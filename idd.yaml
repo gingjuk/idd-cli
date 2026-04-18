@@ -25,5 +25,5 @@ validation:
 
 output:
   file: "idd-report.json"
-  include_graph: true
+  include_graph: false
   verbose: true

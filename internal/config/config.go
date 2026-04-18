@@ -84,7 +84,7 @@ func Default() *Config {
 			RequireSpecTestCoverage: true,
 		},
 		Output: OutputConfig{
-			IncludeGraph: true,
+			IncludeGraph: false,
 			Verbose:      false,
 		},
 	}
