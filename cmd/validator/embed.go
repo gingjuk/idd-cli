@@ -1,4 +1,4 @@
-package iddlinkvalidator
+package main
 
 import (
 	"embed"

@@ -218,7 +218,7 @@ docs/
 markers:
   - id: SPEC-AUTH-001
     name: User login with email/password
-  - id: SPEC-AUTH-002
+  - id: CONTRACT-AUTH-001
     name: Password hashing interface
 ---
 ```

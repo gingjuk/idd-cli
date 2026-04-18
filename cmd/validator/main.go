@@ -13,7 +13,6 @@ import (
 	"github.com/spf13/viper"
 	"gopkg.in/yaml.v3"
 
-	"github.com/yourorg/idd-link-validator"
 	"github.com/yourorg/idd-link-validator/internal/collector"
 	"github.com/yourorg/idd-link-validator/internal/config"
 	"github.com/yourorg/idd-link-validator/internal/engine"
@@ -169,7 +168,7 @@ func run(cmd *cobra.Command, args []string) error {
 	start := time.Now()
 
 	docColl := collector.NewDocCollector(cfg)
-	docSet, err := docColl.Collect(ctx, targetPath)
+	docSet, docErrors, err := docColl.Collect(ctx, targetPath)
 	if err != nil {
 		return fmt.Errorf("failed to collect doc identifiers: %w", err)
 	}
@@ -192,6 +191,7 @@ func run(cmd *cobra.Command, args []string) error {
 	}
 
 	eng := engine.New(cfg)
+	eng.AddStructuralErrors(docErrors)
 	result, err := eng.Run(ctx, docSet)
 	if err != nil {
 		return fmt.Errorf("failed to run validation: %w", err)
@@ -309,9 +309,9 @@ func loadSkills(skillsPath string) ([]SkillInfo, error) {
 func loadEmbeddedSkills() ([]SkillInfo, error) {
 	var skills []SkillInfo
 
-	paths := iddlinkvalidator.ListEmbeddedSkills()
+	paths := ListEmbeddedSkills()
 	for _, p := range paths {
-		data, err := iddlinkvalidator.ReadEmbeddedSkill(p)
+		data, err := ReadEmbeddedSkill(p)
 		if err != nil {
 			continue
 		}

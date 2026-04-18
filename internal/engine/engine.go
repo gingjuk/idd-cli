@@ -35,6 +35,12 @@ func (e *Engine) Run(ctx context.Context, ids *model.IdentifierSet) (*model.Vali
 	return e.result, nil
 }
 
+func (e *Engine) AddStructuralErrors(errors []*model.ValidationError) {
+	for _, err := range errors {
+		e.result.AddError(err.Rule, err.Message, err.Source, err.Link, err.Code)
+	}
+}
+
 func (e *Engine) buildGraph(ids *model.IdentifierSet) {
 	for _, id := range ids.All() {
 		e.graph.AddNode(id.ID, id.Type)
