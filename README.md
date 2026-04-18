@@ -1,4 +1,4 @@
-# IDD Link Validator
+# idd-cli
 
 A CLI tool that validates bidirectional linkage consistency between IDD identifiers across documentation and source code.
 
@@ -44,4 +44,4 @@ See `examples/idd.yaml` for a full configuration example with comments.
 
 ## IDD Documentation System
 
-For IDD framework documentation, see `docs/IDD.md`.
+For IDD framework documentation, see `docs/idd-intro.md`.

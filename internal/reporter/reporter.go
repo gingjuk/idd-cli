@@ -8,8 +8,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/yourorg/idd-link-validator/internal/config"
-	"github.com/yourorg/idd-link-validator/internal/model"
+	"github.com/yourorg/idd-cli/internal/config"
+	"github.com/yourorg/idd-cli/internal/model"
 )
 
 type Reporter struct {

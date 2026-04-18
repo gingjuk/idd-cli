@@ -3,7 +3,7 @@ package graph
 import (
 	"fmt"
 
-	"github.com/yourorg/idd-link-validator/internal/model"
+	"github.com/yourorg/idd-cli/internal/model"
 )
 
 type Node struct {

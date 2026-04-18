@@ -6,9 +6,9 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/yourorg/idd-link-validator/internal/config"
-	"github.com/yourorg/idd-link-validator/internal/model"
-	"github.com/yourorg/idd-link-validator/pkg/pattern"
+	"github.com/yourorg/idd-cli/internal/config"
+	"github.com/yourorg/idd-cli/internal/model"
+	"github.com/yourorg/idd-cli/pkg/pattern"
 )
 
 type DocCollector struct {

@@ -5,7 +5,7 @@
 ## Project Structure
 
 ```
-idd-link-validator/
+idd-cli/
 ├── cmd/validator/         # CLI entry point
 ├── internal/
 │   ├── collector/         # Document/code identifier collection

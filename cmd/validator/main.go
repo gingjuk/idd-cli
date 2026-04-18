@@ -13,10 +13,10 @@ import (
 	"github.com/spf13/viper"
 	"gopkg.in/yaml.v3"
 
-	"github.com/yourorg/idd-link-validator/internal/collector"
-	"github.com/yourorg/idd-link-validator/internal/config"
-	"github.com/yourorg/idd-link-validator/internal/engine"
-	"github.com/yourorg/idd-link-validator/internal/reporter"
+	"github.com/yourorg/idd-cli/internal/collector"
+	"github.com/yourorg/idd-cli/internal/config"
+	"github.com/yourorg/idd-cli/internal/engine"
+	"github.com/yourorg/idd-cli/internal/reporter"
 )
 
 var (
