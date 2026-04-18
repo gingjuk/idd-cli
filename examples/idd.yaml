@@ -1,0 +1,60 @@
+# IDD Link Validator Configuration
+#
+# Config search order:
+#   1. --config flag value
+#   2. ./idd.yaml
+#   3. ./config/idd.yaml
+
+version: "1.0"
+
+# Documentation scan settings
+docs:
+  # Glob patterns for documentation files to scan
+  patterns:
+    - "docs/**/*.md"
+    - "SPEC-*.md"
+    - "TEST-*.md"
+
+  # Regex patterns to extract identifiers from docs
+  identifier_patterns:
+    spec: "SPEC-[A-Z]+-[0-9]+"
+    contract: "CONTRACT-[A-Z]+-[0-9]+"
+    test: "TEST-[A-Z]+-[0-9]+"
+    design: "DESIGN-[A-Z]+-[0-9]+"
+
+# Source code scan settings
+code:
+  # Glob patterns for source files to scan
+  patterns:
+    - "**/*.go"
+    - "**/*.ts"
+    - "**/*.js"
+
+  # Annotation markers to look for in code
+  annotations:
+    - "@spec"
+    - "@contract"
+    - "@test"
+    - "@design"
+
+# Validation rules
+validation:
+  # Require bidirectional links between specs and tests
+  require_bidirectional: true
+
+  # Allow orphan identifiers (not linked from anywhere)
+  allow_orphans: false
+
+  # Require all specs to have at least one test link
+  require_spec_test_coverage: true
+
+# Output settings
+output:
+  # Output file path (default: stdout if empty)
+  file: "idd-report.json"
+
+  # Include full graph in report (default: false)
+  include_graph: false
+
+  # Verbose output (default: false)
+  verbose: false
