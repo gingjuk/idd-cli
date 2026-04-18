@@ -85,6 +85,13 @@ func (c *DocCollector) collectFile(path string, set *model.IdentifierSet) []*mod
 	lines := strings.Split(string(content), "\n")
 	var fileRefs []string
 
+	frontmatterIDs := make(map[string]bool)
+	if fm != nil {
+		for _, marker := range fm.Markers {
+			frontmatterIDs[marker.ID] = true
+		}
+	}
+
 	for i, line := range lines {
 		refs := pattern.ExtractIDDReferences(line)
 		for _, ref := range refs {
@@ -103,6 +110,9 @@ func (c *DocCollector) collectFile(path string, set *model.IdentifierSet) []*mod
 				})
 			}
 
+			if frontmatterIDs[ref] {
+				continue
+			}
 			if !set.Has(ref) {
 				title := c.extractTitle(string(content), ref)
 				id := model.NewIdentifier(ref, idType, title, path, i+1)
@@ -127,6 +137,11 @@ func (c *DocCollector) collectFile(path string, set *model.IdentifierSet) []*mod
 					Source:  path,
 					Link:    marker.ID,
 				})
+			}
+			if !set.Has(marker.ID) {
+				id := model.NewIdentifier(marker.ID, idType, marker.Name, path, 0)
+				id.RawRef = marker.ID
+				set.Add(id)
 			}
 		}
 	}

@@ -1,6 +1,6 @@
 ---
 markers:
-  - id: SPEC-BE-001
+  - id: SPEC-EXAMPLE-001
     name: User Authentication
 ---
 
@@ -8,7 +8,7 @@ markers:
 
 This directory contains example IDD documents showing the expected format.
 
-## SPEC-BE-001: User Authentication
+## SPEC-EXAMPLE-001: User Authentication
 
 **Status:** Done
 
@@ -23,6 +23,6 @@ The system must support user authentication with email/password credentials.
 - Sessions expire after 24 hours
 - Passwords are hashed using bcrypt
 
-**Tests:** [TEST-BE-001](../testing.md#test-be-001-user-login-flow), [TEST-BE-002](../testing.md#test-be-002-session-expiration)
+**Tests:** [TEST-EXAMPLE-001](../testing.md#test-example-001-user-login-flow), [TEST-EXAMPLE-002](../testing.md#test-example-002-session-expiration)
 
-**Related:** [CONTRACT-BE-001](../contract.md#contract-be-001-password-hashing-interface), [DESIGN-BE-001](../design.md#design-be-001-graph-first-architecture)
+**Related:** [CONTRACT-EXAMPLE-001](../contract.md#contract-example-001-password-hashing-interface), [DESIGN-EXAMPLE-001](../design.md#design-example-001-graph-first-architecture)

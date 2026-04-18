@@ -1,8 +1,8 @@
 ---
 markers:
-  - id: CONTRACT-BE-001
+  - id: CONTRACT-EXAMPLE-001
     name: Password Hashing Interface
-  - id: CONTRACT-BE-002
+  - id: CONTRACT-EXAMPLE-002
     name: Session Management Interface
 ---
 
@@ -10,7 +10,7 @@ markers:
 
 This directory contains example IDD contract documents showing the expected format.
 
-## CONTRACT-BE-001: Password Hashing Interface
+## CONTRACT-EXAMPLE-001: Password Hashing Interface
 
 **Status:** Done
 
@@ -33,11 +33,11 @@ type PasswordHasher interface {
 - **Hash failure** — Return error
 - **Verification mismatch** — Return error
 
-**Related Specs:** [SPEC-BE-001](../spec.md#spec-be-001-user-authentication)
+**Related Specs:** [SPEC-EXAMPLE-001](../spec.md#spec-example-001-user-authentication)
 
 ---
 
-## CONTRACT-BE-002: Session Management Interface
+## CONTRACT-EXAMPLE-002: Session Management Interface
 
 **Status:** Done
 
@@ -59,4 +59,4 @@ type SessionManager interface {
 3. **Refresh** — Extend session lifetime
 4. **Revoke** — Immediately invalidate session
 
-**Related Specs:** [SPEC-BE-001](../spec.md#spec-be-001-user-authentication)
+**Related Specs:** [SPEC-EXAMPLE-001](../spec.md#spec-example-001-user-authentication)

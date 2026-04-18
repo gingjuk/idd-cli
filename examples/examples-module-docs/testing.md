@@ -1,8 +1,8 @@
 ---
 markers:
-  - id: TEST-BE-001
+  - id: TEST-EXAMPLE-001
     name: User Login Flow
-  - id: TEST-BE-002
+  - id: TEST-EXAMPLE-002
     name: Session Expiration
 ---
 
@@ -10,7 +10,7 @@ markers:
 
 This directory contains example IDD test documents showing the expected format.
 
-## TEST-BE-001: User Login Flow
+## TEST-EXAMPLE-001: User Login Flow
 
 **Status:** Done
 
@@ -18,7 +18,7 @@ This directory contains example IDD test documents showing the expected format.
 
 Test cases for the user authentication login flow.
 
-**Spec Coverage:** [SPEC-BE-001](../spec.md#spec-be-001-user-authentication)
+**Spec Coverage:** [SPEC-EXAMPLE-001](../spec.md#spec-example-001-user-authentication)
 
 ### Test Cases
 
@@ -30,8 +30,8 @@ Test cases for the user authentication login flow.
 
 **Code Example:**
 ```go
-// TEST-BE-001: User Login Flow
-// Covers: SPEC-BE-001
+// TEST-EXAMPLE-001: User Login Flow
+// Covers: SPEC-EXAMPLE-001
 func TestLogin_Success(t *testing.T) {
     req := LoginRequest{Email: "user@test.com", Password: "valid"}
     resp := Login(req)
@@ -43,7 +43,7 @@ func TestLogin_Success(t *testing.T) {
 
 ---
 
-## TEST-BE-002: Session Expiration
+## TEST-EXAMPLE-002: Session Expiration
 
 **Status:** Done
 
@@ -51,7 +51,7 @@ func TestLogin_Success(t *testing.T) {
 
 Test cases for session expiration behavior.
 
-**Spec Coverage:** [SPEC-BE-001](../spec.md#spec-be-001-user-authentication)
+**Spec Coverage:** [SPEC-EXAMPLE-001](../spec.md#spec-example-001-user-authentication)
 
 ### Test Cases
 
@@ -62,8 +62,8 @@ Test cases for session expiration behavior.
 
 **Code Example:**
 ```go
-// TEST-BE-002: Session Expiration
-// Covers: SPEC-BE-001
+// TEST-EXAMPLE-002: Session Expiration
+// Covers: SPEC-EXAMPLE-001
 func TestSession_ExpiresAfter24Hours(t *testing.T) {
     session := CreateSession(time.Now().Add(-25 * time.Hour))
     if session.IsValid() {

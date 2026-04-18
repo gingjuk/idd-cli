@@ -21,9 +21,18 @@ type Frontmatter struct {
 func ParseFrontmatter(content string) (*Frontmatter, error) {
 	lines := strings.Split(content, "\n")
 	startIdx, endIdx := -1, -1
+	inCodeBlock := false
 
 	for i, line := range lines {
-		if strings.TrimSpace(line) == "---" {
+		trimmed := strings.TrimSpace(line)
+		if strings.HasPrefix(trimmed, "```") {
+			inCodeBlock = !inCodeBlock
+			continue
+		}
+		if inCodeBlock {
+			continue
+		}
+		if trimmed == "---" {
 			if startIdx == -1 {
 				startIdx = i
 			} else {
