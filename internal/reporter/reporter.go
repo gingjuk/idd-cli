@@ -40,10 +40,6 @@ func (r *Reporter) Generate(result *model.ValidationResult) (*model.Report, erro
 }
 
 func (r *Reporter) Write(report *model.Report, output string) error {
-	if output == "" {
-		output = r.cfg.Output.File
-	}
-
 	var writer io.Writer
 	if output == "" || output == "-" {
 		writer = os.Stdout
