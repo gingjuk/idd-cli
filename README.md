@@ -92,7 +92,7 @@ idd-verify skills
 ## Project Structure
 
 ```
-idd-link-validator/
+idd-cli/
 ├── cmd/validator/       # CLI entry point
 ├── internal/
 │   ├── collector/        # Doc/code identifier collection
