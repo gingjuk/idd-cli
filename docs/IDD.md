@@ -53,7 +53,7 @@ identifier_patterns:
 docs/
 ├── backend/
 │   ├── spec.md       # SPEC-BE-001, SPEC-BE-002
-│   ├── test.md       # TEST-BE-001
+│   ├── testing.md    # TEST-BE-001
 │   ├── contract.md   # CONTRACT-BE-001
 │   └── design.md     # DESIGN-BE-001
 └── IDD.md            # 本文档

@@ -197,7 +197,7 @@ docs/
 ├── auth/
 │   ├── spec.md           # SPEC-AUTH-001, SPEC-AUTH-002, ...
 │   ├── contract.md      # CONTRACT-AUTH-001, ...
-│   ├── test.md          # TEST-AUTH-001, ...
+│   ├── testing.md       # TEST-AUTH-001, ...
 │   └── design.md        # DESIGN-AUTH-001, ...
 ├── trading/
 │   ├── spec.md           # SPEC-TRADING-001, ...
@@ -207,8 +207,8 @@ docs/
 
 **Rules:**
 - One subdirectory per module (use module name, lowercase or as appropriate)
-- Each subdirectory contains the module's IDD documents (spec, contract, test, design)
-- Document filenames are lowercase (spec.md, contract.md, etc.)
+- Each subdirectory contains the module's IDD documents (spec, contract, testing, design)
+- Document filenames are lowercase (spec.md, contract.md, testing.md, etc.)
 - Module prefix in identifiers must match the module name (e.g., `SPEC-AUTH-001` in `docs/auth/`)
 
 **Frontmatter:** Each IDD markdown file MUST include YAML frontmatter listing all identifiers it contains with brief descriptions:

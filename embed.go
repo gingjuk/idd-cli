@@ -1,0 +1,26 @@
+package iddlinkvalidator
+
+import (
+	"embed"
+	"io/fs"
+	"strings"
+)
+
+//go:embed skills/*.md
+var SkillsFS embed.FS
+
+func ListEmbeddedSkills() []string {
+	var skills []string
+	fs.WalkDir(SkillsFS, "skills", func(path string, d fs.DirEntry, err error) error {
+		if err != nil || d.IsDir() || !strings.HasSuffix(path, ".md") {
+			return nil
+		}
+		skills = append(skills, path)
+		return nil
+	})
+	return skills
+}
+
+func ReadEmbeddedSkill(path string) ([]byte, error) {
+	return SkillsFS.ReadFile(path)
+}

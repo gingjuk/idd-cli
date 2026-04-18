@@ -2,13 +2,18 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"os"
+	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
+	"gopkg.in/yaml.v3"
 
+	"github.com/yourorg/idd-link-validator"
 	"github.com/yourorg/idd-link-validator/internal/collector"
 	"github.com/yourorg/idd-link-validator/internal/config"
 	"github.com/yourorg/idd-link-validator/internal/engine"
@@ -63,6 +68,31 @@ Example:
 	RunE: run,
 }
 
+var skillsCmd = &cobra.Command{
+	Use:   "skills",
+	Short: "List IDD skills defined in this project",
+	Long: `List IDD skills from the skills/ directory.
+
+Parses frontmatter from skill markdown files and outputs skill definitions.
+
+Example:
+  idd-verify skills
+  idd-verify skills --format json`,
+	RunE: listSkills,
+}
+
+type SkillInfo struct {
+	Name        string `json:"name"`
+	Description string `json:"description"`
+	License     string `json:"license,omitempty"`
+	Compatibility string `json:"compatibility,omitempty"`
+	Audience    string `json:"audience,omitempty"`
+	Workflow    string `json:"workflow,omitempty"`
+	Protected   bool   `json:"protected,omitempty"`
+	Module      string `json:"module,omitempty"`
+	Path        string `json:"path"`
+}
+
 func init() {
 	rootCmd.PersistentFlags().StringVar(&cfgPath, "config", "", "Path to idd.yaml config file (default: ./idd.yaml)")
 	rootCmd.PersistentFlags().StringVarP(&outPath, "output", "o", "", "Output file path (default: stdout)")
@@ -72,6 +102,7 @@ func init() {
 
 	rootCmd.AddCommand(runCmd)
 	rootCmd.AddCommand(lintCmd)
+	rootCmd.AddCommand(skillsCmd)
 
 	_ = viper.BindPFlag("config", rootCmd.PersistentFlags().Lookup("config"))
 	_ = viper.BindPFlag("output", rootCmd.PersistentFlags().Lookup("output"))
@@ -190,4 +221,161 @@ func run(cmd *cobra.Command, args []string) error {
 	}
 
 	return nil
+}
+
+func listSkills(cmd *cobra.Command, args []string) error {
+	skillsPath := "skills"
+	if len(args) > 0 {
+		skillsPath = args[0]
+	}
+
+	skills, err := loadSkills(skillsPath)
+	if err != nil {
+		return fmt.Errorf("failed to load skills: %w", err)
+	}
+
+	if len(skills) == 0 {
+		if verbose {
+			fmt.Println("No skills found")
+		}
+		return nil
+	}
+
+	if format == "json" {
+		data, err := json.MarshalIndent(skills, "", "  ")
+		if err != nil {
+			return fmt.Errorf("failed to marshal skills: %w", err)
+		}
+		fmt.Println(string(data))
+	} else {
+		for _, s := range skills {
+			fmt.Printf("## %s\n", s.Name)
+			fmt.Printf("%s\n", s.Description)
+			if s.Protected {
+				fmt.Printf("🔒 Protected skill\n")
+			}
+			fmt.Printf("Module: %s\n", s.Module)
+			fmt.Printf("Path: %s\n", s.Path)
+			fmt.Println()
+		}
+	}
+
+	return nil
+}
+
+func loadSkills(skillsPath string) ([]SkillInfo, error) {
+	var skills []SkillInfo
+
+	entries, err := os.ReadDir(skillsPath)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return loadEmbeddedSkills()
+		}
+		return nil, err
+	}
+
+	hasMD := false
+	for _, entry := range entries {
+		if !entry.IsDir() && strings.HasSuffix(entry.Name(), ".md") {
+			hasMD = true
+			break
+		}
+	}
+
+	if !hasMD {
+		return loadEmbeddedSkills()
+	}
+
+	for _, entry := range entries {
+		if entry.IsDir() || !strings.HasSuffix(entry.Name(), ".md") {
+			continue
+		}
+
+		path := filepath.Join(skillsPath, entry.Name())
+		data, err := os.ReadFile(path)
+		if err != nil {
+			continue
+		}
+
+		skill := parseSkillFrontmatter(string(data))
+		skill.Path = path
+		skill.Module = extractModuleName(entry.Name())
+		skills = append(skills, skill)
+	}
+
+	return skills, nil
+}
+
+func loadEmbeddedSkills() ([]SkillInfo, error) {
+	var skills []SkillInfo
+
+	paths := iddlinkvalidator.ListEmbeddedSkills()
+	for _, p := range paths {
+		data, err := iddlinkvalidator.ReadEmbeddedSkill(p)
+		if err != nil {
+			continue
+		}
+		skill := parseSkillFrontmatter(string(data))
+		skill.Path = p
+		skill.Module = extractModuleName(filepath.Base(p))
+		skills = append(skills, skill)
+	}
+
+	return skills, nil
+}
+
+type frontmatter struct {
+	Name          string `yaml:"name"`
+	Description   string `yaml:"description"`
+	License       string `yaml:"license"`
+	Compatibility string `yaml:"compatibility"`
+	Metadata      struct {
+		Audience   string `yaml:"audience"`
+		Workflow   string `yaml:"workflow"`
+		Protected  bool   `yaml:"protected"`
+	} `yaml:"metadata"`
+}
+
+func parseSkillFrontmatter(content string) SkillInfo {
+	var fm frontmatter
+
+	lines := strings.Split(content, "\n")
+	var yamlLines []string
+	inFrontmatter := false
+
+	for _, line := range lines {
+		if strings.TrimSpace(line) == "---" {
+			if !inFrontmatter {
+				inFrontmatter = true
+				continue
+			}
+			break
+		}
+		if inFrontmatter {
+			yamlLines = append(yamlLines, line)
+		}
+	}
+
+	if len(yamlLines) > 0 {
+		yamlContent := strings.Join(yamlLines, "\n")
+		yaml.Unmarshal([]byte(yamlContent), &fm)
+	}
+
+	return SkillInfo{
+		Name:          fm.Name,
+		Description:   fm.Description,
+		License:       fm.License,
+		Compatibility: fm.Compatibility,
+		Audience:     fm.Metadata.Audience,
+		Workflow:      fm.Metadata.Workflow,
+		Protected:    fm.Metadata.Protected,
+	}
+}
+
+func extractModuleName(filename string) string {
+	name := strings.TrimSuffix(filename, ".md")
+	if strings.HasPrefix(name, "SKILL-") {
+		return strings.TrimPrefix(name, "SKILL-")
+	}
+	return ""
 }
