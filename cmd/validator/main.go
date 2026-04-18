@@ -310,6 +310,10 @@ func loadEmbeddedSkills() ([]SkillInfo, error) {
 	var skills []SkillInfo
 
 	paths := ListEmbeddedSkills()
+	if len(paths) == 0 {
+		return skills, nil
+	}
+
 	for _, p := range paths {
 		data, err := ReadEmbeddedSkill(p)
 		if err != nil {
