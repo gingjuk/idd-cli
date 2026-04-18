@@ -14,23 +14,23 @@ type IDDPattern struct {
 var Patterns = map[string]*IDDPattern{
 	"SPEC": {
 		Type:    "SPEC",
-		Regex:   regexp.MustCompile(`(?i)\b(SPEC-\d+)\b`),
-		Example: "SPEC-001",
+		Regex:   regexp.MustCompile(`(?i)\b(SPEC-[A-Z]+-[0-9]+)\b`),
+		Example: "SPEC-BE-001",
 	},
 	"CONTRACT": {
 		Type:    "CONTRACT",
-		Regex:   regexp.MustCompile(`(?i)\b(CONTRACT-\d+)\b`),
-		Example: "CONTRACT-001",
+		Regex:   regexp.MustCompile(`(?i)\b(CONTRACT-[A-Z]+-[0-9]+)\b`),
+		Example: "CONTRACT-BE-001",
 	},
 	"TEST": {
 		Type:    "TEST",
-		Regex:   regexp.MustCompile(`(?i)\b(TEST-\d+)\b`),
-		Example: "TEST-001",
+		Regex:   regexp.MustCompile(`(?i)\b(TEST-[A-Z]+-[0-9]+)\b`),
+		Example: "TEST-BE-001",
 	},
 	"DESIGN": {
 		Type:    "DESIGN",
-		Regex:   regexp.MustCompile(`(?i)\b(DESIGN-\d+)\b`),
-		Example: "DESIGN-001",
+		Regex:   regexp.MustCompile(`(?i)\b(DESIGN-[A-Z]+-[0-9]+)\b`),
+		Example: "DESIGN-BE-001",
 	},
 }
 
