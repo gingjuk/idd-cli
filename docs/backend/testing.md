@@ -12,7 +12,7 @@ markers:
 
 **Purpose:**
 
-Test cases for the IDD Link Validator core validation logic.
+Test cases for the idd-cli core validation logic.
 
 ### Model Tests (`internal/model/`)
 

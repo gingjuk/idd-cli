@@ -30,8 +30,8 @@ var (
 
 var rootCmd = &cobra.Command{
 	Use:   "idd-cli",
-	Short: "IDD Link Validator - validates bidirectional linkage between IDD identifiers",
-	Long: `IDD Link Validator scans documentation and source code to build a linkage graph,
+	Short: "idd-cli - validates bidirectional linkage between IDD identifiers",
+	Long: `idd-cli scans documentation and source code to build a linkage graph,
 then validates that all references are bidirectional (spec→test→code consistency).
 
 Example usage:
@@ -157,7 +157,7 @@ func run(cmd *cobra.Command, args []string) error {
 	}
 
 	if verbose {
-		fmt.Printf("IDD Link Validator v%s\n", version)
+		fmt.Printf("idd-cli v%s\n", version)
 		fmt.Printf("Validating: %s\n", targetPath)
 		if !noConfig {
 			fmt.Printf("Config: %s\n", cfgPath)

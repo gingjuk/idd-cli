@@ -1,20 +1,20 @@
 ---
 markers:
   - id: SPEC-BE-001
-    name: IDD Link Validator Overview
+    name: IDD CLI Overview
   - id: SPEC-BE-002
     name: Graph Linkage Structure
 ---
 
 # Specification (backend)
 
-## SPEC-BE-001: IDD Link Validator Overview
+## SPEC-BE-001: IDD CLI Overview
 
 **Status:** Done
 
 **Requirement:**
 
-IDD Link Validator is a CLI tool that validates bidirectional linkage consistency between IDD (Intent-Driven Development) identifiers across documentation and source code.
+idd-cli is a CLI tool that validates bidirectional linkage consistency between IDD (Intent-Driven Development) identifiers across documentation and source code.
 
 **Implementation:** `cmd/validator/main.go`, `internal/engine/engine.go`
 

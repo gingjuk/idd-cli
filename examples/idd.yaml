@@ -1,4 +1,4 @@
-# IDD Link Validator Configuration
+# IDD CLI Configuration
 #
 # Config search order:
 #   1. --config flag value

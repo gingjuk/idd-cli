@@ -1,4 +1,4 @@
-# IDD Link Validator — Agent Guide
+# IDD CLI — Agent Guide
 
 ## Build & Run Commands
 
@@ -25,11 +25,9 @@ gofmt -w .
 goimports -w .
 ```
 
-## Binary Name Discrepancy
+## Binary Name
 
-- **Makefile** builds to `bin/idd-cli`
-- **README.md** incorrectly says `idd-validator`
-- Always use `idd-cli` or check Makefile's `BINARY_NAME`
+The binary is built as `idd-cli` (see Makefile's `BINARY_NAME`).
 
 ## Project Structure
 

@@ -1,4 +1,4 @@
-# IDD Link Validator Documentation
+# IDD CLI Documentation
 
 > This project follows the IDD (Intent-Driven Development) framework for documentation management.
 
