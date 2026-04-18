@@ -188,6 +188,45 @@ def test_execute_order_performance():
 - Every code implementation should reference its spec and contract IDs
 - Every test should reference the spec/contract it validates
 
+### Document Storage Organization
+
+**All IDD documents MUST be stored in the `docs/` directory, organized by module name.**
+
+```
+docs/
+├── auth/
+│   ├── spec.md           # SPEC-AUTH-001, SPEC-AUTH-002, ...
+│   ├── contract.md      # CONTRACT-AUTH-001, ...
+│   ├── test.md          # TEST-AUTH-001, ...
+│   └── design.md        # DESIGN-AUTH-001, ...
+├── trading/
+│   ├── spec.md           # SPEC-TRADING-001, ...
+│   └── ...
+└── ...
+```
+
+**Rules:**
+- One subdirectory per module (use module name, lowercase or as appropriate)
+- Each subdirectory contains the module's IDD documents (spec, contract, test, design)
+- Document filenames are lowercase (spec.md, contract.md, etc.)
+- Module prefix in identifiers must match the module name (e.g., `SPEC-AUTH-001` in `docs/auth/`)
+
+**Frontmatter:** Each IDD markdown file MUST include YAML frontmatter listing all identifiers it contains with brief descriptions:
+
+```yaml
+---
+markers:
+  - id: SPEC-AUTH-001
+    name: User login with email/password
+  - id: CONTRACT-AUTH-001
+    name: Password hashing interface
+---
+```
+
+This enables the IDD Link Validator to quickly locate and parse identifiers without reading full file content.
+
+**Validator Config:** Ensure `idd.yaml` patterns cover `docs/**/*.md` to auto-detect all module documents.
+
 ### Phase 4: TDD Implementation
 
 **TDD Workflow:**
