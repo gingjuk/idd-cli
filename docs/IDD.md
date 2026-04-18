@@ -47,24 +47,27 @@ identifier_patterns:
 
 ## 文档结构
 
+文档按模块组织存储在 `docs/` 目录下：
+
 ```
 docs/
-├── SPEC.md      # 功能规格索引 (含所有 SPEC)
-├── TEST.md      # 测试用例索引 (含所有 TEST)
-├── CONTRACT.md  # 契约接口索引 (含所有 CONTRACT)
-└── DESIGN.md    # 架构设计索引 (含所有 DESIGN)
+├── backend/
+│   ├── spec.md       # SPEC-BE-001, SPEC-BE-002
+│   ├── test.md       # TEST-BE-001
+│   ├── contract.md   # CONTRACT-BE-001
+│   └── design.md     # DESIGN-BE-001
+└── IDD.md            # 本文档
 ```
 
-每份文档包含 YAML frontmatter 用于工具解析：
+每份 IDD 文档必须包含 YAML frontmatter，用于工具快速解析：
 
 ```yaml
 ---
-module: BE
-type: SPEC
-description: 模块描述
 markers:
-  - SPEC-BE-001
-  - SPEC-BE-002
+  - id: SPEC-BE-001
+    name: 功能名称描述
+  - id: CONTRACT-BE-001
+    name: 契约接口描述
 ---
 ```
 

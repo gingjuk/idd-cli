@@ -1,4 +1,4 @@
-# SPEC-001 User Authentication
+# SPEC-BE-001 User Authentication
 
 ## Overview
 
@@ -16,14 +16,14 @@ See implementation in `internal/auth/`.
 
 ## Contracts
 
-- CONTRACT-001 (Password Hashing)
-- CONTRACT-002 (Session Management)
+- CONTRACT-BE-001 (Password Hashing)
+- CONTRACT-BE-002 (Session Management)
 
 ## Tests
 
-- TEST-001 (Login flow)
-- TEST-002 (Session expiration)
+- TEST-BE-001 (Login flow)
+- TEST-BE-002 (Session expiration)
 
 ## Design
 
-- DESIGN-001 (Auth flow diagram)
+- DESIGN-BE-001 (Auth flow diagram)

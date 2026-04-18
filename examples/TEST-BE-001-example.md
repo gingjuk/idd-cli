@@ -1,4 +1,4 @@
-# TEST-001 User Login Flow
+# TEST-BE-001 User Login Flow
 
 ## Test Case
 
@@ -6,12 +6,12 @@ Tests the complete login flow including validation.
 
 ## Specs Covered
 
-- SPEC-001 (User Authentication)
+- SPEC-BE-001 (User Authentication)
 
 ## Code Coverage
 
 ```go
-// @test SPEC-001
+// @test SPEC-BE-001
 func TestLogin(t *testing.T) {
     // test implementation
 }

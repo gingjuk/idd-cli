@@ -1,24 +1,14 @@
 ---
-module: BE
-type: SPEC
-description: Specification index for IDD Link Validator backend module
 markers:
-  - SPEC-BE-001
-  - SPEC-BE-002
+  - id: SPEC-BE-001
+    name: IDD Link Validator Overview
+  - id: SPEC-BE-002
+    name: Graph Linkage Structure
 ---
 
-# Specification Index (BE)
+# Specification (backend)
 
-| ID | Title | Status | Tests |
-|----|-------|--------|-------|
-| [SPEC-BE-001](#spec-be-001) | IDD Link Validator Overview | Done | TEST-BE-001 |
-| [SPEC-BE-002](#spec-be-002) | Graph Linkage Structure | Done | TEST-BE-001 |
-
----
-
-## SPEC-BE-001
-
-### IDD Link Validator Overview
+## SPEC-BE-001: IDD Link Validator Overview
 
 **Status:** Done
 
@@ -50,9 +40,7 @@ IDD Link Validator is a CLI tool that validates bidirectional linkage consistenc
 
 ---
 
-## SPEC-BE-002
-
-### Graph Linkage Structure
+## SPEC-BE-002: Graph Linkage Structure
 
 **Status:** Done
 

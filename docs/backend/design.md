@@ -1,22 +1,12 @@
 ---
-module: BE
-type: DESIGN
-description: Architecture design decisions for IDD Link Validator
 markers:
-  - DESIGN-BE-001
+  - id: DESIGN-BE-001
+    name: Graph-First Architecture
 ---
 
-# Design Index (BE)
+# Design (backend)
 
-| ID | Title | Status |
-|----|-------|--------|
-| [DESIGN-BE-001](#design-be-001) | Graph-First Architecture | Accepted |
-
----
-
-## DESIGN-BE-001
-
-### Graph-First Architecture
+## DESIGN-BE-001: Graph-First Architecture
 
 **Date:** 2026-04-18
 **Status:** Accepted

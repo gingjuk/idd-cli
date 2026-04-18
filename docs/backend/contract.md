@@ -1,22 +1,12 @@
 ---
-module: BE
-type: CONTRACT
-description: Contract interface definitions for IDD Link Validator
 markers:
-  - CONTRACT-BE-001
+  - id: CONTRACT-BE-001
+    name: Collector Interface Contracts
 ---
 
-# Contract Index (BE)
+# Contracts (backend)
 
-| ID | Title | Status |
-|----|-------|--------|
-| [CONTRACT-BE-001](#contract-be-001) | Collector Interface Contracts | Done |
-
----
-
-## CONTRACT-BE-001
-
-### Collector Interface Contracts
+## CONTRACT-BE-001: Collector Interface Contracts
 
 **Status:** Done
 

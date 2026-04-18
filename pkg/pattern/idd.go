@@ -3,6 +3,7 @@ package pattern
 import (
 	"fmt"
 	"regexp"
+	"strings"
 )
 
 type IDDPattern struct {
@@ -43,22 +44,22 @@ type AnnotationPattern struct {
 var AnnotationPatterns = []AnnotationPattern{
 	{
 		Prefix: "@spec",
-		Regex:  regexp.MustCompile(`(?i)@spec\s+(\S+)`),
+		Regex:  regexp.MustCompile(`(?i)@spec\s+([A-Z]+-[A-Z]+-[0-9]+)`),
 		Type:   "SPEC",
 	},
 	{
 		Prefix: "@contract",
-		Regex:  regexp.MustCompile(`(?i)@contract\s+(\S+)`),
+		Regex:  regexp.MustCompile(`(?i)@contract\s+([A-Z]+-[A-Z]+-[0-9]+)`),
 		Type:   "CONTRACT",
 	},
 	{
 		Prefix: "@test",
-		Regex:  regexp.MustCompile(`(?i)@test\s+(\S+)`),
+		Regex:  regexp.MustCompile(`(?i)@test\s+([A-Z]+-[A-Z]+-[0-9]+)`),
 		Type:   "TEST",
 	},
 	{
 		Prefix: "@design",
-		Regex:  regexp.MustCompile(`(?i)@design\s+(\S+)`),
+		Regex:  regexp.MustCompile(`(?i)@design\s+([A-Z]+-[A-Z]+-[0-9]+)`),
 		Type:   "DESIGN",
 	},
 }
@@ -69,11 +70,33 @@ func ExtractIDDReferences(content string) []string {
 		matches := pat.Regex.FindAllStringSubmatch(content, -1)
 		for _, m := range matches {
 			if len(m) > 1 {
-				refs = append(refs, m[1])
+				id := m[1]
+				if !isQuoted(content, id) {
+					refs = append(refs, id)
+				}
 			}
 		}
 	}
 	return refs
+}
+
+func isQuoted(content, id string) bool {
+	idx := 0
+	for {
+		pos := strings.Index(content[idx:], id)
+		if pos == -1 {
+			return false
+		}
+		actualPos := idx + pos
+		if actualPos > 0 && (content[actualPos-1] == '"' || content[actualPos-1] == '`') {
+			return true
+		}
+		endPos := actualPos + len(id)
+		if endPos < len(content) && (content[endPos] == '"' || content[endPos] == '`') {
+			return true
+		}
+		idx = actualPos + 1
+	}
 }
 
 func ExtractAnnotations(content string) []string {

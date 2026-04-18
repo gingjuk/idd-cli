@@ -1,22 +1,12 @@
 ---
-module: BE
-type: TEST
-description: Test case index for IDD Link Validator
 markers:
-  - TEST-BE-001
+  - id: TEST-BE-001
+    name: Core Validation Tests
 ---
 
-# Test Index (BE)
+# Test Cases (backend)
 
-| ID | Title | Status | Spec |
-|----|-------|--------|------|
-| [TEST-BE-001](#test-be-001) | Core Validation Tests | Done | SPEC-BE-001, SPEC-BE-002 |
-
----
-
-## TEST-BE-001
-
-### Core Validation Tests
+## TEST-BE-001: Core Validation Tests
 
 **Status:** Done
 
