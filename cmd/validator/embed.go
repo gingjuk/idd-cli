@@ -1,25 +1,26 @@
 package main
 
 import (
-	"os"
-	"path/filepath"
+	"embed"
+	"io/fs"
 	"strings"
 )
 
+//go:embed skills/*.md
+var SkillsFS embed.FS
+
 func ListEmbeddedSkills() []string {
 	var skills []string
-	entries, err := os.ReadDir("skills")
-	if err != nil {
-		return skills
-	}
-	for _, entry := range entries {
-		if !entry.IsDir() && strings.HasSuffix(entry.Name(), ".md") {
-			skills = append(skills, filepath.Join("skills", entry.Name()))
+	fs.WalkDir(SkillsFS, "skills", func(path string, d fs.DirEntry, err error) error {
+		if err != nil || d.IsDir() || !strings.HasSuffix(path, ".md") {
+			return nil
 		}
-	}
+		skills = append(skills, path)
+		return nil
+	})
 	return skills
 }
 
 func ReadEmbeddedSkill(path string) ([]byte, error) {
-	return os.ReadFile(path)
+	return SkillsFS.ReadFile(path)
 }
