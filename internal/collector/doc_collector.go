@@ -144,6 +144,14 @@ func (c *DocCollector) collectFile(path string, set *model.IdentifierSet) []*mod
 				set.Add(id)
 			}
 		}
+		// Add content references as links from the file's marker identifiers
+		for _, ref := range fileRefs {
+			for _, marker := range fm.Markers {
+				if id, ok := set.Get(marker.ID); ok {
+					id.AddLink(ref)
+				}
+			}
+		}
 	}
 
 	return errors

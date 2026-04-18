@@ -20,12 +20,12 @@ import (
 )
 
 var (
-	cfgPath   string
-	outPath   string
-	format    string
-	verbose   bool
-	noConfig  bool
-	version   = "1.0.0"
+	cfgPath  string
+	outPath  string
+	format   string
+	verbose  bool
+	noConfig bool
+	version  = "1.0.0"
 )
 
 var rootCmd = &cobra.Command{
@@ -39,7 +39,7 @@ Example usage:
   idd-cli run ./docs --config idd.yaml
   idd-cli run ./docs --format json
   idd-cli lint ./docs --format json -o report.json`,
-	Version: version,
+	Version:      version,
 	SilenceUsage: true,
 }
 
@@ -81,15 +81,15 @@ Example:
 }
 
 type SkillInfo struct {
-	Name        string `json:"name"`
-	Description string `json:"description"`
-	License     string `json:"license,omitempty"`
+	Name          string `json:"name"`
+	Description   string `json:"description"`
+	License       string `json:"license,omitempty"`
 	Compatibility string `json:"compatibility,omitempty"`
-	Audience    string `json:"audience,omitempty"`
-	Workflow    string `json:"workflow,omitempty"`
-	Protected   bool   `json:"protected,omitempty"`
-	Module      string `json:"module,omitempty"`
-	Path        string `json:"path"`
+	Audience      string `json:"audience,omitempty"`
+	Workflow      string `json:"workflow,omitempty"`
+	Protected     bool   `json:"protected,omitempty"`
+	Module        string `json:"module,omitempty"`
+	Path          string `json:"path"`
 }
 
 func init() {
@@ -334,9 +334,9 @@ type frontmatter struct {
 	License       string `yaml:"license"`
 	Compatibility string `yaml:"compatibility"`
 	Metadata      struct {
-		Audience   string `yaml:"audience"`
-		Workflow   string `yaml:"workflow"`
-		Protected  bool   `yaml:"protected"`
+		Audience  string `yaml:"audience"`
+		Workflow  string `yaml:"workflow"`
+		Protected bool   `yaml:"protected"`
 	} `yaml:"metadata"`
 }
 
@@ -362,7 +362,7 @@ func parseSkillFrontmatter(content string) SkillInfo {
 
 	if len(yamlLines) > 0 {
 		yamlContent := strings.Join(yamlLines, "\n")
-		yaml.Unmarshal([]byte(yamlContent), &fm)
+		_ = yaml.Unmarshal([]byte(yamlContent), &fm)
 	}
 
 	return SkillInfo{
@@ -370,9 +370,9 @@ func parseSkillFrontmatter(content string) SkillInfo {
 		Description:   fm.Description,
 		License:       fm.License,
 		Compatibility: fm.Compatibility,
-		Audience:     fm.Metadata.Audience,
+		Audience:      fm.Metadata.Audience,
 		Workflow:      fm.Metadata.Workflow,
-		Protected:    fm.Metadata.Protected,
+		Protected:     fm.Metadata.Protected,
 	}
 }
 

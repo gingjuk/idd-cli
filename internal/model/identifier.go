@@ -11,10 +11,10 @@ import (
 type IdentifierType string
 
 const (
-	TypeSpec      IdentifierType = "SPEC"
-	TypeContract  IdentifierType = "CONTRACT"
-	TypeTest      IdentifierType = "TEST"
-	TypeDesign    IdentifierType = "DESIGN"
+	TypeSpec     IdentifierType = "SPEC"
+	TypeContract IdentifierType = "CONTRACT"
+	TypeTest     IdentifierType = "TEST"
+	TypeDesign   IdentifierType = "DESIGN"
 )
 
 // ParseIdentifierType converts a string to IdentifierType.
@@ -196,12 +196,12 @@ func (e ValidationError) Error() string {
 
 // ValidationStats contains statistics about the validation run.
 type ValidationStats struct {
-	TotalIdentifiers int `json:"total_identifiers"`
-	TotalLinks      int `json:"total_links"`
-	SpecsAnalyzed   int `json:"specs_analyzed"`
-	TestsAnalyzed   int `json:"tests_analyzed"`
+	TotalIdentifiers  int `json:"total_identifiers"`
+	TotalLinks        int `json:"total_links"`
+	SpecsAnalyzed     int `json:"specs_analyzed"`
+	TestsAnalyzed     int `json:"tests_analyzed"`
 	ContractsAnalyzed int `json:"contracts_analyzed"`
-	DesignsAnalyzed int `json:"designs_analyzed"`
+	DesignsAnalyzed   int `json:"designs_analyzed"`
 }
 
 // ValidationResult contains the result of validation.
@@ -284,10 +284,10 @@ type GraphSnapshot struct {
 
 // NodeSummary is a summary of a node for the report.
 type NodeSummary struct {
-	ID       string           `json:"id"`
-	Type     IdentifierType   `json:"type"`
-	Outbound int             `json:"outbound"`
-	Inbound  int             `json:"inbound"`
+	ID       string         `json:"id"`
+	Type     IdentifierType `json:"type"`
+	Outbound int            `json:"outbound"`
+	Inbound  int            `json:"inbound"`
 }
 
 // EdgeSummary is a summary of an edge for the report.

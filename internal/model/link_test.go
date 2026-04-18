@@ -21,9 +21,9 @@ func TestLinkType_Constants(t *testing.T) {
 
 func TestReverseLinkType(t *testing.T) {
 	tests := []struct {
-		name  string
-		link  LinkType
-		want  LinkType
+		name string
+		link LinkType
+		want LinkType
 	}{
 		{"tests -> implements", LinkTests, LinkImplements},
 		{"implements -> tests", LinkImplements, LinkTests},

@@ -11,7 +11,7 @@ var SkillsFS embed.FS
 
 func ListEmbeddedSkills() []string {
 	var skills []string
-	fs.WalkDir(SkillsFS, "skills", func(path string, d fs.DirEntry, err error) error {
+	_ = fs.WalkDir(SkillsFS, "skills", func(path string, d fs.DirEntry, err error) error {
 		if err != nil || d.IsDir() || !strings.HasSuffix(path, ".md") {
 			return nil
 		}

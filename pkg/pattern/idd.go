@@ -36,9 +36,9 @@ var Patterns = map[string]*IDDPattern{
 }
 
 type AnnotationPattern struct {
-	Prefix  string
-	Regex   *regexp.Regexp
-	Type    string
+	Prefix string
+	Regex  *regexp.Regexp
+	Type   string
 }
 
 var AnnotationPatterns = []AnnotationPattern{

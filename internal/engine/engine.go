@@ -12,9 +12,9 @@ import (
 )
 
 type Engine struct {
-	cfg      *config.Config
-	graph    *graph.LinkageGraph
-	result   *model.ValidationResult
+	cfg    *config.Config
+	graph  *graph.LinkageGraph
+	result *model.ValidationResult
 }
 
 func New(cfg *config.Config) *Engine {
