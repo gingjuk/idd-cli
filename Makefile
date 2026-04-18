@@ -1,6 +1,6 @@
 .PHONY: build run test clean install
 
-BINARY_NAME=idd-verify
+BINARY_NAME=idd-cli
 VERSION=1.0.0
 GO=go
 

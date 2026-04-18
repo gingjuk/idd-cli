@@ -15,13 +15,13 @@ idd-cli is an **Intent-Driven Development (IDD)** tool that enables:
 
 ```bash
 # Build
-go build -o bin/idd-verify ./cmd/validator
+go build -o bin/idd-cli ./cmd/validator
 
 # Run validation
-./bin/idd-verify run .
+./bin/idd-cli run .
 
 # With config
-./bin/idd-verify --config idd.yaml run .
+./bin/idd-cli --config idd.yaml run .
 
 # Or use Make
 make build && make run
@@ -86,7 +86,7 @@ Load skills from: cmd/validator/skills/SKILL.md
 ls -la .claude/skills/
 
 # Verify skills are accessible
-idd-verify skills
+idd-cli skills
 ```
 
 ## Project Structure

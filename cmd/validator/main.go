@@ -29,16 +29,16 @@ var (
 )
 
 var rootCmd = &cobra.Command{
-	Use:   "idd-verify",
+	Use:   "idd-cli",
 	Short: "IDD Link Validator - validates bidirectional linkage between IDD identifiers",
 	Long: `IDD Link Validator scans documentation and source code to build a linkage graph,
 then validates that all references are bidirectional (spec→test→code consistency).
 
 Example usage:
-  idd-verify run ./docs
-  idd-verify run ./docs --config idd.yaml
-  idd-verify run ./docs --format json
-  idd-verify lint ./docs --format json -o report.json`,
+  idd-cli run ./docs
+  idd-cli run ./docs --config idd.yaml
+  idd-cli run ./docs --format json
+  idd-cli lint ./docs --format json -o report.json`,
 	Version: version,
 	SilenceUsage: true,
 }
@@ -49,8 +49,8 @@ var runCmd = &cobra.Command{
 	Long: `Run IDD linkage validation on the specified path.
 
 Example:
-  idd-verify run ./docs
-  idd-verify run ./docs --config idd.yaml`,
+  idd-cli run ./docs
+  idd-cli run ./docs --config idd.yaml`,
 	Args: cobra.MaximumNArgs(1),
 	RunE: run,
 }
@@ -61,8 +61,8 @@ var lintCmd = &cobra.Command{
 	Long: `Lint IDD linkage validation. This is an alias for 'run'.
 
 Example:
-  idd-verify lint ./docs
-  idd-verify lint ./docs --format json -o report.json`,
+  idd-cli lint ./docs
+  idd-cli lint ./docs --format json -o report.json`,
 	Args: cobra.MaximumNArgs(1),
 	RunE: run,
 }
@@ -75,8 +75,8 @@ var skillsCmd = &cobra.Command{
 Parses frontmatter from skill markdown files and outputs skill definitions.
 
 Example:
-  idd-verify skills
-  idd-verify skills --format json`,
+  idd-cli skills
+  idd-cli skills --format json`,
 	RunE: listSkills,
 }
 

@@ -136,10 +136,10 @@ output:
 
 ```bash
 # Build
-go build -o idd-verify ./cmd/validator
+go build -o idd-cli ./cmd/validator
 
 # Run validation
-./idd-verify run --config idd.yaml
+./idd-cli run --config idd.yaml
 
 # Using Make
 make build && make run

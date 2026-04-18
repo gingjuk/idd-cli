@@ -334,18 +334,18 @@ Commit
 
 ## IDD Link Validator Tool
 
-The IDD Link Validator (`idd-verify`) is a CLI tool that validates bidirectional linkage consistency between IDD identifiers across documentation and source code.
+The IDD Link Validator (`idd-cli`) is a CLI tool that validates bidirectional linkage consistency between IDD identifiers across documentation and source code.
 
 ### Installation
 
 ```bash
-go build -o idd-verify ./cmd/validator
+go build -o idd-cli ./cmd/validator
 ```
 
 ### Usage
 
 ```bash
-idd-verify run --config idd.yaml
+idd-cli run --config idd.yaml
 ```
 
 ### Configuration (`idd.yaml`)

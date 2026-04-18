@@ -26,7 +26,7 @@ func New(cfg *config.Config, format string) *Reporter {
 
 func (r *Reporter) Generate(result *model.ValidationResult) (*model.Report, error) {
 	report := &model.Report{
-		Tool:      "idd-verify",
+		Tool:      "idd-cli",
 		Version:   "1.0.0",
 		Timestamp: time.Now().Format(time.RFC3339),
 		Config: model.ConfigSummary{

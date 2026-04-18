@@ -3,16 +3,16 @@
 ## Build & Run Commands
 
 ```bash
-# Build (outputs to bin/idd-verify, NOT idd-validator)
-go build -o bin/idd-verify ./cmd/validator
+# Build (outputs to bin/idd-cli, NOT idd-validator)
+go build -o bin/idd-cli ./cmd/validator
 
-# Or use Make (binary name in Makefile is "idd-verify")
+# Or use Make (binary name in Makefile is "idd-cli")
 make build
 
 # Run validation
-./bin/idd-verify run .
-./bin/idd-verify run . -v          # verbose
-./bin/idd-verify --config idd.yaml run .
+./bin/idd-cli run .
+./bin/idd-cli run . -v          # verbose
+./bin/idd-cli --config idd.yaml run .
 
 # Run tests (CI requires CGO_ENABLED=1)
 CGO_ENABLED=1 go test -v -race ./...
@@ -27,9 +27,9 @@ goimports -w .
 
 ## Binary Name Discrepancy
 
-- **Makefile** builds to `bin/idd-verify`
+- **Makefile** builds to `bin/idd-cli`
 - **README.md** incorrectly says `idd-validator`
-- Always use `idd-verify` or check Makefile's `BINARY_NAME`
+- Always use `idd-cli` or check Makefile's `BINARY_NAME`
 
 ## Project Structure
 
