@@ -22,6 +22,7 @@ install: build
 	install -m 755 bin/$(BINARY_NAME) /usr/local/bin/
 
 lint:
+	$(LINT) config verify
 	$(LINT) run ./...
 
 fmt:

@@ -16,11 +16,14 @@ linters:
   enable:
     - staticcheck
     - unused
+
+formatters:
   settings:
     gofmt:
       simplify: true
     goimports:
-      local-prefixes: github.com/yourorg/idd-cli
+      local-prefixes:
+        - github.com/yourorg/idd-cli
 
 issues:
   max-issues-per-linter: 0
