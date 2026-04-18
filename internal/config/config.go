@@ -66,12 +66,12 @@ func Default() *Config {
 	return &Config{
 		Version: "1.0",
 		Docs: DocsConfig{
-			Patterns: []string{"**/*.md"},
+			Patterns: []string{"docs/**/*.md"},
 			IdentifierPatterns: IdentifierPatterns{
-				Spec:     `SPEC-[A-Z]+-\d+`,
-				Contract: `CONTRACT-[A-Z]+-\d+`,
-				Test:     `TEST-[A-Z]+-\d+`,
-				Design:   `DESIGN-[A-Z]+-\d+`,
+				Spec:     `SPEC-[A-Z]+-[0-9]+`,
+				Contract: `CONTRACT-[A-Z]+-[0-9]+`,
+				Test:     `TEST-[A-Z]+-[0-9]+`,
+				Design:   `DESIGN-[A-Z]+-[0-9]+`,
 			},
 		},
 		Code: CodeConfig{
@@ -84,7 +84,7 @@ func Default() *Config {
 			RequireSpecTestCoverage: true,
 		},
 		Output: OutputConfig{
-			IncludeGraph: false,
+			IncludeGraph: true,
 			Verbose:      false,
 		},
 	}
