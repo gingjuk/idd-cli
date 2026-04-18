@@ -1,11 +1,11 @@
-# IDD Link Validator Documentation
+# IDD CLI Documentation
 
 > This project follows the IDD (Intent-Driven Development) framework for documentation management.
 
 ## Project Structure
 
 ```
-idd-link-validator/
+idd-cli/
 ├── cmd/validator/         # CLI entry point
 ├── internal/
 │   ├── collector/         # Document/code identifier collection
@@ -136,10 +136,10 @@ output:
 
 ```bash
 # Build
-go build -o idd-verify ./cmd/validator
+go build -o idd-cli ./cmd/validator
 
 # Run validation
-./idd-verify run --config idd.yaml
+./idd-cli run --config idd.yaml
 
 # Using Make
 make build && make run

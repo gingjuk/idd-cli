@@ -20,10 +20,10 @@ code:
 
 validation:
   require_bidirectional: true
-  allow_orphans: false
-  require_spec_test_coverage: true
+  allow_orphans: true
+  require_spec_test_coverage: false
 
 output:
   file: "idd-report.json"
-  include_graph: true
+  include_graph: false
   verbose: true

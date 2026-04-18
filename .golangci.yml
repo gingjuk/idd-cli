@@ -1,0 +1,30 @@
+version: "2"
+
+run:
+  timeout: 5m
+  tests: false
+
+output:
+  formats:
+    text:
+      path: stdout
+      print-issued-lines: true
+      print-linter-name: true
+
+linters:
+  default: standard
+  enable:
+    - staticcheck
+    - unused
+
+formatters:
+  settings:
+    gofmt:
+      simplify: true
+    goimports:
+      local-prefixes:
+        - github.com/yourorg/idd-cli
+
+issues:
+  max-issues-per-linter: 0
+  max-same-issues: 0

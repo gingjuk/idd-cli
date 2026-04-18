@@ -6,9 +6,9 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/yourorg/idd-link-validator/internal/config"
-	"github.com/yourorg/idd-link-validator/internal/model"
-	"github.com/yourorg/idd-link-validator/pkg/pattern"
+	"github.com/yourorg/idd-cli/internal/config"
+	"github.com/yourorg/idd-cli/internal/model"
+	"github.com/yourorg/idd-cli/pkg/pattern"
 )
 
 type DocCollector struct {
@@ -85,6 +85,13 @@ func (c *DocCollector) collectFile(path string, set *model.IdentifierSet) []*mod
 	lines := strings.Split(string(content), "\n")
 	var fileRefs []string
 
+	frontmatterIDs := make(map[string]bool)
+	if fm != nil {
+		for _, marker := range fm.Markers {
+			frontmatterIDs[marker.ID] = true
+		}
+	}
+
 	for i, line := range lines {
 		refs := pattern.ExtractIDDReferences(line)
 		for _, ref := range refs {
@@ -103,6 +110,9 @@ func (c *DocCollector) collectFile(path string, set *model.IdentifierSet) []*mod
 				})
 			}
 
+			if frontmatterIDs[ref] {
+				continue
+			}
 			if !set.Has(ref) {
 				title := c.extractTitle(string(content), ref)
 				id := model.NewIdentifier(ref, idType, title, path, i+1)
@@ -127,6 +137,19 @@ func (c *DocCollector) collectFile(path string, set *model.IdentifierSet) []*mod
 					Source:  path,
 					Link:    marker.ID,
 				})
+			}
+			if !set.Has(marker.ID) {
+				id := model.NewIdentifier(marker.ID, idType, marker.Name, path, 0)
+				id.RawRef = marker.ID
+				set.Add(id)
+			}
+		}
+		// Add content references as links from the file's marker identifiers
+		for _, ref := range fileRefs {
+			for _, marker := range fm.Markers {
+				if id, ok := set.Get(marker.ID); ok {
+					id.AddLink(ref)
+				}
 			}
 		}
 	}

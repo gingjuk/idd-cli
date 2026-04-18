@@ -3,7 +3,7 @@ package graph
 import (
 	"fmt"
 
-	"github.com/yourorg/idd-link-validator/internal/model"
+	"github.com/yourorg/idd-cli/internal/model"
 )
 
 type Node struct {
@@ -186,7 +186,7 @@ func (g *LinkageGraph) ToSnapshot() *model.GraphSnapshot {
 func (g *LinkageGraph) Stats() model.ValidationStats {
 	stats := model.ValidationStats{
 		TotalIdentifiers: g.NodeCount(),
-		TotalLinks:      g.EdgeCount(),
+		TotalLinks:       g.EdgeCount(),
 	}
 	for _, n := range g.nodes {
 		switch n.Type {

@@ -1,8 +1,8 @@
 ---
 markers:
-  - id: DESIGN-BE-001
+  - id: DESIGN-EXAMPLE-001
     name: Graph-First Architecture
-  - id: DESIGN-BE-002
+  - id: DESIGN-EXAMPLE-002
     name: Validation Rule Engine
 ---
 
@@ -10,7 +10,7 @@ markers:
 
 This directory contains example IDD design documents showing the expected format.
 
-## DESIGN-BE-001: Graph-First Architecture
+## DESIGN-EXAMPLE-001: Graph-First Architecture
 
 **Date:** 2026-04-18
 **Status:** Accepted
@@ -59,11 +59,11 @@ We adopted a **graph-first architecture** where:
 - Natural representation — Graphs model bidirectional relationships naturally
 - Testable — Each component can be tested in isolation
 
-**Related:** [SPEC-BE-001](../spec.md#spec-be-001-user-authentication)
+**Related:** [SPEC-EXAMPLE-001](../spec.md#spec-example-001-user-authentication)
 
 ---
 
-## DESIGN-BE-002: Validation Rule Engine
+## DESIGN-EXAMPLE-002: Validation Rule Engine
 
 **Date:** 2026-04-18
 **Status:** Proposed
@@ -89,4 +89,4 @@ type Rule interface {
 }
 ```
 
-**Related:** [SPEC-BE-001](../spec.md#spec-be-001-user-authentication)
+**Related:** [SPEC-EXAMPLE-001](../spec.md#spec-example-001-user-authentication)

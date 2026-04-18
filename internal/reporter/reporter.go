@@ -8,8 +8,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/yourorg/idd-link-validator/internal/config"
-	"github.com/yourorg/idd-link-validator/internal/model"
+	"github.com/yourorg/idd-cli/internal/config"
+	"github.com/yourorg/idd-cli/internal/model"
 )
 
 type Reporter struct {
@@ -26,7 +26,7 @@ func New(cfg *config.Config, format string) *Reporter {
 
 func (r *Reporter) Generate(result *model.ValidationResult) (*model.Report, error) {
 	report := &model.Report{
-		Tool:      "idd-verify",
+		Tool:      "idd-cli",
 		Version:   "1.0.0",
 		Timestamp: time.Now().Format(time.RFC3339),
 		Config: model.ConfigSummary{
@@ -40,10 +40,6 @@ func (r *Reporter) Generate(result *model.ValidationResult) (*model.Report, erro
 }
 
 func (r *Reporter) Write(report *model.Report, output string) error {
-	if output == "" {
-		output = r.cfg.Output.File
-	}
-
 	var writer io.Writer
 	if output == "" || output == "-" {
 		writer = os.Stdout
@@ -52,7 +48,7 @@ func (r *Reporter) Write(report *model.Report, output string) error {
 		if err != nil {
 			return fmt.Errorf("failed to create output file: %w", err)
 		}
-		defer file.Close()
+		defer func() { _ = file.Close() }()
 		writer = file
 	}
 
@@ -72,16 +68,16 @@ func (r *Reporter) writeMarkdown(report *model.Report, w io.Writer) error {
 	var sb strings.Builder
 
 	sb.WriteString("# IDD Linkage Report\n\n")
-	sb.WriteString(fmt.Sprintf("**Tool:** %s v%s  \n", report.Tool, report.Version))
-	sb.WriteString(fmt.Sprintf("**Timestamp:** %s  \n", report.Timestamp))
-	sb.WriteString(fmt.Sprintf("**Status:** %s  \n\n", statusIcon(report.Result.Valid)))
+	fmt.Fprintf(&sb, "**Tool:** %s v%s  \n", report.Tool, report.Version)
+	fmt.Fprintf(&sb, "**Timestamp:** %s  \n", report.Timestamp)
+	fmt.Fprintf(&sb, "**Status:** %s  \n\n", statusIcon(report.Result.Valid))
 
 	if len(report.Result.Errors) > 0 {
 		sb.WriteString("## Errors\n\n")
 		for _, err := range report.Result.Errors {
-			sb.WriteString(fmt.Sprintf("- [%s] %s", err.Rule, err.Message))
+			fmt.Fprintf(&sb, "- [%s] %s", err.Rule, err.Message)
 			if err.Source != "" {
-				sb.WriteString(fmt.Sprintf(" (%s)", err.Source))
+				fmt.Fprintf(&sb, " (%s)", err.Source)
 			}
 			sb.WriteString("\n")
 		}
@@ -91,9 +87,9 @@ func (r *Reporter) writeMarkdown(report *model.Report, w io.Writer) error {
 	if len(report.Result.Warnings) > 0 {
 		sb.WriteString("## Warnings\n\n")
 		for _, warn := range report.Result.Warnings {
-			sb.WriteString(fmt.Sprintf("- [%s] %s", warn.Rule, warn.Message))
+			fmt.Fprintf(&sb, "- [%s] %s", warn.Rule, warn.Message)
 			if warn.Source != "" {
-				sb.WriteString(fmt.Sprintf(" (%s)", warn.Source))
+				fmt.Fprintf(&sb, " (%s)", warn.Source)
 			}
 			sb.WriteString("\n")
 		}
@@ -101,19 +97,19 @@ func (r *Reporter) writeMarkdown(report *model.Report, w io.Writer) error {
 	}
 
 	sb.WriteString("## Stats\n\n")
-	sb.WriteString(fmt.Sprintf("- **Total Identifiers:** %d\n", report.Result.Stats.TotalIdentifiers))
-	sb.WriteString(fmt.Sprintf("- **Total Links:** %d\n", report.Result.Stats.TotalLinks))
-	sb.WriteString(fmt.Sprintf("- **SPECs:** %d\n", report.Result.Stats.SpecsAnalyzed))
-	sb.WriteString(fmt.Sprintf("- **TESTs:** %d\n", report.Result.Stats.TestsAnalyzed))
-	sb.WriteString(fmt.Sprintf("- **CONTRACTs:** %d\n", report.Result.Stats.ContractsAnalyzed))
-	sb.WriteString(fmt.Sprintf("- **DESIGNs:** %d\n\n", report.Result.Stats.DesignsAnalyzed))
+	fmt.Fprintf(&sb, "- **Total Identifiers:** %d\n", report.Result.Stats.TotalIdentifiers)
+	fmt.Fprintf(&sb, "- **Total Links:** %d\n", report.Result.Stats.TotalLinks)
+	fmt.Fprintf(&sb, "- **SPECs:** %d\n", report.Result.Stats.SpecsAnalyzed)
+	fmt.Fprintf(&sb, "- **TESTs:** %d\n", report.Result.Stats.TestsAnalyzed)
+	fmt.Fprintf(&sb, "- **CONTRACTs:** %d\n", report.Result.Stats.ContractsAnalyzed)
+	fmt.Fprintf(&sb, "- **DESIGNs:** %d\n\n", report.Result.Stats.DesignsAnalyzed)
 
 	if report.Result.Graph != nil && len(report.Result.Graph.Nodes) > 0 {
 		sb.WriteString("## Linkage Graph\n\n")
 		sb.WriteString("### Nodes\n\n")
 		for _, node := range report.Result.Graph.Nodes {
-			sb.WriteString(fmt.Sprintf("- `%s` (%s) — in: %d, out: %d\n",
-				node.ID, node.Type, node.Inbound, node.Outbound))
+			fmt.Fprintf(&sb, "- `%s` (%s) — in: %d, out: %d\n",
+				node.ID, node.Type, node.Inbound, node.Outbound)
 		}
 
 		if len(report.Result.Graph.Edges) > 0 {
@@ -123,8 +119,8 @@ func (r *Reporter) writeMarkdown(report *model.Report, w io.Writer) error {
 				if !edge.Verified {
 					verified = "✗"
 				}
-				sb.WriteString(fmt.Sprintf("- %s `%s` → `%s` %s\n",
-					verified, edge.From, edge.To, edge.Type))
+				fmt.Fprintf(&sb, "- %s `%s` → `%s` %s\n",
+					verified, edge.From, edge.To, edge.Type)
 			}
 		}
 	}

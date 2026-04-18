@@ -3,7 +3,7 @@ package graph
 import (
 	"testing"
 
-	"github.com/yourorg/idd-link-validator/internal/model"
+	"github.com/yourorg/idd-cli/internal/model"
 )
 
 func TestNewLinkageGraph(t *testing.T) {

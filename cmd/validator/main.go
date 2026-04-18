@@ -13,33 +13,33 @@ import (
 	"github.com/spf13/viper"
 	"gopkg.in/yaml.v3"
 
-	"github.com/yourorg/idd-link-validator/internal/collector"
-	"github.com/yourorg/idd-link-validator/internal/config"
-	"github.com/yourorg/idd-link-validator/internal/engine"
-	"github.com/yourorg/idd-link-validator/internal/reporter"
+	"github.com/yourorg/idd-cli/internal/collector"
+	"github.com/yourorg/idd-cli/internal/config"
+	"github.com/yourorg/idd-cli/internal/engine"
+	"github.com/yourorg/idd-cli/internal/reporter"
 )
 
 var (
-	cfgPath   string
-	outPath   string
-	format    string
-	verbose   bool
-	noConfig  bool
-	version   = "1.0.0"
+	cfgPath  string
+	outPath  string
+	format   string
+	verbose  bool
+	noConfig bool
+	version  = "1.0.0"
 )
 
 var rootCmd = &cobra.Command{
-	Use:   "idd-verify",
-	Short: "IDD Link Validator - validates bidirectional linkage between IDD identifiers",
-	Long: `IDD Link Validator scans documentation and source code to build a linkage graph,
+	Use:   "idd-cli",
+	Short: "idd-cli - validates bidirectional linkage between IDD identifiers",
+	Long: `idd-cli scans documentation and source code to build a linkage graph,
 then validates that all references are bidirectional (spec→test→code consistency).
 
 Example usage:
-  idd-verify run ./docs
-  idd-verify run ./docs --config idd.yaml
-  idd-verify run ./docs --format json
-  idd-verify lint ./docs --format json -o report.json`,
-	Version: version,
+  idd-cli run ./docs
+  idd-cli run ./docs --config idd.yaml
+  idd-cli run ./docs --format json
+  idd-cli lint ./docs --format json -o report.json`,
+	Version:      version,
 	SilenceUsage: true,
 }
 
@@ -49,8 +49,8 @@ var runCmd = &cobra.Command{
 	Long: `Run IDD linkage validation on the specified path.
 
 Example:
-  idd-verify run ./docs
-  idd-verify run ./docs --config idd.yaml`,
+  idd-cli run ./docs
+  idd-cli run ./docs --config idd.yaml`,
 	Args: cobra.MaximumNArgs(1),
 	RunE: run,
 }
@@ -61,8 +61,8 @@ var lintCmd = &cobra.Command{
 	Long: `Lint IDD linkage validation. This is an alias for 'run'.
 
 Example:
-  idd-verify lint ./docs
-  idd-verify lint ./docs --format json -o report.json`,
+  idd-cli lint ./docs
+  idd-cli lint ./docs --format json -o report.json`,
 	Args: cobra.MaximumNArgs(1),
 	RunE: run,
 }
@@ -75,21 +75,21 @@ var skillsCmd = &cobra.Command{
 Parses frontmatter from skill markdown files and outputs skill definitions.
 
 Example:
-  idd-verify skills
-  idd-verify skills --format json`,
+  idd-cli skills
+  idd-cli skills --format json`,
 	RunE: listSkills,
 }
 
 type SkillInfo struct {
-	Name        string `json:"name"`
-	Description string `json:"description"`
-	License     string `json:"license,omitempty"`
+	Name          string `json:"name"`
+	Description   string `json:"description"`
+	License       string `json:"license,omitempty"`
 	Compatibility string `json:"compatibility,omitempty"`
-	Audience    string `json:"audience,omitempty"`
-	Workflow    string `json:"workflow,omitempty"`
-	Protected   bool   `json:"protected,omitempty"`
-	Module      string `json:"module,omitempty"`
-	Path        string `json:"path"`
+	Audience      string `json:"audience,omitempty"`
+	Workflow      string `json:"workflow,omitempty"`
+	Protected     bool   `json:"protected,omitempty"`
+	Module        string `json:"module,omitempty"`
+	Path          string `json:"path"`
 }
 
 func init() {
@@ -157,7 +157,7 @@ func run(cmd *cobra.Command, args []string) error {
 	}
 
 	if verbose {
-		fmt.Printf("IDD Link Validator v%s\n", version)
+		fmt.Printf("idd-cli v%s\n", version)
 		fmt.Printf("Validating: %s\n", targetPath)
 		if !noConfig {
 			fmt.Printf("Config: %s\n", cfgPath)
@@ -334,9 +334,9 @@ type frontmatter struct {
 	License       string `yaml:"license"`
 	Compatibility string `yaml:"compatibility"`
 	Metadata      struct {
-		Audience   string `yaml:"audience"`
-		Workflow   string `yaml:"workflow"`
-		Protected  bool   `yaml:"protected"`
+		Audience  string `yaml:"audience"`
+		Workflow  string `yaml:"workflow"`
+		Protected bool   `yaml:"protected"`
 	} `yaml:"metadata"`
 }
 
@@ -362,7 +362,7 @@ func parseSkillFrontmatter(content string) SkillInfo {
 
 	if len(yamlLines) > 0 {
 		yamlContent := strings.Join(yamlLines, "\n")
-		yaml.Unmarshal([]byte(yamlContent), &fm)
+		_ = yaml.Unmarshal([]byte(yamlContent), &fm)
 	}
 
 	return SkillInfo{
@@ -370,9 +370,9 @@ func parseSkillFrontmatter(content string) SkillInfo {
 		Description:   fm.Description,
 		License:       fm.License,
 		Compatibility: fm.Compatibility,
-		Audience:     fm.Metadata.Audience,
+		Audience:      fm.Metadata.Audience,
 		Workflow:      fm.Metadata.Workflow,
-		Protected:    fm.Metadata.Protected,
+		Protected:     fm.Metadata.Protected,
 	}
 }
 

@@ -111,7 +111,7 @@ Code and documentation are linked through numbered identifiers. This creates a b
 | `TEST-` | Test case | `TEST-BE-001` |
 | `DESIGN-` | Architecture design decision | `DESIGN-BE-001` |
 
-**Pattern (Regex):** Used by IDD Link Validator for auto-detection
+**Pattern (Regex):** Used by idd-cli for auto-detection
 ```yaml
 identifier_patterns:
   spec: "SPEC-[A-Z]+-[0-9]+"
@@ -223,7 +223,7 @@ markers:
 ---
 ```
 
-This enables the IDD Link Validator to quickly locate and parse identifiers without reading full file content.
+This enables idd-cli to quickly locate and parse identifiers without reading full file content.
 
 **Validator Config:** Ensure `idd.yaml` patterns cover `docs/**/*.md` to auto-detect all module documents.
 
@@ -332,20 +332,20 @@ Commit
 - **Ignore blockers** — Document and escalate
 - **Delete .planning/** when done — Keep for continuity and future reference
 
-## IDD Link Validator Tool
+## IDD CLI Tool
 
-The IDD Link Validator (`idd-verify`) is a CLI tool that validates bidirectional linkage consistency between IDD identifiers across documentation and source code.
+idd-cli is a CLI tool that validates bidirectional linkage consistency between IDD identifiers across documentation and source code.
 
 ### Installation
 
 ```bash
-go build -o idd-verify ./cmd/validator
+go build -o idd-cli ./cmd/validator
 ```
 
 ### Usage
 
 ```bash
-idd-verify run --config idd.yaml
+idd-cli run --config idd.yaml
 ```
 
 ### Configuration (`idd.yaml`)

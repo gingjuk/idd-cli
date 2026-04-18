@@ -31,3 +31,6 @@ go.work
 # Environment
 .env
 .env.local
+
+# IDD
+.planning

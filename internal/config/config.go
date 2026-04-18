@@ -8,34 +8,34 @@ import (
 )
 
 type Config struct {
-	Version   string         `yaml:"version"`
-	Docs      DocsConfig     `yaml:"docs"`
-	Code      CodeConfig     `yaml:"code"`
+	Version    string           `yaml:"version"`
+	Docs       DocsConfig       `yaml:"docs"`
+	Code       CodeConfig       `yaml:"code"`
 	Validation ValidationConfig `yaml:"validation"`
-	Output    OutputConfig   `yaml:"output"`
+	Output     OutputConfig     `yaml:"output"`
 }
 
 type DocsConfig struct {
-	Patterns           []string          `yaml:"patterns"`
+	Patterns           []string           `yaml:"patterns"`
 	IdentifierPatterns IdentifierPatterns `yaml:"identifier_patterns"`
 }
 
 type IdentifierPatterns struct {
-	Spec      string `yaml:"spec"`
-	Contract  string `yaml:"contract"`
-	Test      string `yaml:"test"`
-	Design    string `yaml:"design"`
+	Spec     string `yaml:"spec"`
+	Contract string `yaml:"contract"`
+	Test     string `yaml:"test"`
+	Design   string `yaml:"design"`
 }
 
 type CodeConfig struct {
-	Patterns    []string  `yaml:"patterns"`
-	Annotations []string  `yaml:"annotations"`
+	Patterns    []string `yaml:"patterns"`
+	Annotations []string `yaml:"annotations"`
 }
 
 type ValidationConfig struct {
-	RequireBidirectional     bool `yaml:"require_bidirectional"`
+	RequireBidirectional    bool `yaml:"require_bidirectional"`
 	AllowOrphans            bool `yaml:"allow_orphans"`
-	RequireSpecTestCoverage  bool `yaml:"require_spec_test_coverage"`
+	RequireSpecTestCoverage bool `yaml:"require_spec_test_coverage"`
 }
 
 type OutputConfig struct {
@@ -80,11 +80,11 @@ func Default() *Config {
 		},
 		Validation: ValidationConfig{
 			RequireBidirectional:    true,
-			AllowOrphans:           false,
+			AllowOrphans:            false,
 			RequireSpecTestCoverage: true,
 		},
 		Output: OutputConfig{
-			IncludeGraph: true,
+			IncludeGraph: false,
 			Verbose:      false,
 		},
 	}

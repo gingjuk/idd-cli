@@ -5,16 +5,16 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/yourorg/idd-link-validator/internal/config"
-	"github.com/yourorg/idd-link-validator/internal/graph"
-	"github.com/yourorg/idd-link-validator/internal/model"
-	"github.com/yourorg/idd-link-validator/pkg/pattern"
+	"github.com/yourorg/idd-cli/internal/config"
+	"github.com/yourorg/idd-cli/internal/graph"
+	"github.com/yourorg/idd-cli/internal/model"
+	"github.com/yourorg/idd-cli/pkg/pattern"
 )
 
 type Engine struct {
-	cfg      *config.Config
-	graph    *graph.LinkageGraph
-	result   *model.ValidationResult
+	cfg    *config.Config
+	graph  *graph.LinkageGraph
+	result *model.ValidationResult
 }
 
 func New(cfg *config.Config) *Engine {
@@ -132,7 +132,7 @@ func (e *Engine) validateNoOrphans() {
 
 func (e *Engine) BuildReport() *model.Report {
 	return &model.Report{
-		Tool:      "idd-link-validator",
+		Tool:      "idd-cli",
 		Version:   "1.0.0",
 		Timestamp: time.Now().UTC().Format(time.RFC3339),
 		Config: model.ConfigSummary{

@@ -5,7 +5,7 @@ type LinkType string
 
 const (
 	LinkImplements LinkType = "implements"
-	LinkTests     LinkType = "tests"
+	LinkTests      LinkType = "tests"
 	LinkReferences LinkType = "references"
 	LinkAnnotates  LinkType = "annotates"
 )
