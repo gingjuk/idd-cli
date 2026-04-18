@@ -98,12 +98,30 @@ func GetExpectedFilename(idType string) string {
 
 func ValidateDocumentStructure(filePath string, idType string) error {
 	filename := strings.ToLower(filepath.Base(filePath))
+
+	if isRootDocFile(filePath) {
+		return nil
+	}
+
 	expected := GetExpectedFilename(idType)
 	if expected != "" && filename != expected {
 		return fmt.Errorf("file named '%s' but should be '%s' for type %s (file: %s)",
 			filename, expected, idType, filePath)
 	}
 	return nil
+}
+
+func isRootDocFile(filePath string) bool {
+	dir := filepath.Dir(filePath)
+	filename := strings.ToLower(filepath.Base(filePath))
+	if dir == "docs" || dir == "docs/" {
+		return true
+	}
+	if strings.HasSuffix(dir, "/docs") && !strings.Contains(dir, "/docs/") {
+		return true
+	}
+	_ = filename
+	return false
 }
 
 func ExtractModuleName(filePath string) string {
@@ -119,6 +137,21 @@ func ExtractModuleName(filePath string) string {
 	return ""
 }
 
+var knownAbbrevs = map[string]string{
+	"BE":  "BACKEND",
+	"FE":  "FRONTEND",
+	"E2E": "E2E",
+}
+
+func isKnownAbbreviation(short, long string) bool {
+	for abbrev, full := range knownAbbrevs {
+		if strings.ToUpper(short) == abbrev && strings.ToUpper(long) == full {
+			return true
+		}
+	}
+	return false
+}
+
 func ValidateModulePrefix(id string, filePath string) error {
 	moduleFromPath := ExtractModuleName(filePath)
 	if moduleFromPath == "" {
@@ -132,10 +165,12 @@ func ValidateModulePrefix(id string, filePath string) error {
 	idModule := parts[1]
 
 	if idModule != moduleFromPath {
-		return fmt.Errorf(
-			"identifier module '%s' does not match directory '%s' (id: %s, file: %s)",
-			idModule, moduleFromPath, id, filePath,
-		)
+		if !isKnownAbbreviation(idModule, moduleFromPath) {
+			return fmt.Errorf(
+				"identifier module '%s' does not match directory '%s' (id: %s, file: %s)",
+				idModule, moduleFromPath, id, filePath,
+			)
+		}
 	}
 	return nil
 }
