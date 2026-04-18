@@ -45,55 +45,35 @@ identifier_patterns:
   design: "DESIGN-[A-Z]+-[0-9]+"
 ```
 
-## 文档规范
+## 文档结构
 
-### SPEC 规格文档
-
-```markdown
-## SPEC-BE-001: 功能名称
-
-**需求描述:** 功能需求说明
-
-**实现位置:** `internal/xxx/xxx.go`
-
-**测试用例:** TEST-BE-001, TEST-BE-002
+```
+docs/
+├── SPEC.md      # 功能规格索引 (含所有 SPEC)
+├── TEST.md      # 测试用例索引 (含所有 TEST)
+├── CONTRACT.md  # 契约接口索引 (含所有 CONTRACT)
+└── DESIGN.md    # 架构设计索引 (含所有 DESIGN)
 ```
 
-### CONTRACT 契约文档
+每份文档包含 YAML frontmatter 用于工具解析：
 
-```markdown
-## CONTRACT-BE-001: 接口名称
-
-**函数签名:** `func DoSomething(input Type) (output Type, error)`
-
-**错误处理:**
-- `ErrInvalidInput` - 输入参数无效
-- `ErrNotFound` - 资源不存在
+```yaml
+---
+module: BE
+type: SPEC
+description: 模块描述
+markers:
+  - SPEC-BE-001
+  - SPEC-BE-002
+---
 ```
 
-### TEST 测试文档
+### 标识符索引表格格式
 
 ```markdown
-## TEST-BE-001: 验证功能名称
-
-**测试目的:** 验证功能符合 SPEC-BE-001 规范
-
-**测试步骤:**
-1. 准备测试数据
-2. 执行操作
-3. 验证结果
-```
-
-### DESIGN 设计文档
-
-```markdown
-## DESIGN-BE-001: 架构决策名称
-
-**背景:** 为什么要做这个架构决策
-
-**决策:** 最终采用的方案
-
-**后果:** 这个决策的影响
+| ID | Title | Status | Tests |
+|----|-------|--------|-------|
+| [SPEC-BE-001](#spec-be-001) | 功能名称 | Done | TEST-BE-001 |
 ```
 
 ## 代码注解格式

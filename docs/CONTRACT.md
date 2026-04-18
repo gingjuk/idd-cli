@@ -1,41 +1,47 @@
-# Contract: CONTRACT-BE-001
+---
+module: BE
+type: CONTRACT
+description: Contract interface definitions for IDD Link Validator
+markers:
+  - CONTRACT-BE-001
+---
 
-## Collector Interface Contracts
+# Contract Index (BE)
 
-**Version:** 1.0.0
-**Last Updated:** 2026-04-18
+| ID | Title | Status |
+|----|-------|--------|
+| [CONTRACT-BE-001](#contract-be-001) | Collector Interface Contracts | Done |
 
-## Overview
+---
+
+## CONTRACT-BE-001
+
+### Collector Interface Contracts
+
+**Status:** Done
+
+**Overview:**
 
 Collectors gather IDD identifiers from documentation and source code. This contract defines the interfaces and behaviors for all collectors.
 
-## Interfaces
-
-### Collector Interface
+### Interfaces
 
 ```go
+// Collector is the main interface all collectors implement
 type Collector interface {
     Collect(ctx context.Context, cfg *config.Config) (*model.IdentifierSet, error)
 }
-```
 
-### DocCollector Interface
-
-```go
+// DocCollector collects identifiers from documentation
 type DocCollector interface {
     CollectDocs(ctx context.Context, patterns []string) ([]*model.Identifier, error)
 }
-```
 
-### CodeCollector Interface
-
-```go
-type CodeCollector Interface {
+// CodeCollector collects annotations from source code
+type CodeCollector interface {
     CollectCode(ctx context.Context, patterns []string) ([]*model.Annotation, error)
 }
 ```
-
-## Behavior
 
 ### Collection Process
 
@@ -60,7 +66,4 @@ type CodeCollector Interface {
 - **Parse error** — Log warning, skip file, continue processing
 - **Empty file** — No identifiers found, return empty result
 
-## Related Documents
-
-- **SPEC-BE-001** — IDD Link Validator Overview
-- **TEST-BE-001** — Collector Implementation Tests
+**Related Specs:** SPEC-BE-001

@@ -1,16 +1,13 @@
 {
   "tool": "idd-verify",
   "version": "1.0.0",
-  "timestamp": "2026-04-18T02:26:28+08:00",
+  "timestamp": "2026-04-18T13:38:17+08:00",
   "config": {
     "doc_patterns": [
-      "**/*.md"
+      "docs/**/*.md"
     ],
     "code_patterns": [
-      "**/*.go",
-      "**/*.ts",
-      "**/*.tsx",
-      "**/*.js"
+      "**/*.go"
     ],
     "annotations": [
       "@spec",
@@ -24,132 +21,346 @@
     "errors": [
       {
         "rule": "bidirectional-linkage",
-        "message": "Link CONTRACT-001 → SPEC-001 has no backlink",
-        "source": "docs/SPEC-001-example.md:19",
-        "link": "CONTRACT-001→SPEC-001"
+        "message": "SPEC SPEC-001 has no test links",
+        "link": "SPEC-001"
       },
       {
         "rule": "bidirectional-linkage",
-        "message": "Link CONTRACT-001 → TEST-001 has no backlink",
-        "source": "docs/SPEC-001-example.md:19",
-        "link": "CONTRACT-001→TEST-001"
+        "message": "SPEC SPEC-001\" has no test links",
+        "link": "SPEC-001\""
       },
       {
         "rule": "bidirectional-linkage",
-        "message": "Link CONTRACT-001 → TEST-002 has no backlink",
-        "source": "docs/SPEC-001-example.md:19",
-        "link": "CONTRACT-001→TEST-002"
+        "message": "SPEC SPEC-001\") has no test links",
+        "link": "SPEC-001\")"
       },
       {
         "rule": "bidirectional-linkage",
-        "message": "Link CONTRACT-002 → SPEC-001 has no backlink",
-        "source": "docs/SPEC-001-example.md:20",
-        "link": "CONTRACT-002→SPEC-001"
+        "message": "SPEC SPEC-001\", has no test links",
+        "link": "SPEC-001\","
       },
       {
         "rule": "bidirectional-linkage",
-        "message": "Link CONTRACT-002 → TEST-001 has no backlink",
-        "source": "docs/SPEC-001-example.md:20",
-        "link": "CONTRACT-002→TEST-001"
+        "message": "SPEC SPEC-BE-001 has no test links",
+        "link": "SPEC-BE-001"
       },
       {
         "rule": "bidirectional-linkage",
-        "message": "Link CONTRACT-002 → TEST-002 has no backlink",
-        "source": "docs/SPEC-001-example.md:20",
-        "link": "CONTRACT-002→TEST-002"
+        "message": "SPEC SPEC-BE-002 has no test links",
+        "link": "SPEC-BE-002"
       },
       {
         "rule": "bidirectional-linkage",
-        "message": "Link DESIGN-001 → SPEC-001 has no backlink",
-        "source": "docs/SPEC-001-example.md:29",
-        "link": "DESIGN-001→SPEC-001"
+        "message": "SPEC SPEC-BE-010 has no test links",
+        "link": "SPEC-BE-010"
       },
       {
         "rule": "bidirectional-linkage",
-        "message": "Link DESIGN-001 → TEST-001 has no backlink",
-        "source": "docs/SPEC-001-example.md:29",
-        "link": "DESIGN-001→TEST-001"
+        "message": "SPEC SPEC-BE-011 has no test links",
+        "link": "SPEC-BE-011"
       },
       {
         "rule": "bidirectional-linkage",
-        "message": "Link DESIGN-001 → TEST-002 has no backlink",
-        "source": "docs/SPEC-001-example.md:29",
-        "link": "DESIGN-001→TEST-002"
+        "message": "SPEC SPEC-BE-030 has no test links",
+        "link": "SPEC-BE-030"
       },
       {
         "rule": "bidirectional-linkage",
-        "message": "Link SPEC-001 → CONTRACT-001 has no backlink",
-        "source": "docs/SPEC-001-example.md:1",
-        "link": "SPEC-001→CONTRACT-001"
+        "message": "SPEC SPEC-BE-031 has no test links",
+        "link": "SPEC-BE-031"
       },
       {
         "rule": "bidirectional-linkage",
-        "message": "Link SPEC-001 → CONTRACT-002 has no backlink",
-        "source": "docs/SPEC-001-example.md:1",
-        "link": "SPEC-001→CONTRACT-002"
+        "message": "SPEC SPEC-BE-050 has no test links",
+        "link": "SPEC-BE-050"
       },
       {
         "rule": "bidirectional-linkage",
-        "message": "Link SPEC-001 → DESIGN-001 has no backlink",
-        "source": "docs/SPEC-001-example.md:1",
-        "link": "SPEC-001→DESIGN-001"
+        "message": "SPEC spec-be-001 has no test links",
+        "link": "spec-be-001"
       },
       {
         "rule": "bidirectional-linkage",
-        "message": "Link TEST-001 → CONTRACT-001 has no backlink",
-        "source": "docs/SPEC-001-example.md:24",
-        "link": "TEST-001→CONTRACT-001"
+        "message": "SPEC spec-be-002 has no test links",
+        "link": "spec-be-002"
       },
       {
         "rule": "bidirectional-linkage",
-        "message": "Link TEST-001 → CONTRACT-002 has no backlink",
-        "source": "docs/SPEC-001-example.md:24",
-        "link": "TEST-001→CONTRACT-002"
+        "message": "TEST TEST-001 is not linked from any SPEC",
+        "link": "TEST-001"
       },
       {
         "rule": "bidirectional-linkage",
-        "message": "Link TEST-001 → DESIGN-001 has no backlink",
-        "source": "docs/SPEC-001-example.md:24",
-        "link": "TEST-001→DESIGN-001"
+        "message": "TEST TEST-BE-001 is not linked from any SPEC",
+        "link": "TEST-BE-001"
       },
       {
         "rule": "bidirectional-linkage",
-        "message": "Link TEST-001 → TEST-002 has no backlink",
-        "source": "docs/SPEC-001-example.md:24",
-        "link": "TEST-001→TEST-002"
+        "message": "TEST TEST-BE-002 is not linked from any SPEC",
+        "link": "TEST-BE-002"
       },
       {
         "rule": "bidirectional-linkage",
-        "message": "Link TEST-002 → CONTRACT-001 has no backlink",
-        "source": "docs/SPEC-001-example.md:25",
-        "link": "TEST-002→CONTRACT-001"
+        "message": "TEST test-be-001 is not linked from any SPEC",
+        "link": "test-be-001"
       },
       {
-        "rule": "bidirectional-linkage",
-        "message": "Link TEST-002 → CONTRACT-002 has no backlink",
-        "source": "docs/SPEC-001-example.md:25",
-        "link": "TEST-002→CONTRACT-002"
+        "rule": "orphan-detection",
+        "message": "CONTRACT-001 has no connections",
+        "source": "CONTRACT-001"
       },
       {
-        "rule": "bidirectional-linkage",
-        "message": "Link TEST-002 → DESIGN-001 has no backlink",
-        "source": "docs/SPEC-001-example.md:25",
-        "link": "TEST-002→DESIGN-001"
+        "rule": "orphan-detection",
+        "message": "SPEC-001 has no connections",
+        "source": "SPEC-001"
       },
       {
-        "rule": "bidirectional-linkage",
-        "message": "Link TEST-002 → TEST-001 has no backlink",
-        "source": "docs/SPEC-001-example.md:25",
-        "link": "TEST-002→TEST-001"
+        "rule": "orphan-detection",
+        "message": "SPEC-001\" has no connections",
+        "source": "SPEC-001\""
+      },
+      {
+        "rule": "orphan-detection",
+        "message": "SPEC-001\") has no connections",
+        "source": "SPEC-001\")"
+      },
+      {
+        "rule": "orphan-detection",
+        "message": "SPEC-001\", has no connections",
+        "source": "SPEC-001\","
+      },
+      {
+        "rule": "orphan-detection",
+        "message": "SPEC-BE-001 has no connections",
+        "source": "SPEC-BE-001"
+      },
+      {
+        "rule": "orphan-detection",
+        "message": "SPEC-BE-002 has no connections",
+        "source": "SPEC-BE-002"
+      },
+      {
+        "rule": "orphan-detection",
+        "message": "SPEC-BE-010 has no connections",
+        "source": "SPEC-BE-010"
+      },
+      {
+        "rule": "orphan-detection",
+        "message": "SPEC-BE-011 has no connections",
+        "source": "SPEC-BE-011"
+      },
+      {
+        "rule": "orphan-detection",
+        "message": "SPEC-BE-030 has no connections",
+        "source": "SPEC-BE-030"
+      },
+      {
+        "rule": "orphan-detection",
+        "message": "SPEC-BE-031 has no connections",
+        "source": "SPEC-BE-031"
+      },
+      {
+        "rule": "orphan-detection",
+        "message": "SPEC-BE-050 has no connections",
+        "source": "SPEC-BE-050"
+      },
+      {
+        "rule": "orphan-detection",
+        "message": "TEST-001 has no connections",
+        "source": "TEST-001"
+      },
+      {
+        "rule": "orphan-detection",
+        "message": "TEST-BE-001 has no connections",
+        "source": "TEST-BE-001"
+      },
+      {
+        "rule": "orphan-detection",
+        "message": "TEST-BE-002 has no connections",
+        "source": "TEST-BE-002"
+      },
+      {
+        "rule": "orphan-detection",
+        "message": "spec-be-001 has no connections",
+        "source": "spec-be-001"
+      },
+      {
+        "rule": "orphan-detection",
+        "message": "spec-be-002 has no connections",
+        "source": "spec-be-002"
+      },
+      {
+        "rule": "orphan-detection",
+        "message": "test-be-001 has no connections",
+        "source": "test-be-001"
+      }
+    ],
+    "warnings": [
+      {
+        "rule": "orphan-detection",
+        "message": "CONTRACT-BE-001 is not referenced by any identifier",
+        "source": "CONTRACT-BE-001"
+      },
+      {
+        "rule": "orphan-detection",
+        "message": "DESIGN-BE-001 is not referenced by any identifier",
+        "source": "DESIGN-BE-001"
+      },
+      {
+        "rule": "orphan-detection",
+        "message": "contract-be-001 is not referenced by any identifier",
+        "source": "contract-be-001"
+      },
+      {
+        "rule": "orphan-detection",
+        "message": "design-be-001 is not referenced by any identifier",
+        "source": "design-be-001"
       }
     ],
     "stats": {
-      "total_identifiers": 6,
-      "total_links": 34,
-      "specs_analyzed": 1,
-      "tests_analyzed": 2,
-      "contracts_analyzed": 2,
-      "designs_analyzed": 1
+      "total_identifiers": 22,
+      "total_links": 0,
+      "specs_analyzed": 13,
+      "tests_analyzed": 4,
+      "contracts_analyzed": 3,
+      "designs_analyzed": 2
+    },
+    "graph": {
+      "nodes": [
+        {
+          "id": "SPEC-BE-010",
+          "type": "SPEC",
+          "outbound": 0,
+          "inbound": 0
+        },
+        {
+          "id": "SPEC-BE-031",
+          "type": "SPEC",
+          "outbound": 0,
+          "inbound": 0
+        },
+        {
+          "id": "TEST-001",
+          "type": "TEST",
+          "outbound": 0,
+          "inbound": 0
+        },
+        {
+          "id": "TEST-BE-002",
+          "type": "TEST",
+          "outbound": 0,
+          "inbound": 0
+        },
+        {
+          "id": "SPEC-001",
+          "type": "SPEC",
+          "outbound": 0,
+          "inbound": 0
+        },
+        {
+          "id": "SPEC-001\",",
+          "type": "SPEC",
+          "outbound": 0,
+          "inbound": 0
+        },
+        {
+          "id": "spec-be-001",
+          "type": "SPEC",
+          "outbound": 0,
+          "inbound": 0
+        },
+        {
+          "id": "SPEC-BE-050",
+          "type": "SPEC",
+          "outbound": 0,
+          "inbound": 0
+        },
+        {
+          "id": "SPEC-001\"",
+          "type": "SPEC",
+          "outbound": 0,
+          "inbound": 0
+        },
+        {
+          "id": "contract-be-001",
+          "type": "CONTRACT",
+          "outbound": 0,
+          "inbound": 0
+        },
+        {
+          "id": "CONTRACT-001",
+          "type": "CONTRACT",
+          "outbound": 0,
+          "inbound": 0
+        },
+        {
+          "id": "TEST-BE-001",
+          "type": "TEST",
+          "outbound": 0,
+          "inbound": 0
+        },
+        {
+          "id": "DESIGN-BE-001",
+          "type": "DESIGN",
+          "outbound": 0,
+          "inbound": 0
+        },
+        {
+          "id": "SPEC-001\")",
+          "type": "SPEC",
+          "outbound": 0,
+          "inbound": 0
+        },
+        {
+          "id": "SPEC-BE-011",
+          "type": "SPEC",
+          "outbound": 0,
+          "inbound": 0
+        },
+        {
+          "id": "SPEC-BE-002",
+          "type": "SPEC",
+          "outbound": 0,
+          "inbound": 0
+        },
+        {
+          "id": "spec-be-002",
+          "type": "SPEC",
+          "outbound": 0,
+          "inbound": 0
+        },
+        {
+          "id": "SPEC-BE-001",
+          "type": "SPEC",
+          "outbound": 0,
+          "inbound": 0
+        },
+        {
+          "id": "SPEC-BE-030",
+          "type": "SPEC",
+          "outbound": 0,
+          "inbound": 0
+        },
+        {
+          "id": "test-be-001",
+          "type": "TEST",
+          "outbound": 0,
+          "inbound": 0
+        },
+        {
+          "id": "CONTRACT-BE-001",
+          "type": "CONTRACT",
+          "outbound": 0,
+          "inbound": 0
+        },
+        {
+          "id": "design-be-001",
+          "type": "DESIGN",
+          "outbound": 0,
+          "inbound": 0
+        }
+      ],
+      "edges": []
     }
   }
 }
