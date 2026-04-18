@@ -12,8 +12,6 @@ docs:
   # Glob patterns for documentation files to scan
   patterns:
     - "docs/**/*.md"
-    - "SPEC-*.md"
-    - "TEST-*.md"
 
   # Regex patterns to extract identifiers from docs
   identifier_patterns:
@@ -28,6 +26,7 @@ code:
   patterns:
     - "**/*.go"
     - "**/*.ts"
+    - "**/*.tsx"
     - "**/*.js"
 
   # Annotation markers to look for in code
@@ -50,8 +49,8 @@ validation:
 
 # Output settings
 output:
-  # Output file path (default: stdout if empty)
-  file: "idd-report.json"
+  # Output file path (default: stdout if empty, use -o flag to override)
+  file: ""
 
   # Include full graph in report (default: false)
   include_graph: false
