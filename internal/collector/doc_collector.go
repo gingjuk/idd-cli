@@ -77,16 +77,6 @@ func (c *DocCollector) collectFile(path string, set *model.IdentifierSet) error 
 		}
 	}
 
-	for _, ref := range fileRefs {
-		if id, ok := set.Get(ref); ok {
-			for _, linkRef := range fileRefs {
-				if linkRef != ref {
-					id.AddLink(linkRef)
-				}
-			}
-		}
-	}
-
 	return nil
 }
 

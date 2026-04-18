@@ -111,6 +111,21 @@ Code and documentation are linked through numbered identifiers. This creates a b
 | `TEST-` | Test case | `TEST-BE-001` |
 | `DESIGN-` | Architecture design decision | `DESIGN-BE-001` |
 
+**Pattern (Regex):** Used by IDD Link Validator for auto-detection
+```yaml
+identifier_patterns:
+  spec: "SPEC-[A-Z]+-[0-9]+"
+  contract: "CONTRACT-[A-Z]+-[0-9]+"
+  test: "TEST-[A-Z]+-[0-9]+"
+  design: "DESIGN-[A-Z]+-[0-9]+"
+
+code_annotations:
+  - "@spec"
+  - "@contract"
+  - "@test"
+  - "@design"
+```
+
 **Spec File Size Rule:**
 - If `spec.md` exceeds **1500 lines**, split into multiple files using the pattern `spec-<feat>.md`
 - Each split file should focus on a specific feature or subdomain
@@ -277,3 +292,71 @@ Commit
 - **Skip coverage verification** — 80%+ is the minimum
 - **Ignore blockers** — Document and escalate
 - **Delete .planning/** when done — Keep for continuity and future reference
+
+## IDD Link Validator Tool
+
+The IDD Link Validator (`idd-verify`) is a CLI tool that validates bidirectional linkage consistency between IDD identifiers across documentation and source code.
+
+### Installation
+
+```bash
+go build -o idd-verify ./cmd/validator
+```
+
+### Usage
+
+```bash
+idd-verify run --config idd.yaml
+```
+
+### Configuration (`idd.yaml`)
+
+The validator uses patterns defined in this skill. Default configuration:
+
+```yaml
+version: "1.0"
+
+docs:
+  patterns:
+    - "docs/**/*.md"
+  identifier_patterns:
+    spec: "SPEC-[A-Z]+-[0-9]+"
+    contract: "CONTRACT-[A-Z]+-[0-9]+"
+    test: "TEST-[A-Z]+-[0-9]+"
+    design: "DESIGN-[A-Z]+-[0-9]+"
+
+code:
+  patterns:
+    - "**/*.go"
+  annotations:
+    - "@spec"
+    - "@contract"
+    - "@test"
+    - "@design"
+
+validation:
+  require_bidirectional: true
+  allow_orphans: false
+  require_spec_test_coverage: true
+
+output:
+  file: "idd-report.json"
+  include_graph: true
+  verbose: true
+```
+
+### Validation Rules
+
+1. **Completeness** — Every SPEC must have at least one TEST link (and vice versa)
+2. **Bidirectional** — If SPEC→TEST exists, TEST→SPEC backlink must also exist
+3. **Orphan Detection** — No identifiers with zero connections
+4. **Consistency** — Cross-reference chain consistency (CODE→SPEC→TEST)
+
+### Output
+
+JSON report with:
+- `valid` — Boolean pass/fail status
+- `errors` — Failed validation rules
+- `warnings` — Consistency issues
+- `stats` — Identifier counts by type
+- `graph` — Linkage graph snapshot

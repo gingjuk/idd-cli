@@ -2,12 +2,12 @@ version: "1.0"
 
 docs:
   patterns:
-    - "**/*.md"
+    - "docs/**/*.md"
   identifier_patterns:
-    spec: "SPEC-[A-Z]+-\\d+"
-    contract: "CONTRACT-[A-Z]+-\\d+"
-    test: "TEST-[A-Z]+-\\d+"
-    design: "DESIGN-[A-Z]+-\\d+"
+    spec: "SPEC-[A-Z]+-[0-9]+"
+    contract: "CONTRACT-[A-Z]+-[0-9]+"
+    test: "TEST-[A-Z]+-[0-9]+"
+    design: "DESIGN-[A-Z]+-[0-9]+"
 
 code:
   patterns:
@@ -28,5 +28,5 @@ validation:
 
 output:
   file: "idd-report.json"
-  include_graph: false
+  include_graph: true
   verbose: false
