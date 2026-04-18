@@ -52,11 +52,4 @@ jobs:
           cache: true
 
       - name: test
-        run: go test -v -race ./...
-
-      - name: Upload coverage
-        uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: coverage
-          path: coverage.out
+        run: CGO_ENABLED=1 go test -v -race ./...
