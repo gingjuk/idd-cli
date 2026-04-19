@@ -15,13 +15,16 @@ idd-cli is an **Intent-Driven Development (IDD)** tool that enables:
 
 ```bash
 # Build
-go build -o bin/idd-cli ./cmd/validator
+go build -o bin/idd-cli ./cmd/idd-cli
+
+# Or use go install
+go install github.com/jingxu9x/idd-link-validator/cmd/idd-cli@latest
 
 # Run validation
 ./bin/idd-cli run .
 
 # With config
-./bin/idd-cli --config idd.yaml run .
+./bin/idd-cli --config .idd.yaml run .
 
 # Or use Make
 make build && make run
@@ -32,7 +35,7 @@ make build && make run
 Format: `TYPE-MODULE-NUMBER` (e.g., `SPEC-BE-001`, `TEST-BE-001`)
 
 | Prefix | Meaning |
-|--------|---------|
+| ------ | ------- |
 | `SPEC-` | Functional specification |
 | `CONTRACT-` | Interface/behavior contract |
 | `TEST-` | Test case |
@@ -49,7 +52,15 @@ Format: `TYPE-MODULE-NUMBER` (e.g., `SPEC-BE-001`, `TEST-BE-001`)
 
 ## Configuration
 
-See `examples/idd.yaml` for a full configuration example with comments.
+See `examples/idd-config-example.yaml` for a full configuration example with comments.
+
+## Supported Languages
+
+**Code files**: Go, TypeScript (.ts, .tsx), JavaScript (.js)
+
+**Documentation**: Markdown (.md)
+
+> **Note**: `idd-cli` does **not** check markdown formatting or style. For markdown linting, use a dedicated tool such as [markdownlint](https://github.com/DavidAnson/markdownlint) or [textlint](https://github.com/textlint/textlint).
 
 ## IDD Documentation System
 
@@ -64,19 +75,19 @@ idd-cli includes embedded skills that define the IDD workflow. Copy the skills d
 ```bash
 # Copy skills to your project
 mkdir -p .claude/skills
-cp -r cmd/validator/skills/* .claude/skills/
+cp -r cmd/idd-cli/skills/* .claude/skills/
 
 # Or create a symlink (recommended for development)
-ln -s $(pwd)/cmd/validator/skills .claude/skills/idd
+ln -s $(pwd)/cmd/idd-cli/skills .claude/skills/idd
 ```
 
 ### Codex ( Anthropic )
 
 Add to your agent's system prompt or project instructions:
 
-```
+```text
 This project uses the IDD (Intent-Driven Development) framework.
-Load skills from: cmd/validator/skills/SKILL.md
+Load skills from: cmd/idd-cli/skills/SKILL.md
 ```
 
 ### Verifying Installation
@@ -89,11 +100,29 @@ ls -la .claude/skills/
 idd-cli skills
 ```
 
+### Example Prompts
+
+Once installed, you can use IDD-aware prompts with your AI agent:
+
+**Implement a feature:**
+
+```bash
+/intent-driven-development Implement user authentication with email/password.
+```
+
+**Check compliance before committing:**
+
+```bash
+Run idd-cli to validate and fix any IDD documentation errors.
+```
+
+**That's it.** The agent will create SPEC, CONTRACT, TEST, DESIGN docs with appropriate IDD identifiers, add code annotations, and ensure all links are bidirectional.
+
 ## Project Structure
 
-```
+```text
 idd-cli/
-├── cmd/validator/       # CLI entry point
+├── cmd/idd-cli/       # CLI entry point
 ├── internal/
 │   ├── collector/        # Doc/code identifier collection
 │   ├── engine/          # Validation engine

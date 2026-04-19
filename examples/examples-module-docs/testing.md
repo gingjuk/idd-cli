@@ -29,6 +29,7 @@ Test cases for the user authentication login flow.
 | `TestLogin_UserNotFound` | Non-existent user returns error |
 
 **Code Example:**
+
 ```go
 // TEST-EXAMPLE-001: User Login Flow
 // Covers: SPEC-EXAMPLE-001
@@ -53,7 +54,7 @@ Test cases for session expiration behavior.
 
 **Spec Coverage:** [SPEC-EXAMPLE-001](../spec.md#spec-example-001-user-authentication)
 
-### Test Cases
+### Session Test Cases
 
 | Test | Description |
 |------|-------------|
@@ -61,6 +62,7 @@ Test cases for session expiration behavior.
 | `TestSession_Refresh` | Session can be refreshed before expiration |
 
 **Code Example:**
+
 ```go
 // TEST-EXAMPLE-002: Session Expiration
 // Covers: SPEC-EXAMPLE-001

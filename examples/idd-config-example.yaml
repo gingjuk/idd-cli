@@ -2,8 +2,8 @@
 #
 # Config search order:
 #   1. --config flag value
-#   2. ./idd.yaml
-#   3. ./config/idd.yaml
+#   2. ./.idd.yaml
+#   3. ./.config/idd.yaml
 
 version: "1.0"
 
@@ -19,6 +19,10 @@ docs:
     contract: "CONTRACT-[A-Z]+-[0-9]+"
     test: "TEST-[A-Z]+-[0-9]+"
     design: "DESIGN-[A-Z]+-[0-9]+"
+
+  # Paths to ignore during scanning (glob patterns)
+  ignore_paths:
+    - "examples/**"
 
 # Source code scan settings
 code:
@@ -46,6 +50,14 @@ validation:
 
   # Require all specs to have at least one test link
   require_spec_test_coverage: true
+
+  # Check doc describe field matches code function comment (default: true)
+  require_doc_code_correspondence: true
+
+  # Semantic consistency check between doc describe and code comments
+  consistency_check:
+    enabled: true
+    threshold: 0.3
 
 # Output settings
 output:

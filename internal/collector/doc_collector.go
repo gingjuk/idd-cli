@@ -6,9 +6,9 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/yourorg/idd-cli/internal/config"
-	"github.com/yourorg/idd-cli/internal/model"
-	"github.com/yourorg/idd-cli/pkg/pattern"
+	"github.com/jingxu9x/idd-link-validator/internal/config"
+	"github.com/jingxu9x/idd-link-validator/internal/model"
+	"github.com/jingxu9x/idd-link-validator/pkg/pattern"
 )
 
 type DocCollector struct {
@@ -34,6 +34,9 @@ func (c *DocCollector) Collect(ctx context.Context, targetPath string) (*model.I
 				return nil
 			}
 			if info.IsDir() {
+				return nil
+			}
+			if c.shouldIgnore(path) {
 				return nil
 			}
 			if filepath.Ext(path) == ".md" {
@@ -139,7 +142,7 @@ func (c *DocCollector) collectFile(path string, set *model.IdentifierSet) []*mod
 				})
 			}
 			if !set.Has(marker.ID) {
-				id := model.NewIdentifier(marker.ID, idType, marker.Name, path, 0)
+				id := model.NewIdentifierWithDescribe(marker.ID, idType, marker.Name, marker.Describe, path, 0)
 				id.RawRef = marker.ID
 				set.Add(id)
 			}
@@ -167,4 +170,16 @@ func (c *DocCollector) extractTitle(content string, id string) string {
 		}
 	}
 	return ""
+}
+
+func (c *DocCollector) shouldIgnore(path string) bool {
+	if len(c.cfg.Docs.IgnorePaths) == 0 {
+		return false
+	}
+	for _, ignore := range c.cfg.Docs.IgnorePaths {
+		if matchGlob(ignore, path) {
+			return true
+		}
+	}
+	return false
 }

@@ -9,6 +9,7 @@ bin/
 
 # Test binary
 *.test
+coverage.*
 
 # Output
 idd-report.json

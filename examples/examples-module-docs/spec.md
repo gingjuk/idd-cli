@@ -19,6 +19,7 @@ The system must support user authentication with email/password credentials.
 **Implementation:** `internal/auth/auth.go`
 
 **Acceptance Criteria:**
+
 - Users can log in with email/password
 - Sessions expire after 24 hours
 - Passwords are hashed using bcrypt

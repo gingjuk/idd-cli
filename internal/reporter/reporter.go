@@ -1,5 +1,7 @@
 package reporter
 
+// @spec SPEC-BE-006
+
 import (
 	"encoding/json"
 	"fmt"
@@ -8,8 +10,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/yourorg/idd-cli/internal/config"
-	"github.com/yourorg/idd-cli/internal/model"
+	"github.com/jingxu9x/idd-link-validator/internal/config"
+	"github.com/jingxu9x/idd-link-validator/internal/model"
 )
 
 type Reporter struct {

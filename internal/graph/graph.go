@@ -1,9 +1,11 @@
 package graph
 
+// @spec SPEC-BE-002
+
 import (
 	"fmt"
 
-	"github.com/yourorg/idd-cli/internal/model"
+	"github.com/jingxu9x/idd-link-validator/internal/model"
 )
 
 type Node struct {

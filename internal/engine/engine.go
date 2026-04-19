@@ -1,14 +1,17 @@
 package engine
 
+// @spec SPEC-BE-004
+
 import (
 	"context"
 	"fmt"
 	"time"
 
-	"github.com/yourorg/idd-cli/internal/config"
-	"github.com/yourorg/idd-cli/internal/graph"
-	"github.com/yourorg/idd-cli/internal/model"
-	"github.com/yourorg/idd-cli/pkg/pattern"
+	"github.com/jingxu9x/idd-link-validator/internal/config"
+	"github.com/jingxu9x/idd-link-validator/internal/graph"
+	"github.com/jingxu9x/idd-link-validator/internal/model"
+	"github.com/jingxu9x/idd-link-validator/internal/similarity"
+	"github.com/jingxu9x/idd-link-validator/pkg/pattern"
 )
 
 type Engine struct {
@@ -42,11 +45,22 @@ func (e *Engine) AddStructuralErrors(errors []*model.ValidationError) {
 }
 
 func (e *Engine) buildGraph(ids *model.IdentifierSet) {
-	for _, id := range ids.All() {
-		e.graph.AddNode(id.ID, id.Type)
+	for _, id := range ids.AllIdentifiers() {
+		node := e.graph.AddNode(id.ID, id.Type)
+		if node.Metadata == nil {
+			node.Metadata = make(map[string]interface{})
+		}
+		if _, exists := node.Metadata[string(id.Origin)]; !exists {
+			node.Metadata[string(id.Origin)] = true
+		}
+		if id.Describe != "" {
+			if _, exists := node.Metadata["describe_"+string(id.Origin)]; !exists {
+				node.Metadata["describe_"+string(id.Origin)] = id.Describe
+			}
+		}
 	}
 
-	for _, id := range ids.All() {
+	for _, id := range ids.AllIdentifiers() {
 		for _, linkRef := range id.Links {
 			linkType := e.inferLinkType(id.Type, linkRef)
 			e.graph.AddEdge(id.ID, linkRef, linkType, id.Source, id.Line)
@@ -57,9 +71,19 @@ func (e *Engine) buildGraph(ids *model.IdentifierSet) {
 }
 
 func (e *Engine) inferLinkType(fromType model.IdentifierType, toRef string) model.LinkType {
+	toType := model.TypeSpec
+	if refType := pattern.GetIdentifierType(toRef); refType != "" {
+		if t, err := model.ParseIdentifierType(refType); err == nil {
+			toType = t
+		}
+	}
+
 	switch fromType {
 	case model.TypeSpec:
-		return model.LinkTests
+		if toType == model.TypeTest {
+			return model.LinkTests
+		}
+		return model.LinkReferences
 	case model.TypeTest:
 		return model.LinkImplements
 	case model.TypeContract:
@@ -86,6 +110,14 @@ func (e *Engine) validate() {
 
 	if !e.cfg.Validation.AllowOrphans {
 		e.validateNoOrphans()
+	}
+
+	if e.cfg.Validation.RequireDocCodeCorrespondence {
+		e.validateDocCodeCorrespondence()
+	}
+
+	if e.cfg.Validation.ConsistencyCheck.Enabled {
+		e.validateConsistency()
 	}
 
 	e.result.Sort()
@@ -128,6 +160,72 @@ func (e *Engine) validateNoOrphans() {
 			}
 		}
 	}
+}
+
+func (e *Engine) validateDocCodeCorrespondence() {
+	for _, node := range e.graph.Nodes() {
+		hasDoc, hasCode := false, false
+		if node.Metadata != nil {
+			hasDoc, _ = node.Metadata[string(model.OriginDoc)].(bool)
+			hasCode, _ = node.Metadata[string(model.OriginCode)].(bool)
+		}
+
+		if hasDoc && !hasCode {
+			e.result.AddError(
+				"doc-code-correspondence",
+				fmt.Sprintf("%s is documented but has no code annotation", node.ID),
+				node.ID,
+				"",
+				"",
+			)
+		}
+
+		if hasCode && !hasDoc {
+			e.result.AddError(
+				"doc-code-correspondence",
+				fmt.Sprintf("%s has code annotation but no documentation", node.ID),
+				node.ID,
+				"",
+				"",
+			)
+		}
+	}
+}
+
+func (e *Engine) validateConsistency() {
+	threshold := e.cfg.Validation.ConsistencyCheck.Threshold
+	for _, node := range e.graph.Nodes() {
+		if node.Metadata == nil {
+			continue
+		}
+		hasDoc, _ := node.Metadata[string(model.OriginDoc)].(bool)
+		hasCode, _ := node.Metadata[string(model.OriginCode)].(bool)
+		if !hasDoc || !hasCode {
+			continue
+		}
+		docDescribe, _ := node.Metadata["describe_"+string(model.OriginDoc)].(string)
+		codeDescribe, _ := node.Metadata["describe_"+string(model.OriginCode)].(string)
+		if docDescribe == "" || codeDescribe == "" {
+			continue
+		}
+		score := similarity.Score(docDescribe, codeDescribe)
+		if score < threshold {
+			e.result.AddWarning(
+				"consistency-check",
+				fmt.Sprintf("%s has low similarity between doc and code (score: %.2f < threshold: %.2f)", node.ID, score, threshold),
+				node.ID,
+				fmt.Sprintf("doc: %s | code: %s", truncate(docDescribe, 50), truncate(codeDescribe, 50)),
+				fmt.Sprintf("%.3f", score),
+			)
+		}
+	}
+}
+
+func truncate(s string, maxLen int) string {
+	if len(s) <= maxLen {
+		return s
+	}
+	return s[:maxLen] + "..."
 }
 
 func (e *Engine) BuildReport() *model.Report {

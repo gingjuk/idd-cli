@@ -1,0 +1,16 @@
+profile: coverage.out
+
+threshold:
+  file: 0
+  package: 60
+  total: 60
+
+override:
+  - path: _test\.go$
+    total: 100
+  - path: ^cmd/
+    package: 0
+  - path: ^internal/auth
+    package: 0
+  - path: ^pkg/pattern
+    package: 0

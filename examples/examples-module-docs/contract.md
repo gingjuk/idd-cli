@@ -18,7 +18,7 @@ This directory contains example IDD contract documents showing the expected form
 
 Contract for secure password hashing and verification.
 
-### Interface
+### Password Hasher Interface
 
 ```go
 type PasswordHasher interface {
@@ -41,7 +41,7 @@ type PasswordHasher interface {
 
 **Status:** Done
 
-### Interface
+### Session Manager Interface
 
 ```go
 type SessionManager interface {

@@ -1,0 +1,20 @@
+{
+  "config": {
+    "default": true,
+    "MD013": false,
+    "MD033": false,
+    "MD041": false,
+    "MD024": false,
+    "MD060": false,
+    "noBanner": true,
+    "gitDir": "."
+  },
+  "ignores": [
+    "node_modules",
+    "vendor",
+    "bin",
+    ".git",
+    "coverage.out"
+  ],
+  "globs": ["**/*.md"]
+}

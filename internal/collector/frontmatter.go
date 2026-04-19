@@ -10,8 +10,9 @@ import (
 )
 
 type Marker struct {
-	ID   string `yaml:"id"`
-	Name string `yaml:"name"`
+	ID       string `yaml:"id"`
+	Name     string `yaml:"name"`
+	Describe string `yaml:"describe"`
 }
 
 type Frontmatter struct {
@@ -60,22 +61,110 @@ func ValidateFrontmatterMarkers(fm *Frontmatter, content string, filePath string
 		return errors
 	}
 
-	contentMarkers := make(map[string]bool)
-	for _, line := range strings.Split(content, "\n") {
-		for _, ref := range extractIDDRefs(line) {
-			contentMarkers[ref] = true
+	definedMarkers := extractDefinedMarkers(content)
+	referencedMarkers := extractReferencedMarkers(content)
+
+	for _, marker := range fm.Markers {
+		if !definedMarkers[marker.ID] {
+			if referencedMarkers[marker.ID] {
+				errors = append(errors, fmt.Sprintf(
+					"frontmatter marker '%s' is only referenced in content but not defined as heading (file: %s)",
+					marker.ID, filePath,
+				))
+			} else {
+				errors = append(errors, fmt.Sprintf(
+					"frontmatter marker '%s' not found in content (file: %s)",
+					marker.ID, filePath,
+				))
+			}
 		}
 	}
 
-	for _, marker := range fm.Markers {
-		if !contentMarkers[marker.ID] {
+	if errs := ValidateMarkerFormatting(content, filePath); len(errs) > 0 {
+		errors = append(errors, errs...)
+	}
+
+	return errors
+}
+
+func ValidateMarkerFormatting(content string, filePath string) []string {
+	var errors []string
+	lines := strings.Split(content, "\n")
+	inCodeBlock := false
+	inFrontmatter := false
+
+	for lineNum, line := range lines {
+		trimmed := strings.TrimSpace(line)
+		if strings.HasPrefix(trimmed, "```") {
+			inCodeBlock = !inCodeBlock
+			continue
+		}
+		if inCodeBlock {
+			continue
+		}
+		if trimmed == "---" {
+			if !inFrontmatter {
+				inFrontmatter = true
+				continue
+			} else {
+				inFrontmatter = false
+				continue
+			}
+		}
+		if inFrontmatter {
+			continue
+		}
+		if strings.HasPrefix(trimmed, "#") {
+			continue
+		}
+
+		bareMarkers := extractBareMarkers(line)
+		for _, marker := range bareMarkers {
 			errors = append(errors, fmt.Sprintf(
-				"frontmatter marker '%s' not found in content (file: %s)",
-				marker.ID, filePath,
+				"doc marker '%s' should be wrapped in backticks (file: %s, line: %d)",
+				marker, filePath, lineNum+1,
 			))
 		}
 	}
 	return errors
+}
+
+func extractBareMarkers(line string) []string {
+	var bare []string
+	backtickPattern := regexp.MustCompile("`([^`]+)`")
+	lineWithoutBackticks := backtickPattern.ReplaceAllString(line, "")
+
+	matches := idPattern.FindAllStringSubmatch(lineWithoutBackticks, -1)
+	for _, m := range matches {
+		if len(m) > 1 {
+			bare = append(bare, m[1])
+		}
+	}
+	return bare
+}
+
+func extractDefinedMarkers(content string) map[string]bool {
+	markers := make(map[string]bool)
+	lines := strings.Split(content, "\n")
+	for _, line := range lines {
+		trimmed := strings.TrimSpace(line)
+		if strings.HasPrefix(trimmed, "#") {
+			for _, ref := range extractIDDRefs(trimmed) {
+				markers[ref] = true
+			}
+		}
+	}
+	return markers
+}
+
+func extractReferencedMarkers(content string) map[string]bool {
+	markers := make(map[string]bool)
+	for _, line := range strings.Split(content, "\n") {
+		for _, ref := range extractIDDRefs(line) {
+			markers[ref] = true
+		}
+	}
+	return markers
 }
 
 var idPattern = regexp.MustCompile(`\b(SPEC-[A-Z]+-[0-9]+|CONTRACT-[A-Z]+-[0-9]+|TEST-[A-Z]+-[0-9]+|DESIGN-[A-Z]+-[0-9]+)\b`)

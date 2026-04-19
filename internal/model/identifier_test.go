@@ -229,3 +229,58 @@ func TestValidationResult_Sort(t *testing.T) {
 		t.Errorf("Errors[0].Rule = %q, want 'aaa'", result.Errors[0].Rule)
 	}
 }
+
+func TestNewIdentifierWithDescribe(t *testing.T) {
+	id := NewIdentifierWithDescribe("SPEC-001", TypeSpec, "Test Spec", "Validates JWT tokens", "docs/test.md", 10)
+
+	if id.ID != "SPEC-001" {
+		t.Errorf("ID = %q, want %q", id.ID, "SPEC-001")
+	}
+	if id.Type != TypeSpec {
+		t.Errorf("Type = %v, want %v", id.Type, TypeSpec)
+	}
+	if id.Title != "Test Spec" {
+		t.Errorf("Title = %q, want %q", id.Title, "Test Spec")
+	}
+	if id.Describe != "Validates JWT tokens" {
+		t.Errorf("Describe = %q, want %q", id.Describe, "Validates JWT tokens")
+	}
+	if id.Source != "docs/test.md" {
+		t.Errorf("Source = %q, want %q", id.Source, "docs/test.md")
+	}
+	if id.Line != 10 {
+		t.Errorf("Line = %d, want %d", id.Line, 10)
+	}
+	if id.Origin != OriginDoc {
+		t.Errorf("Origin = %v, want %v", id.Origin, OriginDoc)
+	}
+}
+
+func TestNewAnnotationWithComment(t *testing.T) {
+	ann := NewAnnotationWithComment(TypeSpec, "SPEC-001", "test.go", "@spec SPEC-001", "context", "Validates authentication", 10)
+
+	if ann.Type != TypeSpec {
+		t.Errorf("Type = %v, want %v", ann.Type, TypeSpec)
+	}
+	if ann.FunctionComment != "Validates authentication" {
+		t.Errorf("FunctionComment = %q, want %q", ann.FunctionComment, "Validates authentication")
+	}
+}
+
+func TestAnnotation_ToIdentifier_WithFunctionComment(t *testing.T) {
+	ann := NewAnnotationWithComment(TypeSpec, "SPEC-001", "test.go", "@spec SPEC-001", "context", "Validates JWT tokens", 10)
+	id := ann.ToIdentifier()
+
+	if id.Describe != "Validates JWT tokens" {
+		t.Errorf("Describe = %q, want %q", id.Describe, "Validates JWT tokens")
+	}
+}
+
+func TestAnnotation_ToIdentifier_WithoutFunctionComment(t *testing.T) {
+	ann := NewAnnotation(TypeSpec, "SPEC-001", "test.go", "@spec SPEC-001", "context", 10)
+	id := ann.ToIdentifier()
+
+	if id.Describe != "" {
+		t.Errorf("Describe = %q, want empty string", id.Describe)
+	}
+}

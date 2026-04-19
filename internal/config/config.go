@@ -1,5 +1,8 @@
 package config
 
+// @spec SPEC-BE-003
+// @contract CONTRACT-BE-001
+
 import (
 	"fmt"
 	"os"
@@ -18,6 +21,7 @@ type Config struct {
 type DocsConfig struct {
 	Patterns           []string           `yaml:"patterns"`
 	IdentifierPatterns IdentifierPatterns `yaml:"identifier_patterns"`
+	IgnorePaths        []string           `yaml:"ignore_paths"`
 }
 
 type IdentifierPatterns struct {
@@ -30,12 +34,21 @@ type IdentifierPatterns struct {
 type CodeConfig struct {
 	Patterns    []string `yaml:"patterns"`
 	Annotations []string `yaml:"annotations"`
+	IgnorePaths []string `yaml:"ignore_paths"`
 }
 
 type ValidationConfig struct {
-	RequireBidirectional    bool `yaml:"require_bidirectional"`
-	AllowOrphans            bool `yaml:"allow_orphans"`
-	RequireSpecTestCoverage bool `yaml:"require_spec_test_coverage"`
+	RequireBidirectional         bool             `yaml:"require_bidirectional"`
+	AllowOrphans                 bool             `yaml:"allow_orphans"`
+	RequireSpecTestCoverage      bool             `yaml:"require_spec_test_coverage"`
+	RequireDocCodeCorrespondence bool             `yaml:"require_doc_code_correspondence"`
+	ConsistencyCheck             ConsistencyCheck `yaml:"consistency_check"`
+}
+
+// ConsistencyCheck validates semantic consistency between doc describe and code comments.
+type ConsistencyCheck struct {
+	Enabled   bool    `yaml:"enabled"`
+	Threshold float64 `yaml:"threshold"` // 0.0-1.0, similarity score below this triggers warning
 }
 
 type OutputConfig struct {
@@ -79,9 +92,14 @@ func Default() *Config {
 			Annotations: []string{"@spec", "@contract", "@test", "@design"},
 		},
 		Validation: ValidationConfig{
-			RequireBidirectional:    true,
-			AllowOrphans:            false,
-			RequireSpecTestCoverage: true,
+			RequireBidirectional:         true,
+			AllowOrphans:                 false,
+			RequireSpecTestCoverage:      true,
+			RequireDocCodeCorrespondence: true,
+			ConsistencyCheck: ConsistencyCheck{
+				Enabled:   true,
+				Threshold: 0.3, // default threshold for similarity score
+			},
 		},
 		Output: OutputConfig{
 			IncludeGraph: false,
@@ -102,6 +120,12 @@ func (c *Config) Validate() error {
 	}
 	if len(c.Code.Annotations) == 0 {
 		c.Code.Annotations = []string{"@spec", "@contract", "@test", "@design"}
+	}
+	if c.Validation.ConsistencyCheck.Threshold <= 0 {
+		c.Validation.ConsistencyCheck.Threshold = 0.3
+	}
+	if c.Validation.ConsistencyCheck.Threshold > 1.0 {
+		c.Validation.ConsistencyCheck.Threshold = 1.0
 	}
 	return nil
 }

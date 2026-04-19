@@ -44,22 +44,22 @@ type AnnotationPattern struct {
 var AnnotationPatterns = []AnnotationPattern{
 	{
 		Prefix: "@spec",
-		Regex:  regexp.MustCompile(`(?i)@spec\s+([A-Z]+-[A-Z]+-[0-9]+)`),
+		Regex:  regexp.MustCompile(`(?i)@spec\s+([A-Z]+-[A-Z]+-[0-9]+(?:\s*,\s*[A-Z]+-[A-Z]+-[0-9]+)*)`),
 		Type:   "SPEC",
 	},
 	{
 		Prefix: "@contract",
-		Regex:  regexp.MustCompile(`(?i)@contract\s+([A-Z]+-[A-Z]+-[0-9]+)`),
+		Regex:  regexp.MustCompile(`(?i)@contract\s+([A-Z]+-[A-Z]+-[0-9]+(?:\s*,\s*[A-Z]+-[A-Z]+-[0-9]+)*)`),
 		Type:   "CONTRACT",
 	},
 	{
 		Prefix: "@test",
-		Regex:  regexp.MustCompile(`(?i)@test\s+([A-Z]+-[A-Z]+-[0-9]+)`),
+		Regex:  regexp.MustCompile(`(?i)@test\s+([A-Z]+-[A-Z]+-[0-9]+(?:\s*,\s*[A-Z]+-[A-Z]+-[0-9]+)*)`),
 		Type:   "TEST",
 	},
 	{
 		Prefix: "@design",
-		Regex:  regexp.MustCompile(`(?i)@design\s+([A-Z]+-[A-Z]+-[0-9]+)`),
+		Regex:  regexp.MustCompile(`(?i)@design\s+([A-Z]+-[A-Z]+-[0-9]+(?:\s*,\s*[A-Z]+-[A-Z]+-[0-9]+)*)`),
 		Type:   "DESIGN",
 	},
 }
@@ -70,8 +70,8 @@ func ExtractIDDReferences(content string) []string {
 		matches := pat.Regex.FindAllStringSubmatch(content, -1)
 		for _, m := range matches {
 			if len(m) > 1 {
-				id := m[1]
-				if !isQuoted(content, id) {
+				id := strings.ToUpper(m[1])
+				if !isQuoted(content, m[1]) {
 					refs = append(refs, id)
 				}
 			}
@@ -105,8 +105,21 @@ func ExtractAnnotations(content string) []string {
 		matches := pat.Regex.FindAllStringSubmatch(content, -1)
 		for _, m := range matches {
 			if len(m) > 1 {
-				refs = append(refs, m[1])
+				ids := SplitAnnotationRefs(m[1])
+				refs = append(refs, ids...)
 			}
+		}
+	}
+	return refs
+}
+
+// SplitAnnotationRefs splits comma-separated IDD references and trims whitespace.
+func SplitAnnotationRefs(s string) []string {
+	var refs []string
+	for _, part := range strings.Split(s, ",") {
+		part = strings.TrimSpace(part)
+		if part != "" {
+			refs = append(refs, part)
 		}
 	}
 	return refs

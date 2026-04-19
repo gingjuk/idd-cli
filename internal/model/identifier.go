@@ -1,4 +1,5 @@
 // Package model defines the core data structures for IDD link validation.
+// @spec SPEC-BE-005
 package model
 
 import (
@@ -33,22 +34,25 @@ func ParseIdentifierType(s string) (IdentifierType, error) {
 	}
 }
 
+// Origin indicates where an identifier was found.
+type Origin string
+
+const (
+	OriginDoc  Origin = "doc"
+	OriginCode Origin = "code"
+)
+
 // Identifier represents a single IDD identifier found in docs or code.
 type Identifier struct {
-	// ID is the unique identifier (e.g., "SPEC-001")
-	ID string
-	// Type is the kind of identifier
-	Type IdentifierType
-	// Title is the human-readable title (extracted from document)
-	Title string
-	// Source is the file path or "inline" for code annotations
-	Source string
-	// Line is the line number where the identifier was found
-	Line int
-	// RawRef is the raw reference text as it appears in source
-	RawRef string
-	// Links are forward references from this identifier
-	Links []string
+	ID       string
+	Type     IdentifierType
+	Title    string
+	Describe string
+	Source   string
+	Line     int
+	RawRef   string
+	Links    []string
+	Origin   Origin
 }
 
 // NewIdentifier creates a new identifier with the given fields.
@@ -61,12 +65,33 @@ func NewIdentifier(id string, idType IdentifierType, title, source string, line 
 		Line:   line,
 		RawRef: id,
 		Links:  make([]string, 0),
+		Origin: OriginDoc,
+	}
+}
+
+// NewIdentifierWithDescribe creates a new identifier with describe field.
+func NewIdentifierWithDescribe(id string, idType IdentifierType, title, describe, source string, line int) *Identifier {
+	return &Identifier{
+		ID:       id,
+		Type:     idType,
+		Title:    title,
+		Describe: describe,
+		Source:   source,
+		Line:     line,
+		RawRef:   id,
+		Links:    make([]string, 0),
+		Origin:   OriginDoc,
 	}
 }
 
 // AddLink adds a forward reference from this identifier.
 func (i *Identifier) AddLink(ref string) {
 	i.Links = append(i.Links, ref)
+}
+
+// SetOrigin sets the origin of this identifier.
+func (i *Identifier) SetOrigin(origin Origin) {
+	i.Origin = origin
 }
 
 // IdentifierSet is a collection of all collected identifiers.
@@ -76,7 +101,7 @@ type IdentifierSet struct {
 	Tests     []*Identifier
 	Designs   []*Identifier
 
-	byID map[string]*Identifier
+	byID map[string][]*Identifier
 }
 
 // NewIdentifierSet creates a new empty identifier set.
@@ -86,13 +111,13 @@ func NewIdentifierSet() *IdentifierSet {
 		Contracts: make([]*Identifier, 0),
 		Tests:     make([]*Identifier, 0),
 		Designs:   make([]*Identifier, 0),
-		byID:      make(map[string]*Identifier),
+		byID:      make(map[string][]*Identifier),
 	}
 }
 
 // Add adds an identifier to the set.
 func (s *IdentifierSet) Add(id *Identifier) {
-	s.byID[id.ID] = id
+	s.byID[id.ID] = append(s.byID[id.ID], id)
 	switch id.Type {
 	case TypeSpec:
 		s.Specs = append(s.Specs, id)
@@ -105,25 +130,71 @@ func (s *IdentifierSet) Add(id *Identifier) {
 	}
 }
 
-// Get returns an identifier by ID.
+// Get returns the first identifier by ID (for backward compatibility).
 func (s *IdentifierSet) Get(id string) (*Identifier, bool) {
-	ident, ok := s.byID[id]
-	return ident, ok
+	ids, ok := s.byID[id]
+	if !ok || len(ids) == 0 {
+		return nil, false
+	}
+	return ids[0], true
+}
+
+// GetAll returns all identifiers with the given ID.
+func (s *IdentifierSet) GetAll(id string) []*Identifier {
+	return s.byID[id]
 }
 
 // Has returns true if the identifier exists in the set.
 func (s *IdentifierSet) Has(id string) bool {
-	_, ok := s.byID[id]
-	return ok
+	ids, ok := s.byID[id]
+	return ok && len(ids) > 0
 }
 
-// All returns all identifiers as a slice.
+// All returns all unique identifiers as a slice (one per ID).
 func (s *IdentifierSet) All() []*Identifier {
 	result := make([]*Identifier, 0, len(s.byID))
-	for _, id := range s.byID {
-		result = append(result, id)
+	for _, ids := range s.byID {
+		if len(ids) > 0 {
+			result = append(result, ids[0])
+		}
 	}
 	return result
+}
+
+// AllIdentifiers returns all identifiers including duplicates (multiple origins).
+func (s *IdentifierSet) AllIdentifiers() []*Identifier {
+	result := make([]*Identifier, 0)
+	for _, ids := range s.byID {
+		result = append(result, ids...)
+	}
+	return result
+}
+
+// ByOrigin returns all identifiers with the specified origin.
+func (s *IdentifierSet) ByOrigin(origin Origin) []*Identifier {
+	var result []*Identifier
+	for _, ids := range s.byID {
+		for _, id := range ids {
+			if id.Origin == origin {
+				result = append(result, id)
+			}
+		}
+	}
+	return result
+}
+
+// HasOrigin returns true if at least one identifier with the given ID has the specified origin.
+func (s *IdentifierSet) HasOrigin(id string, origin Origin) bool {
+	ids, ok := s.byID[id]
+	if !ok {
+		return false
+	}
+	for _, id := range ids {
+		if id.Origin == origin {
+			return true
+		}
+	}
+	return false
 }
 
 // Count returns the total number of identifiers.
@@ -133,27 +204,20 @@ func (s *IdentifierSet) Count() int {
 
 // Merge combines another identifier set into this one.
 func (s *IdentifierSet) Merge(other *IdentifierSet) {
-	for _, id := range other.All() {
-		if !s.Has(id.ID) {
-			s.Add(id)
-		}
+	for _, id := range other.AllIdentifiers() {
+		s.Add(id)
 	}
 }
 
 // Annotation represents an annotation found in source code.
 type Annotation struct {
-	// Type is the annotation type (spec, contract, test, design)
-	Type IdentifierType
-	// Ref is the identifier reference (e.g., "SPEC-001")
-	Ref string
-	// Source is the file path
-	Source string
-	// Line is the line number
-	Line int
-	// Raw is the raw annotation text
-	Raw string
-	// Context is surrounding code context
-	Context string
+	Type            IdentifierType
+	Ref             string
+	Source          string
+	Line            int
+	Raw             string
+	Context         string
+	FunctionComment string
 }
 
 // NewAnnotation creates a new annotation.
@@ -168,10 +232,26 @@ func NewAnnotation(typ IdentifierType, ref, source, raw, context string, line in
 	}
 }
 
+// NewAnnotationWithComment creates a new annotation with function comment.
+func NewAnnotationWithComment(typ IdentifierType, ref, source, raw, context, funcComment string, line int) *Annotation {
+	return &Annotation{
+		Type:            typ,
+		Ref:             ref,
+		Source:          source,
+		Line:            line,
+		Raw:             raw,
+		Context:         context,
+		FunctionComment: funcComment,
+	}
+}
+
 // ToIdentifier converts an annotation to an identifier.
 func (a *Annotation) ToIdentifier() *Identifier {
 	id := NewIdentifier(a.Ref, a.Type, "", a.Source, a.Line)
 	id.RawRef = a.Raw
+	if a.FunctionComment != "" {
+		id.Describe = a.FunctionComment
+	}
 	return id
 }
 

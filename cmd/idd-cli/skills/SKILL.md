@@ -22,6 +22,7 @@ IDD is a framework-agnostic development workflow that transforms user intent int
 ## Key Principle
 
 Delegate to **specialized agents** for specific tasks. Use the right agent for the right job:
+
 - Planning tasks → planning agent
 - Architecture/consultation → architecture/consulting agent
 - Code review → review agent
@@ -82,7 +83,7 @@ Create `<module>/.planning/plan.md` with:
 
 For complex features, consult the **architecture/consulting agent** to design architecture:
 
-```
+```text
 Invoke architecture/consulting agent when:
 - New patterns or patterns unfamiliar to the codebase
 - Multiple modules/systems involved
@@ -91,6 +92,7 @@ Invoke architecture/consulting agent when:
 ```
 
 Architecture artifacts:
+
 - `design.md` — System design, architecture decisions
 - `spec.md` — Functionality specification
 - `testing.md` — Testing strategy and approach
@@ -105,13 +107,14 @@ Code and documentation are linked through numbered identifiers. This creates a b
 **Identifier Format:** `<TYPE>-<MODULE>-<NUMBER>`
 
 | Prefix | Meaning | Example |
-|--------|---------|---------|
+| ------ | ------- | ------- |
 | `SPEC-` | Functionality specification | `SPEC-BE-001` |
 | `CONTRACT-` | Interface/behavior contract | `CONTRACT-BE-001` |
 | `TEST-` | Test case | `TEST-BE-001` |
 | `DESIGN-` | Architecture design decision | `DESIGN-BE-001` |
 
 **Pattern (Regex):** Used by idd-cli for auto-detection
+
 ```yaml
 identifier_patterns:
   spec: "SPEC-[A-Z]+-[0-9]+"
@@ -127,12 +130,14 @@ code_annotations:
 ```
 
 **Spec File Size Rule:**
+
 - If `spec.md` exceeds **1500 lines**, split into multiple files using the pattern `spec-<feat>.md`
 - Each split file should focus on a specific feature or subdomain
 - The main `spec.md` becomes an index that references all split files
 - Example: `spec-auth.md`, `spec-trading.md`, `spec-portfolio.md`
 
 **Spec Index Example (`spec.md`):**
+
 ```markdown
 # Specification Index
 
@@ -145,7 +150,7 @@ code_annotations:
 **Module Prefixes:**
 
 | Prefix | Module |
-|--------|--------|
+| ------ | ------ |
 | `BE-` | api-server (backend) |
 | `FE-` | web (frontend) |
 | `E2E-` | End-to-end tests |
@@ -183,6 +188,7 @@ def test_execute_order_performance():
 ```
 
 **Linkage Rules:**
+
 - Each identifier must be unique within its type namespace
 - Every spec/contract item should have at least one corresponding test
 - Every code implementation should reference its spec and contract IDs
@@ -192,7 +198,7 @@ def test_execute_order_performance():
 
 **All IDD documents MUST be stored in the `docs/` directory, organized by module name.**
 
-```
+```text
 docs/
 ├── auth/
 │   ├── spec.md           # SPEC-AUTH-001, SPEC-AUTH-002, ...
@@ -206,6 +212,7 @@ docs/
 ```
 
 **Rules:**
+
 - One subdirectory per module (use module name, lowercase or as appropriate)
 - Each subdirectory contains the module's IDD documents (spec, contract, testing, design)
 - Document filenames are lowercase (spec.md, contract.md, testing.md, etc.)
@@ -225,16 +232,17 @@ markers:
 
 This enables idd-cli to quickly locate and parse identifiers without reading full file content.
 
-**Validator Config:** Ensure `idd.yaml` patterns cover `docs/**/*.md` to auto-detect all module documents.
+**Validator Config:** Ensure `.idd.yaml` patterns cover `docs/**/*.md` to auto-detect all module documents.
 
 ### Phase 4: TDD Implementation
 
 **TDD Workflow:**
+
 1. Write test first (RED) — test should FAIL
 2. Write minimal implementation (GREEN) — test should PASS
 3. Refactor (IMPROVE) — verify coverage 80%+
 
-```
+```text
 delegate_task(
   category="<implementation>",
   load_skills=["tdd-workflow"],
@@ -252,14 +260,14 @@ Target: 80%+ coverage"
 
 For modules with `contract.md`:
 
-```
+```text
 Run contract_test to validate module interfaces match contracts.
 If contract_test fails, fix implementation — not contracts.
 ```
 
 ### Phase 6: Review
 
-```
+```text
 delegate_task(
   category="<review>",
   prompt="Review <changes> for quality, security, maintainability"
@@ -267,6 +275,7 @@ delegate_task(
 ```
 
 Or invoke specific agents:
+
 - Architecture/consulting agent — Architecture, high-level review
 - Explore agent — Code pattern consistency
 
@@ -285,7 +294,7 @@ Types: `feat`, `fix`, `refactor`, `docs`, `test`, `chore`, `perf`, `ci`
 ## Required Documents Summary
 
 | Document | Location | Triggered By | Contents |
-|----------|----------|--------------|----------|
+| -------- | ------- | ----------- | -------- |
 | `intent.md` | `<module>/.planning/` | Planning | User intent import |
 | `plan.md` | `<module>/.planning/` | Planning | Development state tracking, phase breakdown, risks |
 | `design.md` | `docs/<package_path>/` | Architecture Design | System design, architecture decisions |
@@ -295,17 +304,17 @@ Types: `feat`, `fix`, `refactor`, `docs`, `test`, `chore`, `perf`, `ci`
 
 ## Testing Requirements
 
-**Minimum coverage: 80%**
+### Minimum coverage: 80%
 
 | Type | What | When |
-|------|------|------|
+| ---- | --- | --- |
 | Unit tests | Individual functions, utilities, components | Always |
 | Integration tests | API endpoints, database operations | Always |
 | E2E tests | Critical user flows (Playwright) | Critical paths |
 
 ## Workflow Summary
 
-```
+```text
 User Intent
     ↓
 Intent Capture (intent.md)
@@ -339,16 +348,15 @@ idd-cli is a CLI tool that validates bidirectional linkage consistency between I
 ### Installation
 
 ```bash
-go build -o idd-cli ./cmd/validator
+go build -o idd-cli ./cmd/idd-cli
 ```
 
 ### Usage
 
 ```bash
-idd-cli run --config idd.yaml
-```
+idd-cli run --config .idd.yaml
 
-### Configuration (`idd.yaml`)
+### Configuration (`.idd.yaml`)
 
 The validator uses patterns defined in this skill. Default configuration:
 
@@ -394,6 +402,7 @@ output:
 ### Output
 
 JSON report with:
+
 - `valid` — Boolean pass/fail status
 - `errors` — Failed validation rules
 - `warnings` — Consistency issues

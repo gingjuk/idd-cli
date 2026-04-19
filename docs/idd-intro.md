@@ -4,9 +4,9 @@
 
 ## Project Structure
 
-```
+```text
 idd-cli/
-├── cmd/validator/         # CLI entry point
+├── cmd/idd-cli/         # CLI entry point
 ├── internal/
 │   ├── collector/         # Document/code identifier collection
 │   ├── config/           # Configuration loading
@@ -30,13 +30,14 @@ idd-cli/
 **Format:** `<TYPE>-<MODULE>-<NUMBER>`
 
 | Prefix | Meaning | Example |
-|--------|---------|---------|
+| ------ | ------- | ------- |
 | `SPEC-` | Functionality specification | `SPEC-BE-001` |
 | `CONTRACT-` | Interface/behavior contract | `CONTRACT-BE-001` |
 | `TEST-` | Test case | `TEST-BE-001` |
 | `DESIGN-` | Architecture design decision | `DESIGN-BE-001` |
 
 **Regex Patterns:**
+
 ```yaml
 identifier_patterns:
   spec: "SPEC-[A-Z]+-[0-9]+"
@@ -49,7 +50,7 @@ identifier_patterns:
 
 Documents are organized by module in the `docs/` directory:
 
-```
+```text
 docs/
 ├── backend/
 │   ├── spec.md       # SPEC-BE-001, SPEC-BE-002
@@ -136,10 +137,10 @@ output:
 
 ```bash
 # Build
-go build -o idd-cli ./cmd/validator
+go build -o idd-cli ./cmd/idd-cli
 
 # Run validation
-./idd-cli run --config idd.yaml
+./idd-cli run --config .idd.yaml
 
 # Using Make
 make build && make run

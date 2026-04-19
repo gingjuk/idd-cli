@@ -13,10 +13,10 @@ import (
 	"github.com/spf13/viper"
 	"gopkg.in/yaml.v3"
 
-	"github.com/yourorg/idd-cli/internal/collector"
-	"github.com/yourorg/idd-cli/internal/config"
-	"github.com/yourorg/idd-cli/internal/engine"
-	"github.com/yourorg/idd-cli/internal/reporter"
+	"github.com/jingxu9x/idd-link-validator/internal/collector"
+	"github.com/jingxu9x/idd-link-validator/internal/config"
+	"github.com/jingxu9x/idd-link-validator/internal/engine"
+	"github.com/jingxu9x/idd-link-validator/internal/reporter"
 )
 
 var (
@@ -36,7 +36,7 @@ then validates that all references are bidirectional (spec→test→code consist
 
 Example usage:
   idd-cli run ./docs
-  idd-cli run ./docs --config idd.yaml
+  idd-cli run ./docs --config .idd.yaml
   idd-cli run ./docs --format json
   idd-cli lint ./docs --format json -o report.json`,
 	Version:      version,
@@ -50,7 +50,7 @@ var runCmd = &cobra.Command{
 
 Example:
   idd-cli run ./docs
-  idd-cli run ./docs --config idd.yaml`,
+  idd-cli run ./docs --config .idd.yaml`,
 	Args: cobra.MaximumNArgs(1),
 	RunE: run,
 }
@@ -93,7 +93,7 @@ type SkillInfo struct {
 }
 
 func init() {
-	rootCmd.PersistentFlags().StringVar(&cfgPath, "config", "", "Path to idd.yaml config file (default: ./idd.yaml)")
+	rootCmd.PersistentFlags().StringVar(&cfgPath, "config", "", "Path to .idd.yaml config file (default: ./.idd.yaml)")
 	rootCmd.PersistentFlags().StringVarP(&outPath, "output", "o", "", "Output file path (default: stdout)")
 	rootCmd.PersistentFlags().StringVar(&format, "format", "json", "Output format (json, markdown)")
 	rootCmd.PersistentFlags().BoolVarP(&verbose, "verbose", "v", false, "Verbose output")
@@ -129,7 +129,7 @@ func run(cmd *cobra.Command, args []string) error {
 	var err error
 
 	if !noConfig {
-		configPaths := []string{cfgPath, "./idd.yaml", "./config/idd.yaml"}
+		configPaths := []string{cfgPath, "./.idd.yaml", "./config/.idd.yaml"}
 		if cfgPath != "" {
 			configPaths = []string{cfgPath}
 		}

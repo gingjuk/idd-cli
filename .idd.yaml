@@ -8,6 +8,8 @@ docs:
     contract: "CONTRACT-[A-Z]+-[0-9]+"
     test: "TEST-[A-Z]+-[0-9]+"
     design: "DESIGN-[A-Z]+-[0-9]+"
+  ignore_paths:
+    - "examples/**"
 
 code:
   patterns:
@@ -22,6 +24,7 @@ validation:
   require_bidirectional: true
   allow_orphans: true
   require_spec_test_coverage: false
+  require_doc_code_correspondence: false
 
 output:
   file: "idd-report.json"

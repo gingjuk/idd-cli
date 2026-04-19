@@ -30,7 +30,7 @@ We adopted a **graph-first architecture** where:
 
 ### Architecture
 
-```
+```text
 ┌─────────────────────────────────────┐
 │           CLI (main.go)              │
 └─────────────────────────────────────┘
@@ -54,6 +54,7 @@ We adopted a **graph-first architecture** where:
 ### Consequences
 
 **Benefits:**
+
 - Easy to extend — Add new collectors by implementing interface
 - Independent validators — Each rule is a separate struct
 - Natural representation — Graphs model bidirectional relationships naturally
@@ -68,11 +69,11 @@ We adopted a **graph-first architecture** where:
 **Date:** 2026-04-18
 **Status:** Proposed
 
-### Context
+### Rule Engine Context
 
 We need a flexible validation engine that can run different rule sets based on configuration.
 
-### Decision
+### Rule Engine Decision
 
 Validation rules are defined in `idd.yaml` and executed by the Engine in order:
 

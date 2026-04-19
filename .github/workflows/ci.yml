@@ -39,6 +39,23 @@ jobs:
         with:
           version: v2.11.4
 
+  markdownlint:
+    name: markdownlint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Install markdownlint-cli2
+        run: npm install -g markdownlint-cli2
+
+      - name: markdownlint
+        run: markdownlint-cli2
+
   test:
     name: go test
     runs-on: ubuntu-latest
@@ -53,3 +70,24 @@ jobs:
 
       - name: test
         run: CGO_ENABLED=1 go test -v -race ./...
+
+  coverage:
+    name: go coverage
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      - name: run tests with coverage
+        run: |
+          CGO_ENABLED=1 go test -coverprofile=coverage.out -covermode=atomic -coverpkg=./... ./...
+
+      - name: coverage
+        uses: vladopajic/go-test-coverage@v2
+        with:
+          config: ./.testcoverage.yml
