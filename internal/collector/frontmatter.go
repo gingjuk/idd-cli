@@ -1,3 +1,7 @@
+// Package collector provides frontmatter parsing and validation functionality.
+
+// Spec: docs/internal/collector/spec.md
+// Contract: docs/internal/collector/contract.md
 package collector
 
 import (
@@ -9,16 +13,28 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
+// @implement SPEC-INT_COL-005
 type Marker struct {
 	ID       string `yaml:"id"`
 	Name     string `yaml:"name"`
 	Describe string `yaml:"describe"`
 }
 
-type Frontmatter struct {
-	Markers []Marker `yaml:"markers"`
+// @implement SPEC-INT_COL-006
+type RelatedFiles struct {
+	Spec     string `yaml:"spec,omitempty"`
+	Contract string `yaml:"contract,omitempty"`
+	Design   string `yaml:"design,omitempty"`
+	Testing  string `yaml:"testing,omitempty"`
 }
 
+// @implement SPEC-INT_COL-007
+type Frontmatter struct {
+	Markers      []Marker      `yaml:"markers"`
+	RelatedFiles *RelatedFiles `yaml:"related_files,omitempty"`
+}
+
+// @implement SPEC-INT_COL-008
 func ParseFrontmatter(content string) (*Frontmatter, error) {
 	lines := strings.Split(content, "\n")
 	startIdx, endIdx := -1, -1
@@ -55,6 +71,7 @@ func ParseFrontmatter(content string) (*Frontmatter, error) {
 	return &fm, nil
 }
 
+// @implement SPEC-INT_COL-009
 func ValidateFrontmatterMarkers(fm *Frontmatter, content string, filePath string) []string {
 	var errors []string
 	if fm == nil {
@@ -63,6 +80,12 @@ func ValidateFrontmatterMarkers(fm *Frontmatter, content string, filePath string
 
 	definedMarkers := extractDefinedMarkers(content)
 	referencedMarkers := extractReferencedMarkers(content)
+	headingLines := extractHeadingLines(content)
+
+	frontmatterIDs := make(map[string]bool)
+	for _, marker := range fm.Markers {
+		frontmatterIDs[marker.ID] = true
+	}
 
 	for _, marker := range fm.Markers {
 		if !definedMarkers[marker.ID] {
@@ -80,6 +103,12 @@ func ValidateFrontmatterMarkers(fm *Frontmatter, content string, filePath string
 		}
 	}
 
+	for id, line := range headingLines {
+		if err := ValidateHeadingFormat(id, line); err != nil {
+			errors = append(errors, fmt.Sprintf("%s (file: %s)", err.Error(), filePath))
+		}
+	}
+
 	if errs := ValidateMarkerFormatting(content, filePath); len(errs) > 0 {
 		errors = append(errors, errs...)
 	}
@@ -87,6 +116,7 @@ func ValidateFrontmatterMarkers(fm *Frontmatter, content string, filePath string
 	return errors
 }
 
+// @implement SPEC-INT_COL-010
 func ValidateMarkerFormatting(content string, filePath string) []string {
 	var errors []string
 	lines := strings.Split(content, "\n")
@@ -131,9 +161,16 @@ func ValidateMarkerFormatting(content string, filePath string) []string {
 
 func extractBareMarkers(line string) []string {
 	var bare []string
-	backtickPattern := regexp.MustCompile("`([^`]+)`")
-	lineWithoutBackticks := backtickPattern.ReplaceAllString(line, "")
+	// First, remove double-backtick examples (e.g., `` `SPEC-BE-001` ``)
+	backtickPattern := regexp.MustCompile("``[^`]*`[^`]+`[^`]*``")
+	lineWithoutExamples := backtickPattern.ReplaceAllString(line, "")
 
+	// Remove single-backtick wrapped identifiers (these are properly formatted)
+	// Replace with spaces to preserve word boundaries
+	singleBacktickPattern := regexp.MustCompile("`[^`]+`")
+	lineWithoutBackticks := singleBacktickPattern.ReplaceAllString(lineWithoutExamples, " ")
+
+	// Now find any remaining bare identifiers
 	matches := idPattern.FindAllStringSubmatch(lineWithoutBackticks, -1)
 	for _, m := range matches {
 		if len(m) > 1 {
@@ -167,7 +204,105 @@ func extractReferencedMarkers(content string) map[string]bool {
 	return markers
 }
 
-var idPattern = regexp.MustCompile(`\b(SPEC-[A-Z]+-[0-9]+|CONTRACT-[A-Z]+-[0-9]+|TEST-[A-Z]+-[0-9]+|DESIGN-[A-Z]+-[0-9]+)\b`)
+func extractHeadingLines(content string) map[string]string {
+	result := make(map[string]string)
+	lines := strings.Split(content, "\n")
+	inCodeBlock := false
+	for _, line := range lines {
+		trimmed := strings.TrimSpace(line)
+		if strings.HasPrefix(trimmed, "```") {
+			inCodeBlock = !inCodeBlock
+			continue
+		}
+		if inCodeBlock {
+			continue
+		}
+		if strings.HasPrefix(trimmed, "#") {
+			for _, ref := range extractIDDRefs(trimmed) {
+				result[ref] = trimmed
+			}
+		}
+	}
+	return result
+}
+
+// @implement SPEC-INT_COL-011
+func ValidateHeadingFormat(id, heading string) error {
+	colonIdx := strings.Index(heading, ":")
+	if colonIdx == -1 {
+		return fmt.Errorf("heading for '%s' missing ':' separator, expected format: '%s: <description>'", id, id)
+	}
+	headingId := strings.TrimSpace(strings.TrimLeft(heading[:colonIdx], "# "))
+	if headingId != id {
+		return fmt.Errorf("heading identifier '%s' does not match marker '%s'", headingId, id)
+	}
+	desc := strings.TrimSpace(heading[colonIdx+1:])
+	if desc == "" {
+		return fmt.Errorf("heading for '%s' missing description after ':'", id)
+	}
+
+	parts := strings.Split(id, "-")
+
+	if len(parts) == 2 {
+		if err := validateSectionMarkerFormat(id, parts); err != nil {
+			return err
+		}
+	} else if len(parts) == 3 {
+		if err := validateIDDIdentifierFormat(id, parts); err != nil {
+			return err
+		}
+	} else {
+		return fmt.Errorf("identifier '%s' must have 2 or 3 parts, found %d parts", id, len(parts))
+	}
+
+	return nil
+}
+
+func validateSectionMarkerFormat(id string, parts []string) error {
+	typePart := strings.ToUpper(parts[0])
+	if typePart != "PATTERN" && typePart != "WALK" {
+		return fmt.Errorf("identifier '%s' has invalid TYPE '%s' for section marker, expected PATTERN or WALK", id, parts[0])
+	}
+
+	numberPart := parts[1]
+	for _, c := range numberPart {
+		if c < '0' || c > '9' {
+			return fmt.Errorf("identifier '%s' has invalid NUMBER '%s', must be digits only", id, numberPart)
+		}
+	}
+	return fmt.Errorf("identifier '%s' uses internal section marker TYPE '%s', not a valid IDD identifier (PATTERN-*, WALK-* are internal section markers)", id, typePart)
+}
+
+func validateIDDIdentifierFormat(id string, parts []string) error {
+	validIDDTypes := map[string]bool{
+		"SPEC":     true,
+		"CONTRACT": true,
+		"TEST":     true,
+		"DESIGN":   true,
+	}
+
+	typePart := strings.ToUpper(parts[0])
+	if !validIDDTypes[typePart] {
+		return fmt.Errorf("identifier '%s' has invalid TYPE '%s', expected SPEC, CONTRACT, TEST, or DESIGN", id, parts[0])
+	}
+
+	modulePart := parts[1]
+	for _, c := range modulePart {
+		if (c < 'A' || c > 'Z') && (c < '0' || c > '9') && c != '_' {
+			return fmt.Errorf("identifier '%s' has invalid MODULE '%s', must be uppercase letters, digits, or underscore only", id, modulePart)
+		}
+	}
+
+	numberPart := parts[2]
+	for _, c := range numberPart {
+		if c < '0' || c > '9' {
+			return fmt.Errorf("identifier '%s' has invalid NUMBER '%s', must be digits only", id, numberPart)
+		}
+	}
+	return nil
+}
+
+var idPattern = regexp.MustCompile(`\b(SPEC-[A-Z0-9_]+-[0-9]+|CONTRACT-[A-Z0-9_]+-[0-9]+|TEST-[A-Z0-9_]+-[0-9]+|DESIGN-[A-Z0-9_]+-[0-9]+|PATTERN-[A-Z0-9_]+-[0-9]+|WALK-[A-Z0-9_]+-[0-9]+)\b`)
 
 func extractIDDRefs(line string) []string {
 	var refs []string
@@ -180,6 +315,7 @@ func extractIDDRefs(line string) []string {
 	return refs
 }
 
+// @implement SPEC-INT_COL-012
 func GetExpectedFilename(idType string) string {
 	switch strings.ToUpper(idType) {
 	case "SPEC":
@@ -194,6 +330,7 @@ func GetExpectedFilename(idType string) string {
 	return ""
 }
 
+// @implement SPEC-INT_COL-013
 func ValidateDocumentStructure(filePath string, idType string) error {
 	filename := strings.ToLower(filepath.Base(filePath))
 
@@ -222,34 +359,24 @@ func isRootDocFile(filePath string) bool {
 	return false
 }
 
+// @implement SPEC-INT_COL-014
 func ExtractModuleName(filePath string) string {
 	parts := strings.Split(filepath.Dir(filePath), string(filepath.Separator))
 	for i, part := range parts {
 		if part == "docs" && i+1 < len(parts) {
-			module := parts[i+1]
-			if module != "" && module != "." {
-				return strings.ToUpper(module)
+			nextPart := parts[i+1]
+			first := abbrevOrUpper(nextPart)
+			if i+2 < len(parts) && parts[i+2] != "" {
+				second := abbrevOrUpper(parts[i+2])
+				return first + "_" + second
 			}
+			return first
 		}
 	}
 	return ""
 }
 
-var knownAbbrevs = map[string]string{
-	"BE":  "BACKEND",
-	"FE":  "FRONTEND",
-	"E2E": "E2E",
-}
-
-func isKnownAbbreviation(short, long string) bool {
-	for abbrev, full := range knownAbbrevs {
-		if strings.ToUpper(short) == abbrev && strings.ToUpper(long) == full {
-			return true
-		}
-	}
-	return false
-}
-
+// @implement SPEC-INT_COL-015
 func ValidateModulePrefix(id string, filePath string) error {
 	moduleFromPath := ExtractModuleName(filePath)
 	if moduleFromPath == "" {
@@ -263,12 +390,10 @@ func ValidateModulePrefix(id string, filePath string) error {
 	idModule := parts[1]
 
 	if idModule != moduleFromPath {
-		if !isKnownAbbreviation(idModule, moduleFromPath) {
-			return fmt.Errorf(
-				"identifier module '%s' does not match directory '%s' (id: %s, file: %s)",
-				idModule, moduleFromPath, id, filePath,
-			)
-		}
+		return fmt.Errorf(
+			"identifier module '%s' does not match directory '%s'",
+			idModule, moduleFromPath,
+		)
 	}
 	return nil
 }

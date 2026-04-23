@@ -17,22 +17,221 @@ IDD is a framework-agnostic development workflow that transforms user intent int
 
 ## Core Philosophy
 
-**Intent First** — Every implementation starts with explicit user intent, not assumptions. The workflow preserves intent through planning, architecture, implementation, and validation phases.
+**Four Pillars of IDD:**
 
-## Key Principle
+1. **Intent is Truth** — Every deliverable originates from an approved `intent.md`. Nothing exists unless it is defined in intent and approved. Implementation without intent is guesswork.
 
-Delegate to **specialized agents** for specific tasks. Use the right agent for the right job:
+2. **Specs are Code** — Specifications must be formalized, precise, and unambiguous. Like production code, specs undergo review, version control, and validation. Vague specs produce vague implementations.
 
-- Planning tasks → planning agent
-- Architecture/consultation → architecture/consulting agent
-- Code review → review agent
-- Deep implementation → implementation agent
+3. **Tests Prove Intent** — Tests verify behavior against specs, not implementation details. A test proving "the function returns X for input Y" is valid; a test proving "the function calls dependency Z" is not.
 
-## Phases
+4. **Nothing Guessed** — When anything is unclear, CLARIFY. Never guess, assume, or fill gaps with assumptions. Ambiguity resolved by the implementor (not the author) introduces interpretation risk. Ask, don't guess.
 
-### Phase 1: Intent Capture
+## Workflow
 
-Before ANY code is written, capture the user's intent in `<module>/.planning/intent.md`:
+```text
+User Intent
+    ↓
+Intent Capture (intent.md)
+    ↓
+Planning (plan.md)
+    ↓
+[Architecture] → Consulting Agent → design.md/spec.md/contract.md
+    ↓
+TDD Implementation → Implementation Agent + tdd-workflow
+    ↓
+Contract Validation (if applicable)
+    ↓
+Review → Review Agent / Consulting Agent
+    ↓
+Commit
+```
+
+**Phase Details:**
+
+| Phase | Input | Output | When |
+|-------|-------|--------|------|
+| 1. Intent Capture | User request | `intent.md` | Always — before any code |
+| 2. Planning | `intent.md` | `plan.md` | Always |
+| 3. Architecture | `intent.md`, `plan.md` | `design.md`, `spec.md`, `contract.md`, `testing.md` | Complex features |
+| 4. Implementation | Specs, contracts | Code with annotations | Always |
+| 5. Contract Validation | `*_contract_test.go` | Validated interfaces | If `contract.md` exists |
+| 6. Review | Changes | Approved code | Always |
+| 7. Knowledge Capture | Implementation | Updated memory/docs | Always |
+
+**TDD Workflow:**
+
+1. Write test first (RED) — test should FAIL
+2. Write minimal implementation (GREEN) — test should PASS
+3. Refactor (IMPROVE) — verify coverage 80%+
+
+**Troubleshoot:** check test isolation → verify mocks → fix implementation (not tests, unless tests are wrong).
+
+## Document Dependency Chain
+
+Documents are created in dependency order. Each document type builds upon or validates the previous:
+
+```text
+User Intent
+     ↓
+contract.md          ← User Intent defines WHAT needs to be built (interfaces, capabilities)
+     ↓
+design.md            ← Contract refines HOW to structure it (architecture, components)
+     ↓
+spec.md              ← Design breaks down HOW in detail (function signatures, behaviors)
+     ↓
+Implementation       ← Spec guides implementation (code annotated with @implement SPEC-*)
+     ↓
+testing.md           ← Each SPEC requires TEST coverage (annotated with @test TEST-*)
+
+Contract Validation (separate from testing.md):
+spec.md ──implements──→ contract.md
+         └───implements──→ design.md
+
+testing.md contains TEST identifiers (via `@test`) that validate SPECs
+
+Contract test file (`*_contract_test.go`) uses `@test-contract SPEC` to validate SPEC satisfies contract
+```
+
+**Dependency Rules:**
+
+| Document | Depends On | Provides To |
+|---------|-----------|------------|
+| `intent.md` | User request | Starting point for all planning |
+| `contract.md` | `intent.md` | Interface signatures, capability definitions |
+| `design.md` | `contract.md` | Architecture decisions, package layout |
+| `spec.md` | `contract.md`, `design.md` | Detailed specifications, **implements** contract and design |
+| `testing.md` | `spec.md` | TEST identifiers (via `@test`) that validate SPECs |
+| Contract test (`*_contract_test.go`) | `spec.md`, `contract.md` | Uses `@test-contract` to validate SPEC satisfies contract |
+| Code | `spec.md`, `design.md` | Implementation annotated with `@implement SPEC-*` |
+
+**Note:** `spec.md` has two roles:
+
+1. **Implements contract** — Each SPEC declares which contract interface it implements
+2. **Implements design** — SPEC details (function signatures, behaviors) realize the architecture defined in design.md
+
+**Spec implements Contract and Design:**
+
+Each SPEC in `spec.md` must state which contract and design it implements:
+
+```markdown
+## SPEC-AUTH-001: User Login
+
+**Contract:** `contract.md` — implements interface `Authenticator`
+
+**Design:** `design.md` — implements architecture `AuthModule`
+
+**Requirement:** Login with email/password returning JWT token.
+
+**Implementation:** `internal/auth/auth.go`
+
+**Tests:** `TEST-AUTH-001`
+```
+
+**Required fields:**
+
+| Field | Required | Description |
+|-------|----------|-------------|
+| Contract | Yes | Which contract interface this SPEC implements |
+| Design | Yes | Which design component this SPEC implements |
+| Requirement | Yes | What this SPEC describes |
+| Implementation | No | Path to source code |
+| Tests | Yes | TEST identifiers that validate this SPEC |
+
+**Test validates SPEC (not contract directly):**
+
+Each TEST in `testing.md` must state which SPEC it covers via **Spec Coverage:**
+
+```markdown
+## TEST-AUTH-001: User Login Test
+
+**Spec Coverage:** `SPEC-AUTH-001`
+
+**Purpose:** Verify login returns valid JWT for valid credentials.
+```
+
+**Note:** Contract validation is done via `@test-contract` in contract test files (`*_contract_test.go`), not in regular test files.
+
+**Code implements SPEC (and implicitly implements Contract):**
+
+```go
+// @implement SPEC-AUTH-001
+func Login(email, password string) (string, error) {
+    // Implementation
+}
+```
+
+**Contract Test File (`*_contract_test.go`):**
+
+Contract tests explicitly validate that implementation satisfies contract interfaces:
+
+```go
+// Contract: docs/auth/contract.md
+// Implements: SPEC-AUTH-001 (Authenticator interface)
+
+// @test-contract SPEC-AUTH-001
+func TestContractLogin(t *testing.T) {
+    // Validate Login() satisfies Authenticator interface
+}
+```
+
+## Document Hierarchy
+
+All IDD documents stored in `docs/` directory, organized by module name:
+
+```text
+docs/
+├── <module>/
+│   ├── spec.md           # SPEC-<MODULE>-NNN
+│   ├── contract.md      # Interface signatures (references SPECs)
+│   ├── testing.md       # TEST-<MODULE>-NNN
+│   └── design.md        # Architecture decisions (references SPECs)
+```
+
+**Rules:**
+
+- One subdirectory per module (use module name, lowercase or as appropriate)
+- Document filenames are lowercase (spec.md, contract.md, testing.md, etc.)
+- Module prefix in identifiers must match the module name (e.g., `SPEC-AUTH-001` in `docs/auth/`)
+- contract.md and design.md do not have their own identifiers — they reference SPECs
+- If spec.md exceeds **1500 lines**, split into `spec-<feat>.md`; main spec.md becomes an index
+
+**Agent Responsibilities:**
+
+Delegate to **specialized agents** for specific documents. Use the right agent for the right job:
+
+| Document | Responsible Agent | Notes |
+|----------|-------------------|-------|
+| `intent.md` | Human (user) or planning agent | Captures user intent |
+| `plan.md` | Planning agent | Creates and maintains plan |
+| `contract.md` | Architecture/consulting agent | Defines interfaces from intent |
+| `design.md` | Architecture/consulting agent | Designs system structure |
+| `spec.md` | Deep implementation agent | Detailed specifications |
+| `testing.md` | Deep implementation agent | Test cases |
+| Code | Deep implementation agent | Annotated with `@implement` |
+| Code review | Review agent | Quality, security check |
+
+**Frontmatter:** Each IDD markdown file MUST include YAML frontmatter:
+
+```yaml
+---
+markers:
+  - id: SPEC-<MODULE>-NNN
+    name: <description>
+
+related_files:
+  spec: spec.md
+  contract: contract.md
+  design: design.md
+  testing: testing.md
+---
+```
+
+## Document Templates
+
+### Planning Templates
+
+**`intent.md`** (in `<module>/.planning/`):
 
 ```markdown
 # Intent: <feature name>
@@ -53,11 +252,7 @@ Before ANY code is written, capture the user's intent in `<module>/.planning/int
 - Item 2
 ```
 
-Use the `planning` skill to create this: `skill({ name: "planning" })`
-
-### Phase 2: Planning
-
-Create `<module>/.planning/plan.md` with:
+**`plan.md`** (in `<module>/.planning/`):
 
 ```markdown
 # Plan: <feature name>
@@ -79,258 +274,276 @@ Create `<module>/.planning/plan.md` with:
 [Immediate next step to take]
 ```
 
-### Phase 3: Architecture (when needed)
+### IDD Document Templates
 
-For complex features, consult the **architecture/consulting agent** to design architecture:
+**`spec.md`** format:
 
-```text
-Invoke architecture/consulting agent when:
-- New patterns or patterns unfamiliar to the codebase
-- Multiple modules/systems involved
-- Performance or security concerns
-- Unfamiliar framework behavior
+````markdown
+---
+markers:
+  - id: SPEC-<MODULE>-001
+    name: <description>
+
+related_files:
+  spec: spec.md
+  contract: contract.md
+  design: design.md
+  testing: testing.md
+---
+
+# Specification (<module>)
+
+## SPEC-<MODULE>-001: <Title>
+
+**Contract:** implements interface `<InterfaceName>`
+
+**Design:** implements architecture `<ComponentName>`
+
+**Requirement:** [What this spec describes]
+
+**Input Sources:** [API endpoints, user inputs, external dependencies]
+
+**Implementation:** `<path to source code>`
+
+**Implements:**
+
+```go
+func FunctionName(param1 string, param2 int) (Result, error)
 ```
 
-Architecture artifacts:
+**Parameters:**
 
-- `design.md` — System design, architecture decisions
-- `spec.md` — Functionality specification
-- `testing.md` — Testing strategy and approach
-- `contract.md` — (15+ functions or shared lib) Signatures, types, error contracts
+- `param1`, Description of param1
+- `param2`, Description of param2
 
-Location: `docs/<package_path>/`
+**Returns:**
 
-### Phase 3.5: Documentation Linkage
+- `Result`, Description of return value
+- `error`, Error description
 
-Code and documentation are linked through numbered identifiers. This creates a bidirectional traceable relationship between specs, contracts, tests, and implementation.
+**Tests:** `TEST-<MODULE>-001`
+````
 
-**Identifier Format:** `<TYPE>-<MODULE>-<NUMBER>`
+**Required sections:** Contract, Design, Requirement, Tests
+**Optional sections:** Input Sources, Implementation, Implements (with Parameters/Returns)
+
+**Interface/Class method naming:** When documenting an interface method or class member method, use `<InterfaceName>.<Method>` as the title (e.g., `Reporter.Write`). The Implements section signature should show the full method signature.
+
+**`testing.md`** format:
+
+```markdown
+---
+markers:
+  - id: TEST-<MODULE>-001
+    name: <test description>
+
+related_files:
+  spec: spec.md
+  testing: testing.md
+---
+
+# Test Cases (<module>)
+
+## TEST-<MODULE>-001: <Title>
+
+**Purpose:** [What this test validates]
+
+**Spec Coverage:** `SPEC-<MODULE>-001`
+```
+
+**`design.md`** format:
+
+```markdown
+---
+related_files:
+  spec: spec.md
+  design: design.md
+---
+
+# Design (<module>)
+
+## Architecture
+[High-level system design]
+
+## Package Layout
+[Directory structure and package responsibilities]
+
+## Function Composition
+**Call graph:** `A → B → C`
+**Initialization:** `InitA()` → `InitB()`
+
+## Dependencies
+**External:** [postgres, redis, kafka]
+**Internal:** [pkg/auth, pkg/metrics]
+
+## Testability Hooks
+[Test strategy and contract test approach]
+```
+
+**Required sections:** Architecture, Package Layout, Function Composition, Dependencies, Testability Hooks
+
+**`contract.md`** format:
+
+````markdown
+---
+related_files:
+  spec: spec.md
+  contract: contract.md
+---
+
+# Contracts (<module>)
+
+## Interface: <Name>
+
+```go
+type <Interface> interface {
+    Method() error
+}
+```
+
+**Implements:** `SPEC-<MODULE>-001`
+````
+
+**Required sections:** Interface definition with Implements field
+**Note:** `contract.md` does not have its own identifiers — interfaces are referenced by SPECs via the **Contract:** field
+
+### Code Annotation Templates
+
+**Source file** (after package declaration):
+
+```go
+// Package mymodule provides <description>.
+//
+// Spec: docs/<module>/spec.md
+// Contract: docs/<module>/contract.md
+package mymodule
+
+// @implement SPEC-<MODULE>-001
+func PublicFunction() {
+    // implementation
+}
+```
+
+**Test file** (`<module>_test.go`):
+
+```go
+// Package mymodule provides tests for authentication.
+//
+// Spec: docs/<module>/spec.md
+// Test: docs/<module>/testing.md
+package mymodule
+
+// @test TEST-<MODULE>-001
+func TestPublicFunction(t *testing.T) {
+    // test implementation
+}
+```
+
+**Contract test file** (`<module>_contract_test.go`):
+
+Contract tests validate that implementation satisfies contract interfaces:
+
+```go
+// Package mymodule provides contract tests.
+//
+// Spec: docs/<module>/spec.md
+// Contract: docs/<module>/contract.md
+package mymodule
+
+// @test-contract SPEC-<MODULE>-001
+func TestContractPublicFunction(t *testing.T) {
+    // Validate implementation matches contract
+}
+```
+
+## Identifier Format
+
+**Pattern:** `<TYPE>-<MODULE>-<NUMBER>` — Exactly 3 segments separated by hyphens
 
 | Prefix | Meaning | Example |
 | ------ | ------- | ------- |
 | `SPEC-` | Functionality specification | `SPEC-BE-001` |
-| `CONTRACT-` | Interface/behavior contract | `CONTRACT-BE-001` |
 | `TEST-` | Test case | `TEST-BE-001` |
-| `DESIGN-` | Architecture design decision | `DESIGN-BE-001` |
 
-**Pattern (Regex):** Used by idd-cli for auto-detection
+**Module prefix** derived from directory name under `docs/`:
 
-```yaml
-identifier_patterns:
-  spec: "SPEC-[A-Z]+-[0-9]+"
-  contract: "CONTRACT-[A-Z]+-[0-9]+"
-  test: "TEST-[A-Z]+-[0-9]+"
-  design: "DESIGN-[A-Z]+-[0-9]+"
+- `docs/backend/` → `BACKEND` or `BE`
+- `docs/auth/` → `AUTH`
+- `docs/trading/` → `TRADING` or `TR`
 
-code_annotations:
-  - "@spec"
-  - "@contract"
-  - "@test"
-  - "@design"
-```
+**Invalid (will be flagged by idd-cli):**
 
-**Spec File Size Rule:**
+- `SPEC-BE-007-007` — Triple-segment identifier
+- `PATTERN-*`, `WALK-*` — Section identifiers, not IDD identifiers
 
-- If `spec.md` exceeds **1500 lines**, split into multiple files using the pattern `spec-<feat>.md`
-- Each split file should focus on a specific feature or subdomain
-- The main `spec.md` becomes an index that references all split files
-- Example: `spec-auth.md`, `spec-trading.md`, `spec-portfolio.md`
+## Linkage Rules
 
-**Spec Index Example (`spec.md`):**
+**Bidirectional Links:**
 
-```markdown
-# Specification Index
+IDD documents have bidirectional links that must remain consistent:
 
-## Modules
-- [Authentication](spec-auth.md) — SPEC-BE-001 to SPEC-BE-010
-- [Trading](spec-trading.md) — SPEC-BE-011 to SPEC-BE-030
-- [Portfolio](spec-portfolio.md) — SPEC-BE-031 to SPEC-BE-050
-```
+| Link Pair | Forward Direction | Backward Direction |
+|-----------|------------------|-------------------|
+| Contract ↔ SPEC | SPEC: `**Contract:**` | contract.md: `**Implements:**` |
+| SPEC ↔ TEST | SPEC: `**Tests:**` | testing.md: `**Spec Coverage:**` |
 
-**Module Prefixes:**
-
-| Prefix | Module |
-| ------ | ------ |
-| `BE-` | api-server (backend) |
-| `FE-` | web (frontend) |
-| `E2E-` | End-to-end tests |
-
-**Code Comment Format:**
-
-```python
-# =============================================================================
-# @spec     SPEC-BE-001: Order execution must complete within 100ms
-# @contract CONTRACT-BE-001: execute_order(order: Order) -> Execution
-# @test     TEST-BE-001: Verify order execution meets SLA
-# =============================================================================
-def execute_order(self, order: Order) -> Execution:
-    """Execute a market order. See CONTRACT-BE-001 for error handling."""
-```
-
-**Document Format (spec.md, contract.md, testing.md):**
-
-```markdown
-## SPEC-BE-001: Order Execution Performance
-
-**Requirement:** Order execution must complete within 100ms for market orders.
-
-**Implementation:** `api-server/app/services/backtest_engine/executor.py`
-
-**Tests:** TEST-BE-001, TEST-BE-002
-```
-
-**Test Format:**
-
-```python
-# TEST-BE-001: Verify order execution meets SLA
-def test_execute_order_performance():
-    """SLA: 100ms p99 latency. See SPEC-BE-001."""
-```
-
-**Linkage Rules:**
-
-- Each identifier must be unique within its type namespace
-- Every spec/contract item should have at least one corresponding test
-- Every code implementation should reference its spec and contract IDs
-- Every test should reference the spec/contract it validates
-
-### Document Storage Organization
-
-**All IDD documents MUST be stored in the `docs/` directory, organized by module name.**
+**Complete Tracking Chain:**
 
 ```text
-docs/
-├── auth/
-│   ├── spec.md           # SPEC-AUTH-001, SPEC-AUTH-002, ...
-│   ├── contract.md      # CONTRACT-AUTH-001, ...
-│   ├── testing.md       # TEST-AUTH-001, ...
-│   └── design.md        # DESIGN-AUTH-001, ...
-├── trading/
-│   ├── spec.md           # SPEC-TRADING-001, ...
-│   └── ...
-└── ...
+contract.md (Authenticator interface)
+    ↑ Implements
+    |
+SPEC-AUTH-001 (in spec.md)
+    ├── **Contract:** contract.md — implements interface Authenticator
+    ├── **Design:** design.md — implements architecture AuthModule
+    └── **Tests:** TEST-AUTH-001
+            ↑ Spec Coverage
+            |
+TEST-AUTH-001 (in testing.md)
+
+CODE: @implement SPEC-AUTH-001    →  implements Authenticator interface
+TEST: @test TEST-AUTH-001         →  validates SPEC-AUTH-001
+CONTRACT TEST: @test-contract SPEC-AUTH-001  →  validates SPEC satisfies contract
 ```
 
-**Rules:**
+**Linkage Verification Rules:**
 
-- One subdirectory per module (use module name, lowercase or as appropriate)
-- Each subdirectory contains the module's IDD documents (spec, contract, testing, design)
-- Document filenames are lowercase (spec.md, contract.md, testing.md, etc.)
-- Module prefix in identifiers must match the module name (e.g., `SPEC-AUTH-001` in `docs/auth/`)
+*Contract ↔ SPEC:*
 
-**Frontmatter:** Each IDD markdown file MUST include YAML frontmatter listing all identifiers it contains with brief descriptions:
+- Every SPEC with `**Contract:**` must have a matching `**Implements:**` in contract.md
+- Every contract interface with `**Implements:**` must have a matching SPEC that declares it
+- The interface name in SPEC's `implements interface <Name>` must exist in contract.md
 
-```yaml
----
-markers:
-  - id: SPEC-AUTH-001
-    name: User login with email/password
-  - id: SPEC-AUTH-002
-    name: Password hashing interface
----
-```
+*SPEC ↔ TEST:*
 
-This enables idd-cli to quickly locate and parse identifiers without reading full file content.
+- Every SPEC's `**Tests:**` field must have corresponding `**Spec Coverage:**` in testing.md
+- Every TEST's `**Spec Coverage:**` must reference an existing SPEC
+- The TEST identifier in SPEC's `**Tests:**` must match the TEST's own identifier
 
-**Validator Config:** Ensure `.idd.yaml` patterns cover `docs/**/*.md` to auto-detect all module documents.
+**Frontmatter ↔ Body Sync:**
 
-### Phase 4: TDD Implementation
+1. Every frontmatter marker must have a corresponding heading
+2. Every body reference must be in frontmatter markers
+3. Bidirectional consistency between `markers[].id` and headings
 
-**TDD Workflow:**
+**Annotation Placement:**
 
-1. Write test first (RED) — test should FAIL
-2. Write minimal implementation (GREEN) — test should PASS
-3. Refactor (IMPROVE) — verify coverage 80%+
-
-```text
-delegate_task(
-  category="<implementation>",
-  load_skills=["tdd-workflow"],
-  prompt="Implement <feature> following TDD:
-1. Write failing test (RED)
-2. Write minimal implementation (GREEN)
-3. Refactor (IMPROVE)
-Target: 80%+ coverage"
-)
-```
-
-**Troubleshoot:** check test isolation → verify mocks → fix implementation (not tests, unless tests are wrong).
-
-### Phase 5: Contract Validation (when applicable)
-
-For modules with `contract.md`:
-
-```text
-Run contract_test to validate module interfaces match contracts.
-If contract_test fails, fix implementation — not contracts.
-```
-
-### Phase 6: Review
-
-```text
-delegate_task(
-  category="<review>",
-  prompt="Review <changes> for quality, security, maintainability"
-)
-```
-
-Or invoke specific agents:
-
-- Architecture/consulting agent — Architecture, high-level review
-- Explore agent — Code pattern consistency
-
-### Phase 7: Knowledge Capture
-
-- Personal debugging notes → auto memory
-- Team/project knowledge → existing docs structure
-- If task produces relevant docs/comments, don't duplicate elsewhere
-
-### Phase 8: Commit
-
-**Commit format:** `<type>: <description>`
-
-Types: `feat`, `fix`, `refactor`, `docs`, `test`, `chore`, `perf`, `ci`
-
-## Required Documents Summary
-
-| Document | Location | Triggered By | Contents |
-| -------- | ------- | ----------- | -------- |
-| `intent.md` | `<module>/.planning/` | Planning | User intent import |
-| `plan.md` | `<module>/.planning/` | Planning | Development state tracking, phase breakdown, risks |
-| `design.md` | `docs/<package_path>/` | Architecture Design | System design, architecture decisions |
-| `spec.md` | `docs/<package_path>/` | Architecture Design | Functionality specification (split if >1500 lines → `spec-<feat>.md`) |
-| `testing.md` | `docs/<package_path>/` | Architecture Design | Testing strategy and approach |
-| `contract.md` | `docs/<package_path>/` | Architecture Design (15+ funcs or shared lib) | Signatures, types, error contracts |
+- `@implement`, `@test`, `@test-contract` are ONLY allowed on function/type declarations
+- NOT permitted inside function bodies, closures, or inline expressions
 
 ## Testing Requirements
 
-### Minimum coverage: 80%
+### Coverage
+
+Minimum coverage: 80%
 
 | Type | What | When |
-| ---- | --- | --- |
-| Unit tests | Individual functions, utilities, components | Always |
+| ---- | --- | ---- |
+| Unit tests | Individual functions, utilities | Always |
 | Integration tests | API endpoints, database operations | Always |
 | E2E tests | Critical user flows (Playwright) | Critical paths |
 
-## Workflow Summary
-
-```text
-User Intent
-    ↓
-Intent Capture (intent.md)
-    ↓
-Planning (plan.md)
-    ↓
-[Architecture] → Consulting Agent → design.md/spec.md/contract.md
-    ↓
-TDD Implementation → Implementation Agent + tdd-workflow
-    ↓
-Contract Validation (if applicable)
-    ↓
-Review → Review Agent / Consulting Agent
-    ↓
-Commit
-```
+**Contract tests:** For every `contract.md`, there MUST exist `*_contract_test.go` in the same directory as source.
 
 ## Anti-Patterns
 
@@ -339,26 +552,28 @@ Commit
 - **Skip tests** — TDD is mandatory for all new features
 - **Skip coverage verification** — 80%+ is the minimum
 - **Ignore blockers** — Document and escalate
-- **Delete .planning/** when done — Keep for continuity and future reference
+- **Delete .planning/** when done — Keep for continuity
+- **Annotate inside function bodies** — Annotations only on function/type declarations
+- **Triple-segment identifiers** — Use `SPEC-BE-007` not `SPEC-BE-007-007`
+- **Mismatched frontmatter-body** — Breaks doc-link-consistency
 
 ## IDD CLI Tool
 
-idd-cli is a CLI tool that validates bidirectional linkage consistency between IDD identifiers across documentation and source code.
+idd-cli validates doc-link-consistency between IDD identifiers across documentation and source code.
 
-### Installation
+**Installation:**
 
 ```bash
 go build -o idd-cli ./cmd/idd-cli
 ```
 
-### Usage
+**Usage:**
 
 ```bash
 idd-cli run --config .idd.yaml
+```
 
-### Configuration (`.idd.yaml`)
-
-The validator uses patterns defined in this skill. Default configuration:
+**Configuration (`.idd.yaml`):**
 
 ```yaml
 version: "1.0"
@@ -368,21 +583,19 @@ docs:
     - "docs/**/*.md"
   identifier_patterns:
     spec: "SPEC-[A-Z]+-[0-9]+"
-    contract: "CONTRACT-[A-Z]+-[0-9]+"
     test: "TEST-[A-Z]+-[0-9]+"
-    design: "DESIGN-[A-Z]+-[0-9]+"
+    test_contract: "TEST-[A-Z]+-[0-9]+"
 
 code:
   patterns:
     - "**/*.go"
   annotations:
-    - "@spec"
-    - "@contract"
+    - "@implement"
     - "@test"
-    - "@design"
+    - "@test-contract"
 
 validation:
-  require_bidirectional: true
+  require_doc_link_consistency: true
   allow_orphans: false
   require_spec_test_coverage: true
 
@@ -392,19 +605,16 @@ output:
   verbose: true
 ```
 
-### Validation Rules
+**Validation Rules:**
 
-1. **Completeness** — Every SPEC must have at least one TEST link (and vice versa)
-2. **Bidirectional** — If SPEC→TEST exists, TEST→SPEC backlink must also exist
+1. **Completeness** — Every SPEC must have at least one TEST in its **Tests:** field
+2. **Bidirectional (CRITICAL)** — SPEC→TEST link must match TEST→SPEC backlink
 3. **Orphan Detection** — No identifiers with zero connections
-4. **Consistency** — Cross-reference chain consistency (CODE→SPEC→TEST)
+4. **Identifier Format** — Must match `<TYPE>-<MODULE>-<NUMBER>` (3 segments)
+5. **Heading Format** — Section headings MUST be `## <Identifier>: <description>`
+6. **Frontmatter-Body Sync** — All identifiers in body must be in frontmatter, and vice versa
+7. **Annotation Placement** — `@implement`, `@test`, `@test-contract` must be on function/type declarations only
+8. **Package Doc Comment** — Every .go file must have a package doc comment after `package` declaration
+9. **Duplicate Heading Identifier (CRITICAL)** — H2 section headings MUST NOT have duplicate identifiers within the same file. If a file contains multiple sections (e.g., `## Test` and `## Contract Test`), each section must use its own sequential numbering range (e.g., `TEST-INT_ENG-001` to `TEST-INT_ENG-007` for Test, and `TEST-INT_ENG-013` to `TEST-INT_ENG-019` for Contract Test). idd-cli will detect and report this error. Never reuse identifiers across sections.
 
-### Output
-
-JSON report with:
-
-- `valid` — Boolean pass/fail status
-- `errors` — Failed validation rules
-- `warnings` — Consistency issues
-- `stats` — Identifier counts by type
-- `graph` — Linkage graph snapshot
+**Output:** JSON report with `valid`, `errors`, `warnings`, `stats`, and `graph` snapshot.

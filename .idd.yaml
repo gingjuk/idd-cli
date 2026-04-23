@@ -5,26 +5,37 @@ docs:
     - "docs/**/*.md"
   identifier_patterns:
     spec: "SPEC-[A-Z]+-[0-9]+"
-    contract: "CONTRACT-[A-Z]+-[0-9]+"
     test: "TEST-[A-Z]+-[0-9]+"
-    design: "DESIGN-[A-Z]+-[0-9]+"
+    test_contract: "TEST-[A-Z]+-[0-9]+"
   ignore_paths:
     - "examples/**"
+    - "cmd/idd-cli/skills/**"
+    - "docs/architecture"
+    - ".planning/**"
+    - "README.md"
+    - "AGENTS.md"
 
 code:
   patterns:
     - "**/*.go"
   annotations:
-    - "@spec"
-    - "@contract"
+    - "@implement"
     - "@test"
-    - "@design"
+    - "@test-contract"
 
 validation:
-  require_bidirectional: true
-  allow_orphans: true
-  require_spec_test_coverage: false
-  require_doc_code_correspondence: false
+  allow_orphans: false
+  require_doc_link_consistency: true
+  require_spec_test_coverage: true
+  require_contract_test_coverage: true
+  require_doc_code_correspondence: true
+  require_public_func_annotation: true
+  require_package_doc_comment: true
+  require_related_files: true
+  require_annotation_identifier: true
+  require_annotation_on_same_line: true
+  require_test_annotation: true
+  require_design_sections: true
 
 output:
   file: "idd-report.json"

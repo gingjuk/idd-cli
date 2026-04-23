@@ -1,3 +1,7 @@
+// Package collector provides testing utilities for the collector module.
+
+// Spec: docs/internal/collector/spec.md
+// Test: docs/internal/collector/testing.md
 package collector
 
 import (
@@ -6,11 +10,13 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/jingxu9x/idd-link-validator/internal/config"
-	"github.com/jingxu9x/idd-link-validator/internal/model"
+	"github.com/jingxu9x/idd-cli/internal/config"
+	"github.com/jingxu9x/idd-cli/internal/model"
 )
 
+// @test TEST-INT_COL-027
 func TestExtractFunctionComment(t *testing.T) {
+	// idd:ignore start
 	tests := []struct {
 		name           string
 		lines          []string
@@ -21,7 +27,7 @@ func TestExtractFunctionComment(t *testing.T) {
 			name: "comment after annotation",
 			lines: []string{
 				"package main",
-				"// @spec SPEC-BE-001",
+				"// @implement SPEC-BE-001",
 				"// Validates user credentials",
 				"// and issues JWT tokens",
 				"func Authenticate() {}",
@@ -32,7 +38,7 @@ func TestExtractFunctionComment(t *testing.T) {
 		{
 			name: "function comment with func",
 			lines: []string{
-				"// @spec SPEC-BE-001",
+				"// @implement SPEC-BE-001",
 				"func Authenticate() {}",
 			},
 			annotationLine: 0,
@@ -41,7 +47,7 @@ func TestExtractFunctionComment(t *testing.T) {
 		{
 			name: "no comment",
 			lines: []string{
-				"// @spec SPEC-BE-001",
+				"// @implement SPEC-BE-001",
 				"func Authenticate() {}",
 			},
 			annotationLine: 0,
@@ -50,7 +56,7 @@ func TestExtractFunctionComment(t *testing.T) {
 		{
 			name: "comment with func name",
 			lines: []string{
-				"// @spec SPEC-BE-001",
+				"// @implement SPEC-BE-001",
 				"// Processes user login request",
 				"func ProcessLogin() {}",
 			},
@@ -58,6 +64,7 @@ func TestExtractFunctionComment(t *testing.T) {
 			wantContains:   "Processes user login request",
 		},
 	}
+	// idd:ignore end
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -69,8 +76,9 @@ func TestExtractFunctionComment(t *testing.T) {
 	}
 }
 
+// @test TEST-INT_COL-022
 func TestExtractFunctionComment_OutOfBounds(t *testing.T) {
-	lines := []string{"// @spec SPEC-BE-001"}
+	lines := []string{"// @implement SPEC-BE-001"} // idd:ignore
 	result := extractFunctionComment(lines, 10)
 	if result != "" {
 		t.Errorf("Out of bounds should return empty, got %q", result)
@@ -82,39 +90,43 @@ func TestExtractFunctionComment_OutOfBounds(t *testing.T) {
 	}
 }
 
+// @test TEST-INT_COL-023
 func TestExtractFunctionComment_PointerReceiver(t *testing.T) {
+	// idd:ignore start
 	lines := []string{
-		"// @spec SPEC-BE-001",
+		"// @implement SPEC-BE-001",
 		"// Validates pointer receiver",
 		"func (s *Service) Validate() {}",
 	}
+	// idd:ignore end
 	result := extractFunctionComment(lines, 0)
 	if !strings.Contains(result, "Validates pointer receiver") {
 		t.Errorf("Expected comment with pointer receiver, got %q", result)
 	}
 }
 
+// @test TEST-INT_COL-024
 func TestCodeCollector_Collect(t *testing.T) {
 	tmpDir := t.TempDir()
 
+	// idd:ignore start
 	code := `package main
 
-// @spec SPEC-BE-001
-// Validates user credentials
+// @implement SPEC-CMD_IDD-001
 func Authenticate() error {
 	return nil
 }
 
-// @contract CONTRACT-BE-001
-// Defines payment interface
+// @implement SPEC-CMD_IDD-002
 type Payment interface {
 	Process(amount float64) error
 }
 
-// @test TEST-BE-001
+// @test TEST-CMD_IDD-001
 // Test authentication
 func TestAuth(t *testing.T) {}
 `
+	// idd:ignore end
 	err := os.WriteFile(filepath.Join(tmpDir, "main.go"), []byte(code), 0644)
 	if err != nil {
 		t.Fatalf("Failed to write test file: %v", err)
@@ -127,39 +139,41 @@ func TestAuth(t *testing.T) {}
 		t.Fatalf("Collect failed: %v", err)
 	}
 
-	if !set.Has("SPEC-BE-001") {
-		t.Error("Should have SPEC-BE-001")
+	if !set.Has("SPEC-CMD_IDD-001") {
+		t.Error("Should have SPEC-CMD_IDD-001")
 	}
-	if !set.Has("CONTRACT-BE-001") {
-		t.Error("Should have CONTRACT-BE-001")
+	if !set.Has("SPEC-CMD_IDD-002") {
+		t.Error("Should have SPEC-CMD_IDD-002")
 	}
-	if !set.Has("TEST-BE-001") {
-		t.Error("Should have TEST-BE-001")
+	if !set.Has("TEST-CMD_IDD-001") {
+		t.Error("Should have TEST-CMD_IDD-001")
 	}
 
-	specID, ok := set.Get("SPEC-BE-001")
+	specID, ok := set.Get("SPEC-CMD_IDD-001")
 	if !ok {
-		t.Fatal("SPEC-BE-001 not found")
+		t.Fatal("SPEC-CMD_IDD-001 not found")
 	}
 	if specID.Describe == "" {
-		t.Error("SPEC-BE-001 should have Describe extracted from function comment")
+		t.Error("SPEC-CMD_IDD-001 should have Describe extracted from function comment")
 	}
 	if specID.Origin != model.OriginCode {
 		t.Errorf("Origin = %v, want %v", specID.Origin, model.OriginCode)
 	}
 }
 
+// @test TEST-INT_COL-025
 func TestCodeCollector_CollectGoFile(t *testing.T) {
 	tmpDir := t.TempDir()
 
+	// idd:ignore start
 	code := `package main
 
-// @spec SPEC-BE-002
-// Handles user registration
+// @implement SPEC-CMD_IDD-002
 func Register() error {
 	return nil
 }
 `
+	// idd:ignore end
 	err := os.WriteFile(filepath.Join(tmpDir, "test.go"), []byte(code), 0644)
 	if err != nil {
 		t.Fatalf("Failed to write test file: %v", err)
@@ -172,21 +186,24 @@ func Register() error {
 		t.Fatalf("Collect failed: %v", err)
 	}
 
-	if !set.Has("SPEC-BE-002") {
-		t.Error("Should have SPEC-BE-002")
+	if !set.Has("SPEC-CMD_IDD-002") {
+		t.Error("Should have SPEC-CMD_IDD-002")
 	}
 }
 
+// @test TEST-INT_COL-026
 func TestCodeCollector_MultipleAnnotations(t *testing.T) {
 	tmpDir := t.TempDir()
 
+	// idd:ignore start
 	code := `package main
 
-// @spec SPEC-BE-001, SPEC-BE-002
+// @implement SPEC-CMD_IDD-001, SPEC-CMD_IDD-002
 func Multiple() error {
 	return nil
 }
 `
+	// idd:ignore end
 	err := os.WriteFile(filepath.Join(tmpDir, "main.go"), []byte(code), 0644)
 	if err != nil {
 		t.Fatalf("Failed to write test file: %v", err)
@@ -199,10 +216,10 @@ func Multiple() error {
 		t.Fatalf("Collect failed: %v", err)
 	}
 
-	if !set.Has("SPEC-BE-001") {
-		t.Error("Should have SPEC-BE-001")
+	if !set.Has("SPEC-CMD_IDD-001") {
+		t.Error("Should have SPEC-CMD_IDD-001")
 	}
-	if !set.Has("SPEC-BE-002") {
-		t.Error("Should have SPEC-BE-002")
+	if !set.Has("SPEC-CMD_IDD-002") {
+		t.Error("Should have SPEC-CMD_IDD-002")
 	}
 }

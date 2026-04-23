@@ -1,6 +1,8 @@
-package reporter
+// Package reporter provides output formatting for validation results.
 
-// @spec SPEC-BE-006
+// Spec: docs/internal/reporter/spec.md
+// Contract: docs/internal/reporter/contract.md
+package reporter
 
 import (
 	"encoding/json"
@@ -10,15 +12,20 @@ import (
 	"strings"
 	"time"
 
-	"github.com/jingxu9x/idd-link-validator/internal/config"
-	"github.com/jingxu9x/idd-link-validator/internal/model"
+	"github.com/jingxu9x/idd-cli/internal/config"
+	"github.com/jingxu9x/idd-cli/internal/model"
 )
 
+// Reporter generates validation reports in JSON and Markdown formats.
+// @implement SPEC-INT_RPT-001
 type Reporter struct {
 	cfg    *config.Config
 	format string
 }
 
+// New creates a new Reporter with the given configuration and output format.
+// Defaults to JSON if format is empty.
+// @implement SPEC-INT_RPT-003
 func New(cfg *config.Config, format string) *Reporter {
 	if format == "" {
 		format = "json"
@@ -26,6 +33,9 @@ func New(cfg *config.Config, format string) *Reporter {
 	return &Reporter{cfg: cfg, format: format}
 }
 
+// Generate creates a complete report from a validation result, including tool metadata,
+// config summary, and the validation result.
+// @implement SPEC-INT_RPT-004
 func (r *Reporter) Generate(result *model.ValidationResult) (*model.Report, error) {
 	report := &model.Report{
 		Tool:      "idd-cli",
@@ -41,6 +51,8 @@ func (r *Reporter) Generate(result *model.ValidationResult) (*model.Report, erro
 	return report, nil
 }
 
+// Write outputs the report to stdout or file based on output path.
+// @implement SPEC-INT_RPT-005
 func (r *Reporter) Write(report *model.Report, output string) error {
 	var writer io.Writer
 	if output == "" || output == "-" {

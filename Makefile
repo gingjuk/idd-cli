@@ -26,7 +26,7 @@ install:
 lint:
 	$(LINT) config verify
 	$(LINT) run ./...
-	npx markdownlint-cli2
+	markdownlint-cli2
 
 fmt:
 	gofmt -w .

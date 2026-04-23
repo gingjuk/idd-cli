@@ -1,3 +1,7 @@
+// Package collector provides code identifier collection functionality.
+
+// Spec: docs/internal/collector/spec.md
+// Contract: docs/internal/collector/contract.md
 package collector
 
 import (
@@ -7,19 +11,31 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/jingxu9x/idd-link-validator/internal/config"
-	"github.com/jingxu9x/idd-link-validator/internal/model"
-	"github.com/jingxu9x/idd-link-validator/pkg/pattern"
+	"github.com/jingxu9x/idd-cli/internal/config"
+	"github.com/jingxu9x/idd-cli/internal/model"
+	"github.com/jingxu9x/idd-cli/pkg/pattern"
 )
 
+// CodeCollector collects IDD annotations from source code files (Go, TypeScript,
+// JavaScript), extracting @implement, @test, and @test-contract annotations.
+//
+// @implement SPEC-INT_COL-003
 type CodeCollector struct {
 	cfg *config.Config
 }
 
+// NewCodeCollector creates a new CodeCollector with the given configuration.
+//
+// @implement SPEC-INT_COL-004
 func NewCodeCollector(cfg *config.Config) *CodeCollector {
 	return &CodeCollector{cfg: cfg}
 }
 
+// Collect collects IDD identifiers from code annotations in source files at the
+// target path. If targetPath is a directory, recursively walks to find all
+// .go, .ts, .tsx, .js files.
+//
+// @implement SPEC-INT_COL-024
 func (c *CodeCollector) Collect(ctx context.Context, targetPath string) (*model.IdentifierSet, error) {
 	set := model.NewIdentifierSet()
 
@@ -55,6 +71,7 @@ func (c *CodeCollector) Collect(ctx context.Context, targetPath string) (*model.
 	return set, nil
 }
 
+// collectFile scans a source file for IDD annotations and extracts identifiers.
 func (c *CodeCollector) collectFile(path string, set *model.IdentifierSet) error {
 	content, err := os.ReadFile(path)
 	if err != nil {
@@ -63,12 +80,33 @@ func (c *CodeCollector) collectFile(path string, set *model.IdentifierSet) error
 
 	lines := strings.Split(string(content), "\n")
 
+	ignoreScope := false
 	for i, line := range lines {
+		// Check for idd:ignore scope markers
+		if strings.Contains(line, "// idd:ignore start") || strings.Contains(line, "//idd:ignore-start") {
+			ignoreScope = true
+			continue
+		}
+		if strings.Contains(line, "// idd:ignore end") || strings.Contains(line, "//idd:ignore-end") {
+			ignoreScope = false
+			continue
+		}
+
+		// Check for single-line idd:ignore
+		if strings.Contains(line, "// idd:ignore") || strings.Contains(line, "//idd:ignore") {
+			continue
+		}
+
+		// Skip if inside ignore scope
+		if ignoreScope {
+			continue
+		}
+
 		for _, pat := range pattern.AnnotationPatterns {
 			matches := pat.Regex.FindAllStringSubmatch(line, -1)
 			for _, m := range matches {
 				if len(m) > 1 {
-					refs := pattern.SplitAnnotationRefs(m[1])
+					refs := SplitAnnotationRefs(m[1])
 					idType, _ := model.ParseIdentifierType(pat.Type)
 
 					ctx := ""
@@ -98,11 +136,10 @@ func (c *CodeCollector) collectFile(path string, set *model.IdentifierSet) error
 	return nil
 }
 
+// matchGlob matches a glob pattern against a full file path.
+// Supports ** for matching any number of directories.
 func matchGlob(pattern, fullPath string) bool {
 	if pattern == "**" {
-		return true
-	}
-	if strings.Contains(fullPath, pattern) {
 		return true
 	}
 	parts := strings.Split(pattern, "/**")
@@ -116,6 +153,7 @@ func matchGlob(pattern, fullPath string) bool {
 	return matched
 }
 
+// shouldIgnore checks if a path should be ignored based on configured ignore patterns.
 func (c *CodeCollector) shouldIgnore(path string) bool {
 	if len(c.cfg.Code.IgnorePaths) == 0 {
 		return false
@@ -128,8 +166,13 @@ func (c *CodeCollector) shouldIgnore(path string) bool {
 	return false
 }
 
+// funcDeclRegex matches function declarations in Go code.
 var funcDeclRegex = regexp.MustCompile(`^func\s+(?:\([^)]+\)\s+)?(\w+)\s*\(`)
 
+// extractFunctionComment extracts function name and preceding comments as context
+// for code annotations.
+//
+// extractFunctionComment extracts function name and preceding comments as context.
 func extractFunctionComment(lines []string, annotationLine int) string {
 	if annotationLine >= len(lines) {
 		return ""
@@ -173,4 +216,17 @@ func extractFunctionComment(lines []string, annotationLine int) string {
 		return strings.Join(commentLines, " ")
 	}
 	return ""
+}
+
+// SplitAnnotationRefs splits comma-separated IDD references from an annotation
+// and trims whitespace. Used to handle multiple references in a single
+// annotation like `@implement` `SPEC-INT_COL-001`, `SPEC-INT_COL-002`.
+//
+// @implement SPEC-INT_COL-025
+func SplitAnnotationRefs(s string) []string {
+	refs := strings.Split(s, ",")
+	for i, ref := range refs {
+		refs[i] = strings.TrimSpace(ref)
+	}
+	return refs
 }

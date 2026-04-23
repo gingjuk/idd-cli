@@ -17,7 +17,7 @@ This directory contains example IDD design documents showing the expected format
 
 ### Context
 
-The system needs to support multiple validation rules, multiple collector types, and bidirectional relationship checking. We need an architecture that allows easy extension.
+The system needs to support multiple validation rules, multiple collector types, and doc-link-consistency checking. We need an architecture that allows easy extension.
 
 ### Decision
 
@@ -57,7 +57,7 @@ We adopted a **graph-first architecture** where:
 
 - Easy to extend — Add new collectors by implementing interface
 - Independent validators — Each rule is a separate struct
-- Natural representation — Graphs model bidirectional relationships naturally
+- Natural representation — Graphs model doc-link-consistency relationships naturally
 - Testable — Each component can be tested in isolation
 
 **Related:** [SPEC-EXAMPLE-001](../spec.md#spec-example-001-user-authentication)

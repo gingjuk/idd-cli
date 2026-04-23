@@ -31,20 +31,66 @@ idd-cli/
 
 | Prefix | Meaning | Example |
 | ------ | ------- | ------- |
-| `SPEC-` | Functionality specification | `SPEC-BE-001` |
-| `CONTRACT-` | Interface/behavior contract | `CONTRACT-BE-001` |
-| `TEST-` | Test case | `TEST-BE-001` |
-| `DESIGN-` | Architecture design decision | `DESIGN-BE-001` |
+| `SPEC-` | Functionality specification | SPEC-XX-001 |
+| `TEST-` | Test case | TEST-XX-001 |
+
+Note: CONTRACT and DESIGN are no longer primary identifiers. contract.md describes contracts that implement SPECs. design.md describes architecture decisions.
 
 **Regex Patterns:**
 
 ```yaml
 identifier_patterns:
   spec: "SPEC-[A-Z]+-[0-9]+"
-  contract: "CONTRACT-[A-Z]+-[0-9]+"
   test: "TEST-[A-Z]+-[0-9]+"
-  design: "DESIGN-[A-Z]+-[0-9]+"
+  test_contract: "TEST-[A-Z]+-[0-9]+"
 ```
+
+## Ignoring Annotations
+
+In some cases, you may want idd-cli to ignore certain annotations. For example, test data strings containing IDD identifiers should not be treated as real annotations.
+
+### Nolint Directives
+
+```go
+// idd:ignore                    // Ignore this line only
+
+// idd:ignore-start              // Start ignoring (alternative syntax)
+// idd:ignore-end                // Stop ignoring (alternative syntax)
+```
+
+### Examples
+
+**Single line ignore:**
+
+```go
+code := `// idd:ignore
+// @implement SPEC-XX-001          // This annotation will NOT be collected
+`
+func TestRealAnnotation() {
+    // @test TEST-XX-001              // This annotation WILL be collected
+}
+```
+
+**Scope ignore:**
+
+```go
+// idd:ignore start
+code := `
+// @implement SPEC-XX-001      // Ignored
+// @test TEST-XX-001         // Ignored
+`
+// idd:ignore end
+
+func TestCode() {
+    // @test TEST-XX-001              // Collected normally
+}
+```
+
+### When to Use
+
+- **Test data**: Annotations inside backtick strings in test files should be wrapped with `// idd:ignore` or `// idd:ignore start/end`
+- **Example code**: Code examples in comments that show annotations but aren't meant to be collected
+- **Temporary annotations**: Annotations you're not ready to link yet
 
 ## Document Structure
 
@@ -53,10 +99,10 @@ Documents are organized by module in the `docs/` directory:
 ```text
 docs/
 ├── backend/
-│   ├── spec.md       # SPEC-BE-001, SPEC-BE-002
-│   ├── testing.md    # TEST-BE-001
-│   ├── contract.md   # CONTRACT-BE-001
-│   └── design.md     # DESIGN-BE-001
+│   ├── spec.md       # SPEC-XX-001, SPEC-XX-002
+│   ├── testing.md    # TEST-XX-001
+│   ├── contract.md   # Contract implementations (no CONTRACT identifiers)
+│   └── design.md     # Architecture decisions (no DESIGN identifiers)
 └── IDD.md            # This file
 ```
 
@@ -65,10 +111,14 @@ Each IDD document must include YAML frontmatter for tool parsing:
 ```yaml
 ---
 markers:
-  - id: SPEC-BE-001
+  - id: SPEC-XX-001
     name: Feature description
-  - id: CONTRACT-BE-001
-    name: Contract interface description
+
+related_files:
+  spec: spec.md
+  contract: contract.md
+  design: design.md
+  testing: testing.md
 ---
 ```
 
@@ -77,17 +127,24 @@ markers:
 ```markdown
 | ID | Title | Status | Tests |
 |----|-------|--------|-------|
-| [SPEC-BE-001](#spec-be-001) | Feature Name | Done | TEST-BE-001 |
+| [SPEC-XX-001](#spec-xx-001) | Feature Name | Done | TEST-XX-001 |
 ```
 
 ## Code Annotation Format
 
 ```go
-// @spec SPEC-BE-001: Feature description
-// @contract CONTRACT-BE-001: Interface specification
-// @test TEST-BE-001: Test verification
-// @design DESIGN-BE-001: Architecture design
+// @implement SPEC-XX-001: Feature description
 func DoSomething() {
+    // implementation
+}
+
+// @test TEST-XX-001: Test verification
+func TestDoSomething() {
+    // implementation
+}
+
+// @test-contract TEST-XX-002: Contract test for Login interface
+func TestDoSomethingContract() {
     // implementation
 }
 ```
@@ -109,21 +166,19 @@ docs:
     - "docs/**/*.md"
   identifier_patterns:
     spec: "SPEC-[A-Z]+-[0-9]+"
-    contract: "CONTRACT-[A-Z]+-[0-9]+"
     test: "TEST-[A-Z]+-[0-9]+"
-    design: "DESIGN-[A-Z]+-[0-9]+"
+    test_contract: "TEST-[A-Z]+-[0-9]+"
 
 code:
   patterns:
     - "**/*.go"
   annotations:
-    - "@spec"
-    - "@contract"
+    - "@implement"
     - "@test"
-    - "@design"
+    - "@test-contract"
 
 validation:
-  require_bidirectional: true
+  require_doc_link_consistency: true
   allow_orphans: false
   require_spec_test_coverage: true
 

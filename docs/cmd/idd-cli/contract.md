@@ -1,14 +1,14 @@
 ---
-markers:
-  - id: CONTRACT-BE-001
-    name: Collector Interface Contracts
-  - id: CONTRACT-BE-002
-    name: Engine Validation Contracts
+related_files:
+  spec: spec.md
+  contract: contract.md
+  design: design.md
+  testing: testing.md
 ---
 
 # Contracts (backend)
 
-## CONTRACT-BE-001: Collector Interface Contracts
+## Collector Interface Contracts
 
 **Status:** Done
 
@@ -49,7 +49,7 @@ type CodeCollector interface {
 | Source | Pattern |
 | ------ | ------- |
 | Documentation | `SPEC-[A-Z]+-[0-9]+`, `TEST-[A-Z]+-[0-9]+`, etc. |
-| Code | `@spec SPEC-XXX`, `@test TEST-XXX`, etc. |
+| Code | `@implement SPEC-XXX`, `@test TEST-XXX`, `@test-contract TEST-XXX`, etc. |
 
 ### Error Handling
 
@@ -58,11 +58,11 @@ type CodeCollector interface {
 - **Parse error** — Log warning, skip file, continue processing
 - **Empty file** — No identifiers found, return empty result
 
-**Related Specs:** `SPEC-BE-001`
+**Related Specs:** `SPEC-CMD_IDD-001`
 
 ---
 
-## CONTRACT-BE-002: Engine Validation Contracts
+## Engine Validation Contracts
 
 **Status:** Done
 
@@ -102,4 +102,4 @@ type Rule interface {
 | BidirectionalLinkRule | Verifies links are bidirectional |
 | OrphanRule | Detects unreferenced identifiers |
 
-**Related Specs:** `SPEC-BE-004`, `SPEC-BE-002`
+**Related Specs:** `SPEC-CMD_IDD-004`, `SPEC-CMD_IDD-002`

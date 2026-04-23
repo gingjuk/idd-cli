@@ -1,3 +1,7 @@
+// Package walk provides file traversal utilities.
+
+// Spec: docs/pkg/walk/spec.md
+// Contract: docs/pkg/walk/contract.md
 package walk
 
 import (
@@ -5,8 +9,12 @@ import (
 	"path/filepath"
 )
 
+// FileVisitor is a callback function type for file visitation.
+// @implement SPEC-PKG_WALK-001
 type FileVisitor func(path string, info os.FileInfo) error
 
+// Walk walks the filesystem matching files against the given glob patterns.
+// @implement SPEC-PKG_WALK-002
 func Walk(patterns []string, visitor FileVisitor) error {
 	visited := make(map[string]bool)
 
@@ -51,6 +59,8 @@ func Walk(patterns []string, visitor FileVisitor) error {
 	return nil
 }
 
+// MatchAnyExtensions checks if a file path has any of the specified extensions.
+// @implement SPEC-PKG_WALK-003
 func MatchAnyExtensions(path string, extensions []string) bool {
 	ext := filepath.Ext(path)
 	for _, e := range extensions {

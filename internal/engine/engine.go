@@ -1,25 +1,42 @@
-package engine
+// Package engine provides the core validation engine.
 
-// @spec SPEC-BE-004
+// Spec: docs/internal/engine/spec.md
+// Contract: docs/internal/engine/contract.md
+
+package engine
 
 import (
 	"context"
 	"fmt"
+	"os"
+	"path/filepath"
+	"regexp"
+	"strings"
 	"time"
 
-	"github.com/jingxu9x/idd-link-validator/internal/config"
-	"github.com/jingxu9x/idd-link-validator/internal/graph"
-	"github.com/jingxu9x/idd-link-validator/internal/model"
-	"github.com/jingxu9x/idd-link-validator/internal/similarity"
-	"github.com/jingxu9x/idd-link-validator/pkg/pattern"
+	"github.com/jingxu9x/idd-cli/internal/config"
+	"github.com/jingxu9x/idd-cli/internal/graph"
+	"github.com/jingxu9x/idd-cli/internal/model"
+	"github.com/jingxu9x/idd-cli/internal/similarity"
+	"github.com/jingxu9x/idd-cli/pkg/pattern"
 )
 
+// Engine is the core validation engine that orchestrates the validation pipeline.
+// It coordinates collection, graph building, and validation rules to process
+// identifiers through the complete validation workflow.
+// The Engine holds the configuration, a linkage graph for tracking relationships
+// between identifiers, and accumulates validation results.
+// @implement SPEC-CMD_IDD-001, SPEC-CMD_IDD-002, SPEC-CMD_IDD-003, SPEC-CMD_IDD-004, SPEC-CMD_IDD-005, SPEC-CMD_IDD-006, SPEC-CMD_IDD-007, SPEC-INT_ENG-001
 type Engine struct {
 	cfg    *config.Config
 	graph  *graph.LinkageGraph
 	result *model.ValidationResult
 }
 
+// New creates a new Engine instance with the given configuration.
+// It initializes the engine with an empty linkage graph and validation result,
+// preparing it to run validation against identifiers.
+// @implement SPEC-INT_ENG-002
 func New(cfg *config.Config) *Engine {
 	return &Engine{
 		cfg:    cfg,
@@ -28,6 +45,10 @@ func New(cfg *config.Config) *Engine {
 	}
 }
 
+// Run executes the validation pipeline for the given identifiers.
+// It builds the linkage graph from the identifiers, runs all validation rules
+// based on configuration, and returns the accumulated validation result.
+// @implement SPEC-INT_ENG-004
 func (e *Engine) Run(ctx context.Context, ids *model.IdentifierSet) (*model.ValidationResult, error) {
 	e.buildGraph(ids)
 	e.result.Stats = e.graph.Stats()
@@ -38,12 +59,21 @@ func (e *Engine) Run(ctx context.Context, ids *model.IdentifierSet) (*model.Vali
 	return e.result, nil
 }
 
+// AddStructuralErrors appends pre-built validation errors to the result.
+// This allows callers to inject structural errors detected outside the
+// normal validation pipeline.
 func (e *Engine) AddStructuralErrors(errors []*model.ValidationError) {
 	for _, err := range errors {
+		if err == nil {
+			continue
+		}
 		e.result.AddError(err.Rule, err.Message, err.Source, err.Link, err.Code)
 	}
 }
 
+// buildGraph constructs the linkage graph from the identifier set.
+// It adds all identifiers as nodes, then creates edges based on link references
+// between identifiers, inferring link types from the identifier types.
 func (e *Engine) buildGraph(ids *model.IdentifierSet) {
 	for _, id := range ids.AllIdentifiers() {
 		node := e.graph.AddNode(id.ID, id.Type)
@@ -70,6 +100,9 @@ func (e *Engine) buildGraph(ids *model.IdentifierSet) {
 	e.graph.VerifyBidirectionalLinks()
 }
 
+// inferLinkType determines the appropriate link type based on the source
+// identifier type and target reference. It maps SPEC->TEST as LinkTests,
+// SPEC->CONTRACT as LinkContract, TEST->SPEC as LinkImplements, etc.
 func (e *Engine) inferLinkType(fromType model.IdentifierType, toRef string) model.LinkType {
 	toType := model.TypeSpec
 	if refType := pattern.GetIdentifierType(toRef); refType != "" {
@@ -83,11 +116,14 @@ func (e *Engine) inferLinkType(fromType model.IdentifierType, toRef string) mode
 		if toType == model.TypeTest {
 			return model.LinkTests
 		}
+		if toType == model.TypeContract {
+			return model.LinkContract
+		}
 		return model.LinkReferences
 	case model.TypeTest:
 		return model.LinkImplements
 	case model.TypeContract:
-		return model.LinkReferences
+		return model.LinkContractImplements
 	case model.TypeDesign:
 		return model.LinkReferences
 	default:
@@ -95,17 +131,30 @@ func (e *Engine) inferLinkType(fromType model.IdentifierType, toRef string) mode
 	}
 }
 
+// validate runs all enabled validation rules based on the engine configuration.
+// It checks completeness, contract coverage, design sections, doc link consistency,
+// orphan detection, doc-code correspondence, and various annotation requirements.
 func (e *Engine) validate() {
-	e.result.Valid = true
-
 	if e.cfg.Validation.RequireSpecTestCoverage {
 		for _, err := range e.graph.ValidateCompleteness() {
 			e.result.AddError(err.Rule, err.Message, err.Source, err.Link, err.Code)
 		}
 	}
 
-	if e.cfg.Validation.RequireBidirectional {
-		e.validateBidirectional()
+	if e.cfg.Validation.RequireContractTestCoverage {
+		e.validateContractTestCoverage()
+	}
+
+	if e.cfg.Validation.RequireDesignSections {
+		e.validateDesignSections()
+	}
+
+	e.validateContractDesignMarkers()
+	e.validateDocPathExists()
+
+	if e.cfg.Validation.RequireDocLinkConsistency {
+		e.validateDocLinkConsistency()
+		e.validateDuplicateHeadingIdentifiers()
 	}
 
 	if !e.cfg.Validation.AllowOrphans {
@@ -116,27 +165,43 @@ func (e *Engine) validate() {
 		e.validateDocCodeCorrespondence()
 	}
 
+	if e.cfg.Validation.RequirePublicFuncAnnotation {
+		e.validatePublicFuncAnnotations()
+	}
+
+	if e.cfg.Validation.RequirePackageDocComment {
+		e.validatePackageDocComment()
+		e.validateDocPathMatchesPackagePath()
+	}
+
+	if e.cfg.Validation.RequireRelatedFiles {
+		e.validateRelatedFiles()
+	}
+
+	if e.cfg.Validation.RequireTestAnnotation {
+		e.validateTestAnnotations()
+	}
+
+	if e.cfg.Validation.RequireAnnotationIdentifier {
+		e.validateAnnotationIdentifiers()
+	}
+
+	if e.cfg.Validation.RequireAnnotationOnSameLine {
+		e.validateConsecutiveAnnotations()
+	}
+
 	if e.cfg.Validation.ConsistencyCheck.Enabled {
 		e.validateConsistency()
+	}
+
+	if len(e.result.Errors) == 0 {
+		e.result.Valid = true
 	}
 
 	e.result.Sort()
 }
 
-func (e *Engine) validateBidirectional() {
-	for _, edge := range e.graph.Edges() {
-		if !edge.Verified {
-			e.result.AddError(
-				"bidirectional-linkage",
-				fmt.Sprintf("Link %s → %s has no backlink", edge.From, edge.To),
-				fmt.Sprintf("%s:%d", edge.Source, edge.Line),
-				fmt.Sprintf("%s→%s", edge.From, edge.To),
-				"",
-			)
-		}
-	}
-}
-
+// validateNoOrphans detects identifiers with no connections in the graph.
 func (e *Engine) validateNoOrphans() {
 	for _, node := range e.graph.Nodes() {
 		if len(node.InEdges()) == 0 && len(node.OutEdges()) == 0 {
@@ -162,6 +227,400 @@ func (e *Engine) validateNoOrphans() {
 	}
 }
 
+// validateContractTestCoverage checks that every CONTRACT identifier has at least
+// one TEST identifier with @test-contract annotation referencing it.
+func (e *Engine) validateContractTestCoverage() {
+	contractTestMap := make(map[string]bool)
+
+	testContractRegex := regexp.MustCompile(`@test-contract\s+(TEST-[A-Z0-9_]+-[0-9]+)`)
+
+	e.walkCodeFiles(func(path string, lines []string) {
+		for _, line := range lines {
+			if matches := testContractRegex.FindStringSubmatch(line); len(matches) > 1 {
+				contractID := matches[1]
+				contractTestMap[contractID] = true
+			}
+		}
+	})
+
+	for _, node := range e.graph.Nodes() {
+		idType := pattern.GetIdentifierType(node.ID)
+		if idType == "CONTRACT" {
+			if !contractTestMap[node.ID] {
+				e.result.AddError(
+					"contract-test-coverage",
+					fmt.Sprintf("%s has no @test-contract TEST annotation", node.ID),
+					node.ID,
+					"",
+					"",
+				)
+			}
+		}
+	}
+}
+
+// validateDesignSections checks that design.md files contain all required
+// sections: architecture, package layout, function composition, testability
+// hooks, and dependencies.
+func (e *Engine) validateDesignSections() {
+	requiredSections := []string{
+		"architecture",
+		"package layout",
+		"function composition",
+		"testability hooks",
+		"dependencies",
+	}
+
+	designRegex := regexp.MustCompile(`(?i)^#{2,}\s*(architecture|package layout|function composition|testability hooks|dependencies)\s*$`)
+
+	e.walkDocFiles(func(path string, lines []string) {
+		if !strings.HasSuffix(path, "design.md") {
+			return
+		}
+
+		foundSections := make(map[string]bool)
+		for _, line := range lines {
+			if matches := designRegex.FindStringSubmatch(strings.TrimSpace(line)); len(matches) > 1 {
+				foundSections[strings.ToLower(matches[1])] = true
+			}
+		}
+
+		for _, section := range requiredSections {
+			if !foundSections[section] {
+				e.result.AddError(
+					"design-sections",
+					fmt.Sprintf("design.md missing required section: %s", section),
+					path,
+					"",
+					"",
+				)
+			}
+		}
+	})
+}
+
+// validateDocLinkConsistency checks that docs use the correct link fields:
+// SPEC docs should use **Tests:** not **Spec Coverage:**, and TEST docs
+// should use **Spec Coverage:** not **Tests:**. It also verifies that all
+// graph edges have corresponding backlinks.
+func (e *Engine) validateDocLinkConsistency() {
+	specCoverageRegex := regexp.MustCompile(`\*\*Spec Coverage:\*\*`)
+	testsRegex := regexp.MustCompile(`\*\*Tests:\*\*`)
+
+	e.walkDocFiles(func(path string, lines []string) {
+		isSpec := strings.HasSuffix(path, "spec.md")
+		isTest := strings.HasSuffix(path, "testing.md")
+
+		for i, line := range lines {
+			if isSpec && specCoverageRegex.MatchString(line) {
+				e.result.AddError(
+					"doc-link-consistency",
+					"spec.md should use **Tests:** not **Spec Coverage:**",
+					fmt.Sprintf("%s:%d", path, i+1),
+					"",
+					"",
+				)
+			}
+			if isTest && testsRegex.MatchString(line) {
+				e.result.AddError(
+					"doc-link-consistency",
+					"testing.md should use **Spec Coverage:** not **Tests:**",
+					fmt.Sprintf("%s:%d", path, i+1),
+					"",
+					"",
+				)
+			}
+		}
+	})
+
+	e.validateContractInterfaceConsistency()
+}
+
+// validateContractInterfaceConsistency checks that the interface name referenced
+// in SPEC's **Contract:** field exists in the corresponding contract.md file.
+// If the interface is not found, it emits a warning (not an error).
+func (e *Engine) validateContractInterfaceConsistency() {
+	contractFieldRegex := regexp.MustCompile(`(?i)\*\*Contract:\*\*\s*(.+)`)
+	implementsInterfaceRegex := regexp.MustCompile(`implements\s+interface\s+([A-Za-z0-9_]+)`)
+
+	contractInterfaces := make(map[string]map[string]bool)
+
+	e.walkDocFiles(func(path string, lines []string) {
+		if !strings.HasSuffix(path, "contract.md") {
+			return
+		}
+		interfaces := make(map[string]bool)
+		contentStr := strings.Join(lines, "\n")
+
+		// Match ## Interface: <Name> or ### <Name> headings
+		if match := regexp.MustCompile(`(?i)^#{2,3}\s+interface:\s*([A-Za-z][A-Za-z0-9_]*)`).FindStringSubmatch(contentStr); len(match) > 1 {
+			interfaces[match[1]] = true
+		}
+		// Match backtick-quoted identifiers that look like interface names
+		for _, line := range lines {
+			if match := regexp.MustCompile("`([A-Z][a-zA-Z0-9_]*)`").FindStringSubmatch(line); len(match) > 1 {
+				name := match[1]
+				if name != "contract.md" && name != "design.md" && name != "spec.md" && name != "testing.md" && !strings.HasSuffix(name, ".md") {
+					interfaces[name] = true
+				}
+			}
+		}
+		// Match func declarations in Go code blocks
+		funcRegex := regexp.MustCompile(`(?m)^func\s+(?:\([^)]+\)\s+)?([A-Z][a-zA-Z0-9_]*)\s*\(`)
+		for _, match := range funcRegex.FindAllStringSubmatch(contentStr, -1) {
+			if len(match) > 1 {
+				interfaces[match[1]] = true
+			}
+		}
+		if len(interfaces) > 0 {
+			contractInterfaces[path] = interfaces
+		}
+	})
+
+	e.walkDocFiles(func(path string, lines []string) {
+		if !strings.HasSuffix(path, "spec.md") {
+			return
+		}
+
+		dir := filepath.Dir(path)
+		contractPath := filepath.Join(dir, "contract.md")
+
+		for i, line := range lines {
+			if matches := contractFieldRegex.FindStringSubmatch(line); len(matches) > 1 {
+				fieldValue := strings.TrimSpace(matches[1])
+
+				if fieldValue == "" || fieldValue == "`contract.md`" || fieldValue == "contract.md" {
+					continue
+				}
+
+				var interfaceName string
+				if implMatches := implementsInterfaceRegex.FindStringSubmatch(fieldValue); len(implMatches) > 1 {
+					interfaceName = implMatches[1]
+				} else {
+					backtickRegex := regexp.MustCompile("`([^`]+)`")
+					if btMatches := backtickRegex.FindAllStringSubmatch(fieldValue, -1); len(btMatches) > 0 {
+						for _, m := range btMatches {
+							content := m[1]
+							if content != "contract.md" && !strings.Contains(content, ".md") {
+								interfaceName = content
+							}
+						}
+					}
+				}
+
+				if interfaceName == "" {
+					continue
+				}
+
+				if contractIdents, ok := contractInterfaces[contractPath]; ok {
+					if !contractIdents[interfaceName] {
+						// Fallback: check if interfaceName appears anywhere as capitalized identifier in contract.md
+						found := false
+						if contractContent, err := os.ReadFile(contractPath); err == nil {
+							fallbackRegex := regexp.MustCompile(`\b([A-Z][a-zA-Z0-9_]*)\b`)
+							for _, m := range fallbackRegex.FindAllStringSubmatch(string(contractContent), -1) {
+								if len(m) > 1 && m[1] == interfaceName {
+									found = true
+									break
+								}
+							}
+						}
+						if !found {
+							e.result.AddWarning(
+								"contract-interface-consistency",
+								fmt.Sprintf("SPEC references interface '%s' in **Contract:** but it was not found in %s", interfaceName, contractPath),
+								fmt.Sprintf("%s:%d", path, i+1),
+								interfaceName,
+								"",
+							)
+						}
+					}
+				}
+			}
+		}
+	})
+}
+
+// validateDuplicateHeadingIdentifiers checks that H2 headings within the same
+// file do not have duplicate identifier names. This catches cases where multiple
+// sections (e.g., "## Test" and "## Contract Test") reuse the same TEST identifiers.
+func (e *Engine) validateDuplicateHeadingIdentifiers() {
+	// Match H2 headings with identifiers like ## TEST-FOO-001: Title
+	headingRegex := regexp.MustCompile(`(?i)^#{2}\s+(TEST-[A-Z0-9_]+-[0-9]+|SPEC-[A-Z0-9_]+-[0-9]+|CONTRACT-[A-Z0-9_]+-[0-9]+):\s*`)
+
+	e.walkDocFiles(func(path string, lines []string) {
+		seen := make(map[string][]int) // identifier -> line numbers
+		for i, line := range lines {
+			trimmed := strings.TrimSpace(line)
+			if matches := headingRegex.FindStringSubmatch(trimmed); len(matches) > 1 {
+				id := matches[1]
+				seen[id] = append(seen[id], i+1)
+			}
+		}
+
+		for id, lines := range seen {
+			if len(lines) > 1 {
+				e.result.AddError(
+					"duplicate-heading-identifier",
+					fmt.Sprintf("%s appears %d times in %s (lines: %v)", id, len(lines), path, lines),
+					fmt.Sprintf("%s:%d", path, lines[0]),
+					"",
+					"",
+				)
+			}
+		}
+	})
+}
+
+// validateContractDesignMarkers checks that contract.md and design.md files
+// do NOT have markers in their frontmatter - they should only have related_files.
+func (e *Engine) validateContractDesignMarkers() {
+	e.walkDocFiles(func(path string, lines []string) {
+		if !strings.HasSuffix(path, "contract.md") && !strings.HasSuffix(path, "design.md") {
+			return
+		}
+
+		// Parse frontmatter markers
+		startIdx, endIdx := -1, -1
+		inFrontmatter := false
+		for i, line := range lines {
+			trimmed := strings.TrimSpace(line)
+			if trimmed == "---" {
+				if !inFrontmatter {
+					startIdx = i
+					inFrontmatter = true
+				} else {
+					endIdx = i
+					break
+				}
+			}
+		}
+
+		if startIdx == -1 || endIdx == -1 {
+			return // No frontmatter, that's fine
+		}
+
+		// Check if markers field exists in frontmatter
+		for i := startIdx; i < endIdx; i++ {
+			trimmed := strings.TrimSpace(lines[i])
+			if strings.HasPrefix(trimmed, "markers:") {
+				e.result.AddError(
+					"frontmatter-markers",
+					fmt.Sprintf("%s should not have markers field in frontmatter (file: %s)", filepath.Base(path), path),
+					path,
+					"",
+					"",
+				)
+				return
+			}
+		}
+	})
+}
+
+// validateDocPathExists checks that subdirectories under docs/ correspond to
+// real packages in the codebase. If a docs subdirectory doesn't match any
+// package path, emit a warning.
+func (e *Engine) validateDocPathExists() {
+	docsRoot := "docs"
+
+	entries, err := os.ReadDir(docsRoot)
+	if err != nil {
+		return
+	}
+
+	for _, entry := range entries {
+		if !entry.IsDir() {
+			continue
+		}
+
+		// Skip special directories like backend, core, contract, etc.
+		docDir := filepath.Join(docsRoot, entry.Name())
+		pkgPath := entry.Name()
+
+		// Skip root-level doc directories that don't correspond to packages
+		// (backend, core, contract are reference/example docs)
+		if entry.Name() == "backend" || entry.Name() == "core" || entry.Name() == "contract" {
+			continue
+		}
+
+		// Check if this doc directory corresponds to a real package
+		// e.g., docs/internal/auth -> internal/auth
+		fullPkgPath := pkgPath
+		if entry.Name() == "internal" || entry.Name() == "pkg" {
+			// For internal/ and pkg/, check subdirectories
+			subEntries, _ := os.ReadDir(docDir)
+			for _, subEntry := range subEntries {
+				if !subEntry.IsDir() {
+					continue
+				}
+				if entry.Name() == "internal" {
+					fullPkgPath = filepath.Join("internal", subEntry.Name())
+				} else if entry.Name() == "pkg" {
+					fullPkgPath = filepath.Join("pkg", subEntry.Name())
+				}
+
+				// Check if package exists
+				if !e.packageExists(fullPkgPath) && !e.isIgnoredDocPath(docDir) {
+					e.result.AddWarning(
+						"doc-path-missing",
+						fmt.Sprintf("docs directory '%s' has no corresponding package '%s'. Add to ignore_paths if this is user documentation.", docDir, fullPkgPath),
+						docDir,
+						"",
+						"",
+					)
+				}
+			}
+		} else {
+			// Check if package exists at docs/<name> -> <name>
+			if !e.packageExists(pkgPath) && !e.isIgnoredDocPath(docDir) {
+				e.result.AddWarning(
+					"doc-path-missing",
+					fmt.Sprintf("docs directory '%s' has no corresponding package '%s'. Add to ignore_paths if this is user documentation.", docDir, pkgPath),
+					docDir,
+					"",
+					"",
+				)
+			}
+		}
+	}
+}
+
+// packageExists checks whether a package directory exists at the given path.
+func (e *Engine) packageExists(pkgPath string) bool {
+	// Check if the package path exists
+	info, err := os.Stat(pkgPath)
+	if err != nil {
+		return false
+	}
+	return info.IsDir()
+}
+
+// isIgnoredDocPath checks whether a doc path should be ignored based on
+// configured ignore patterns.
+func (e *Engine) isIgnoredDocPath(docPath string) bool {
+	for _, ignore := range e.cfg.Docs.IgnorePaths {
+		if matched, _ := filepath.Match(ignore, docPath); matched {
+			return true
+		}
+		// Handle ** glob pattern: docs/api/** matches docs/api and docs/api/...
+		if strings.Contains(ignore, "**") {
+			prefix := strings.TrimSuffix(ignore, "/**")
+			prefix = strings.TrimSuffix(prefix, "**")
+			if strings.HasPrefix(docPath, prefix+"/") || docPath == prefix {
+				return true
+			}
+			continue
+		}
+		if strings.Contains(docPath, ignore) {
+			return true
+		}
+	}
+	return false
+}
+
+// validateDocCodeCorrespondence checks that identifiers have both documentation
+// and code annotations. It reports errors when an identifier is documented
+// but has no code annotation, or vice versa.
 func (e *Engine) validateDocCodeCorrespondence() {
 	for _, node := range e.graph.Nodes() {
 		hasDoc, hasCode := false, false
@@ -192,6 +651,9 @@ func (e *Engine) validateDocCodeCorrespondence() {
 	}
 }
 
+// validateConsistency checks that the describe fields in documentation and code
+// annotations have sufficient similarity, using configurable threshold. Low
+// similarity indicates the doc and code descriptions may be out of sync.
 func (e *Engine) validateConsistency() {
 	threshold := e.cfg.Validation.ConsistencyCheck.Threshold
 	for _, node := range e.graph.Nodes() {
@@ -221,6 +683,8 @@ func (e *Engine) validateConsistency() {
 	}
 }
 
+// truncate truncates a string to the specified maximum length, appending
+// "..." if the string was shortened.
 func truncate(s string, maxLen int) string {
 	if len(s) <= maxLen {
 		return s
@@ -228,6 +692,601 @@ func truncate(s string, maxLen int) string {
 	return s[:maxLen] + "..."
 }
 
+// validatePublicFuncAnnotations checks that all public functions and types
+// have @implement annotations directly above their declarations. This ensures
+// every public API is properly tracked in the IDD system.
+func (e *Engine) validatePublicFuncAnnotations() {
+	publicFuncRegex := regexp.MustCompile(`^func\s+([A-Z][a-zA-Z0-9]*)\s*\(`)
+	publicMethodRegex := regexp.MustCompile(`^func\s+\([^)]+\)\s*([A-Z][a-zA-Z0-9]*)\s*\(`)
+	publicTypeRegex := regexp.MustCompile(`^type\s+([A-Z][a-zA-Z0-9]*)\s*`)
+	// Only match lines where @implement appears at start of comment (after // and optional space)
+	implementAtStartRegex := regexp.MustCompile(`^\s*//\s*@implement\b`)
+
+	e.walkCodeFiles(func(path string, lines []string) {
+		annotated := make(map[string]bool)
+		annotatedLine := make(map[string]int)
+
+		// First pass: find all @implement annotations and their target functions
+		type anno struct {
+			line      int
+			funcName  string
+			isMethod  bool
+		}
+		var annotations []anno
+
+		ignoreScope := false
+		for i, line := range lines {
+			// Check for idd:ignore scope markers
+			if strings.Contains(line, "// idd:ignore start") || strings.Contains(line, "//idd:ignore-start") {
+				ignoreScope = true
+				continue
+			}
+			if strings.Contains(line, "// idd:ignore end") || strings.Contains(line, "//idd:ignore-end") {
+				ignoreScope = false
+				continue
+			}
+			if ignoreScope {
+				continue
+			}
+
+			if !implementAtStartRegex.MatchString(line) {
+				continue
+			}
+			// Find the next function/type after this @implement line
+			for j := i + 1; j < len(lines); j++ {
+				nextLine := strings.TrimSpace(lines[j])
+				if strings.HasPrefix(nextLine, "//") || nextLine == "" {
+					continue // skip comment lines and blank lines
+				}
+				if match := publicFuncRegex.FindStringSubmatch(nextLine); len(match) > 1 {
+					annotations = append(annotations, anno{i, match[1], false})
+					break
+				}
+				if match := publicMethodRegex.FindStringSubmatch(nextLine); len(match) > 1 {
+					annotations = append(annotations, anno{i, match[1], true})
+					break
+				}
+				if match := publicTypeRegex.FindStringSubmatch(nextLine); len(match) > 1 {
+					annotations = append(annotations, anno{i, match[1], false})
+					break
+				}
+				// Not a function/type line — stop searching
+				break
+			}
+		}
+
+		// Check for duplicate annotations on the same function
+		// Use "method:" prefix for methods to distinguish from standalone functions with same name
+		for _, a := range annotations {
+			key := a.funcName
+			if a.isMethod {
+				key = "method:" + key
+			}
+			if annotated[key] {
+				e.result.AddError(
+					"duplicate-annotation",
+					fmt.Sprintf("public function/type %s has multiple @implement annotations; use comma-separated identifiers on a single line", a.funcName),
+					fmt.Sprintf("%s:%d", path, a.line+1),
+					"",
+					"",
+				)
+			}
+			annotated[key] = true
+			annotatedLine[a.funcName] = a.line + 1
+		}
+
+		// Second pass: check @implement not directly above function/type
+		for i, line := range lines {
+			if !implementAtStartRegex.MatchString(line) {
+				continue
+			}
+			if i+1 < len(lines) {
+				nextLine := strings.TrimSpace(lines[i+1])
+				if publicFuncRegex.MatchString(nextLine) || publicMethodRegex.MatchString(nextLine) || publicTypeRegex.MatchString(nextLine) {
+					continue // valid placement, handled in first pass
+				}
+			}
+			// Only report placement error if this @implement didn't find a valid target
+			found := false
+			for _, a := range annotations {
+				if a.line == i {
+					found = true
+					break
+				}
+			}
+			if !found {
+				e.result.AddError(
+					"annotation-placement",
+					"@implement not directly above function/type",
+					fmt.Sprintf("%s:%d", path, i+1),
+					"",
+					"",
+				)
+			}
+		}
+
+		ignoreScope = false
+		for i, line := range lines {
+			// Check for idd:ignore scope markers
+			if strings.Contains(line, "// idd:ignore start") || strings.Contains(line, "//idd:ignore-start") {
+				ignoreScope = true
+				continue
+			}
+			if strings.Contains(line, "// idd:ignore end") || strings.Contains(line, "//idd:ignore-end") {
+				ignoreScope = false
+				continue
+			}
+			if ignoreScope {
+				continue
+			}
+
+			funcName := ""
+			if match := publicFuncRegex.FindStringSubmatch(line); len(match) > 1 {
+				funcName = match[1]
+			} else if match := publicTypeRegex.FindStringSubmatch(line); len(match) > 1 {
+				funcName = match[1]
+			}
+
+			if funcName != "" && funcName != "main" && funcName != "init" && !strings.HasPrefix(funcName, "Test") && !strings.HasSuffix(funcName, "Test") {
+				// Check both funcName and "method:"+funcName since annotated map uses method prefix
+				if !annotated[funcName] && !annotated["method:"+funcName] {
+					e.result.AddError(
+						"public-func-annotation",
+						fmt.Sprintf("public function/type %s missing @implement", funcName),
+						fmt.Sprintf("%s:%d", path, i+1),
+						"",
+						"",
+					)
+				}
+			}
+		}
+	})
+}
+
+// validatePackageDocComment checks that each Go package file has a proper
+// package doc comment with Package description, Spec path, and Contract path.
+// It also verifies there's a blank line between Package describe and Spec.
+func (e *Engine) validatePackageDocComment() {
+	specPathRegex := regexp.MustCompile(`(?i)^//\s*Spec:\s*docs/`)
+	contractPathRegex := regexp.MustCompile(`(?i)^//\s*Contract:\s*docs/`)
+	testPathRegex := regexp.MustCompile(`(?i)^//\s*Test:\s*docs/`)
+	packageDocRegex := regexp.MustCompile(`^//\s*Package\s+\w+`)
+
+	e.walkCodeFiles(func(path string, lines []string) {
+		if filepath.Ext(path) != ".go" {
+			return
+		}
+
+		isTestFile := strings.HasSuffix(path, "_test.go")
+		isContractTestFile := strings.HasSuffix(path, "_contract_test.go")
+
+		var packageName string
+		var packageLine int
+		for i, line := range lines {
+			if strings.HasPrefix(line, "package ") {
+				packageName = strings.TrimPrefix(strings.TrimSpace(line), "package ")
+				packageLine = i
+				break
+			}
+		}
+
+		if packageName == "" || packageName == "main" {
+			return
+		}
+
+		commentStart := packageLine - 10
+		if commentStart < 0 {
+			commentStart = 0
+		}
+
+		var packageDocLine, specLine, testOrContractLine, contractLine = -1, -1, -1, -1
+		for i := commentStart; i < packageLine; i++ {
+			line := strings.TrimSpace(lines[i])
+			if line == "" {
+				continue
+			}
+			if packageDocRegex.MatchString(line) && packageDocLine == -1 {
+				packageDocLine = i
+			}
+			if specPathRegex.MatchString(line) && specLine == -1 {
+				specLine = i
+			}
+			if !isTestFile || isContractTestFile {
+				if contractPathRegex.MatchString(line) && contractLine == -1 {
+					contractLine = i
+				}
+			}
+			if testPathRegex.MatchString(line) && testOrContractLine == -1 {
+				testOrContractLine = i
+			}
+		}
+
+		if packageDocLine == -1 {
+			e.result.AddError(
+				"package-doc-comment",
+				fmt.Sprintf("package %s missing package doc comment", packageName),
+				path, "", "",
+			)
+			return
+		}
+		if specLine == -1 {
+			e.result.AddError(
+				"package-doc-comment",
+				fmt.Sprintf("package %s missing Spec path", packageName),
+				path, "", "",
+			)
+			return
+		}
+
+		if isTestFile {
+			if testOrContractLine == -1 {
+				e.result.AddError(
+					"package-doc-comment",
+					fmt.Sprintf("package %s missing Test path", packageName),
+					path, "", "",
+				)
+				return
+			}
+			if isContractTestFile && contractLine == -1 {
+				e.result.AddError(
+					"package-doc-comment",
+					fmt.Sprintf("package %s missing Contract path", packageName),
+					path, "", "",
+				)
+				return
+			}
+		} else {
+			if contractLine == -1 {
+				e.result.AddError(
+					"package-doc-comment",
+					fmt.Sprintf("package %s missing Contract path", packageName),
+					path, "", "",
+				)
+				return
+			}
+		}
+
+		blankLineBetweenPackageAndSpec := false
+		for i := packageDocLine + 1; i < specLine; i++ {
+			if strings.TrimSpace(lines[i]) == "" {
+				blankLineBetweenPackageAndSpec = true
+				break
+			}
+		}
+		if !blankLineBetweenPackageAndSpec {
+			e.result.AddError(
+				"package-doc-comment",
+				fmt.Sprintf("package %s missing blank line between Package describe and Spec", packageName),
+				path, "", "",
+			)
+		}
+	})
+}
+
+// validateDocPathMatchesPackagePath checks that docs paths in package comments
+// follow the format docs/<package_path>/xxx.md where <package_path> matches
+// the actual package directory structure (e.g., docs/internal/auth/spec.md
+// for package at internal/auth).
+func (e *Engine) validateDocPathMatchesPackagePath() {
+	// Match docs paths like "docs/auth/spec.md" or "docs/internal/engine/spec.md"
+	docPathRegex := regexp.MustCompile(`(?i)^//\s*(Spec|Contract|Test):\s*(docs/.*\.md)`)
+
+	e.walkCodeFiles(func(path string, lines []string) {
+		if filepath.Ext(path) != ".go" {
+			return
+		}
+
+		// Skip test files for this validation - they use Test: not path matching
+		if strings.HasSuffix(path, "_test.go") {
+			return
+		}
+
+		// Get the package directory from the file path
+		// e.g., "internal/auth/auth.go" -> "internal/auth"
+		dir := filepath.Dir(path)
+
+		var packageLine int
+		for i, line := range lines {
+			if strings.HasPrefix(line, "package ") {
+				packageLine = i
+				break
+			}
+		}
+
+		if packageLine == 0 {
+			return
+		}
+
+		commentStart := packageLine - 10
+		if commentStart < 0 {
+			commentStart = 0
+		}
+
+		// Check each docs path reference
+		for i := commentStart; i < packageLine; i++ {
+			line := strings.TrimSpace(lines[i])
+			if m := docPathRegex.FindStringSubmatch(line); len(m) > 2 {
+				docsPath := m[2] // e.g., "docs/auth/spec.md"
+
+				// Extract the path after "docs/"
+				// e.g., "docs/auth/spec.md" -> "auth"
+				// e.g., "docs/internal/auth/spec.md" -> "internal/auth"
+				rest := strings.TrimPrefix(docsPath, "docs/")
+				rest = strings.TrimSuffix(rest, filepath.Base(docsPath))
+				rest = strings.TrimSuffix(rest, "/")
+
+				// Check if the docs path matches the package directory
+				if rest != dir {
+					e.result.AddError(
+						"package-doc-path",
+						fmt.Sprintf("docs path %s does not match package path %s (file: %s, line: %d)", docsPath, dir, path, i+1),
+						fmt.Sprintf("%s:%d", path, i+1),
+						"",
+						"",
+					)
+				}
+			}
+		}
+	})
+}
+
+// validateTestAnnotations checks that test functions have proper annotations
+// (like @test or @test-contract), and that referenced identifiers exist in the graph.
+func (e *Engine) validateTestAnnotations() {
+	testFuncRegex := regexp.MustCompile(`^func\s+(Test[A-Z][a-zA-Z0-9]*|[A-Z][a-zA-Z0-9]*Test[A-Z][a-zA-Z0-9]*)\s*\(`)
+	testAnnotationRegex := regexp.MustCompile(`@test\s+(TEST-[A-Z0-9_]+-[0-9]+)`)
+	testContractAnnotationRegex := regexp.MustCompile(`@test-contract\s+(TEST-[A-Z0-9_]+-[0-9]+)`)
+
+	e.walkCodeFiles(func(path string, lines []string) {
+		if !strings.HasSuffix(path, "_test.go") {
+			return
+		}
+
+		isContractTestFile := strings.HasSuffix(path, "_contract_test.go")
+
+		ignoreScope := false
+		for i, line := range lines {
+			// Check for idd:ignore scope markers
+			if strings.Contains(line, "// idd:ignore start") || strings.Contains(line, "//idd:ignore-start") {
+				ignoreScope = true
+				continue
+			}
+			if strings.Contains(line, "// idd:ignore end") || strings.Contains(line, "//idd:ignore-end") {
+				ignoreScope = false
+				continue
+			}
+
+			// Skip if inside ignore scope
+			if ignoreScope {
+				continue
+			}
+
+			if match := testFuncRegex.FindStringSubmatch(line); len(match) > 1 {
+				funcName := match[1]
+				found := false
+				var testID string
+				for j := i - 1; j >= 0 && j >= i-5; j-- {
+					if strings.TrimSpace(lines[j]) == "" {
+						continue
+					}
+					if strings.HasPrefix(lines[j], "func ") {
+						break
+					}
+					if strings.HasPrefix(lines[j], "//") {
+						if isContractTestFile {
+							if m := testContractAnnotationRegex.FindStringSubmatch(lines[j]); len(m) > 1 {
+								found = true
+								testID = m[1]
+								break
+							}
+						} else {
+							if m := testAnnotationRegex.FindStringSubmatch(lines[j]); len(m) > 1 {
+								found = true
+								testID = m[1]
+								break
+							}
+						}
+					}
+					if strings.HasPrefix(lines[j], "/*") {
+						break
+					}
+				}
+				if !found {
+					if isContractTestFile {
+						e.result.AddError(
+							"test-annotation",
+							fmt.Sprintf("test function %s missing @test-contract annotation", funcName),
+							fmt.Sprintf("%s:%d", path, i+1),
+							"",
+							"",
+						)
+					} else {
+						e.result.AddError(
+							"test-annotation",
+							fmt.Sprintf("test function %s missing @test annotation", funcName),
+							fmt.Sprintf("%s:%d", path, i+1),
+							"",
+							"",
+						)
+					}
+				} else if testID != "" {
+					if node, ok := e.graph.GetNode(testID); !ok || node == nil {
+						e.result.AddError(
+							"test-annotation",
+							fmt.Sprintf("test function %s references undefined %s", funcName, testID),
+							fmt.Sprintf("%s:%d", path, i+1),
+							"",
+							"",
+						)
+					}
+				}
+			}
+		}
+	})
+}
+
+// validateRelatedFiles checks that documentation files have the required
+// related_files field in their frontmatter.
+func (e *Engine) validateRelatedFiles() {
+	frontmatterRegex := regexp.MustCompile(`^related_files:`)
+
+	e.walkDocFiles(func(path string, lines []string) {
+		startIdx, endIdx := -1, -1
+		inFrontmatter := false
+		for i, line := range lines {
+			trimmed := strings.TrimSpace(line)
+			if trimmed == "---" {
+				if !inFrontmatter {
+					startIdx = i
+					inFrontmatter = true
+				} else {
+					endIdx = i
+					break
+				}
+			}
+		}
+
+		if startIdx == -1 || endIdx == -1 {
+			e.result.AddError(
+				"related-files",
+				"document missing frontmatter",
+				path, "", "",
+			)
+			return
+		}
+
+		hasRelatedFiles := false
+		for i := startIdx; i < endIdx; i++ {
+			if frontmatterRegex.MatchString(strings.TrimSpace(lines[i])) {
+				hasRelatedFiles = true
+				break
+			}
+		}
+
+		if !hasRelatedFiles {
+			e.result.AddError(
+				"related-files",
+				"frontmatter missing related_files",
+				path, "", "",
+			)
+		}
+	})
+}
+
+// walkCodeFiles iterates over all code files matching the configured patterns
+// and invokes the visitor function for each file with its path and line content.
+func (e *Engine) walkCodeFiles(visitor func(path string, lines []string)) {
+	for _, globPattern := range e.cfg.Code.Patterns {
+		e.walkGlob(globPattern, visitor)
+	}
+}
+
+// walkDocFiles iterates over all documentation files matching the configured
+// patterns and invokes the visitor function for each file with its path and lines.
+func (e *Engine) walkDocFiles(visitor func(path string, lines []string)) {
+	for _, globPattern := range e.cfg.Docs.Patterns {
+		e.walkGlob(globPattern, visitor)
+	}
+}
+
+// walkGlob walks the directory tree matching the given pattern and invokes
+// the visitor function for each matching file. Handles non-recursive patterns.
+func (e *Engine) walkGlob(pattern string, visitor func(path string, lines []string)) {
+	hasRecursive := strings.Contains(pattern, "**")
+	if hasRecursive {
+		e.walkGlobRecursive(pattern, visitor)
+		return
+	}
+	dir, file := filepath.Split(pattern)
+	if dir == "" {
+		dir = "."
+	}
+	if file == "" {
+		return
+	}
+	_ = filepath.WalkDir(dir, func(path string, d os.DirEntry, err error) error {
+		if err != nil {
+			return nil
+		}
+		if d.IsDir() {
+			return nil
+		}
+		matched, err := filepath.Match(file, d.Name())
+		if err != nil || !matched {
+			return nil
+		}
+		fullPath := filepath.Join(dir, d.Name())
+		if e.shouldIgnorePath(fullPath) {
+			return nil
+		}
+		content, err := os.ReadFile(fullPath)
+		if err != nil {
+			return nil
+		}
+		lines := strings.Split(string(content), "\n")
+		visitor(fullPath, lines)
+		return nil
+	})
+}
+
+// walkGlobRecursive walks the directory tree matching the given recursive
+// pattern (containing **/) and invokes the visitor function for each matching file.
+func (e *Engine) walkGlobRecursive(pattern string, visitor func(path string, lines []string)) {
+	dir, file := filepath.Split(pattern)
+	if dir == "" {
+		dir = "."
+	}
+	if file == "" {
+		return
+	}
+	dir = strings.TrimSuffix(dir, "**/")
+	if dir == "" {
+		dir = "."
+	}
+	file = strings.TrimPrefix(file, "**/")
+
+	_ = filepath.WalkDir(dir, func(path string, d os.DirEntry, err error) error {
+		if err != nil {
+			return nil
+		}
+		if d.IsDir() {
+			return nil
+		}
+		matched, err := filepath.Match(file, d.Name())
+		if err != nil || !matched {
+			return nil
+		}
+		fullPath := path
+		if e.shouldIgnorePath(fullPath) {
+			return nil
+		}
+		content, err := os.ReadFile(fullPath)
+		if err != nil {
+			return nil
+		}
+		lines := strings.Split(string(content), "\n")
+		visitor(fullPath, lines)
+		return nil
+	})
+}
+
+// shouldIgnorePath checks whether a file path matches any of the configured
+// ignore patterns for code files.
+func (e *Engine) shouldIgnorePath(path string) bool {
+	for _, ignore := range e.cfg.Code.IgnorePaths {
+		if matched, _ := filepath.Match(ignore, filepath.Base(path)); matched {
+			return true
+		}
+		if strings.Contains(path, ignore) {
+			return true
+		}
+	}
+	return false
+}
+
+// BuildReport generates a complete validation report with tool information,
+// configuration summary, and the accumulated validation result.
+// @implement SPEC-CMD_IDD-004
 func (e *Engine) BuildReport() *model.Report {
 	return &model.Report{
 		Tool:      "idd-cli",

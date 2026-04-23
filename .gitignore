@@ -6,6 +6,8 @@ bin/
 *.dll
 *.so
 *.dylib
+idd
+idd-cli
 
 # Test binary
 *.test
@@ -35,3 +37,6 @@ go.work
 
 # IDD
 .planning
+
+# Agent
+.omc

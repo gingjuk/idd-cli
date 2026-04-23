@@ -7,7 +7,7 @@
 go build -o bin/idd-cli ./cmd/idd-cli
 
 # Or use go install
-go install github.com/jingxu9x/idd-link-validator/cmd/idd-cli@latest
+go install github.com/jingxu9x/idd-cli/cmd/idd-cli@latest
 
 # Or use Make (binary name in Makefile is "idd-cli")
 make build
@@ -53,7 +53,7 @@ Format: `TYPE-MODULE-NUMBER` (e.g., `SPEC-BE-001`, `TEST-BE-001`)
 
 Pattern in `.idd.yaml`: `SPEC-[A-Z]+-[0-9]+`
 
-Code annotations: `@spec`, `@contract`, `@test`, `@design`
+Code annotations: `@implement`, `@test`, `@test-contract`
 
 ## Config Loading
 
@@ -78,6 +78,7 @@ Trust code over README for implementation details.
 - Tests exist in `internal/graph/graph_test.go` and `internal/model/*_test.go`
 - Most packages lack test coverage
 - Run with `-race` flag (CI requirement)
+- **Use table-driven tests** to organize test cases grouped by scenario
 
 ## IDD Documentation System
 
@@ -115,4 +116,4 @@ If validation fails, fix errors before committing. Common issues:
 
 - Doc markers not wrapped in backticks (e.g., use `` `SPEC-BE-001` `` not `SPEC-BE-001`)
 - Frontmatter markers must match actual heading content
-- All identifiers must have bidirectional links
+- All identifiers must have doc-link-consistency

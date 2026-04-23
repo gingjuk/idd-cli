@@ -1,5 +1,7 @@
 // Package model defines the core data structures for IDD link validation.
-// @spec SPEC-BE-005
+
+// Spec: docs/internal/model/spec.md
+// Contract: docs/internal/model/contract.md
 package model
 
 import (
@@ -9,6 +11,7 @@ import (
 )
 
 // IdentifierType represents the type of IDD identifier.
+// @implement SPEC-INT_MOD-001
 type IdentifierType string
 
 const (
@@ -18,7 +21,8 @@ const (
 	TypeDesign   IdentifierType = "DESIGN"
 )
 
-// ParseIdentifierType converts a string to IdentifierType.
+// ParseIdentifierType parses identifier type from string representation.
+// @implement SPEC-INT_MOD-001
 func ParseIdentifierType(s string) (IdentifierType, error) {
 	switch strings.ToUpper(s) {
 	case "SPEC":
@@ -34,7 +38,8 @@ func ParseIdentifierType(s string) (IdentifierType, error) {
 	}
 }
 
-// Origin indicates where an identifier was found.
+// Origin indicates where an identifier was found (doc or code).
+// @implement SPEC-INT_MOD-014
 type Origin string
 
 const (
@@ -43,6 +48,7 @@ const (
 )
 
 // Identifier represents a single IDD identifier found in docs or code.
+// @implement SPEC-INT_MOD-018
 type Identifier struct {
 	ID       string
 	Type     IdentifierType
@@ -55,7 +61,8 @@ type Identifier struct {
 	Origin   Origin
 }
 
-// NewIdentifier creates a new identifier with the given fields.
+// NewIdentifier creates a new identifier with given fields.
+// @implement SPEC-INT_MOD-002
 func NewIdentifier(id string, idType IdentifierType, title, source string, line int) *Identifier {
 	return &Identifier{
 		ID:     id,
@@ -70,6 +77,7 @@ func NewIdentifier(id string, idType IdentifierType, title, source string, line 
 }
 
 // NewIdentifierWithDescribe creates a new identifier with describe field.
+// @implement SPEC-INT_MOD-002
 func NewIdentifierWithDescribe(id string, idType IdentifierType, title, describe, source string, line int) *Identifier {
 	return &Identifier{
 		ID:       id,
@@ -85,16 +93,19 @@ func NewIdentifierWithDescribe(id string, idType IdentifierType, title, describe
 }
 
 // AddLink adds a forward reference from this identifier.
+// @implement SPEC-INT_MOD-003
 func (i *Identifier) AddLink(ref string) {
 	i.Links = append(i.Links, ref)
 }
 
 // SetOrigin sets the origin of this identifier.
+// @implement SPEC-INT_MOD-017
 func (i *Identifier) SetOrigin(origin Origin) {
 	i.Origin = origin
 }
 
-// IdentifierSet is a collection of all collected identifiers.
+// IdentifierSet stores identifiers by type and ID.
+// @implement SPEC-INT_MOD-004
 type IdentifierSet struct {
 	Specs     []*Identifier
 	Contracts []*Identifier
@@ -105,6 +116,7 @@ type IdentifierSet struct {
 }
 
 // NewIdentifierSet creates a new empty identifier set.
+// @implement SPEC-INT_MOD-004
 func NewIdentifierSet() *IdentifierSet {
 	return &IdentifierSet{
 		Specs:     make([]*Identifier, 0),
@@ -116,6 +128,7 @@ func NewIdentifierSet() *IdentifierSet {
 }
 
 // Add adds an identifier to the set.
+// @implement SPEC-INT_MOD-004
 func (s *IdentifierSet) Add(id *Identifier) {
 	s.byID[id.ID] = append(s.byID[id.ID], id)
 	switch id.Type {
@@ -130,7 +143,8 @@ func (s *IdentifierSet) Add(id *Identifier) {
 	}
 }
 
-// Get returns the first identifier by ID (for backward compatibility).
+// Get returns the first identifier by ID.
+// @implement SPEC-INT_MOD-005
 func (s *IdentifierSet) Get(id string) (*Identifier, bool) {
 	ids, ok := s.byID[id]
 	if !ok || len(ids) == 0 {
@@ -140,17 +154,20 @@ func (s *IdentifierSet) Get(id string) (*Identifier, bool) {
 }
 
 // GetAll returns all identifiers with the given ID.
+// @implement SPEC-INT_MOD-005
 func (s *IdentifierSet) GetAll(id string) []*Identifier {
 	return s.byID[id]
 }
 
 // Has returns true if the identifier exists in the set.
+// @implement SPEC-INT_MOD-005
 func (s *IdentifierSet) Has(id string) bool {
 	ids, ok := s.byID[id]
 	return ok && len(ids) > 0
 }
 
 // All returns all unique identifiers as a slice (one per ID).
+// @implement SPEC-INT_MOD-006
 func (s *IdentifierSet) All() []*Identifier {
 	result := make([]*Identifier, 0, len(s.byID))
 	for _, ids := range s.byID {
@@ -162,6 +179,7 @@ func (s *IdentifierSet) All() []*Identifier {
 }
 
 // AllIdentifiers returns all identifiers including duplicates (multiple origins).
+// @implement SPEC-INT_MOD-006
 func (s *IdentifierSet) AllIdentifiers() []*Identifier {
 	result := make([]*Identifier, 0)
 	for _, ids := range s.byID {
@@ -171,6 +189,7 @@ func (s *IdentifierSet) AllIdentifiers() []*Identifier {
 }
 
 // ByOrigin returns all identifiers with the specified origin.
+// @implement SPEC-INT_MOD-004
 func (s *IdentifierSet) ByOrigin(origin Origin) []*Identifier {
 	var result []*Identifier
 	for _, ids := range s.byID {
@@ -184,6 +203,7 @@ func (s *IdentifierSet) ByOrigin(origin Origin) []*Identifier {
 }
 
 // HasOrigin returns true if at least one identifier with the given ID has the specified origin.
+// @implement SPEC-INT_MOD-004
 func (s *IdentifierSet) HasOrigin(id string, origin Origin) bool {
 	ids, ok := s.byID[id]
 	if !ok {
@@ -198,11 +218,13 @@ func (s *IdentifierSet) HasOrigin(id string, origin Origin) bool {
 }
 
 // Count returns the total number of identifiers.
+// @implement SPEC-INT_MOD-006
 func (s *IdentifierSet) Count() int {
 	return len(s.byID)
 }
 
 // Merge combines another identifier set into this one.
+// @implement SPEC-INT_MOD-007
 func (s *IdentifierSet) Merge(other *IdentifierSet) {
 	for _, id := range other.AllIdentifiers() {
 		s.Add(id)
@@ -210,6 +232,7 @@ func (s *IdentifierSet) Merge(other *IdentifierSet) {
 }
 
 // Annotation represents an annotation found in source code.
+// @implement SPEC-INT_MOD-008
 type Annotation struct {
 	Type            IdentifierType
 	Ref             string
@@ -220,7 +243,8 @@ type Annotation struct {
 	FunctionComment string
 }
 
-// NewAnnotation creates a new annotation.
+// NewAnnotation creates a new annotation from code.
+// @implement SPEC-INT_MOD-008
 func NewAnnotation(typ IdentifierType, ref, source, raw, context string, line int) *Annotation {
 	return &Annotation{
 		Type:    typ,
@@ -233,6 +257,7 @@ func NewAnnotation(typ IdentifierType, ref, source, raw, context string, line in
 }
 
 // NewAnnotationWithComment creates a new annotation with function comment.
+// @implement SPEC-INT_MOD-008
 func NewAnnotationWithComment(typ IdentifierType, ref, source, raw, context, funcComment string, line int) *Annotation {
 	return &Annotation{
 		Type:            typ,
@@ -246,6 +271,7 @@ func NewAnnotationWithComment(typ IdentifierType, ref, source, raw, context, fun
 }
 
 // ToIdentifier converts an annotation to an identifier.
+// @implement SPEC-INT_MOD-009
 func (a *Annotation) ToIdentifier() *Identifier {
 	id := NewIdentifier(a.Ref, a.Type, "", a.Source, a.Line)
 	id.RawRef = a.Raw
@@ -256,6 +282,7 @@ func (a *Annotation) ToIdentifier() *Identifier {
 }
 
 // ValidationError represents a single validation error.
+// @implement SPEC-INT_MOD-010
 type ValidationError struct {
 	// Rule is the name of the validation rule that failed
 	Rule string `json:"rule"`
@@ -275,6 +302,7 @@ func (e ValidationError) Error() string {
 }
 
 // ValidationStats contains statistics about the validation run.
+// @implement SPEC-INT_MOD-010
 type ValidationStats struct {
 	TotalIdentifiers  int `json:"total_identifiers"`
 	TotalLinks        int `json:"total_links"`
@@ -285,6 +313,7 @@ type ValidationStats struct {
 }
 
 // ValidationResult contains the result of validation.
+// @implement SPEC-INT_MOD-010
 type ValidationResult struct {
 	Valid    bool              `json:"valid"`
 	Errors   []ValidationError `json:"errors,omitempty"`
@@ -294,6 +323,7 @@ type ValidationResult struct {
 }
 
 // NewValidationResult creates a new validation result.
+// @implement SPEC-INT_MOD-010
 func NewValidationResult() *ValidationResult {
 	return &ValidationResult{
 		Errors:   make([]ValidationError, 0),
@@ -302,6 +332,7 @@ func NewValidationResult() *ValidationResult {
 }
 
 // AddError adds a validation error.
+// @implement SPEC-INT_MOD-011
 func (r *ValidationResult) AddError(rule, msg, source, link, code string) {
 	r.Errors = append(r.Errors, ValidationError{
 		Rule:    rule,
@@ -314,6 +345,7 @@ func (r *ValidationResult) AddError(rule, msg, source, link, code string) {
 }
 
 // AddWarning adds a validation warning.
+// @implement SPEC-INT_MOD-011
 func (r *ValidationResult) AddWarning(rule, msg, source, link, code string) {
 	r.Warnings = append(r.Warnings, ValidationError{
 		Rule:    rule,
@@ -325,6 +357,7 @@ func (r *ValidationResult) AddWarning(rule, msg, source, link, code string) {
 }
 
 // Sort sorts errors and warnings by rule and message.
+// @implement SPEC-INT_MOD-011
 func (r *ValidationResult) Sort() {
 	sort.Slice(r.Errors, func(i, j int) bool {
 		if r.Errors[i].Rule != r.Errors[j].Rule {
@@ -341,6 +374,7 @@ func (r *ValidationResult) Sort() {
 }
 
 // Report is the final output report.
+// @implement SPEC-INT_MOD-010
 type Report struct {
 	Tool      string           `json:"tool"`
 	Version   string           `json:"version"`
@@ -350,6 +384,7 @@ type Report struct {
 }
 
 // ConfigSummary summarizes the config used for the run.
+// @implement SPEC-INT_MOD-010
 type ConfigSummary struct {
 	DocPatterns  []string `json:"doc_patterns"`
 	CodePatterns []string `json:"code_patterns"`
@@ -357,12 +392,14 @@ type ConfigSummary struct {
 }
 
 // GraphSnapshot is a summary of the linkage graph for the report.
+// @implement SPEC-INT_MOD-010
 type GraphSnapshot struct {
 	Nodes []NodeSummary `json:"nodes"`
 	Edges []EdgeSummary `json:"edges"`
 }
 
 // NodeSummary is a summary of a node for the report.
+// @implement SPEC-INT_MOD-010
 type NodeSummary struct {
 	ID       string         `json:"id"`
 	Type     IdentifierType `json:"type"`
@@ -371,6 +408,7 @@ type NodeSummary struct {
 }
 
 // EdgeSummary is a summary of an edge for the report.
+// @implement SPEC-INT_MOD-010
 type EdgeSummary struct {
 	From     string `json:"from"`
 	To       string `json:"to"`

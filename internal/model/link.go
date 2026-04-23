@@ -1,32 +1,48 @@
+// Package model provides link types for IDD identifier relationships.
+
+// Spec: docs/internal/model/spec.md
+// Contract: docs/internal/model/contract.md
 package model
 
 // LinkType represents the type of relationship between identifiers.
+// @implement SPEC-INT_MOD-012
 type LinkType string
 
 const (
-	LinkImplements LinkType = "implements"
-	LinkTests      LinkType = "tests"
-	LinkReferences LinkType = "references"
-	LinkAnnotates  LinkType = "annotates"
+	LinkImplements         LinkType = "implements"
+	LinkTests              LinkType = "tests"
+	LinkContractTests      LinkType = "contract_tests"
+	LinkReferences         LinkType = "references"
+	LinkAnnotates          LinkType = "annotates"
+	LinkContract           LinkType = "contract"            // SPEC → contract (forward direction)
+	LinkContractImplements LinkType = "contract_implements" // contract → SPEC (backward direction)
 )
 
 // ReverseLinkType returns the reverse link type.
+// @implement SPEC-INT_MOD-012
 func ReverseLinkType(lt LinkType) LinkType {
 	switch lt {
 	case LinkTests:
 		return LinkImplements
 	case LinkImplements:
 		return LinkTests
+	case LinkContractTests:
+		return LinkContractTests
 	case LinkReferences:
 		return LinkReferences
 	case LinkAnnotates:
 		return LinkAnnotates
+	case LinkContract:
+		return LinkContractImplements
+	case LinkContractImplements:
+		return LinkContract
 	default:
 		return lt
 	}
 }
 
 // Link represents a directed relationship between two identifiers.
+// @implement SPEC-INT_MOD-013
 type Link struct {
 	From   string
 	To     string
@@ -36,6 +52,7 @@ type Link struct {
 }
 
 // NewLink creates a new link.
+// @implement SPEC-INT_MOD-015
 func NewLink(from, to string, linkType LinkType, source string, line int) *Link {
 	return &Link{
 		From:   from,

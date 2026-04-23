@@ -16,9 +16,8 @@ docs:
   # Regex patterns to extract identifiers from docs
   identifier_patterns:
     spec: "SPEC-[A-Z]+-[0-9]+"
-    contract: "CONTRACT-[A-Z]+-[0-9]+"
     test: "TEST-[A-Z]+-[0-9]+"
-    design: "DESIGN-[A-Z]+-[0-9]+"
+    test_contract: "TEST-[A-Z]+-[0-9]+"
 
   # Paths to ignore during scanning (glob patterns)
   ignore_paths:
@@ -35,24 +34,43 @@ code:
 
   # Annotation markers to look for in code
   annotations:
-    - "@spec"
-    - "@contract"
+    - "@implement"
     - "@test"
-    - "@design"
+    - "@test-contract"
 
 # Validation rules
 validation:
-  # Require bidirectional links between specs and tests
-  require_bidirectional: true
-
   # Allow orphan identifiers (not linked from anywhere)
   allow_orphans: false
+
+  # Require doc link consistency between specs and tests
+  require_doc_link_consistency: true
 
   # Require all specs to have at least one test link
   require_spec_test_coverage: true
 
   # Check doc describe field matches code function comment (default: true)
   require_doc_code_correspondence: true
+
+  # Require public functions have @implement annotation
+  require_public_func_annotation: true
+
+  # Require package doc comment with Spec/Contract paths
+  require_package_doc_comment: true
+
+  # Require doc frontmatter has related_files section
+  require_related_files: true
+
+  # Require @implement/@test/@test-contract annotations have identifiers
+  require_annotation_identifier: true
+
+  # Require annotation types not split across consecutive lines
+  # e.g., ALLOWED: // @test TEST-AUTH-001, TEST-AUTH-002
+  # e.g., NOT ALLOWED: // @test TEST-AUTH-001 \n // @test TEST-AUTH-002
+  require_annotation_on_same_line: true
+
+  # Require test functions have @test or @test-contract annotation
+  require_test_annotation: true
 
   # Semantic consistency check between doc describe and code comments
   consistency_check:

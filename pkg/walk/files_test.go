@@ -1,3 +1,7 @@
+// Package walk provides testing utilities for the walk module.
+
+// Spec: docs/pkg/walk/spec.md
+// Test: docs/pkg/walk/testing.md
 package walk
 
 import (
@@ -6,6 +10,7 @@ import (
 	"testing"
 )
 
+// @test TEST-PKG_WALK-007
 func TestWalk(t *testing.T) {
 	tmpDir := t.TempDir()
 
@@ -30,6 +35,7 @@ func TestWalk(t *testing.T) {
 	}
 }
 
+// @test TEST-PKG_WALK-001
 func TestWalk_NoMatches(t *testing.T) {
 	tmpDir := t.TempDir()
 
@@ -43,6 +49,7 @@ func TestWalk_NoMatches(t *testing.T) {
 	}
 }
 
+// @test TEST-PKG_WALK-002
 func TestWalk_StopOnError(t *testing.T) {
 	tmpDir := t.TempDir()
 
@@ -58,6 +65,7 @@ func TestWalk_StopOnError(t *testing.T) {
 	}
 }
 
+// @test TEST-PKG_WALK-003
 func TestWalk_Directory(t *testing.T) {
 	tmpDir := t.TempDir()
 
@@ -86,6 +94,7 @@ func TestWalk_Directory(t *testing.T) {
 	}
 }
 
+// @test TEST-PKG_WALK-004
 func TestWalk_DuplicatePrevention(t *testing.T) {
 	tmpDir := t.TempDir()
 
@@ -106,6 +115,7 @@ func TestWalk_DuplicatePrevention(t *testing.T) {
 	}
 }
 
+// @test TEST-PKG_WALK-008
 func TestMatchAnyExtensions(t *testing.T) {
 	tests := []struct {
 		path   string
@@ -129,6 +139,7 @@ func TestMatchAnyExtensions(t *testing.T) {
 	}
 }
 
+// @test TEST-PKG_WALK-005
 func TestWalk_NilPatterns(t *testing.T) {
 	var visited int
 	err := Walk(nil, func(path string, info os.FileInfo) error {
@@ -144,6 +155,7 @@ func TestWalk_NilPatterns(t *testing.T) {
 	}
 }
 
+// @test TEST-PKG_WALK-006
 func TestWalk_EmptyPatterns(t *testing.T) {
 	var visited int
 	err := Walk([]string{}, func(path string, info os.FileInfo) error {

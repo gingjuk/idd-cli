@@ -1,12 +1,12 @@
 ---
-markers:
-  - id: CONTRACT-COLLECTOR-001
-    name: Collector Interface Contracts
+related_files:
+  spec: spec.md
+  contract: contract.md
+  design: design.md
+  testing: testing.md
 ---
 
 # Contracts (collector)
-
-## CONTRACT-COLLECTOR-001: Collector Interface Contracts
 
 **Status:** Done
 
@@ -14,9 +14,9 @@ markers:
 
 Collectors gather IDD identifiers from documentation and source code. This contract defines the interfaces and shared behaviors for all collectors.
 
-### Shared Functionality
+## Shared Functionality
 
-#### Frontmatter Parsing
+### Frontmatter Parsing
 
 ```go
 type Marker struct {
@@ -33,7 +33,7 @@ func ParseFrontmatter(content string) (*Frontmatter, error)
 func ValidateFrontmatterMarkers(fm *Frontmatter, content string, filePath string) []string
 ```
 
-#### Document Validation
+### Document Validation
 
 ```go
 func ValidateDocumentStructure(filePath string, idType string) error
@@ -92,4 +92,64 @@ func (c *CodeCollector) Collect(ctx context.Context, targetPath string) (*model.
 | Module prefix mismatch | Add ValidationError, continue |
 | Bare marker (no backticks) | Add ValidationError, continue |
 
-**Related Specs:** `SPEC-COLLECTOR-001`, `SPEC-COLLECTOR-002`, `SPEC-BE-001`
+### Interface: ExtractTitle
+
+```go
+func (c *DocCollector) ExtractTitle(content string, id string) string
+```
+
+Extracts document titles from markdown headings containing identifiers.
+
+### Interface: ExtractAnnotations
+
+```go
+// Annotation patterns matched from code
+var AnnotationPatterns = []*regexp.Regexp{...}
+```
+
+Extracts IDD annotations (@implement, @test, @test-contract) from code.
+
+### Interface: ExtractFunctionContext
+
+```go
+func ExtractFunctionComment(lines []string, annotationLine int) string
+```
+
+Extracts function name and preceding comments as context for code annotations.
+
+### Interface: SetOrigin
+
+```go
+func (id *Identifier) SetOrigin(origin model.OriginType)
+```
+
+Sets origin to OriginCode for code-based identifiers.
+
+### Interface: SplitAnnotationRefs
+
+```go
+func SplitAnnotationRefs(s string) []string
+```
+
+Splits comma-separated IDD references from an annotation.
+
+### Interface: ShouldIgnore
+
+```go
+func (c *DocCollector) ShouldIgnore(path string) bool
+func (c *CodeCollector) ShouldIgnore(path string) bool
+```
+
+Checks if a path should be ignored based on configured ignore patterns.
+
+### Interface: DiscoverFiles
+
+File discovery is handled within the Collect method - it recursively finds source files with supported extensions (.go, .ts, .tsx, .js).
+
+### Interface: GetLanguagePatterns
+
+Language patterns are defined in the annotation patterns configuration.
+
+---
+
+**Related Specs:** `SPEC-INT_COL-001`, `SPEC-INT_COL-002`, `SPEC-INT_COL-006`, `SPEC-INT_COL-009`, `SPEC-INT_COL-010`, `SPEC-INT_COL-011`, `SPEC-INT_COL-012`, `SPEC-INT_COL-013`, `SPEC-INT_COL-014`, `SPEC-INT_COL-015`

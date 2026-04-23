@@ -1,6 +1,8 @@
-package similarity
+// Package similarity provides TF-IDF text similarity scoring.
 
-// @spec SPEC-BE-007
+// Spec: docs/internal/similarity/spec.md
+// Contract: docs/internal/similarity/contract.md
+package similarity
 
 import (
 	"math"
@@ -9,14 +11,23 @@ import (
 	"unicode"
 )
 
+// TFIDF provides TF-IDF based document similarity analysis.
+//
+// @implement SPEC-INT_SIM-001
 type TFIDF struct {
 	idf map[string]float64
 }
 
+// NewTFIDF creates a new TF-IDF indexer with an empty IDF cache.
+//
+// @implement SPEC-INT_SIM-002
 func NewTFIDF() *TFIDF {
 	return &TFIDF{idf: make(map[string]float64)}
 }
 
+// Tokenize text into lowercase alphanumeric tokens, filtering stop words.
+//
+// @implement SPEC-INT_SIM-006
 func (t *TFIDF) Tokenize(text string) []string {
 	text = strings.ToLower(text)
 	reg := regexp.MustCompile(`[a-z0-9]+`)
@@ -45,6 +56,9 @@ func isStopWord(word string) bool {
 	return stopWords[word]
 }
 
+// ComputeTF computes term frequency for document tokens.
+//
+// @implement SPEC-INT_SIM-007
 func (t *TFIDF) ComputeTF(tokens []string) map[string]float64 {
 	tf := make(map[string]float64)
 	if len(tokens) == 0 {
@@ -59,6 +73,9 @@ func (t *TFIDF) ComputeTF(tokens []string) map[string]float64 {
 	return tf
 }
 
+// ComputeIDF computes inverse document frequency across corpus.
+//
+// @implement SPEC-INT_SIM-008
 func (t *TFIDF) ComputeIDF(documents [][]string) {
 	df := make(map[string]int)
 	numDocs := float64(len(documents))
@@ -76,6 +93,9 @@ func (t *TFIDF) ComputeIDF(documents [][]string) {
 	}
 }
 
+// ComputeTFIDF computes TF-IDF scores by combining term frequency with inverse document frequency.
+//
+// @implement SPEC-INT_SIM-003
 func (t *TFIDF) ComputeTFIDF(tf map[string]float64) map[string]float64 {
 	tfidf := make(map[string]float64)
 	for token, tfVal := range tf {
@@ -88,6 +108,9 @@ func (t *TFIDF) ComputeTFIDF(tf map[string]float64) map[string]float64 {
 	return tfidf
 }
 
+// CosineSimilarity computes cosine similarity between two TF-IDF vectors.
+//
+// @implement SPEC-INT_SIM-010
 func CosineSimilarity(vec1, vec2 map[string]float64) float64 {
 	var dotProduct, norm1, norm2 float64
 	keys := make(map[string]bool)
@@ -110,6 +133,9 @@ func CosineSimilarity(vec1, vec2 map[string]float64) float64 {
 	return dotProduct / (math.Sqrt(norm1) * math.Sqrt(norm2))
 }
 
+// Score computes similarity score between doc and code text using TF-IDF.
+//
+// @implement SPEC-INT_SIM-009
 func (t *TFIDF) Score(docText, codeText string) float64 {
 	docTokens := t.Tokenize(docText)
 	codeTokens := t.Tokenize(codeText)
@@ -122,11 +148,17 @@ func (t *TFIDF) Score(docText, codeText string) float64 {
 	return CosineSimilarity(docTFIDF, codeTFIDF)
 }
 
+// Score computes similarity score between documents using TF-IDF.
+//
+// @implement SPEC-INT_SIM-004
 func Score(docText, codeText string) float64 {
 	tfidf := NewTFIDF()
 	return tfidf.Score(docText, codeText)
 }
 
+// NormalizeText normalizes text by converting to lowercase and removing non-alphanumeric characters.
+//
+// @implement SPEC-INT_SIM-005
 func NormalizeText(text string) string {
 	text = strings.ToLower(text)
 	text = strings.Map(func(r rune) rune {

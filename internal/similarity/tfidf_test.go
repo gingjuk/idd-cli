@@ -1,9 +1,14 @@
+// Package similarity provides testing utilities for the similarity module.
+
+// Spec: docs/internal/similarity/spec.md
+// Test: docs/internal/similarity/testing.md
 package similarity
 
 import (
 	"testing"
 )
 
+// @test TEST-INT_SIM-001
 func TestTFIDF_Tokenize(t *testing.T) {
 	tfidf := NewTFIDF()
 
@@ -30,6 +35,7 @@ func TestTFIDF_Tokenize(t *testing.T) {
 	}
 }
 
+// @test TEST-INT_SIM-002
 func TestTFIDF_ComputeTF(t *testing.T) {
 	tfidf := NewTFIDF()
 
@@ -49,6 +55,7 @@ func TestTFIDF_ComputeTF(t *testing.T) {
 	}
 }
 
+// @test TEST-INT_SIM-003
 func TestTFIDF_ComputeIDF(t *testing.T) {
 	tfidf := NewTFIDF()
 
@@ -68,6 +75,7 @@ func TestTFIDF_ComputeIDF(t *testing.T) {
 	}
 }
 
+// @test TEST-INT_SIM-004
 func TestTFIDF_ComputeTFIDF(t *testing.T) {
 	tfidf := NewTFIDF()
 	tfidf.idf = map[string]float64{
@@ -90,6 +98,7 @@ func TestTFIDF_ComputeTFIDF(t *testing.T) {
 	}
 }
 
+// @test TEST-INT_SIM-005
 func TestCosineSimilarity(t *testing.T) {
 	tests := []struct {
 		name     string
@@ -152,6 +161,7 @@ func TestCosineSimilarity(t *testing.T) {
 	}
 }
 
+// @test TEST-INT_SIM-005
 func TestCosineSimilarity_ZeroNorm(t *testing.T) {
 	result := CosineSimilarity(map[string]float64{}, map[string]float64{"a": 1})
 	if result != 0 {
@@ -159,6 +169,7 @@ func TestCosineSimilarity_ZeroNorm(t *testing.T) {
 	}
 }
 
+// @test TEST-INT_SIM-002
 func TestScore(t *testing.T) {
 	highSimilarity := "validates user credentials and issues JWT tokens"
 	codeText := "validates user credentials and issues JWT tokens for session management"
@@ -177,6 +188,7 @@ func TestScore(t *testing.T) {
 	}
 }
 
+// @test TEST-INT_SIM-006
 func TestScore_EmptyStrings(t *testing.T) {
 	score := Score("", "")
 	if score != 0 {
@@ -184,6 +196,7 @@ func TestScore_EmptyStrings(t *testing.T) {
 	}
 }
 
+// @test TEST-INT_SIM-003
 func TestNormalizeText(t *testing.T) {
 	tests := []struct {
 		input    string

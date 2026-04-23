@@ -13,10 +13,10 @@ import (
 	"github.com/spf13/viper"
 	"gopkg.in/yaml.v3"
 
-	"github.com/jingxu9x/idd-link-validator/internal/collector"
-	"github.com/jingxu9x/idd-link-validator/internal/config"
-	"github.com/jingxu9x/idd-link-validator/internal/engine"
-	"github.com/jingxu9x/idd-link-validator/internal/reporter"
+	"github.com/jingxu9x/idd-cli/internal/collector"
+	"github.com/jingxu9x/idd-cli/internal/config"
+	"github.com/jingxu9x/idd-cli/internal/engine"
+	"github.com/jingxu9x/idd-cli/internal/reporter"
 )
 
 var (
@@ -30,9 +30,9 @@ var (
 
 var rootCmd = &cobra.Command{
 	Use:   "idd-cli",
-	Short: "idd-cli - validates bidirectional linkage between IDD identifiers",
+	Short: "idd-cli - validates IDD documentation consistency",
 	Long: `idd-cli scans documentation and source code to build a linkage graph,
-then validates that all references are bidirectional (spec→test→code consistency).
+then validates link consistency (SPEC: **Tests:** ↔ TEST: **Spec Coverage:**).
 
 Example usage:
   idd-cli run ./docs
@@ -80,6 +80,20 @@ Example:
 	RunE: listSkills,
 }
 
+var generateCmd = &cobra.Command{
+	Use:   "generate [skill|skill --output file]",
+	Short: "Generate IDD skill file",
+	Long: `Generate the IDD skill file to the specified output path.
+
+The skill file defines the IDD (Intent-Driven Development) workflow.
+
+Example:
+  idd-cli generate skill --output idd-skill.md
+  idd-cli generate skill -o ~/.claude/skills/SKILL.md`,
+	RunE: generateSkill,
+}
+
+// @implement SPEC-CMD_IDD-009, SPEC-CMD_IDD-010
 type SkillInfo struct {
 	Name          string `json:"name"`
 	Description   string `json:"description"`
@@ -102,6 +116,7 @@ func init() {
 	rootCmd.AddCommand(runCmd)
 	rootCmd.AddCommand(lintCmd)
 	rootCmd.AddCommand(skillsCmd)
+	rootCmd.AddCommand(generateCmd)
 
 	_ = viper.BindPFlag("config", rootCmd.PersistentFlags().Lookup("config"))
 	_ = viper.BindPFlag("output", rootCmd.PersistentFlags().Lookup("output"))
@@ -382,4 +397,29 @@ func extractModuleName(filename string) string {
 		return strings.TrimPrefix(name, "SKILL-")
 	}
 	return ""
+}
+
+func generateSkill(cmd *cobra.Command, args []string) error {
+	if len(args) > 0 && args[0] != "skill" {
+		return fmt.Errorf("unknown generate target: %s", args[0])
+	}
+
+	skillPath := "skills/SKILL.md"
+	data, err := ReadEmbeddedSkill(skillPath)
+	if err != nil {
+		return fmt.Errorf("failed to read embedded skill: %w", err)
+	}
+
+	if outPath == "" || outPath == "-" {
+		fmt.Print(string(data))
+	} else {
+		if err := os.WriteFile(outPath, data, 0644); err != nil {
+			return fmt.Errorf("failed to write skill file: %w", err)
+		}
+		if verbose {
+			fmt.Printf("Skill written to %s\n", outPath)
+		}
+	}
+
+	return nil
 }

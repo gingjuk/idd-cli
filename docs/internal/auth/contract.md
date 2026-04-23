@@ -1,12 +1,14 @@
 ---
-markers:
-  - id: CONTRACT-AUTH-001
-    name: Authentication Contracts
+related_files:
+  spec: spec.md
+  contract: contract.md
+  design: design.md
+  testing: testing.md
 ---
 
 # Contracts (auth)
 
-## CONTRACT-AUTH-001: Authentication Interface Contracts
+## Authentication Interface Contracts
 
 **Status:** Done
 
@@ -47,4 +49,4 @@ type LoginResponse struct {
 - Account locked → return error with `ErrAccountLocked`
 - Network failure → return error with `ErrNetworkFailure`
 
-**Related Specs:** `SPEC-AUTH-001`
+**Related Specs:** `SPEC-INT_AUTH-001`

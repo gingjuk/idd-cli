@@ -1,4 +1,4 @@
-module github.com/jingxu9x/idd-link-validator
+module github.com/jingxu9x/idd-cli
 
 go 1.22
 

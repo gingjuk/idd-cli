@@ -9,6 +9,7 @@ import (
 //go:embed skills/*.md
 var SkillsFS embed.FS
 
+// @implement SPEC-CMD_IDD-008
 func ListEmbeddedSkills() []string {
 	var skills []string
 	_ = fs.WalkDir(SkillsFS, "skills", func(path string, d fs.DirEntry, err error) error {
@@ -21,6 +22,7 @@ func ListEmbeddedSkills() []string {
 	return skills
 }
 
+// @implement SPEC-CMD_IDD-008
 func ReadEmbeddedSkill(path string) ([]byte, error) {
 	return SkillsFS.ReadFile(path)
 }

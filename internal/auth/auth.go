@@ -1,14 +1,21 @@
+// Package auth provides authentication utilities.
+
+// Spec: docs/internal/auth/spec.md
+// Contract: docs/internal/auth/contract.md
 package auth
 
-// @spec SPEC-AUTH-001
-// @contract CONTRACT-AUTH-001
+// LoginRequest represents user login credentials (email, password).
+//
+// @implement SPEC-INT_AUTH-001
 type LoginRequest struct {
 	Email    string
 	Password string
 }
 
-// @spec SPEC-AUTH-001
-// @test TEST-AUTH-001
+// LoginResponse represents authentication result with token.
+//
+// @test TEST-INT_AUTH-001
+// @implement SPEC-INT_AUTH-001
 type LoginResponse struct {
 	Token string
 }

@@ -1,7 +1,9 @@
-package config
+// Package config provides configuration loading and validation.
 
-// @spec SPEC-BE-003
-// @contract CONTRACT-BE-001
+// Spec: docs/internal/config/spec.md
+// Contract: docs/internal/config/contract.md
+
+package config
 
 import (
 	"fmt"
@@ -10,6 +12,8 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
+// Config is the root configuration structure that holds all settings for the IDD CLI validation tool.
+// @implement SPEC-INT_CFG-001
 type Config struct {
 	Version    string           `yaml:"version"`
 	Docs       DocsConfig       `yaml:"docs"`
@@ -18,45 +22,65 @@ type Config struct {
 	Output     OutputConfig     `yaml:"output"`
 }
 
+// DocsConfig holds documentation-related configuration including patterns and ignore paths.
+// @implement SPEC-INT_CFG-002
 type DocsConfig struct {
 	Patterns           []string           `yaml:"patterns"`
 	IdentifierPatterns IdentifierPatterns `yaml:"identifier_patterns"`
 	IgnorePaths        []string           `yaml:"ignore_paths"`
 }
 
+// IdentifierPatterns defines regex patterns for matching SPEC, TEST, and other IDD identifiers.
+// @implement SPEC-INT_CFG-003
 type IdentifierPatterns struct {
-	Spec     string `yaml:"spec"`
-	Contract string `yaml:"contract"`
-	Test     string `yaml:"test"`
-	Design   string `yaml:"design"`
+	Spec         string `yaml:"spec"`
+	Test         string `yaml:"test"`
+	TestContract string `yaml:"test_contract"`
 }
 
+// CodeConfig holds code-related configuration including patterns and annotations.
+// @implement SPEC-INT_CFG-004
 type CodeConfig struct {
 	Patterns    []string `yaml:"patterns"`
 	Annotations []string `yaml:"annotations"`
 	IgnorePaths []string `yaml:"ignore_paths"`
 }
 
+// ValidationConfig holds validation rule settings for the IDD CLI.
+// @implement SPEC-INT_CFG-005
 type ValidationConfig struct {
-	RequireBidirectional         bool             `yaml:"require_bidirectional"`
+	RequireDocLinkConsistency    bool             `yaml:"require_doc_link_consistency"`
 	AllowOrphans                 bool             `yaml:"allow_orphans"`
 	RequireSpecTestCoverage      bool             `yaml:"require_spec_test_coverage"`
+	RequireContractTestCoverage  bool             `yaml:"require_contract_test_coverage"`
+	RequireDesignSections        bool             `yaml:"require_design_sections"`
 	RequireDocCodeCorrespondence bool             `yaml:"require_doc_code_correspondence"`
+	RequirePublicFuncAnnotation  bool             `yaml:"require_public_func_annotation"`
+	RequirePackageDocComment     bool             `yaml:"require_package_doc_comment"`
+	RequireRelatedFiles          bool             `yaml:"require_related_files"`
+	RequireTestAnnotation        bool             `yaml:"require_test_annotation"`
+	RequireAnnotationIdentifier  bool             `yaml:"require_annotation_identifier"`
+	RequireAnnotationOnSameLine  bool             `yaml:"require_annotation_on_same_line"`
 	ConsistencyCheck             ConsistencyCheck `yaml:"consistency_check"`
 }
 
 // ConsistencyCheck validates semantic consistency between doc describe and code comments.
+// @implement SPEC-INT_CFG-006
 type ConsistencyCheck struct {
 	Enabled   bool    `yaml:"enabled"`
 	Threshold float64 `yaml:"threshold"` // 0.0-1.0, similarity score below this triggers warning
 }
 
+// OutputConfig holds output-related configuration settings.
+// @implement SPEC-INT_CFG-007
 type OutputConfig struct {
 	File         string `yaml:"file"`
 	IncludeGraph bool   `yaml:"include_graph"`
 	Verbose      bool   `yaml:"verbose"`
 }
 
+// Load reads and validates configuration from a YAML file at the given path.
+// @implement SPEC-INT_CFG-007
 func Load(path string) (*Config, error) {
 	data, err := os.ReadFile(path)
 	if err != nil {
@@ -75,30 +99,46 @@ func Load(path string) (*Config, error) {
 	return &cfg, nil
 }
 
+// Default returns a Config with sensible default values for the IDD CLI.
+// @implement SPEC-INT_CFG-008
 func Default() *Config {
 	return &Config{
 		Version: "1.0",
 		Docs: DocsConfig{
 			Patterns: []string{"docs/**/*.md"},
 			IdentifierPatterns: IdentifierPatterns{
-				Spec:     `SPEC-[A-Z]+-[0-9]+`,
-				Contract: `CONTRACT-[A-Z]+-[0-9]+`,
-				Test:     `TEST-[A-Z]+-[0-9]+`,
-				Design:   `DESIGN-[A-Z]+-[0-9]+`,
+				Spec:         `SPEC-[A-Z]+-[0-9]+`,
+				Test:         `TEST-[A-Z]+-[0-9]+`,
+				TestContract: `TEST-[A-Z]+-[0-9]+`,
+			},
+			IgnorePaths: []string{
+				"examples/**",
+				"cmd/idd-cli/skills/**",
+				"cmd/**",
+				"docs/architecture/**",
+				".planning/**",
 			},
 		},
 		Code: CodeConfig{
-			Patterns:    []string{"**/*.go", "**/*.ts", "**/*.tsx", "**/*.js"},
-			Annotations: []string{"@spec", "@contract", "@test", "@design"},
+			Patterns:    []string{"**/*.go"},
+			Annotations: []string{"@implement", "@test", "@test-contract"},
 		},
 		Validation: ValidationConfig{
-			RequireBidirectional:         true,
 			AllowOrphans:                 false,
+			RequireDocLinkConsistency:    true,
 			RequireSpecTestCoverage:      true,
+			RequireContractTestCoverage:  true,
+			RequireDesignSections:        true,
 			RequireDocCodeCorrespondence: true,
+			RequirePublicFuncAnnotation:  true,
+			RequirePackageDocComment:     true,
+			RequireRelatedFiles:          true,
+			RequireTestAnnotation:        true,
+			RequireAnnotationIdentifier:  true,
+			RequireAnnotationOnSameLine:  true,
 			ConsistencyCheck: ConsistencyCheck{
 				Enabled:   true,
-				Threshold: 0.3, // default threshold for similarity score
+				Threshold: 0.3,
 			},
 		},
 		Output: OutputConfig{
@@ -108,6 +148,8 @@ func Default() *Config {
 	}
 }
 
+// Validate checks that configuration values are correct and sets defaults where appropriate.
+// @implement SPEC-INT_CFG-009
 func (c *Config) Validate() error {
 	if c.Version == "" {
 		c.Version = "1.0"
@@ -119,7 +161,7 @@ func (c *Config) Validate() error {
 		c.Code.Patterns = []string{"**/*.go"}
 	}
 	if len(c.Code.Annotations) == 0 {
-		c.Code.Annotations = []string{"@spec", "@contract", "@test", "@design"}
+		c.Code.Annotations = []string{"@implement", "@test", "@test-contract"}
 	}
 	if c.Validation.ConsistencyCheck.Threshold <= 0 {
 		c.Validation.ConsistencyCheck.Threshold = 0.3

@@ -1,9 +1,14 @@
+// Package model provides testing utilities for the model module.
+
+// Spec: docs/internal/model/spec.md
+// Test: docs/internal/model/testing.md
 package model
 
 import (
 	"testing"
 )
 
+// @test TEST-INT_MOD-019
 func TestParseIdentifierType(t *testing.T) {
 	tests := []struct {
 		name    string
@@ -35,6 +40,7 @@ func TestParseIdentifierType(t *testing.T) {
 	}
 }
 
+// @test TEST-INT_MOD-020
 func TestNewIdentifier(t *testing.T) {
 	id := NewIdentifier("SPEC-001", TypeSpec, "Test Spec", "docs/test.md", 10)
 
@@ -61,6 +67,7 @@ func TestNewIdentifier(t *testing.T) {
 	}
 }
 
+// @test TEST-INT_MOD-001
 func TestIdentifierSet_Add_Get_Has(t *testing.T) {
 	set := NewIdentifierSet()
 	spec := NewIdentifier("SPEC-001", TypeSpec, "Test", "test.md", 1)
@@ -83,6 +90,7 @@ func TestIdentifierSet_Add_Get_Has(t *testing.T) {
 	}
 }
 
+// @test TEST-INT_MOD-002
 func TestIdentifierSet_Count(t *testing.T) {
 	set := NewIdentifierSet()
 	if set.Count() != 0 {
@@ -97,6 +105,7 @@ func TestIdentifierSet_Count(t *testing.T) {
 	}
 }
 
+// @test TEST-INT_MOD-003
 func TestIdentifierSet_All(t *testing.T) {
 	set := NewIdentifierSet()
 	set.Add(NewIdentifier("SPEC-001", TypeSpec, "", "", 0))
@@ -108,6 +117,7 @@ func TestIdentifierSet_All(t *testing.T) {
 	}
 }
 
+// @test TEST-INT_MOD-004
 func TestIdentifierSet_Merge(t *testing.T) {
 	set1 := NewIdentifierSet()
 	set1.Add(NewIdentifier("SPEC-001", TypeSpec, "", "", 0))
@@ -122,6 +132,7 @@ func TestIdentifierSet_Merge(t *testing.T) {
 	}
 }
 
+// @test TEST-INT_MOD-005
 func TestIdentifier_AddLink(t *testing.T) {
 	id := NewIdentifier("SPEC-001", TypeSpec, "", "", 0)
 	id.AddLink("TEST-001")
@@ -132,8 +143,9 @@ func TestIdentifier_AddLink(t *testing.T) {
 	}
 }
 
+// @test TEST-INT_MOD-022
 func TestNewAnnotation(t *testing.T) {
-	ann := NewAnnotation(TypeSpec, "SPEC-001", "test.go", "@spec SPEC-001", "context", 10)
+	ann := NewAnnotation(TypeSpec, "SPEC-001", "test.go", "@implement SPEC-001", "context", 10)
 
 	if ann.Type != TypeSpec {
 		t.Errorf("Type = %v, want %v", ann.Type, TypeSpec)
@@ -149,8 +161,9 @@ func TestNewAnnotation(t *testing.T) {
 	}
 }
 
+// @test TEST-INT_MOD-006
 func TestAnnotation_ToIdentifier(t *testing.T) {
-	ann := NewAnnotation(TypeSpec, "SPEC-001", "test.go", "@spec SPEC-001", "context", 10)
+	ann := NewAnnotation(TypeSpec, "SPEC-001", "test.go", "@implement SPEC-001", "context", 10)
 	id := ann.ToIdentifier()
 
 	if id.ID != "SPEC-001" {
@@ -162,11 +175,12 @@ func TestAnnotation_ToIdentifier(t *testing.T) {
 	if id.Source != "test.go" {
 		t.Errorf("Source = %q, want %q", id.Source, "test.go")
 	}
-	if id.RawRef != "@spec SPEC-001" {
-		t.Errorf("RawRef = %q, want %q", id.RawRef, "@spec SPEC-001")
+	if id.RawRef != "@implement SPEC-001" {
+		t.Errorf("RawRef = %q, want %q", id.RawRef, "@implement SPEC-001")
 	}
 }
 
+// @test TEST-INT_MOD-007
 func TestValidationError_Error(t *testing.T) {
 	err := ValidationError{
 		Rule:    "test-rule",
@@ -179,6 +193,7 @@ func TestValidationError_Error(t *testing.T) {
 	}
 }
 
+// @test TEST-INT_MOD-021
 func TestNewValidationResult(t *testing.T) {
 	result := NewValidationResult()
 
@@ -193,6 +208,7 @@ func TestNewValidationResult(t *testing.T) {
 	}
 }
 
+// @test TEST-INT_MOD-008
 func TestValidationResult_AddError(t *testing.T) {
 	result := NewValidationResult()
 	result.AddError("rule1", "message", "source", "link", "code")
@@ -205,6 +221,7 @@ func TestValidationResult_AddError(t *testing.T) {
 	}
 }
 
+// @test TEST-INT_MOD-009
 func TestValidationResult_AddWarning(t *testing.T) {
 	result := NewValidationResult()
 	result.AddWarning("rule", "msg", "", "", "")
@@ -217,6 +234,7 @@ func TestValidationResult_AddWarning(t *testing.T) {
 	}
 }
 
+// @test TEST-INT_MOD-010
 func TestValidationResult_Sort(t *testing.T) {
 	result := NewValidationResult()
 	result.AddError("bbb", "msg2", "", "", "")
@@ -230,6 +248,7 @@ func TestValidationResult_Sort(t *testing.T) {
 	}
 }
 
+// @test TEST-INT_MOD-023
 func TestNewIdentifierWithDescribe(t *testing.T) {
 	id := NewIdentifierWithDescribe("SPEC-001", TypeSpec, "Test Spec", "Validates JWT tokens", "docs/test.md", 10)
 
@@ -256,8 +275,9 @@ func TestNewIdentifierWithDescribe(t *testing.T) {
 	}
 }
 
+// @test TEST-INT_MOD-024
 func TestNewAnnotationWithComment(t *testing.T) {
-	ann := NewAnnotationWithComment(TypeSpec, "SPEC-001", "test.go", "@spec SPEC-001", "context", "Validates authentication", 10)
+	ann := NewAnnotationWithComment(TypeSpec, "SPEC-001", "test.go", "@implement SPEC-001", "context", "Validates authentication", 10)
 
 	if ann.Type != TypeSpec {
 		t.Errorf("Type = %v, want %v", ann.Type, TypeSpec)
@@ -267,8 +287,9 @@ func TestNewAnnotationWithComment(t *testing.T) {
 	}
 }
 
+// @test TEST-INT_MOD-011
 func TestAnnotation_ToIdentifier_WithFunctionComment(t *testing.T) {
-	ann := NewAnnotationWithComment(TypeSpec, "SPEC-001", "test.go", "@spec SPEC-001", "context", "Validates JWT tokens", 10)
+	ann := NewAnnotationWithComment(TypeSpec, "SPEC-001", "test.go", "@implement SPEC-001", "context", "Validates JWT tokens", 10)
 	id := ann.ToIdentifier()
 
 	if id.Describe != "Validates JWT tokens" {
@@ -276,11 +297,127 @@ func TestAnnotation_ToIdentifier_WithFunctionComment(t *testing.T) {
 	}
 }
 
+// @test TEST-INT_MOD-012
 func TestAnnotation_ToIdentifier_WithoutFunctionComment(t *testing.T) {
-	ann := NewAnnotation(TypeSpec, "SPEC-001", "test.go", "@spec SPEC-001", "context", 10)
+	ann := NewAnnotation(TypeSpec, "SPEC-001", "test.go", "@implement SPEC-001", "context", 10)
 	id := ann.ToIdentifier()
 
 	if id.Describe != "" {
 		t.Errorf("Describe = %q, want empty string", id.Describe)
+	}
+}
+
+// @test TEST-INT_MOD-013
+func TestIdentifierSet_GetAll(t *testing.T) {
+	set := NewIdentifierSet()
+	spec1 := NewIdentifier("SPEC-001", TypeSpec, "", "file1.md", 1)
+	spec2 := NewIdentifier("SPEC-001", TypeSpec, "", "file2.md", 2)
+
+	set.Add(spec1)
+	set.Add(spec2)
+
+	all := set.GetAll("SPEC-001")
+	if len(all) != 2 {
+		t.Errorf("GetAll(SPEC-001) returned %d items, want 2", len(all))
+	}
+
+	none := set.GetAll("NONEXISTENT")
+	if len(none) != 0 {
+		t.Errorf("GetAll(NONEXISTENT) returned %d items, want 0", len(none))
+	}
+}
+
+// @test TEST-INT_MOD-014
+func TestIdentifierSet_AllIdentifiers(t *testing.T) {
+	set := NewIdentifierSet()
+	set.Add(NewIdentifier("SPEC-001", TypeSpec, "", "", 0))
+	set.Add(NewIdentifier("SPEC-001", TypeSpec, "", "", 0))
+	set.Add(NewIdentifier("TEST-001", TypeTest, "", "", 0))
+
+	all := set.AllIdentifiers()
+	if len(all) != 3 {
+		t.Errorf("AllIdentifiers() returned %d items, want 3", len(all))
+	}
+}
+
+// @test TEST-INT_MOD-015
+func TestIdentifierSet_ByOrigin(t *testing.T) {
+	set := NewIdentifierSet()
+	docSpec := NewIdentifier("SPEC-001", TypeSpec, "", "doc.md", 0)
+	docSpec.Origin = OriginDoc
+	codeSpec := NewIdentifier("SPEC-002", TypeSpec, "", "code.go", 0)
+	codeSpec.Origin = OriginCode
+
+	set.Add(docSpec)
+	set.Add(codeSpec)
+
+	docOnly := set.ByOrigin(OriginDoc)
+	if len(docOnly) != 1 {
+		t.Errorf("ByOrigin(OriginDoc) returned %d items, want 1", len(docOnly))
+	}
+
+	codeOnly := set.ByOrigin(OriginCode)
+	if len(codeOnly) != 1 {
+		t.Errorf("ByOrigin(OriginCode) returned %d items, want 1", len(codeOnly))
+	}
+}
+
+// @test TEST-INT_MOD-016
+func TestIdentifierSet_HasOrigin(t *testing.T) {
+	set := NewIdentifierSet()
+	docSpec := NewIdentifier("SPEC-001", TypeSpec, "", "doc.md", 0)
+	docSpec.Origin = OriginDoc
+	set.Add(docSpec)
+
+	if !set.HasOrigin("SPEC-001", OriginDoc) {
+		t.Error("HasOrigin(SPEC-001, OriginDoc) = false, want true")
+	}
+
+	if set.HasOrigin("SPEC-001", OriginCode) {
+		t.Error("HasOrigin(SPEC-001, OriginCode) = true, want false")
+	}
+
+	if set.HasOrigin("NONEXISTENT", OriginDoc) {
+		t.Error("HasOrigin(NONEXISTENT, OriginDoc) = true, want false")
+	}
+}
+
+// @test TEST-INT_MOD-017
+func TestIdentifierSet_Get(t *testing.T) {
+	set := NewIdentifierSet()
+	spec := NewIdentifier("SPEC-001", TypeSpec, "", "", 0)
+	set.Add(spec)
+
+	got, ok := set.Get("SPEC-001")
+	if !ok {
+		t.Error("Get(SPEC-001) ok = false, want true")
+	}
+	if got.ID != "SPEC-001" {
+		t.Errorf("Get(SPEC-001).ID = %q, want SPEC-001", got.ID)
+	}
+
+	_, ok = set.Get("NONEXISTENT")
+	if ok {
+		t.Error("Get(NONEXISTENT) ok = true, want false")
+	}
+}
+
+// @test TEST-INT_MOD-018
+func TestValidationResult_Sort_MultipleRules(t *testing.T) {
+	result := NewValidationResult()
+	result.AddError("zzz", "msg3", "", "", "")
+	result.AddError("aaa", "msg1", "", "", "")
+	result.AddError("mmm", "msg2", "", "", "")
+
+	result.Sort()
+
+	if result.Errors[0].Rule != "aaa" {
+		t.Errorf("Errors[0].Rule = %q, want 'aaa'", result.Errors[0].Rule)
+	}
+	if result.Errors[1].Rule != "mmm" {
+		t.Errorf("Errors[1].Rule = %q, want 'mmm'", result.Errors[1].Rule)
+	}
+	if result.Errors[2].Rule != "zzz" {
+		t.Errorf("Errors[2].Rule = %q, want 'zzz'", result.Errors[2].Rule)
 	}
 }

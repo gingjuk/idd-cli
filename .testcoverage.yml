@@ -2,7 +2,7 @@ profile: coverage.out
 
 threshold:
   file: 0
-  package: 60
+  package: 80
   total: 60
 
 override:
@@ -11,6 +11,10 @@ override:
   - path: ^cmd/
     package: 0
   - path: ^internal/auth
+    package: 0
+  - path: ^internal/engine
+    package: 0
+  - path: ^internal/config
     package: 0
   - path: ^pkg/pattern
     package: 0

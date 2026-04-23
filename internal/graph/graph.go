@@ -1,13 +1,18 @@
-package graph
+// Package graph provides graph data structures for IDD link validation.
 
-// @spec SPEC-BE-002
+// Spec: docs/internal/graph/spec.md
+// Contract: docs/internal/graph/contract.md
+package graph
 
 import (
 	"fmt"
 
-	"github.com/jingxu9x/idd-link-validator/internal/model"
+	"github.com/jingxu9x/idd-cli/internal/model"
 )
 
+// Node represents an IDD identifier within the linkage graph with incoming and outgoing edges.
+//
+// @implement SPEC-INT_GRPH-001
 type Node struct {
 	ID       string
 	Type     model.IdentifierType
@@ -16,6 +21,9 @@ type Node struct {
 	outEdges []*Edge
 }
 
+// Edge represents a directed relationship between two nodes in the linkage graph.
+//
+// @implement SPEC-INT_GRPH-002
 type Edge struct {
 	From     string
 	To       string
@@ -25,18 +33,26 @@ type Edge struct {
 	Verified bool
 }
 
+// LinkageGraph manages nodes and edges for IDD identifier validation.
+//
+// @implement SPEC-INT_GRPH-003
 type LinkageGraph struct {
 	nodes map[string]*Node
 	edges []*Edge
 	idx   *Index
 }
 
+// Index provides fast lookup structures for nodes by ID, type, and backlinks.
+//
+// @implement SPEC-INT_GRPH-004
 type Index struct {
 	byID      map[string]*Node
 	byType    map[model.IdentifierType][]*Node
 	backlinks map[string][]string
 }
 
+// NewLinkageGraph creates a new empty linkage graph with initialized maps.
+// @implement SPEC-INT_GRPH-005, SPEC-INT_GRPH-006, SPEC-INT_GRPH-009
 func NewLinkageGraph() *LinkageGraph {
 	return &LinkageGraph{
 		nodes: make(map[string]*Node),
@@ -49,6 +65,9 @@ func NewLinkageGraph() *LinkageGraph {
 	}
 }
 
+// AddNode adds a node to the graph if it doesn't exist.
+//
+// @implement SPEC-INT_GRPH-007
 func (g *LinkageGraph) AddNode(id string, idType model.IdentifierType) *Node {
 	if n, ok := g.nodes[id]; ok {
 		return n
@@ -66,6 +85,9 @@ func (g *LinkageGraph) AddNode(id string, idType model.IdentifierType) *Node {
 	return n
 }
 
+// AddEdge adds a directed edge between two nodes.
+//
+// @implement SPEC-INT_GRPH-008
 func (g *LinkageGraph) AddEdge(from, to string, edgeType model.LinkType, source string, line int) {
 	edge := &Edge{
 		From:   from,
@@ -136,7 +158,10 @@ func (g *LinkageGraph) GetInboundByType(nodeID string, linkType model.LinkType) 
 }
 
 func (g *LinkageGraph) GetBacklinks(nodeID string) []string {
-	return g.idx.backlinks[nodeID]
+	if links, ok := g.idx.backlinks[nodeID]; ok {
+		return links
+	}
+	return []string{}
 }
 
 func (g *LinkageGraph) NodeCount() int {
@@ -212,18 +237,18 @@ func (g *LinkageGraph) ValidateCompleteness() []model.ValidationError {
 			testLinks := g.GetOutboundByType(node.ID, model.LinkTests)
 			if len(testLinks) == 0 {
 				errors = append(errors, model.ValidationError{
-					Rule:    "bidirectional-linkage",
-					Message: fmt.Sprintf("SPEC %s has no test links", node.ID),
+					Rule:    "spec-missing-tests",
+					Message: fmt.Sprintf("SPEC %s has no **Tests:** field", node.ID),
 					Link:    node.ID,
 				})
 			}
 		}
 		if node.Type == model.TypeTest {
-			specLinks := g.GetInboundByType(node.ID, model.LinkTests)
+			specLinks := g.GetOutboundByType(node.ID, model.LinkImplements)
 			if len(specLinks) == 0 {
 				errors = append(errors, model.ValidationError{
-					Rule:    "bidirectional-linkage",
-					Message: fmt.Sprintf("TEST %s is not linked from any SPEC", node.ID),
+					Rule:    "test-missing-coverage",
+					Message: fmt.Sprintf("TEST %s has no **Spec Coverage:** field", node.ID),
 					Link:    node.ID,
 				})
 			}

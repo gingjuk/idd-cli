@@ -1,11 +1,16 @@
+// Package graph provides testing utilities for the graph module.
+
+// Spec: docs/internal/graph/spec.md
+// Test: docs/internal/graph/testing.md
 package graph
 
 import (
 	"testing"
 
-	"github.com/jingxu9x/idd-link-validator/internal/model"
+	"github.com/jingxu9x/idd-cli/internal/model"
 )
 
+// @test TEST-INT_GRPH-015
 func TestNewLinkageGraph(t *testing.T) {
 	g := NewLinkageGraph()
 
@@ -17,6 +22,7 @@ func TestNewLinkageGraph(t *testing.T) {
 	}
 }
 
+// @test TEST-INT_GRPH-001
 func TestLinkageGraph_AddNode(t *testing.T) {
 	g := NewLinkageGraph()
 
@@ -40,6 +46,7 @@ func TestLinkageGraph_AddNode(t *testing.T) {
 	}
 }
 
+// @test TEST-INT_GRPH-002
 func TestLinkageGraph_AddEdge(t *testing.T) {
 	g := NewLinkageGraph()
 	g.AddNode("SPEC-001", model.TypeSpec)
@@ -60,6 +67,7 @@ func TestLinkageGraph_AddEdge(t *testing.T) {
 	}
 }
 
+// @test TEST-INT_GRPH-003
 func TestLinkageGraph_GetNode(t *testing.T) {
 	g := NewLinkageGraph()
 	g.AddNode("SPEC-001", model.TypeSpec)
@@ -78,6 +86,7 @@ func TestLinkageGraph_GetNode(t *testing.T) {
 	}
 }
 
+// @test TEST-INT_GRPH-004
 func TestLinkageGraph_NodeInOutEdges(t *testing.T) {
 	g := NewLinkageGraph()
 	g.AddNode("SPEC-001", model.TypeSpec)
@@ -100,6 +109,7 @@ func TestLinkageGraph_NodeInOutEdges(t *testing.T) {
 	}
 }
 
+// @test TEST-INT_GRPH-005
 func TestLinkageGraph_GetOutboundByType(t *testing.T) {
 	g := NewLinkageGraph()
 	g.AddNode("SPEC-001", model.TypeSpec)
@@ -125,6 +135,7 @@ func TestLinkageGraph_GetOutboundByType(t *testing.T) {
 	}
 }
 
+// @test TEST-INT_GRPH-006
 func TestLinkageGraph_GetInboundByType(t *testing.T) {
 	g := NewLinkageGraph()
 	g.AddNode("SPEC-001", model.TypeSpec)
@@ -140,6 +151,7 @@ func TestLinkageGraph_GetInboundByType(t *testing.T) {
 	}
 }
 
+// @test TEST-INT_GRPH-007
 func TestLinkageGraph_GetBacklinks(t *testing.T) {
 	g := NewLinkageGraph()
 	g.AddNode("SPEC-001", model.TypeSpec)
@@ -156,6 +168,7 @@ func TestLinkageGraph_GetBacklinks(t *testing.T) {
 	}
 }
 
+// @test TEST-INT_GRPH-008
 func TestLinkageGraph_VerifyBidirectionalLinks(t *testing.T) {
 	g := NewLinkageGraph()
 	g.AddNode("SPEC-001", model.TypeSpec)
@@ -174,6 +187,7 @@ func TestLinkageGraph_VerifyBidirectionalLinks(t *testing.T) {
 	}
 }
 
+// @test TEST-INT_GRPH-009
 func TestLinkageGraph_VerifyBidirectionalLinks_Unverified(t *testing.T) {
 	g := NewLinkageGraph()
 	g.AddNode("SPEC-001", model.TypeSpec)
@@ -190,6 +204,7 @@ func TestLinkageGraph_VerifyBidirectionalLinks_Unverified(t *testing.T) {
 	}
 }
 
+// @test TEST-INT_GRPH-010
 func TestLinkageGraph_ToSnapshot(t *testing.T) {
 	g := NewLinkageGraph()
 	g.AddNode("SPEC-001", model.TypeSpec)
@@ -206,6 +221,7 @@ func TestLinkageGraph_ToSnapshot(t *testing.T) {
 	}
 }
 
+// @test TEST-INT_GRPH-011
 func TestLinkageGraph_Stats(t *testing.T) {
 	g := NewLinkageGraph()
 	g.AddNode("SPEC-001", model.TypeSpec)
@@ -229,6 +245,7 @@ func TestLinkageGraph_Stats(t *testing.T) {
 	}
 }
 
+// @test TEST-INT_GRPH-012
 func TestLinkageGraph_ValidateCompleteness(t *testing.T) {
 	g := NewLinkageGraph()
 	g.AddNode("SPEC-001", model.TypeSpec)
@@ -243,6 +260,7 @@ func TestLinkageGraph_ValidateCompleteness(t *testing.T) {
 	}
 }
 
+// @test TEST-INT_GRPH-013
 func TestLinkageGraph_ValidateCompleteness_NoLinks(t *testing.T) {
 	g := NewLinkageGraph()
 	g.AddNode("SPEC-001", model.TypeSpec)
@@ -254,6 +272,7 @@ func TestLinkageGraph_ValidateCompleteness_NoLinks(t *testing.T) {
 	}
 }
 
+// @test TEST-INT_GRPH-014
 func TestLinkageGraph_Nodes_Edges(t *testing.T) {
 	g := NewLinkageGraph()
 	g.AddNode("SPEC-001", model.TypeSpec)

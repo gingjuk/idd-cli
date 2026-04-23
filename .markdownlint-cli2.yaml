@@ -14,7 +14,8 @@
     "vendor",
     "bin",
     ".git",
-    "coverage.out"
+    "coverage.out",
+    ".planning"
   ],
   "globs": ["**/*.md"]
 }

@@ -1,14 +1,20 @@
 ---
 markers:
-  - id: TEST-BE-001
+  - id: TEST-CMD_IDD-001
     name: Core Validation Tests
-  - id: TEST-BE-002
+  - id: TEST-CMD_IDD-002
     name: Module Integration Tests
+
+related_files:
+  spec: spec.md
+  contract: contract.md
+  design: design.md
+  testing: testing.md
 ---
 
 # Test Cases (backend)
 
-## TEST-BE-001: Core Validation Tests
+## TEST-CMD_IDD-001: Core Validation Tests
 
 **Status:** Done
 
@@ -52,11 +58,11 @@ Test cases for the idd-cli core validation logic.
 | `TestLinkageGraph_Stats` | Tests statistics |
 | `TestLinkageGraph_ValidateCompleteness` | Tests completeness |
 
-**Spec Coverage:** `SPEC-BE-001`, `SPEC-BE-002`
+**Spec Coverage:** `SPEC-CMD_IDD-001`, `SPEC-CMD_IDD-002`, `SPEC-CMD_IDD-003`, `SPEC-CMD_IDD-004`, `SPEC-CMD_IDD-005`, `SPEC-CMD_IDD-006`, `SPEC-CMD_IDD-007`, `SPEC-CMD_IDD-008`, `SPEC-CMD_IDD-009`, `SPEC-CMD_IDD-010`
 
 ---
 
-## TEST-BE-002: Module Integration Tests
+## TEST-CMD_IDD-002: Module Integration Tests
 
 **Status:** Done
 
@@ -96,4 +102,4 @@ Integration tests covering the interaction between modules including config load
 | `TestTFIDF_CosineSimilarity` | Tests cosine similarity computation |
 | `TestTFIDF_FindDuplicates` | Tests duplicate detection |
 
-**Spec Coverage:** `SPEC-BE-003`, `SPEC-BE-004`, `SPEC-BE-006`, `SPEC-BE-007`
+**Spec Coverage:** `SPEC-CMD_IDD-001`, `SPEC-CMD_IDD-002`, `SPEC-CMD_IDD-003`, `SPEC-CMD_IDD-004`, `SPEC-CMD_IDD-005`, `SPEC-CMD_IDD-006`, `SPEC-CMD_IDD-007`, `SPEC-CMD_IDD-008`, `SPEC-CMD_IDD-009`, `SPEC-CMD_IDD-010`
