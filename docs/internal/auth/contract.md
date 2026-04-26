@@ -1,9 +1,9 @@
 ---
 related_files:
-  spec: spec.md
-  contract: contract.md
-  design: design.md
-  testing: testing.md
+  spec: docs/internal/auth/spec.md
+  contract: docs/internal/auth/contract.md
+  design: docs/internal/auth/design.md
+  testing: docs/internal/auth/testing.md
 ---
 
 # Contracts (auth)
@@ -49,4 +49,4 @@ type LoginResponse struct {
 - Account locked → return error with `ErrAccountLocked`
 - Network failure → return error with `ErrNetworkFailure`
 
-**Related Specs:** `SPEC-INT_AUTH-001`
+**Related Specs:** `SPEC-INTERNAL_AUTH-001`

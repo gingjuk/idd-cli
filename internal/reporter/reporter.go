@@ -17,7 +17,7 @@ import (
 )
 
 // Reporter generates validation reports in JSON and Markdown formats.
-// @implement SPEC-INT_RPT-001
+// @implement SPEC-INTERNAL_REPORTER-001
 type Reporter struct {
 	cfg    *config.Config
 	format string
@@ -25,7 +25,7 @@ type Reporter struct {
 
 // New creates a new Reporter with the given configuration and output format.
 // Defaults to JSON if format is empty.
-// @implement SPEC-INT_RPT-003
+// @implement SPEC-INTERNAL_REPORTER-003
 func New(cfg *config.Config, format string) *Reporter {
 	if format == "" {
 		format = "json"
@@ -35,7 +35,7 @@ func New(cfg *config.Config, format string) *Reporter {
 
 // Generate creates a complete report from a validation result, including tool metadata,
 // config summary, and the validation result.
-// @implement SPEC-INT_RPT-004
+// @implement SPEC-INTERNAL_REPORTER-004
 func (r *Reporter) Generate(result *model.ValidationResult) (*model.Report, error) {
 	report := &model.Report{
 		Tool:      "idd-cli",
@@ -52,7 +52,7 @@ func (r *Reporter) Generate(result *model.ValidationResult) (*model.Report, erro
 }
 
 // Write outputs the report to stdout or file based on output path.
-// @implement SPEC-INT_RPT-005
+// @implement SPEC-INTERNAL_REPORTER-005
 func (r *Reporter) Write(report *model.Report, output string) error {
 	var writer io.Writer
 	if output == "" || output == "-" {

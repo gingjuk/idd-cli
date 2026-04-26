@@ -1,9 +1,9 @@
 ---
 related_files:
-  spec: spec.md
-  contract: contract.md
-  design: design.md
-  testing: testing.md
+  spec: docs/cmd/idd-cli/spec.md
+  contract: docs/cmd/idd-cli/contract.md
+  design: docs/cmd/idd-cli/design.md
+  testing: docs/cmd/idd-cli/testing.md
 ---
 
 # Contracts (backend)
@@ -58,7 +58,7 @@ type CodeCollector interface {
 - **Parse error** — Log warning, skip file, continue processing
 - **Empty file** — No identifiers found, return empty result
 
-**Related Specs:** `SPEC-CMD_IDD-001`
+**Related Specs:** `SPEC-CMD_IDD_CLI-001`
 
 ---
 
@@ -102,4 +102,4 @@ type Rule interface {
 | BidirectionalLinkRule | Verifies links are bidirectional |
 | OrphanRule | Detects unreferenced identifiers |
 
-**Related Specs:** `SPEC-CMD_IDD-004`, `SPEC-CMD_IDD-002`
+**Related Specs:** `SPEC-CMD_IDD_CLI-004`, `SPEC-CMD_IDD_CLI-002`

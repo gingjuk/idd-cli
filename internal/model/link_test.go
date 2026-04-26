@@ -8,7 +8,7 @@ import (
 	"testing"
 )
 
-// @test TEST-INT_MOD-028
+// @test TEST-INTERNAL_MODEL-028
 func TestLinkType_Constants(t *testing.T) {
 	if LinkImplements != "implements" {
 		t.Errorf("LinkImplements = %q, want %q", LinkImplements, "implements")
@@ -24,7 +24,7 @@ func TestLinkType_Constants(t *testing.T) {
 	}
 }
 
-// @test TEST-INT_MOD-029
+// @test TEST-INTERNAL_MODEL-029
 func TestReverseLinkType(t *testing.T) {
 	tests := []struct {
 		name string
@@ -48,7 +48,7 @@ func TestReverseLinkType(t *testing.T) {
 	}
 }
 
-// @test TEST-INT_MOD-030
+// @test TEST-INTERNAL_MODEL-030
 func TestNewLink(t *testing.T) {
 	link := NewLink("SPEC-001", "TEST-001", LinkTests, "test.go", 10)
 

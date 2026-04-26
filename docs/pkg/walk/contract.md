@@ -1,9 +1,9 @@
 ---
 related_files:
-  spec: spec.md
-  contract: contract.md
-  design: design.md
-  testing: testing.md
+  spec: docs/pkg/walk/spec.md
+  contract: docs/pkg/walk/contract.md
+  design: docs/pkg/walk/design.md
+  testing: docs/pkg/walk/testing.md
 ---
 
 # Contract (walk)

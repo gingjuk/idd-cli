@@ -12,7 +12,7 @@ import (
 	"github.com/jingxu9x/idd-cli/internal/config"
 )
 
-// @test TEST-INT_COL-010
+// @test TEST-INTERNAL_COLLECTOR-010
 func TestParseFrontmatter(t *testing.T) {
 	tests := []struct {
 		name    string
@@ -84,7 +84,7 @@ markers:
 	}
 }
 
-// @test TEST-INT_COL-011
+// @test TEST-INTERNAL_COLLECTOR-011
 func TestValidateFrontmatterMarkers(t *testing.T) {
 	tests := []struct {
 		name    string
@@ -160,7 +160,7 @@ func TestValidateFrontmatterMarkers(t *testing.T) {
 	}
 }
 
-// @test TEST-INT_COL-012
+// @test TEST-INTERNAL_COLLECTOR-012
 func TestExtractDefinedMarkers(t *testing.T) {
 	content := `# SPEC-BE-001
 # CONTRACT-BE-001
@@ -179,13 +179,13 @@ No ID here`
 	}
 }
 
-// @test TEST-INT_COL-013
+// @test TEST-INTERNAL_COLLECTOR-013
 func TestPathIgnorePatterns(t *testing.T) {
 	// Placeholder test for path ignore patterns
 	// TODO: Implement actual ignore_paths testing
 }
 
-// @test TEST-INT_COL-014
+// @test TEST-INTERNAL_COLLECTOR-014
 func TestExtractReferencedMarkers(t *testing.T) {
 	content := `# Heading
 See SPEC-BE-001 and TEST-BE-001 for details.
@@ -203,7 +203,7 @@ Also see CONTRACT-BE-002.`
 	}
 }
 
-// @test TEST-INT_COL-019
+// @test TEST-INTERNAL_COLLECTOR-019
 func TestExtractIDDRefs(t *testing.T) {
 	tests := []struct {
 		line    string
@@ -224,7 +224,7 @@ func TestExtractIDDRefs(t *testing.T) {
 	}
 }
 
-// @test TEST-INT_COL-015
+// @test TEST-INTERNAL_COLLECTOR-015
 func TestGetExpectedFilename(t *testing.T) {
 	tests := []struct {
 		idType string
@@ -246,7 +246,7 @@ func TestGetExpectedFilename(t *testing.T) {
 	}
 }
 
-// @test TEST-INT_COL-017
+// @test TEST-INTERNAL_COLLECTOR-017
 func TestValidateDocumentStructure(t *testing.T) {
 	tests := []struct {
 		path   string
@@ -268,7 +268,7 @@ func TestValidateDocumentStructure(t *testing.T) {
 	}
 }
 
-// @test TEST-INT_COL-016
+// @test TEST-INTERNAL_COLLECTOR-016
 func TestIsRootDocFile(t *testing.T) {
 	tests := []struct {
 		path string
@@ -288,13 +288,13 @@ func TestIsRootDocFile(t *testing.T) {
 	}
 }
 
-// @test TEST-INT_COL-018
+// @test TEST-INTERNAL_COLLECTOR-018
 func TestExtractModuleName(t *testing.T) {
 	tests := []struct {
 		path string
 		want string
 	}{
-		{"docs/cmd/idd-cli/spec.md", "CMD_IDD"},
+		{"docs/cmd/idd-cli/spec.md", "CMD_IDD_CLI"},
 		{"docs/backend/spec.md", "BACKEND"},
 		{"docs/frontend/test.md", "FRONTEND"},
 		{"docs/spec.md", ""},
@@ -309,7 +309,7 @@ func TestExtractModuleName(t *testing.T) {
 	}
 }
 
-// @test TEST-INT_COL-020
+// @test TEST-INTERNAL_COLLECTOR-020
 func TestValidateModulePrefix(t *testing.T) {
 	tests := []struct {
 		id     string
@@ -317,13 +317,13 @@ func TestValidateModulePrefix(t *testing.T) {
 		wantOk bool
 	}{
 		// idd:ignore start
-		{"SPEC-CMD_IDD-001", "docs/cmd/idd-cli/spec.md", true},
+		{"SPEC-CMD_IDD_CLI-001", "docs/cmd/idd-cli/spec.md", true},
 		// idd:ignore end
 		{"SPEC-BE-001", "docs/cmd/idd-cli/spec.md", false},
 		{"SPEC-FE-001", "docs/cmd/idd-cli/spec.md", false},
 		{"SPEC-XX-001", "docs/cmd/idd-cli/spec.md", false},
 		{"SPEC-BE-001", "docs/spec.md", true},
-		{"SPEC-INT_COL-001", "docs/internal/collector/spec.md", true},
+		{"SPEC-INTERNAL_COLLECTOR-001", "docs/internal/collector/spec.md", true},
 	}
 
 	for _, tt := range tests {
@@ -335,7 +335,7 @@ func TestValidateModulePrefix(t *testing.T) {
 	}
 }
 
-// @test TEST-INT_COL-001
+// @test TEST-INTERNAL_COLLECTOR-001
 func TestDocCollector_Collect(t *testing.T) {
 	tmpDir := t.TempDir()
 
@@ -364,7 +364,7 @@ func TestDocCollector_Collect(t *testing.T) {
 	}
 }
 
-// @test TEST-INT_COL-002
+// @test TEST-INTERNAL_COLLECTOR-002
 func TestDocCollector_Collect_WithFrontmatter(t *testing.T) {
 	tmpDir := t.TempDir()
 
@@ -399,7 +399,7 @@ See TEST-BE-001.
 	}
 }
 
-// @test TEST-INT_COL-003
+// @test TEST-INTERNAL_COLLECTOR-003
 func TestDocCollector_Collect_FileNotFound(t *testing.T) {
 	cfg := config.Default()
 	coll := NewDocCollector(cfg)
@@ -412,7 +412,7 @@ func TestDocCollector_Collect_FileNotFound(t *testing.T) {
 	}
 }
 
-// @test TEST-INT_COL-004
+// @test TEST-INTERNAL_COLLECTOR-004
 func TestDocCollector_Collect_NonMarkdownFile(t *testing.T) {
 	tmpDir := t.TempDir()
 
@@ -430,7 +430,7 @@ func TestDocCollector_Collect_NonMarkdownFile(t *testing.T) {
 	}
 }
 
-// @test TEST-INT_COL-005
+// @test TEST-INTERNAL_COLLECTOR-005
 func TestDocCollector_extractTitle(t *testing.T) {
 	coll := NewDocCollector(config.Default())
 
@@ -446,7 +446,7 @@ More content`
 	}
 }
 
-// @test TEST-INT_COL-006
+// @test TEST-INTERNAL_COLLECTOR-006
 func TestDocCollector_extractTitle_NotFound(t *testing.T) {
 	coll := NewDocCollector(config.Default())
 
@@ -458,7 +458,7 @@ func TestDocCollector_extractTitle_NotFound(t *testing.T) {
 	}
 }
 
-// @test TEST-INT_COL-007
+// @test TEST-INTERNAL_COLLECTOR-007
 func TestDocCollector_Collect_DirectoryWithNoSpec(t *testing.T) {
 	tmpDir := t.TempDir()
 
@@ -476,7 +476,7 @@ func TestDocCollector_Collect_DirectoryWithNoSpec(t *testing.T) {
 	}
 }
 
-// @test TEST-INT_COL-021
+// @test TEST-INTERNAL_COLLECTOR-021
 func TestNewDocCollector(t *testing.T) {
 	cfg := config.Default()
 	coll := NewDocCollector(cfg)
@@ -488,7 +488,7 @@ func TestNewDocCollector(t *testing.T) {
 	}
 }
 
-// @test TEST-INT_COL-008
+// @test TEST-INTERNAL_COLLECTOR-008
 func TestMarker_Describe(t *testing.T) {
 	m := Marker{
 		ID:       "SPEC-BE-001",
@@ -500,7 +500,7 @@ func TestMarker_Describe(t *testing.T) {
 	}
 }
 
-// @test TEST-INT_COL-009
+// @test TEST-INTERNAL_COLLECTOR-009
 func TestFrontmatter_Markers(t *testing.T) {
 	fm := &Frontmatter{
 		Markers: []Marker{
@@ -513,7 +513,7 @@ func TestFrontmatter_Markers(t *testing.T) {
 	}
 }
 
-// @test TEST-INT_COL-022
+// @test TEST-INTERNAL_COLLECTOR-022
 func TestExtractSectionContent(t *testing.T) {
 	tests := []struct {
 		name      string
@@ -568,7 +568,7 @@ func TestExtractSectionContent(t *testing.T) {
 	}
 }
 
-// @test TEST-INT_COL-023
+// @test TEST-INTERNAL_COLLECTOR-023
 func TestExtractSpecCoverage(t *testing.T) {
 	tests := []struct {
 		name   string
@@ -613,7 +613,7 @@ func TestExtractSpecCoverage(t *testing.T) {
 	}
 }
 
-// @test TEST-INT_COL-024
+// @test TEST-INTERNAL_COLLECTOR-024
 func TestExtractTestsField(t *testing.T) {
 	tests := []struct {
 		name    string
@@ -653,7 +653,7 @@ func TestExtractTestsField(t *testing.T) {
 	}
 }
 
-// @test TEST-INT_COL-025
+// @test TEST-INTERNAL_COLLECTOR-025
 func TestExtractContractField(t *testing.T) {
 	tests := []struct {
 		name    string
@@ -688,7 +688,7 @@ func TestExtractContractField(t *testing.T) {
 	}
 }
 
-// @test TEST-INT_COL-026
+// @test TEST-INTERNAL_COLLECTOR-026
 func TestExtractImplementsField(t *testing.T) {
 	tests := []struct {
 		name    string
@@ -697,13 +697,13 @@ func TestExtractImplementsField(t *testing.T) {
 	}{
 		{
 			name:    "single implements",
-			section: "**Implements:** `SPEC-INT_COL-001`",
-			want:    []string{"SPEC-INT_COL-001"},
+			section: "**Implements:** `SPEC-INTERNAL_COLLECTOR-001`",
+			want:    []string{"SPEC-INTERNAL_COLLECTOR-001"},
 		},
 		{
 			name:    "multiple implements",
-			section: "**Implements:** `SPEC-INT_COL-001`, `SPEC-INT_COL-002`",
-			want:    []string{"SPEC-INT_COL-001", "SPEC-INT_COL-002"},
+			section: "**Implements:** `SPEC-INTERNAL_COLLECTOR-001`, `SPEC-INTERNAL_COLLECTOR-002`",
+			want:    []string{"SPEC-INTERNAL_COLLECTOR-001", "SPEC-INTERNAL_COLLECTOR-002"},
 		},
 		{
 			name:    "no implements field",
@@ -728,7 +728,7 @@ func TestExtractImplementsField(t *testing.T) {
 	}
 }
 
-// @test TEST-INT_COL-027
+// @test TEST-INTERNAL_COLLECTOR-027
 func TestDocCollector_Collect_WithSpecAndTestLinks(t *testing.T) {
 	tmpDir := t.TempDir()
 
@@ -760,7 +760,7 @@ func TestDocCollector_Collect_WithSpecAndTestLinks(t *testing.T) {
 	}
 }
 
-// @test TEST-INT_COL-028
+// @test TEST-INTERNAL_COLLECTOR-028
 func TestDocCollector_Collect_WithContractLink(t *testing.T) {
 	tmpDir := t.TempDir()
 
@@ -799,7 +799,7 @@ func TestDocCollector_Collect_WithContractLink(t *testing.T) {
 	}
 }
 
-// @test TEST-INT_COL-029
+// @test TEST-INTERNAL_COLLECTOR-029
 func TestDocCollector_shouldIgnore(t *testing.T) {
 	cfg := config.Default()
 	cfg.Docs.IgnorePaths = []string{"docs/internal/**"}

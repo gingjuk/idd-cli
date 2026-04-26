@@ -10,7 +10,7 @@ import (
 	"github.com/jingxu9x/idd-cli/internal/model"
 )
 
-// @test TEST-INT_GRPH-015
+// @test TEST-INTERNAL_GRAPH-015
 func TestNewLinkageGraph(t *testing.T) {
 	g := NewLinkageGraph()
 
@@ -22,7 +22,7 @@ func TestNewLinkageGraph(t *testing.T) {
 	}
 }
 
-// @test TEST-INT_GRPH-001
+// @test TEST-INTERNAL_GRAPH-001
 func TestLinkageGraph_AddNode(t *testing.T) {
 	g := NewLinkageGraph()
 
@@ -46,7 +46,7 @@ func TestLinkageGraph_AddNode(t *testing.T) {
 	}
 }
 
-// @test TEST-INT_GRPH-002
+// @test TEST-INTERNAL_GRAPH-002
 func TestLinkageGraph_AddEdge(t *testing.T) {
 	g := NewLinkageGraph()
 	g.AddNode("SPEC-001", model.TypeSpec)
@@ -67,7 +67,7 @@ func TestLinkageGraph_AddEdge(t *testing.T) {
 	}
 }
 
-// @test TEST-INT_GRPH-003
+// @test TEST-INTERNAL_GRAPH-003
 func TestLinkageGraph_GetNode(t *testing.T) {
 	g := NewLinkageGraph()
 	g.AddNode("SPEC-001", model.TypeSpec)
@@ -86,7 +86,7 @@ func TestLinkageGraph_GetNode(t *testing.T) {
 	}
 }
 
-// @test TEST-INT_GRPH-004
+// @test TEST-INTERNAL_GRAPH-004
 func TestLinkageGraph_NodeInOutEdges(t *testing.T) {
 	g := NewLinkageGraph()
 	g.AddNode("SPEC-001", model.TypeSpec)
@@ -109,7 +109,7 @@ func TestLinkageGraph_NodeInOutEdges(t *testing.T) {
 	}
 }
 
-// @test TEST-INT_GRPH-005
+// @test TEST-INTERNAL_GRAPH-005
 func TestLinkageGraph_GetOutboundByType(t *testing.T) {
 	g := NewLinkageGraph()
 	g.AddNode("SPEC-001", model.TypeSpec)
@@ -135,7 +135,7 @@ func TestLinkageGraph_GetOutboundByType(t *testing.T) {
 	}
 }
 
-// @test TEST-INT_GRPH-006
+// @test TEST-INTERNAL_GRAPH-006
 func TestLinkageGraph_GetInboundByType(t *testing.T) {
 	g := NewLinkageGraph()
 	g.AddNode("SPEC-001", model.TypeSpec)
@@ -151,7 +151,7 @@ func TestLinkageGraph_GetInboundByType(t *testing.T) {
 	}
 }
 
-// @test TEST-INT_GRPH-007
+// @test TEST-INTERNAL_GRAPH-007
 func TestLinkageGraph_GetBacklinks(t *testing.T) {
 	g := NewLinkageGraph()
 	g.AddNode("SPEC-001", model.TypeSpec)
@@ -168,7 +168,7 @@ func TestLinkageGraph_GetBacklinks(t *testing.T) {
 	}
 }
 
-// @test TEST-INT_GRPH-008
+// @test TEST-INTERNAL_GRAPH-008
 func TestLinkageGraph_VerifyBidirectionalLinks(t *testing.T) {
 	g := NewLinkageGraph()
 	g.AddNode("SPEC-001", model.TypeSpec)
@@ -187,7 +187,7 @@ func TestLinkageGraph_VerifyBidirectionalLinks(t *testing.T) {
 	}
 }
 
-// @test TEST-INT_GRPH-009
+// @test TEST-INTERNAL_GRAPH-009
 func TestLinkageGraph_VerifyBidirectionalLinks_Unverified(t *testing.T) {
 	g := NewLinkageGraph()
 	g.AddNode("SPEC-001", model.TypeSpec)
@@ -204,7 +204,7 @@ func TestLinkageGraph_VerifyBidirectionalLinks_Unverified(t *testing.T) {
 	}
 }
 
-// @test TEST-INT_GRPH-010
+// @test TEST-INTERNAL_GRAPH-010
 func TestLinkageGraph_ToSnapshot(t *testing.T) {
 	g := NewLinkageGraph()
 	g.AddNode("SPEC-001", model.TypeSpec)
@@ -221,7 +221,7 @@ func TestLinkageGraph_ToSnapshot(t *testing.T) {
 	}
 }
 
-// @test TEST-INT_GRPH-011
+// @test TEST-INTERNAL_GRAPH-011
 func TestLinkageGraph_Stats(t *testing.T) {
 	g := NewLinkageGraph()
 	g.AddNode("SPEC-001", model.TypeSpec)
@@ -245,7 +245,7 @@ func TestLinkageGraph_Stats(t *testing.T) {
 	}
 }
 
-// @test TEST-INT_GRPH-012
+// @test TEST-INTERNAL_GRAPH-012
 func TestLinkageGraph_ValidateCompleteness(t *testing.T) {
 	g := NewLinkageGraph()
 	g.AddNode("SPEC-001", model.TypeSpec)
@@ -260,7 +260,7 @@ func TestLinkageGraph_ValidateCompleteness(t *testing.T) {
 	}
 }
 
-// @test TEST-INT_GRPH-013
+// @test TEST-INTERNAL_GRAPH-013
 func TestLinkageGraph_ValidateCompleteness_NoLinks(t *testing.T) {
 	g := NewLinkageGraph()
 	g.AddNode("SPEC-001", model.TypeSpec)
@@ -272,7 +272,7 @@ func TestLinkageGraph_ValidateCompleteness_NoLinks(t *testing.T) {
 	}
 }
 
-// @test TEST-INT_GRPH-014
+// @test TEST-INTERNAL_GRAPH-014
 func TestLinkageGraph_Nodes_Edges(t *testing.T) {
 	g := NewLinkageGraph()
 	g.AddNode("SPEC-001", model.TypeSpec)

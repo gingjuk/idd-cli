@@ -1,9 +1,9 @@
 ---
 related_files:
-  spec: spec.md
-  contract: contract.md
-  design: design.md
-  testing: testing.md
+  spec: docs/internal/graph/spec.md
+  contract: docs/internal/graph/contract.md
+  design: docs/internal/graph/design.md
+  testing: docs/internal/graph/testing.md
 ---
 
 # Contract (graph)
@@ -31,4 +31,4 @@ The graph must provide efficient storage and traversal of identifier relationshi
 - [x] Index maintains backlinks for fast lookup
 - [x] Bidirectional verification marks edges as verified/unverified
 
-**Related:** `SPEC-INT_GRPH-001`, `SPEC-INT_GRPH-002`, `SPEC-INT_GRPH-003`
+**Related:** `SPEC-INTERNAL_GRAPH-001`, `SPEC-INTERNAL_GRAPH-002`, `SPEC-INTERNAL_GRAPH-003`

@@ -1,34 +1,34 @@
 ---
 markers:
-  - id: SPEC-PKG_PAT-001
+  - id: SPEC-PKG_PATTERN-001
     name: IDD Pattern Regex
-  - id: SPEC-PKG_PAT-002
+  - id: SPEC-PKG_PATTERN-002
     name: Code Annotation Pattern
-  - id: SPEC-PKG_PAT-003
+  - id: SPEC-PKG_PATTERN-003
     name: Annotation Type Mapping
-  - id: SPEC-PKG_PAT-004
+  - id: SPEC-PKG_PATTERN-004
     name: Reference Extraction
-  - id: SPEC-PKG_PAT-005
+  - id: SPEC-PKG_PATTERN-005
     name: Reference Splitting
-  - id: SPEC-PKG_PAT-006
+  - id: SPEC-PKG_PATTERN-006
     name: Identifier Type Detection
-  - id: SPEC-PKG_PAT-007
+  - id: SPEC-PKG_PATTERN-007
     name: Pattern Validation
-  - id: SPEC-PKG_PAT-008
+  - id: SPEC-PKG_PATTERN-008
     name: IDD Reference Filter
-  - id: SPEC-PKG_PAT-009
+  - id: SPEC-PKG_PATTERN-009
     name: Pattern Constants
 
 related_files:
-  spec: spec.md
-  contract: contract.md
-  design: design.md
-  testing: testing.md
+  spec: docs/pkg/pattern/spec.md
+  contract: docs/pkg/pattern/contract.md
+  design: docs/pkg/pattern/design.md
+  testing: docs/pkg/pattern/testing.md
 ---
 
 # Specification (pattern)
 
-## SPEC-PKG_PAT-001: IDD Pattern Regex
+## SPEC-PKG_PATTERN-001: IDD Pattern Regex
 
 **Status:** Done
 
@@ -47,11 +47,11 @@ Define regex patterns for IDD identifier recognition.
 - TEST pattern: `TEST-[A-Z]+-[0-9]+`
 - CONTRACT pattern: `CONTRACT-[A-Z]+-[0-9]+`
 - DESIGN pattern: `DESIGN-[A-Z]+-[0-9]+`
-**Tests:** `TEST-PKG_PAT-001`
+**Tests:** `TEST-PKG_PATTERN-001`
 
 ---
 
-## SPEC-PKG_PAT-002: Code Annotation Pattern
+## SPEC-PKG_PATTERN-002: Code Annotation Pattern
 
 **Status:** Done
 
@@ -68,11 +68,11 @@ Define regex patterns for code annotations (@implement, @test, @test-contract).
 
 - Annotation prefix pattern
 - Annotation value pattern
-**Tests:** `TEST-PKG_PAT-002`
+**Tests:** `TEST-PKG_PATTERN-002`
 
 ---
 
-## SPEC-PKG_PAT-003: Annotation Type Mapping
+## SPEC-PKG_PATTERN-003: Annotation Type Mapping
 
 **Status:** Done
 
@@ -89,11 +89,11 @@ Map annotation prefixes to identifier types.
 
 - `GetAnnotationType(prefix string) string`
 - Maps: @implement → SPEC, @test → TEST, @test-contract → TEST
-**Tests:** `TEST-PKG_PAT-003`
+**Tests:** `TEST-PKG_PATTERN-003`
 
 ---
 
-## SPEC-PKG_PAT-004: Reference Extraction
+## SPEC-PKG_PATTERN-004: Reference Extraction
 
 **Status:** Done
 
@@ -110,11 +110,11 @@ Extract IDD references from content.
 
 - `ExtractIDDReferences(content string) []string`
 - Extracts all IDD identifier references from text
-**Tests:** `TEST-PKG_PAT-004`
+**Tests:** `TEST-PKG_PATTERN-004`
 
 ---
 
-## SPEC-PKG_PAT-005: Reference Splitting
+## SPEC-PKG_PATTERN-005: Reference Splitting
 
 **Status:** Done
 
@@ -131,11 +131,11 @@ Split comma-separated IDD references.
 
 - `SplitAnnotationRefs(s string) []string`
 - Trims whitespace from each reference
-**Tests:** `TEST-PKG_PAT-005`
+**Tests:** `TEST-PKG_PATTERN-005`
 
 ---
 
-## SPEC-PKG_PAT-006: Identifier Type Detection
+## SPEC-PKG_PATTERN-006: Identifier Type Detection
 
 **Status:** Done
 
@@ -152,11 +152,11 @@ Determine identifier type from reference string.
 
 - `GetIdentifierType(ref string) string`
 - Returns "SPEC", "TEST", "CONTRACT", "DESIGN" or empty
-**Tests:** `TEST-PKG_PAT-006`
+**Tests:** `TEST-PKG_PATTERN-006`
 
 ---
 
-## SPEC-PKG_PAT-007: Pattern Validation
+## SPEC-PKG_PATTERN-007: Pattern Validation
 
 **Status:** Done
 
@@ -173,11 +173,11 @@ Validate identifier against IDD pattern.
 
 - `ValidateIDPattern(id string) error`
 - Validates against known patterns
-**Tests:** `TEST-PKG_PAT-007`
+**Tests:** `TEST-PKG_PATTERN-007`
 
 ---
 
-## SPEC-PKG_PAT-008: IDD Reference Filter
+## SPEC-PKG_PATTERN-008: IDD Reference Filter
 
 **Status:** Done
 
@@ -194,11 +194,11 @@ Filter out quoted/backtick-wrapped identifiers.
 
 - `ExtractAnnotations(content string) []string`
 - Filters out identifiers in backticks or quotes
-**Tests:** `TEST-PKG_PAT-008`
+**Tests:** `TEST-PKG_PATTERN-008`
 
 ---
 
-## SPEC-PKG_PAT-009: Pattern Constants
+## SPEC-PKG_PATTERN-009: Pattern Constants
 
 **Status:** Done
 
@@ -216,4 +216,4 @@ Define pattern constants for reuse.
 - Pattern strings
 - Annotation prefixes
 
-**Tests:** `TEST-PKG_PAT-007`
+**Tests:** `TEST-PKG_PATTERN-007`

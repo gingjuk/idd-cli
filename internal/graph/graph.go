@@ -12,7 +12,7 @@ import (
 
 // Node represents an IDD identifier within the linkage graph with incoming and outgoing edges.
 //
-// @implement SPEC-INT_GRPH-001
+// @implement SPEC-INTERNAL_GRAPH-001
 type Node struct {
 	ID       string
 	Type     model.IdentifierType
@@ -23,7 +23,7 @@ type Node struct {
 
 // Edge represents a directed relationship between two nodes in the linkage graph.
 //
-// @implement SPEC-INT_GRPH-002
+// @implement SPEC-INTERNAL_GRAPH-002
 type Edge struct {
 	From     string
 	To       string
@@ -35,7 +35,7 @@ type Edge struct {
 
 // LinkageGraph manages nodes and edges for IDD identifier validation.
 //
-// @implement SPEC-INT_GRPH-003
+// @implement SPEC-INTERNAL_GRAPH-003
 type LinkageGraph struct {
 	nodes map[string]*Node
 	edges []*Edge
@@ -44,7 +44,7 @@ type LinkageGraph struct {
 
 // Index provides fast lookup structures for nodes by ID, type, and backlinks.
 //
-// @implement SPEC-INT_GRPH-004
+// @implement SPEC-INTERNAL_GRAPH-004
 type Index struct {
 	byID      map[string]*Node
 	byType    map[model.IdentifierType][]*Node
@@ -52,7 +52,7 @@ type Index struct {
 }
 
 // NewLinkageGraph creates a new empty linkage graph with initialized maps.
-// @implement SPEC-INT_GRPH-005, SPEC-INT_GRPH-006, SPEC-INT_GRPH-009
+// @implement SPEC-INTERNAL_GRAPH-005, SPEC-INTERNAL_GRAPH-006, SPEC-INTERNAL_GRAPH-009
 func NewLinkageGraph() *LinkageGraph {
 	return &LinkageGraph{
 		nodes: make(map[string]*Node),
@@ -67,7 +67,7 @@ func NewLinkageGraph() *LinkageGraph {
 
 // AddNode adds a node to the graph if it doesn't exist.
 //
-// @implement SPEC-INT_GRPH-007
+// @implement SPEC-INTERNAL_GRAPH-007
 func (g *LinkageGraph) AddNode(id string, idType model.IdentifierType) *Node {
 	if n, ok := g.nodes[id]; ok {
 		return n
@@ -87,7 +87,7 @@ func (g *LinkageGraph) AddNode(id string, idType model.IdentifierType) *Node {
 
 // AddEdge adds a directed edge between two nodes.
 //
-// @implement SPEC-INT_GRPH-008
+// @implement SPEC-INTERNAL_GRAPH-008
 func (g *LinkageGraph) AddEdge(from, to string, edgeType model.LinkType, source string, line int) {
 	edge := &Edge{
 		From:   from,

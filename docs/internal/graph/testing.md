@@ -1,46 +1,46 @@
 ---
 markers:
-  - id: TEST-INT_GRPH-001
+  - id: TEST-INTERNAL_GRAPH-001
     name: Graph Test 1
-  - id: TEST-INT_GRPH-002
+  - id: TEST-INTERNAL_GRAPH-002
     name: Graph Test 2
-  - id: TEST-INT_GRPH-003
+  - id: TEST-INTERNAL_GRAPH-003
     name: Graph Test 3
-  - id: TEST-INT_GRPH-004
+  - id: TEST-INTERNAL_GRAPH-004
     name: Graph Test 4
-  - id: TEST-INT_GRPH-005
+  - id: TEST-INTERNAL_GRAPH-005
     name: Graph Test 5
-  - id: TEST-INT_GRPH-006
+  - id: TEST-INTERNAL_GRAPH-006
     name: Graph Test 6
-  - id: TEST-INT_GRPH-007
+  - id: TEST-INTERNAL_GRAPH-007
     name: Graph Test 7
-  - id: TEST-INT_GRPH-008
+  - id: TEST-INTERNAL_GRAPH-008
     name: Graph Test 8
-  - id: TEST-INT_GRPH-009
+  - id: TEST-INTERNAL_GRAPH-009
     name: Graph Test 9
-  - id: TEST-INT_GRPH-010
+  - id: TEST-INTERNAL_GRAPH-010
     name: Graph Test 10
-  - id: TEST-INT_GRPH-011
+  - id: TEST-INTERNAL_GRAPH-011
     name: Graph Test 11
-  - id: TEST-INT_GRPH-012
+  - id: TEST-INTERNAL_GRAPH-012
     name: Graph Test 12
-  - id: TEST-INT_GRPH-013
+  - id: TEST-INTERNAL_GRAPH-013
     name: Graph Test 13
-  - id: TEST-INT_GRPH-014
+  - id: TEST-INTERNAL_GRAPH-014
     name: Graph Test 14
-  - id: TEST-INT_GRPH-015
+  - id: TEST-INTERNAL_GRAPH-015
     name: Graph Test 15
 
 related_files:
-  spec: spec.md
-  contract: contract.md
-  design: design.md
-  testing: testing.md
+  spec: docs/internal/graph/spec.md
+  contract: docs/internal/graph/contract.md
+  design: docs/internal/graph/design.md
+  testing: docs/internal/graph/testing.md
 ---
 
 # Test Cases (graph)
 
-## TEST-INT_GRPH-001: NewLinkageGraph
+## TEST-INTERNAL_GRAPH-001: NewLinkageGraph
 
 **Status:** Done
 
@@ -48,11 +48,11 @@ related_files:
 
 Test graph initialization.
 
-**Spec Coverage:** `SPEC-INT_GRPH-001`, `SPEC-INT_GRPH-002`, `SPEC-INT_GRPH-003`, `SPEC-INT_GRPH-004`, `SPEC-INT_GRPH-005`
+**Spec Coverage:** `SPEC-INTERNAL_GRAPH-001`, `SPEC-INTERNAL_GRAPH-002`, `SPEC-INTERNAL_GRAPH-003`, `SPEC-INTERNAL_GRAPH-004`, `SPEC-INTERNAL_GRAPH-005`
 
 ---
 
-## TEST-INT_GRPH-002: AddNode
+## TEST-INTERNAL_GRAPH-002: AddNode
 
 **Status:** Done
 
@@ -60,11 +60,11 @@ Test graph initialization.
 
 Test node addition to graph.
 
-**Spec Coverage:** `SPEC-INT_GRPH-001`, `SPEC-INT_GRPH-002`, `SPEC-INT_GRPH-003`, `SPEC-INT_GRPH-004`, `SPEC-INT_GRPH-005`
+**Spec Coverage:** `SPEC-INTERNAL_GRAPH-001`, `SPEC-INTERNAL_GRAPH-002`, `SPEC-INTERNAL_GRAPH-003`, `SPEC-INTERNAL_GRAPH-004`, `SPEC-INTERNAL_GRAPH-005`
 
 ---
 
-## TEST-INT_GRPH-003: AddEdge
+## TEST-INTERNAL_GRAPH-003: AddEdge
 
 **Status:** Done
 
@@ -72,11 +72,11 @@ Test node addition to graph.
 
 Test edge addition between nodes.
 
-**Spec Coverage:** `SPEC-INT_GRPH-001`, `SPEC-INT_GRPH-002`, `SPEC-INT_GRPH-003`, `SPEC-INT_GRPH-004`, `SPEC-INT_GRPH-005`
+**Spec Coverage:** `SPEC-INTERNAL_GRAPH-001`, `SPEC-INTERNAL_GRAPH-002`, `SPEC-INTERNAL_GRAPH-003`, `SPEC-INTERNAL_GRAPH-004`, `SPEC-INTERNAL_GRAPH-005`
 
 ---
 
-## TEST-INT_GRPH-004: GetNode
+## TEST-INTERNAL_GRAPH-004: GetNode
 
 **Status:** Done
 
@@ -84,11 +84,11 @@ Test edge addition between nodes.
 
 Test node lookup by ID.
 
-**Spec Coverage:** `SPEC-INT_GRPH-001`, `SPEC-INT_GRPH-002`, `SPEC-INT_GRPH-003`, `SPEC-INT_GRPH-004`, `SPEC-INT_GRPH-005`
+**Spec Coverage:** `SPEC-INTERNAL_GRAPH-001`, `SPEC-INTERNAL_GRAPH-002`, `SPEC-INTERNAL_GRAPH-003`, `SPEC-INTERNAL_GRAPH-004`, `SPEC-INTERNAL_GRAPH-005`
 
 ---
 
-## TEST-INT_GRPH-005: NodeInOutEdges
+## TEST-INTERNAL_GRAPH-005: NodeInOutEdges
 
 **Status:** Done
 
@@ -96,11 +96,11 @@ Test node lookup by ID.
 
 Test edge traversal from nodes.
 
-**Spec Coverage:** `SPEC-INT_GRPH-001`, `SPEC-INT_GRPH-002`, `SPEC-INT_GRPH-003`, `SPEC-INT_GRPH-004`, `SPEC-INT_GRPH-005`
+**Spec Coverage:** `SPEC-INTERNAL_GRAPH-001`, `SPEC-INTERNAL_GRAPH-002`, `SPEC-INTERNAL_GRAPH-003`, `SPEC-INTERNAL_GRAPH-004`, `SPEC-INTERNAL_GRAPH-005`
 
 ---
 
-## TEST-INT_GRPH-006: GetOutboundByType
+## TEST-INTERNAL_GRAPH-006: GetOutboundByType
 
 **Status:** Done
 
@@ -108,11 +108,11 @@ Test edge traversal from nodes.
 
 Test filtering outbound edges by type.
 
-**Spec Coverage:** `SPEC-INT_GRPH-001`, `SPEC-INT_GRPH-002`, `SPEC-INT_GRPH-003`, `SPEC-INT_GRPH-004`, `SPEC-INT_GRPH-005`
+**Spec Coverage:** `SPEC-INTERNAL_GRAPH-001`, `SPEC-INTERNAL_GRAPH-002`, `SPEC-INTERNAL_GRAPH-003`, `SPEC-INTERNAL_GRAPH-004`, `SPEC-INTERNAL_GRAPH-005`
 
 ---
 
-## TEST-INT_GRPH-007: GetInboundByType
+## TEST-INTERNAL_GRAPH-007: GetInboundByType
 
 **Status:** Done
 
@@ -120,11 +120,11 @@ Test filtering outbound edges by type.
 
 Test filtering inbound edges by type.
 
-**Spec Coverage:** `SPEC-INT_GRPH-001`, `SPEC-INT_GRPH-002`, `SPEC-INT_GRPH-003`, `SPEC-INT_GRPH-004`, `SPEC-INT_GRPH-005`
+**Spec Coverage:** `SPEC-INTERNAL_GRAPH-001`, `SPEC-INTERNAL_GRAPH-002`, `SPEC-INTERNAL_GRAPH-003`, `SPEC-INTERNAL_GRAPH-004`, `SPEC-INTERNAL_GRAPH-005`
 
 ---
 
-## TEST-INT_GRPH-008: GetBacklinks
+## TEST-INTERNAL_GRAPH-008: GetBacklinks
 
 **Status:** Done
 
@@ -132,11 +132,11 @@ Test filtering inbound edges by type.
 
 Test reverse edge lookup using index.
 
-**Spec Coverage:** `SPEC-INT_GRPH-001`, `SPEC-INT_GRPH-002`, `SPEC-INT_GRPH-003`, `SPEC-INT_GRPH-004`, `SPEC-INT_GRPH-005`
+**Spec Coverage:** `SPEC-INTERNAL_GRAPH-001`, `SPEC-INTERNAL_GRAPH-002`, `SPEC-INTERNAL_GRAPH-003`, `SPEC-INTERNAL_GRAPH-004`, `SPEC-INTERNAL_GRAPH-005`
 
 ---
 
-## TEST-INT_GRPH-009: VerifyBidirectionalLinks
+## TEST-INTERNAL_GRAPH-009: VerifyBidirectionalLinks
 
 **Status:** Done
 
@@ -144,11 +144,11 @@ Test reverse edge lookup using index.
 
 Test doc-link-consistency verification.
 
-**Spec Coverage:** `SPEC-INT_GRPH-001`, `SPEC-INT_GRPH-002`, `SPEC-INT_GRPH-003`, `SPEC-INT_GRPH-004`, `SPEC-INT_GRPH-005`, `SPEC-INT_GRPH-009`
+**Spec Coverage:** `SPEC-INTERNAL_GRAPH-001`, `SPEC-INTERNAL_GRAPH-002`, `SPEC-INTERNAL_GRAPH-003`, `SPEC-INTERNAL_GRAPH-004`, `SPEC-INTERNAL_GRAPH-005`, `SPEC-INTERNAL_GRAPH-009`
 
 ---
 
-## TEST-INT_GRPH-010: ToSnapshot
+## TEST-INTERNAL_GRAPH-010: ToSnapshot
 
 **Status:** Done
 
@@ -156,11 +156,11 @@ Test doc-link-consistency verification.
 
 Test graph serialization to snapshot.
 
-**Spec Coverage:** `SPEC-INT_GRPH-001`, `SPEC-INT_GRPH-002`, `SPEC-INT_GRPH-003`, `SPEC-INT_GRPH-004`, `SPEC-INT_GRPH-005`
+**Spec Coverage:** `SPEC-INTERNAL_GRAPH-001`, `SPEC-INTERNAL_GRAPH-002`, `SPEC-INTERNAL_GRAPH-003`, `SPEC-INTERNAL_GRAPH-004`, `SPEC-INTERNAL_GRAPH-005`
 
 ---
 
-## TEST-INT_GRPH-011: Stats
+## TEST-INTERNAL_GRAPH-011: Stats
 
 **Status:** Done
 
@@ -168,11 +168,11 @@ Test graph serialization to snapshot.
 
 Test statistics computation.
 
-**Spec Coverage:** `SPEC-INT_GRPH-001`, `SPEC-INT_GRPH-002`, `SPEC-INT_GRPH-003`, `SPEC-INT_GRPH-004`, `SPEC-INT_GRPH-005`
+**Spec Coverage:** `SPEC-INTERNAL_GRAPH-001`, `SPEC-INTERNAL_GRAPH-002`, `SPEC-INTERNAL_GRAPH-003`, `SPEC-INTERNAL_GRAPH-004`, `SPEC-INTERNAL_GRAPH-005`
 
 ---
 
-## TEST-INT_GRPH-012: ValidateCompleteness
+## TEST-INTERNAL_GRAPH-012: ValidateCompleteness
 
 **Status:** Done
 
@@ -180,11 +180,11 @@ Test statistics computation.
 
 Test completeness validation.
 
-**Spec Coverage:** `SPEC-INT_GRPH-001`, `SPEC-INT_GRPH-002`, `SPEC-INT_GRPH-003`, `SPEC-INT_GRPH-004`, `SPEC-INT_GRPH-005`
+**Spec Coverage:** `SPEC-INTERNAL_GRAPH-001`, `SPEC-INTERNAL_GRAPH-002`, `SPEC-INTERNAL_GRAPH-003`, `SPEC-INTERNAL_GRAPH-004`, `SPEC-INTERNAL_GRAPH-005`
 
 ---
 
-## TEST-INT_GRPH-013: Edge Verification
+## TEST-INTERNAL_GRAPH-013: Edge Verification
 
 **Status:** Done
 
@@ -192,11 +192,11 @@ Test completeness validation.
 
 Test edge verification marking.
 
-**Spec Coverage:** `SPEC-INT_GRPH-001`, `SPEC-INT_GRPH-002`, `SPEC-INT_GRPH-003`, `SPEC-INT_GRPH-004`, `SPEC-INT_GRPH-005`
+**Spec Coverage:** `SPEC-INTERNAL_GRAPH-001`, `SPEC-INTERNAL_GRAPH-002`, `SPEC-INTERNAL_GRAPH-003`, `SPEC-INTERNAL_GRAPH-004`, `SPEC-INTERNAL_GRAPH-005`
 
 ---
 
-## TEST-INT_GRPH-014: Index Backlink Lookup
+## TEST-INTERNAL_GRAPH-014: Index Backlink Lookup
 
 **Status:** Done
 
@@ -204,11 +204,11 @@ Test edge verification marking.
 
 Test index-based backlink lookup performance.
 
-**Spec Coverage:** `SPEC-INT_GRPH-001`, `SPEC-INT_GRPH-002`, `SPEC-INT_GRPH-003`, `SPEC-INT_GRPH-004`, `SPEC-INT_GRPH-005`
+**Spec Coverage:** `SPEC-INTERNAL_GRAPH-001`, `SPEC-INTERNAL_GRAPH-002`, `SPEC-INTERNAL_GRAPH-003`, `SPEC-INTERNAL_GRAPH-004`, `SPEC-INTERNAL_GRAPH-005`
 
 ---
 
-## TEST-INT_GRPH-015: Node Metadata
+## TEST-INTERNAL_GRAPH-015: Node Metadata
 
 **Status:** Done
 
@@ -216,4 +216,4 @@ Test index-based backlink lookup performance.
 
 Test node metadata storage and retrieval.
 
-**Spec Coverage:** `SPEC-INT_GRPH-001`, `SPEC-INT_GRPH-002`, `SPEC-INT_GRPH-003`, `SPEC-INT_GRPH-004`, `SPEC-INT_GRPH-005`
+**Spec Coverage:** `SPEC-INTERNAL_GRAPH-001`, `SPEC-INTERNAL_GRAPH-002`, `SPEC-INTERNAL_GRAPH-003`, `SPEC-INTERNAL_GRAPH-004`, `SPEC-INTERNAL_GRAPH-005`

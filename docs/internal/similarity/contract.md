@@ -1,9 +1,9 @@
 ---
 related_files:
-  spec: spec.md
-  contract: contract.md
-  design: design.md
-  testing: testing.md
+  spec: docs/internal/similarity/spec.md
+  contract: docs/internal/similarity/contract.md
+  design: docs/internal/similarity/design.md
+  testing: docs/internal/similarity/testing.md
 ---
 
 # Contract (similarity)
@@ -30,4 +30,4 @@ The similarity module provides TF-IDF based document similarity analysis.
 - [x] Configurable similarity threshold
 - [x] Similar files are flagged for review
 
-**Related:** `SPEC-INT_SIM-001` through `SPEC-INT_SIM-005`
+**Related:** `SPEC-INTERNAL_SIMILARITY-001` through `SPEC-INTERNAL_SIMILARITY-005`

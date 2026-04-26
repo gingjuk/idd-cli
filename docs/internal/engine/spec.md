@@ -1,22 +1,22 @@
 ---
 markers:
-  - id: SPEC-INT_ENG-001
+  - id: SPEC-INTERNAL_ENGINE-001
     name: Engine Core Struct
-  - id: SPEC-INT_ENG-002
+  - id: SPEC-INTERNAL_ENGINE-002
     name: Engine.New Method
-  - id: SPEC-INT_ENG-004
+  - id: SPEC-INTERNAL_ENGINE-004
     name: Engine.Run Method
 
 related_files:
-  spec: spec.md
-  contract: contract.md
-  design: design.md
-  testing: testing.md
+  spec: docs/internal/engine/spec.md
+  contract: docs/internal/engine/contract.md
+  design: docs/internal/engine/design.md
+  testing: docs/internal/engine/testing.md
 ---
 
 # Specification (engine)
 
-## SPEC-INT_ENG-001: Engine Core Struct
+## SPEC-INTERNAL_ENGINE-001: Engine Core Struct
 
 **Contract:** `Engine`
 
@@ -40,13 +40,13 @@ The validation engine is the core orchestration component that coordinates colle
 - [x] Engine coordinates validation pipeline
 - [x] Engine supports context for cancellation
 
-**Tests:** `TEST-INT_ENG-001`, `TEST-INT_ENG-002`, `TEST-INT_ENG-003`, `TEST-INT_ENG-004`, `TEST-INT_ENG-005`, `TEST-INT_ENG-006`, `TEST-INT_ENG-007`, `TEST-INT_ENG-008`, `TEST-INT_ENG-009`, `TEST-INT_ENG-010`, `TEST-INT_ENG-011`, `TEST-INT_ENG-012`
+**Tests:** `TEST-INTERNAL_ENGINE-001`, `TEST-INTERNAL_ENGINE-002`, `TEST-INTERNAL_ENGINE-003`, `TEST-INTERNAL_ENGINE-004`, `TEST-INTERNAL_ENGINE-005`, `TEST-INTERNAL_ENGINE-006`, `TEST-INTERNAL_ENGINE-007`, `TEST-INTERNAL_ENGINE-008`, `TEST-INTERNAL_ENGINE-009`, `TEST-INTERNAL_ENGINE-010`, `TEST-INTERNAL_ENGINE-011`, `TEST-INTERNAL_ENGINE-012`
 
-**Related:** `SPEC-INT_ENG-001`, `SPEC-INT_ENG-002`
+**Related:** `SPEC-INTERNAL_ENGINE-001`, `SPEC-INTERNAL_ENGINE-002`
 
 ---
 
-## SPEC-INT_ENG-002: Engine.New
+## SPEC-INTERNAL_ENGINE-002: Engine.New
 
 **Contract:** `New`
 
@@ -77,11 +77,11 @@ Factory function to create a new Engine instance with configuration.
 - [x] Empty graph initialized
 - [x] Empty result initialized
 
-**Tests:** `TEST-INT_ENG-002`, `TEST-INT_ENG-003`
+**Tests:** `TEST-INTERNAL_ENGINE-002`, `TEST-INTERNAL_ENGINE-003`
 
 ---
 
-## SPEC-INT_ENG-004: Engine.Run
+## SPEC-INTERNAL_ENGINE-004: Engine.Run
 
 **Function Signature:**
 `func (e *Engine) Run(ctx context.Context, ids *model.IdentifierSet) (*model.ValidationResult, error)`
@@ -101,4 +101,4 @@ Factory function to create a new Engine instance with configuration.
 - [x] Runs all enabled validation rules
 - [x] Returns accumulated validation result
 
-**Tests:** `TEST-INT_ENG-004`, `TEST-INT_ENG-005`
+**Tests:** `TEST-INTERNAL_ENGINE-004`, `TEST-INTERNAL_ENGINE-005`

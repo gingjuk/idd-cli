@@ -1,24 +1,24 @@
 ---
 markers:
-  - id: SPEC-INT_RPT-001
+  - id: SPEC-INTERNAL_REPORTER-001
     name: Reporter Structure
-  - id: SPEC-INT_RPT-003
+  - id: SPEC-INTERNAL_REPORTER-003
     name: Reporter.New
-  - id: SPEC-INT_RPT-004
+  - id: SPEC-INTERNAL_REPORTER-004
     name: Reporter.Generate
-  - id: SPEC-INT_RPT-005
+  - id: SPEC-INTERNAL_REPORTER-005
     name: Reporter.Write
 
 related_files:
-  spec: spec.md
-  contract: contract.md
-  design: design.md
-  testing: testing.md
+  spec: docs/internal/reporter/spec.md
+  contract: docs/internal/reporter/contract.md
+  design: docs/internal/reporter/design.md
+  testing: docs/internal/reporter/testing.md
 ---
 
 # Specification (reporter)
 
-## SPEC-INT_RPT-001: Reporter Structure
+## SPEC-INTERNAL_REPORTER-001: Reporter Structure
 
 **Contract:** `Reporter`
 
@@ -42,9 +42,9 @@ Reporter generates validation reports in JSON and Markdown formats.
 - [x] Reporter.Generate creates complete report
 - [x] Reporter.Write outputs report to stdout or file
 
-**Tests:** `TEST-INT_RPT-001`, `TEST-INT_RPT-002`, `TEST-INT_RPT-003`, `TEST-INT_RPT-004`, `TEST-INT_RPT-005`, `TEST-INT_RPT-006`, `TEST-INT_RPT-007`, `TEST-INT_RPT-008`, `TEST-INT_RPT-009`, `TEST-INT_RPT-010`
+**Tests:** `TEST-INTERNAL_REPORTER-001`, `TEST-INTERNAL_REPORTER-002`, `TEST-INTERNAL_REPORTER-003`, `TEST-INTERNAL_REPORTER-004`, `TEST-INTERNAL_REPORTER-005`, `TEST-INTERNAL_REPORTER-006`, `TEST-INTERNAL_REPORTER-007`, `TEST-INTERNAL_REPORTER-008`, `TEST-INTERNAL_REPORTER-009`, `TEST-INTERNAL_REPORTER-010`
 
-## SPEC-INT_RPT-003: Reporter.New
+## SPEC-INTERNAL_REPORTER-003: Reporter.New
 
 **Function Signature:**
 `func New(cfg *config.Config, format string) *Reporter`
@@ -58,9 +58,9 @@ Reporter generates validation reports in JSON and Markdown formats.
 
 **Returns:** A new Reporter instance
 
-**Tests:** `TEST-INT_RPT-001`
+**Tests:** `TEST-INTERNAL_REPORTER-001`
 
-## SPEC-INT_RPT-004: Reporter.Generate
+## SPEC-INTERNAL_REPORTER-004: Reporter.Generate
 
 **Function Signature:**
 `func (r *Reporter) Generate(result *model.ValidationResult) (*model.Report, error)`
@@ -73,9 +73,9 @@ Reporter generates validation reports in JSON and Markdown formats.
 
 **Returns:** Complete Report structure or error
 
-**Tests:** `TEST-INT_RPT-002`
+**Tests:** `TEST-INTERNAL_REPORTER-002`
 
-## SPEC-INT_RPT-005: Reporter.Write
+## SPEC-INTERNAL_REPORTER-005: Reporter.Write
 
 **Function Signature:**
 `func (r *Reporter) Write(report *model.Report, output string) error`
@@ -95,6 +95,6 @@ Reporter generates validation reports in JSON and Markdown formats.
 - [x] Write outputs to stdout for "-" or empty output
 - [x] Write creates file for non-empty non-dash output path
 
-**Tests:** `TEST-INT_RPT-001`, `TEST-INT_RPT-002`, `TEST-INT_RPT-003`, `TEST-INT_RPT-004`, `TEST-INT_RPT-005`, `TEST-INT_RPT-006`, `TEST-INT_RPT-007`, `TEST-INT_RPT-008`, `TEST-INT_RPT-009`, `TEST-INT_RPT-010`
+**Tests:** `TEST-INTERNAL_REPORTER-001`, `TEST-INTERNAL_REPORTER-002`, `TEST-INTERNAL_REPORTER-003`, `TEST-INTERNAL_REPORTER-004`, `TEST-INTERNAL_REPORTER-005`, `TEST-INTERNAL_REPORTER-006`, `TEST-INTERNAL_REPORTER-007`, `TEST-INTERNAL_REPORTER-008`, `TEST-INTERNAL_REPORTER-009`, `TEST-INTERNAL_REPORTER-010`
 
-**Related:** `SPEC-INT_RPT-001`
+**Related:** `SPEC-INTERNAL_REPORTER-001`

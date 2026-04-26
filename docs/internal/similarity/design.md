@@ -1,9 +1,9 @@
 ---
 related_files:
-  spec: spec.md
-  contract: contract.md
-  design: design.md
-  testing: testing.md
+  spec: docs/internal/similarity/spec.md
+  contract: docs/internal/similarity/contract.md
+  design: docs/internal/similarity/design.md
+  testing: docs/internal/similarity/testing.md
 ---
 
 # Design (similarity)

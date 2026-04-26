@@ -8,7 +8,7 @@ import (
 	"testing"
 )
 
-// @test TEST-PKG_PAT-001
+// @test TEST-PKG_PATTERN-001
 func TestValidateIdentifierFormat(t *testing.T) {
 	tests := []struct {
 		name    string
@@ -135,7 +135,7 @@ func TestValidateIdentifierFormat(t *testing.T) {
 	}
 }
 
-// @test TEST-PKG_PAT-002
+// @test TEST-PKG_PATTERN-002
 func TestValidateIDPattern(t *testing.T) {
 	tests := []struct {
 		name    string
@@ -184,7 +184,7 @@ func TestValidateIDPattern(t *testing.T) {
 	}
 }
 
-// @test TEST-PKG_PAT-003
+// @test TEST-PKG_PATTERN-003
 func TestGetIdentifierType(t *testing.T) {
 	tests := []struct {
 		name string
@@ -238,7 +238,7 @@ func TestGetIdentifierType(t *testing.T) {
 	}
 }
 
-// @test TEST-PKG_PAT-004
+// @test TEST-PKG_PATTERN-004
 func TestGetAnnotationType(t *testing.T) {
 	tests := []struct {
 		name   string
@@ -287,7 +287,7 @@ func TestGetAnnotationType(t *testing.T) {
 	}
 }
 
-// @test TEST-PKG_PAT-005
+// @test TEST-PKG_PATTERN-005
 func TestExtractIDDReferences(t *testing.T) {
 	tests := []struct {
 		name    string
@@ -356,7 +356,7 @@ func TestExtractIDDReferences(t *testing.T) {
 	}
 }
 
-// @test TEST-PKG_PAT-006
+// @test TEST-PKG_PATTERN-006
 func TestSplitAnnotationRefs(t *testing.T) {
 	tests := []struct {
 		name string
@@ -405,7 +405,7 @@ func TestSplitAnnotationRefs(t *testing.T) {
 	}
 }
 
-// @test TEST-PKG_PAT-007
+// @test TEST-PKG_PATTERN-007
 func TestExtractAnnotations(t *testing.T) {
 	tests := []struct {
 		name    string
@@ -422,15 +422,15 @@ func TestExtractAnnotations(t *testing.T) {
 		{
 			name: "multiple annotation types",
 			// idd:ignore start
-			content: "// @implement SPEC-CMD_IDD-001\n// @test TEST-CMD_IDD-001",
-			want:    []string{"SPEC-CMD_IDD-001", "TEST-CMD_IDD-001"},
+			content: "// @implement SPEC-CMD_IDD_CLI-001\n// @test TEST-CMD_IDD_CLI-001",
+			want:    []string{"SPEC-CMD_IDD_CLI-001", "TEST-CMD_IDD_CLI-001"},
 			// idd:ignore end
 		},
 		{
 			name: "annotation with multiple refs",
 			// idd:ignore start
-			content: "// @implement SPEC-CMD_IDD-001, SPEC-CMD_IDD-002",
-			want:    []string{"SPEC-CMD_IDD-001", "SPEC-CMD_IDD-002"},
+			content: "// @implement SPEC-CMD_IDD_CLI-001, SPEC-CMD_IDD_CLI-002",
+			want:    []string{"SPEC-CMD_IDD_CLI-001", "SPEC-CMD_IDD_CLI-002"},
 			// idd:ignore end
 		},
 		{
@@ -450,7 +450,7 @@ func TestExtractAnnotations(t *testing.T) {
 	}
 }
 
-// @test TEST-PKG_PAT-008
+// @test TEST-PKG_PATTERN-008
 func TestIsQuoted(t *testing.T) {
 	tests := []struct {
 		name    string

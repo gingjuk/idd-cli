@@ -15,7 +15,7 @@ import (
 	"github.com/jingxu9x/idd-cli/internal/model"
 )
 
-// @test TEST-INT_RPT-009
+// @test TEST-INTERNAL_REPORTER-009
 func TestNew(t *testing.T) {
 	cfg := config.Default()
 
@@ -37,7 +37,7 @@ func TestNew(t *testing.T) {
 	}
 }
 
-// @test TEST-INT_RPT-001
+// @test TEST-INTERNAL_REPORTER-001
 func TestReporter_Generate(t *testing.T) {
 	cfg := config.Default()
 	r := New(cfg, "json")
@@ -64,7 +64,7 @@ func TestReporter_Generate(t *testing.T) {
 	}
 }
 
-// @test TEST-INT_RPT-002
+// @test TEST-INTERNAL_REPORTER-002
 func TestReporter_Write_JSON(t *testing.T) {
 	tmpDir := t.TempDir()
 	outputPath := filepath.Join(tmpDir, "report.json")
@@ -98,7 +98,7 @@ func TestReporter_Write_JSON(t *testing.T) {
 	}
 }
 
-// @test TEST-INT_RPT-003
+// @test TEST-INTERNAL_REPORTER-003
 func TestReporter_Write_Stdout(t *testing.T) {
 	cfg := config.Default()
 	r := New(cfg, "json")
@@ -119,7 +119,7 @@ func TestReporter_Write_Stdout(t *testing.T) {
 	}
 }
 
-// @test TEST-INT_RPT-004
+// @test TEST-INTERNAL_REPORTER-004
 func TestReporter_Write_Markdown(t *testing.T) {
 	tmpDir := t.TempDir()
 	outputPath := filepath.Join(tmpDir, "report.md")
@@ -160,7 +160,7 @@ func TestReporter_Write_Markdown(t *testing.T) {
 	}
 }
 
-// @test TEST-INT_RPT-005
+// @test TEST-INTERNAL_REPORTER-005
 func TestReporter_Write_UnsupportedFormat(t *testing.T) {
 	cfg := config.Default()
 	r := New(cfg, "xml")
@@ -176,7 +176,7 @@ func TestReporter_Write_UnsupportedFormat(t *testing.T) {
 	}
 }
 
-// @test TEST-INT_RPT-006
+// @test TEST-INTERNAL_REPORTER-006
 func TestReporter_writeMarkdown_Errors(t *testing.T) {
 	cfg := config.Default()
 	r := New(cfg, "markdown")
@@ -209,7 +209,7 @@ func TestReporter_writeMarkdown_Errors(t *testing.T) {
 	}
 }
 
-// @test TEST-INT_RPT-007
+// @test TEST-INTERNAL_REPORTER-007
 func TestReporter_writeMarkdown_Stats(t *testing.T) {
 	cfg := config.Default()
 	r := New(cfg, "markdown")
@@ -244,7 +244,7 @@ func TestReporter_writeMarkdown_Stats(t *testing.T) {
 	}
 }
 
-// @test TEST-INT_RPT-008
+// @test TEST-INTERNAL_REPORTER-008
 func TestReporter_writeMarkdown_Graph(t *testing.T) {
 	cfg := config.Default()
 	r := New(cfg, "markdown")
@@ -279,7 +279,7 @@ func TestReporter_writeMarkdown_Graph(t *testing.T) {
 	}
 }
 
-// @test TEST-INT_RPT-010
+// @test TEST-INTERNAL_REPORTER-010
 func TestStatusIcon(t *testing.T) {
 	if statusIcon(true) != "✅ PASS" {
 		t.Errorf("statusIcon(true) = %q, want %q", statusIcon(true), "✅ PASS")

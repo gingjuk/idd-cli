@@ -30,7 +30,7 @@ import (
 //   3. Verify — Check doc-link-consistency
 //   4. Report — Aggregate errors and generate output
 
-// @test-contract TEST-INT_ENG-001
+// @test-contract TEST-INTERNAL_ENGINE-001
 func TestEngineStruct(t *testing.T) {
 	cfg := config.Default()
 	e := New(cfg)
@@ -52,7 +52,7 @@ func TestEngineStruct(t *testing.T) {
 	}
 }
 
-// @test-contract TEST-INT_ENG-002
+// @test-contract TEST-INTERNAL_ENGINE-002
 func TestEngineNewConstructor(t *testing.T) {
 	cfg := config.Default()
 	e := New(cfg)
@@ -72,7 +72,7 @@ func TestEngineNewConstructor(t *testing.T) {
 	}
 }
 
-// @test-contract TEST-INT_ENG-003
+// @test-contract TEST-INTERNAL_ENGINE-003
 func TestEngineRunPerformsValidationProcess(t *testing.T) {
 	cfg := config.Default()
 	cfg.Validation.AllowOrphans = true // Allow orphans for this test
@@ -116,7 +116,7 @@ func TestEngineRunPerformsValidationProcess(t *testing.T) {
 	}
 }
 
-// @test-contract TEST-INT_ENG-004
+// @test-contract TEST-INTERNAL_ENGINE-004
 func TestEngineRunWithUnidirectionalLink(t *testing.T) {
 	// NOTE: Bidirectional link checking was removed per user request.
 	// Unidirectional links are now allowed without warnings.
@@ -158,7 +158,7 @@ func TestEngineRunWithUnidirectionalLink(t *testing.T) {
 	}
 }
 
-// @test-contract TEST-INT_ENG-005
+// @test-contract TEST-INTERNAL_ENGINE-005
 func TestEngineValidationProcessSteps(t *testing.T) {
 	cfg := config.Default()
 	cfg.Validation.AllowOrphans = false // Orphans should generate errors
@@ -191,7 +191,7 @@ func TestEngineValidationProcessSteps(t *testing.T) {
 	}
 }
 
-// @test-contract TEST-INT_ENG-006
+// @test-contract TEST-INTERNAL_ENGINE-006
 func TestRuleInterface(t *testing.T) {
 	// CONTRACT-BE-002 defines Rule interface:
 	// type Rule interface {
@@ -216,7 +216,7 @@ func TestRuleInterface(t *testing.T) {
 	}
 }
 
-// @test-contract TEST-INT_ENG-007
+// @test-contract TEST-INTERNAL_ENGINE-007
 func TestRuleInterfaceWithErrors(t *testing.T) {
 	rule := &testRule{name: "failing-rule", shouldError: true}
 
@@ -232,7 +232,7 @@ func TestRuleInterfaceWithErrors(t *testing.T) {
 	}
 }
 
-// @test-contract TEST-INT_ENG-008
+// @test-contract TEST-INTERNAL_ENGINE-008
 func TestBidirectionalLinkRuleContract(t *testing.T) {
 	// NOTE: Bidirectional link checking was removed per user request.
 	// This test verifies the engine still processes links correctly.
@@ -261,7 +261,7 @@ func TestBidirectionalLinkRuleContract(t *testing.T) {
 	}
 }
 
-// @test-contract TEST-INT_ENG-009
+// @test-contract TEST-INTERNAL_ENGINE-009
 func TestOrphanRuleContract(t *testing.T) {
 	// According to CONTRACT-BE-002, OrphanRule should detect unreferenced identifiers
 
@@ -292,7 +292,7 @@ func TestOrphanRuleContract(t *testing.T) {
 	}
 }
 
-// @test-contract TEST-INT_ENG-010
+// @test-contract TEST-INTERNAL_ENGINE-010
 func TestEngineValidateMethod(t *testing.T) {
 	cfg := config.Default()
 	cfg.Validation.AllowOrphans = true
@@ -330,7 +330,7 @@ func TestEngineValidateMethod(t *testing.T) {
 	}
 }
 
-// @test-contract TEST-INT_ENG-011
+// @test-contract TEST-INTERNAL_ENGINE-011
 func TestEngineBuildReport(t *testing.T) {
 	cfg := config.Default()
 	e := New(cfg)
@@ -361,7 +361,7 @@ func TestEngineBuildReport(t *testing.T) {
 	}
 }
 
-// @test-contract TEST-INT_ENG-012
+// @test-contract TEST-INTERNAL_ENGINE-012
 func TestEngineInferLinkType(t *testing.T) {
 	cfg := config.Default()
 	e := New(cfg)
@@ -417,7 +417,7 @@ var _ Rule = (*testRule)(nil)
 
 // Rule interface as defined in CONTRACT-BE-002
 // idd:ignore start
-// @implement SPEC-CMD_IDD-010
+// @implement SPEC-CMD_IDD_CLI-010
 type Rule interface {
 	// idd:ignore end
 	Name() string

@@ -1,50 +1,50 @@
 ---
 markers:
-  - id: SPEC-INT_MOD-001
+  - id: SPEC-INTERNAL_MODEL-001
     name: Identifier Type Parsing
-  - id: SPEC-INT_MOD-002
+  - id: SPEC-INTERNAL_MODEL-002
     name: Identifier Creation
-  - id: SPEC-INT_MOD-003
+  - id: SPEC-INTERNAL_MODEL-003
     name: Identifier Link Management
-  - id: SPEC-INT_MOD-004
+  - id: SPEC-INTERNAL_MODEL-004
     name: IdentifierSet Collection
-  - id: SPEC-INT_MOD-005
+  - id: SPEC-INTERNAL_MODEL-005
     name: IdentifierSet Access Operations
-  - id: SPEC-INT_MOD-006
+  - id: SPEC-INTERNAL_MODEL-006
     name: IdentifierSet Count and All
-  - id: SPEC-INT_MOD-007
+  - id: SPEC-INTERNAL_MODEL-007
     name: IdentifierSet Merge Operation
-  - id: SPEC-INT_MOD-008
+  - id: SPEC-INTERNAL_MODEL-008
     name: Annotation Creation
-  - id: SPEC-INT_MOD-009
+  - id: SPEC-INTERNAL_MODEL-009
     name: Annotation Conversion
-  - id: SPEC-INT_MOD-010
+  - id: SPEC-INTERNAL_MODEL-010
     name: Validation Result Types
-  - id: SPEC-INT_MOD-011
+  - id: SPEC-INTERNAL_MODEL-011
     name: Validation Result Operations
-  - id: SPEC-INT_MOD-012
+  - id: SPEC-INTERNAL_MODEL-012
     name: Link Type Definition
-  - id: SPEC-INT_MOD-013
+  - id: SPEC-INTERNAL_MODEL-013
     name: Link Structure
-  - id: SPEC-INT_MOD-014
+  - id: SPEC-INTERNAL_MODEL-014
     name: Origin Type Definition
-  - id: SPEC-INT_MOD-015
+  - id: SPEC-INTERNAL_MODEL-015
     name: Origin Operations
-  - id: SPEC-INT_MOD-017
+  - id: SPEC-INTERNAL_MODEL-017
     name: Identifier Origin Methods
-  - id: SPEC-INT_MOD-018
+  - id: SPEC-INTERNAL_MODEL-018
     name: Identifier Model Core
 
 related_files:
-  spec: spec.md
-  contract: contract.md
-  design: design.md
-  testing: testing.md
+  spec: docs/internal/model/spec.md
+  contract: docs/internal/model/contract.md
+  design: docs/internal/model/design.md
+  testing: docs/internal/model/testing.md
 ---
 
 # Specification (model)
 
-## SPEC-INT_MOD-001: Identifier Type Parsing
+## SPEC-INTERNAL_MODEL-001: Identifier Type Parsing
 
 **Contract:** `ParseIdentifierType`
 
@@ -58,18 +58,18 @@ Parse identifier type from string representation.
 
 **Implementation:** `internal/model/identifier.go`
 
-**Tests:** `TEST-INT_MOD-001`
+**Tests:** `TEST-INTERNAL_MODEL-001`
 
 **Public Functions:**
 
-## SPEC-INT_MOD-025: Identifier.ParseIdentifierType
+## SPEC-INTERNAL_MODEL-025: Identifier.ParseIdentifierType
 
 **Function Signature:**
 `func ParseIdentifierType(s string) (IdentifierType, error)`
 
 ---
 
-## SPEC-INT_MOD-002: Identifier Creation
+## SPEC-INTERNAL_MODEL-002: Identifier Creation
 
 **Contract:** `NewIdentifier`
 
@@ -83,18 +83,18 @@ Create a new identifier with given fields.
 
 **Implementation:** `internal/model/identifier.go`
 
-**Tests:** `TEST-INT_MOD-002`
+**Tests:** `TEST-INTERNAL_MODEL-002`
 
 **Public Functions:**
 
-## SPEC-INT_MOD-026: Identifier.NewIdentifier
+## SPEC-INTERNAL_MODEL-026: Identifier.NewIdentifier
 
 **Function Signature:**
 `func NewIdentifier(id string, idType IdentifierType, title, source string, line int) *Identifier`
 
 ---
 
-## SPEC-INT_MOD-003: Identifier Link Management
+## SPEC-INTERNAL_MODEL-003: Identifier Link Management
 
 **Contract:** `AddLink`
 
@@ -114,11 +114,11 @@ Identifiers store forward links to dependencies.
 - [x] AddLink adds forward reference
 - [x] Backlinks are computed from forward links
 
-**Tests:** `TEST-INT_MOD-003`
+**Tests:** `TEST-INTERNAL_MODEL-003`
 
 ---
 
-## SPEC-INT_MOD-004: IdentifierSet Collection
+## SPEC-INTERNAL_MODEL-004: IdentifierSet Collection
 
 **Contract:** `IdentifierSet`
 
@@ -136,11 +136,11 @@ IdentifierSet stores identifiers by type and ID.
 
 - `IdentifierSet` — Collection with type slices and byID map
 
-**Tests:** `TEST-INT_MOD-004`
+**Tests:** `TEST-INTERNAL_MODEL-004`
 
 ---
 
-## SPEC-INT_MOD-005: IdentifierSet Access Operations
+## SPEC-INTERNAL_MODEL-005: IdentifierSet Access Operations
 
 **Contract:** `IdentifierSet`
 
@@ -154,17 +154,17 @@ IdentifierSet provides Get, Has operations.
 
 **Implementation:** `internal/model/identifier.go`
 
-**Tests:** `TEST-INT_MOD-005`
+**Tests:** `TEST-INTERNAL_MODEL-005`
 
 **Public Functions:**
 
-## SPEC-INT_MOD-027: IdentifierSet.Get
+## SPEC-INTERNAL_MODEL-027: IdentifierSet.Get
 
-## SPEC-INT_MOD-028: IdentifierSet.Has
+## SPEC-INTERNAL_MODEL-028: IdentifierSet.Has
 
 ---
 
-## SPEC-INT_MOD-006: IdentifierSet Count and All
+## SPEC-INTERNAL_MODEL-006: IdentifierSet Count and All
 
 **Contract:** `IdentifierSet`
 
@@ -178,17 +178,17 @@ IdentifierSet provides Count and All operations.
 
 **Implementation:** `internal/model/identifier.go`
 
-**Tests:** `TEST-INT_MOD-006`
+**Tests:** `TEST-INTERNAL_MODEL-006`
 
 **Public Functions:**
 
-## SPEC-INT_MOD-029: IdentifierSet.Count
+## SPEC-INTERNAL_MODEL-029: IdentifierSet.Count
 
-## SPEC-INT_MOD-030: IdentifierSet.All
+## SPEC-INTERNAL_MODEL-030: IdentifierSet.All
 
 ---
 
-## SPEC-INT_MOD-007: IdentifierSet Merge Operation
+## SPEC-INTERNAL_MODEL-007: IdentifierSet Merge Operation
 
 **Contract:** `IdentifierSet`
 
@@ -202,15 +202,15 @@ Combine two identifier sets.
 
 **Implementation:** `internal/model/identifier.go`
 
-**Tests:** `TEST-INT_MOD-007`
+**Tests:** `TEST-INTERNAL_MODEL-007`
 
 **Public Functions:**
 
-## SPEC-INT_MOD-031: IdentifierSet.Merge
+## SPEC-INTERNAL_MODEL-031: IdentifierSet.Merge
 
 ---
 
-## SPEC-INT_MOD-008: Annotation Creation
+## SPEC-INTERNAL_MODEL-008: Annotation Creation
 
 **Contract:** `NewAnnotation`
 
@@ -224,15 +224,15 @@ Create annotation from code.
 
 **Implementation:** `internal/model/identifier.go`
 
-**Tests:** `TEST-INT_MOD-008`
+**Tests:** `TEST-INTERNAL_MODEL-008`
 
 **Public Functions:**
 
-## SPEC-INT_MOD-032: Annotation.NewAnnotation
+## SPEC-INTERNAL_MODEL-032: Annotation.NewAnnotation
 
 ---
 
-## SPEC-INT_MOD-009: Annotation Conversion
+## SPEC-INTERNAL_MODEL-009: Annotation Conversion
 
 **Contract:** `Annotation`
 
@@ -246,15 +246,15 @@ Convert annotation to identifier.
 
 **Implementation:** `internal/model/identifier.go`
 
-**Tests:** `TEST-INT_MOD-009`
+**Tests:** `TEST-INTERNAL_MODEL-009`
 
 **Public Functions:**
 
-## SPEC-INT_MOD-033: Annotation.ToIdentifier
+## SPEC-INTERNAL_MODEL-033: Annotation.ToIdentifier
 
 ---
 
-## SPEC-INT_MOD-010: Validation Result Types
+## SPEC-INTERNAL_MODEL-010: Validation Result Types
 
 **Contract:** `ValidationResult`
 
@@ -268,7 +268,7 @@ Validation result stores errors and warnings.
 
 **Implementation:** `internal/model/identifier.go`
 
-**Tests:** `TEST-INT_MOD-010`
+**Tests:** `TEST-INTERNAL_MODEL-010`
 
 **Key Types:**
 
@@ -277,7 +277,7 @@ Validation result stores errors and warnings.
 
 ---
 
-## SPEC-INT_MOD-011: Validation Result Operations
+## SPEC-INTERNAL_MODEL-011: Validation Result Operations
 
 **Contract:** `ValidationResult`
 
@@ -291,21 +291,21 @@ Add errors/warnings and sort results.
 
 **Implementation:** `internal/model/identifier.go`
 
-**Tests:** `TEST-INT_MOD-011`, `TEST-INT_MOD-016`
+**Tests:** `TEST-INTERNAL_MODEL-011`, `TEST-INTERNAL_MODEL-016`
 
 **Public Functions:**
 
-## SPEC-INT_MOD-034: ValidationResult.AddError
+## SPEC-INTERNAL_MODEL-034: ValidationResult.AddError
 
-## SPEC-INT_MOD-035: ValidationResult.AddWarning
+## SPEC-INTERNAL_MODEL-035: ValidationResult.AddWarning
 
-## SPEC-INT_MOD-036: ValidationResult.Sort
+## SPEC-INTERNAL_MODEL-036: ValidationResult.Sort
 
-**Tests:** `TEST-INT_MOD-011`, `TEST-INT_MOD-016`
+**Tests:** `TEST-INTERNAL_MODEL-011`, `TEST-INTERNAL_MODEL-016`
 
 ---
 
-## SPEC-INT_MOD-012: Link Type Definition
+## SPEC-INTERNAL_MODEL-012: Link Type Definition
 
 **Contract:** `LinkType`
 
@@ -323,11 +323,11 @@ LinkType enum for edge types.
 
 - `LinkType` — Enum for LinkTests, LinkImplements, LinkReferences
 
-**Tests:** `TEST-INT_MOD-012`, `TEST-INT_MOD-028`
+**Tests:** `TEST-INTERNAL_MODEL-012`, `TEST-INTERNAL_MODEL-028`
 
 ---
 
-## SPEC-INT_MOD-013: Link Structure
+## SPEC-INTERNAL_MODEL-013: Link Structure
 
 **Contract:** `Link`
 
@@ -345,11 +345,11 @@ Link represents a reference from one identifier to another.
 
 - `Link` — Reference with type and target ID
 
-**Tests:** `TEST-INT_MOD-013`, `TEST-INT_MOD-029`, `TEST-INT_MOD-030`
+**Tests:** `TEST-INTERNAL_MODEL-013`, `TEST-INTERNAL_MODEL-029`, `TEST-INTERNAL_MODEL-030`
 
 ---
 
-## SPEC-INT_MOD-014: Origin Type Definition
+## SPEC-INTERNAL_MODEL-014: Origin Type Definition
 
 **Contract:** `Origin`
 
@@ -369,11 +369,11 @@ Origin represents the source location type of an identifier.
 - `OriginDoc` — Indicates identifier came from documentation
 - `OriginCode` — Indicates identifier came from source code
 
-**Tests:** `TEST-INT_MOD-014`
+**Tests:** `TEST-INTERNAL_MODEL-014`
 
 ---
 
-## SPEC-INT_MOD-015: Origin Operations
+## SPEC-INTERNAL_MODEL-015: Origin Operations
 
 **Contract:** `Origin`
 
@@ -392,11 +392,11 @@ Set and check identifier origin.
 - `SetOrigin(o Origin)`
 - `Origin() Origin`
 
-**Tests:** `TEST-INT_MOD-015`
+**Tests:** `TEST-INTERNAL_MODEL-015`
 
 ---
 
-## SPEC-INT_MOD-017: Identifier Origin Methods
+## SPEC-INTERNAL_MODEL-017: Identifier Origin Methods
 
 **Contract:** `SetOrigin`
 
@@ -412,16 +412,16 @@ Methods to get/set identifier origin.
 
 **Methods:**
 
-- `SetOrigin(origin Origin)` — implemented as part of `SPEC-INT_MOD-017`
+- `SetOrigin(origin Origin)` — implemented as part of `SPEC-INTERNAL_MODEL-017`
 - `GetOrigin() Origin` — not present in code (only SetOrigin exists)
 
-**Tests:** `TEST-INT_MOD-017`
+**Tests:** `TEST-INTERNAL_MODEL-017`
 
 **Note:** `GetOrigin()` method does not exist in code. Only `SetOrigin()` is implemented.
 
 ---
 
-## SPEC-INT_MOD-018: Identifier Model Core
+## SPEC-INTERNAL_MODEL-018: Identifier Model Core
 
 **Contract:** `Identifier`
 
@@ -439,6 +439,6 @@ Core identifier type with all fields.
 
 - `Identifier` — IDD identifier with type, module, number, links
 
-**Tests:** `TEST-INT_MOD-018`
+**Tests:** `TEST-INTERNAL_MODEL-018`
 
 **Tests:** ``

@@ -1,9 +1,9 @@
 ---
 related_files:
-  spec: spec.md
-  contract: contract.md
-  design: design.md
-  testing: testing.md
+  spec: docs/internal/engine/spec.md
+  contract: docs/internal/engine/contract.md
+  design: docs/internal/engine/design.md
+  testing: docs/internal/engine/testing.md
 ---
 
 # Design (engine)

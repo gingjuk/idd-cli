@@ -1,9 +1,9 @@
 ---
 related_files:
-  spec: spec.md
-  contract: contract.md
-  design: design.md
-  testing: testing.md
+  spec: docs/internal/auth/spec.md
+  contract: docs/internal/auth/contract.md
+  design: docs/internal/auth/design.md
+  testing: docs/internal/auth/testing.md
 ---
 
 # Design (auth)

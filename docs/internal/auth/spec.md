@@ -1,18 +1,18 @@
 ---
 markers:
-  - id: SPEC-INT_AUTH-001
+  - id: SPEC-INTERNAL_AUTH-001
     name: Authentication Module
 
 related_files:
-  spec: spec.md
-  contract: contract.md
-  design: design.md
-  testing: testing.md
+  spec: docs/internal/auth/spec.md
+  contract: docs/internal/auth/contract.md
+  design: docs/internal/auth/design.md
+  testing: docs/internal/auth/testing.md
 ---
 
 # Specification (auth)
 
-## SPEC-INT_AUTH-001: Authentication Module
+## SPEC-INTERNAL_AUTH-001: Authentication Module
 
 **Status:** Done
 
@@ -36,6 +36,6 @@ Authentication module provides user login and token generation functionality for
 - [x] LoginRequest struct contains email and password fields
 - [x] LoginResponse struct contains token field
 - [x] Authentication types are annotated with @implement; tests use @test-contract for CONTRACT coverage
-- [x] Test annotations link to `TEST-INT_AUTH-001`
+- [x] Test annotations link to `TEST-INTERNAL_AUTH-001`
 
-**Tests:** `TEST-INT_AUTH-001`
+**Tests:** `TEST-INTERNAL_AUTH-001`

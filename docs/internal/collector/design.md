@@ -1,9 +1,9 @@
 ---
 related_files:
-  spec: spec.md
-  contract: contract.md
-  design: design.md
-  testing: testing.md
+  spec: docs/internal/collector/spec.md
+  contract: docs/internal/collector/contract.md
+  design: docs/internal/collector/design.md
+  testing: docs/internal/collector/testing.md
 ---
 
 # Design (collector)

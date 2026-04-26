@@ -1,9 +1,9 @@
 ---
 related_files:
-  spec: spec.md
-  contract: contract.md
-  design: design.md
-  testing: testing.md
+  spec: docs/pkg/pattern/spec.md
+  contract: docs/pkg/pattern/contract.md
+  design: docs/pkg/pattern/design.md
+  testing: docs/pkg/pattern/testing.md
 ---
 
 # Contract (pattern)
@@ -30,4 +30,4 @@ The pattern package provides IDD identifier pattern matching and extraction util
 - [x] Multiple references in one annotation are split
 - [x] Unknown identifier types return empty string
 
-**Related:** `SPEC-PKG_PAT-001` through `SPEC-PKG_PAT-009`
+**Related:** `SPEC-PKG_PATTERN-001` through `SPEC-PKG_PATTERN-009`

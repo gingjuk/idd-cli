@@ -1,62 +1,62 @@
 ---
 markers:
-  - id: TEST-INT_ENG-001
+  - id: TEST-INTERNAL_ENGINE-001
     name: Engine Run Basic
-  - id: TEST-INT_ENG-002
+  - id: TEST-INTERNAL_ENGINE-002
     name: Engine BuildGraph
-  - id: TEST-INT_ENG-003
+  - id: TEST-INTERNAL_ENGINE-003
     name: Engine Validation
-  - id: TEST-INT_ENG-004
+  - id: TEST-INTERNAL_ENGINE-004
     name: Engine Structural Errors
-  - id: TEST-INT_ENG-005
+  - id: TEST-INTERNAL_ENGINE-005
     name: Engine Report Generation
-  - id: TEST-INT_ENG-006
+  - id: TEST-INTERNAL_ENGINE-006
     name: Engine Context Cancellation
-  - id: TEST-INT_ENG-007
+  - id: TEST-INTERNAL_ENGINE-007
     name: Engine Consistency Check
-  - id: TEST-INT_ENG-008
+  - id: TEST-INTERNAL_ENGINE-008
     name: Engine Validation Rules
-  - id: TEST-INT_ENG-009
+  - id: TEST-INTERNAL_ENGINE-009
     name: Engine Config Validation
-  - id: TEST-INT_ENG-010
+  - id: TEST-INTERNAL_ENGINE-010
     name: Engine Pattern Matching
-  - id: TEST-INT_ENG-011
+  - id: TEST-INTERNAL_ENGINE-011
     name: Engine Annotation Validation
-  - id: TEST-INT_ENG-012
+  - id: TEST-INTERNAL_ENGINE-012
     name: Engine File Collection
-  - id: TEST-INT_ENG-020
+  - id: TEST-INTERNAL_ENGINE-020
     name: Engine Duplicate Heading Validation
-  - id: TEST-INT_ENG-021
+  - id: TEST-INTERNAL_ENGINE-021
     name: Engine Duplicate Heading No Duplicates
-  - id: TEST-INT_ENG-022
+  - id: TEST-INTERNAL_ENGINE-022
     name: Engine Contract Design Markers With Markers
-  - id: TEST-INT_ENG-023
+  - id: TEST-INTERNAL_ENGINE-023
     name: Engine Contract Design Markers Without Markers
-  - id: TEST-INT_ENG-024
+  - id: TEST-INTERNAL_ENGINE-024
     name: Engine Contract Design Markers Design File
-  - id: TEST-INT_ENG-025
+  - id: TEST-INTERNAL_ENGINE-025
     name: Engine Package Exists
-  - id: TEST-INT_ENG-026
+  - id: TEST-INTERNAL_ENGINE-026
     name: Engine Ignored Doc Path
-  - id: TEST-INT_ENG-027
+  - id: TEST-INTERNAL_ENGINE-027
     name: Engine Validate Doc Path Exists
-  - id: TEST-INT_ENG-028
+  - id: TEST-INTERNAL_ENGINE-028
     name: Engine Validate Related Files
-  - id: TEST-INT_ENG-029
+  - id: TEST-INTERNAL_ENGINE-029
     name: Engine Validate Related Files Valid
 
 related_files:
-  spec: spec.md
-  contract: contract.md
-  design: design.md
-  testing: testing.md
+  spec: docs/internal/engine/spec.md
+  contract: docs/internal/engine/contract.md
+  design: docs/internal/engine/design.md
+  testing: docs/internal/engine/testing.md
 ---
 
 # Test Cases (engine)
 
 ## Test
 
-## TEST-INT_ENG-001: Engine Run Basic
+## TEST-INTERNAL_ENGINE-001: Engine Run Basic
 
 **Status:** Done
 
@@ -64,11 +64,11 @@ related_files:
 
 Test basic Engine.Run functionality.
 
-**Spec Coverage:** `SPEC-INT_ENG-001`, `SPEC-INT_ENG-002`
+**Spec Coverage:** `SPEC-INTERNAL_ENGINE-001`, `SPEC-INTERNAL_ENGINE-002`
 
 ---
 
-## TEST-INT_ENG-002: Engine BuildGraph
+## TEST-INTERNAL_ENGINE-002: Engine BuildGraph
 
 **Status:** Done
 
@@ -76,11 +76,11 @@ Test basic Engine.Run functionality.
 
 Test that Engine correctly builds the linkage graph from identifiers.
 
-**Spec Coverage:** `SPEC-INT_ENG-001`, `SPEC-INT_ENG-002`
+**Spec Coverage:** `SPEC-INTERNAL_ENGINE-001`, `SPEC-INTERNAL_ENGINE-002`
 
 ---
 
-## TEST-INT_ENG-003: Engine Validation
+## TEST-INTERNAL_ENGINE-003: Engine Validation
 
 **Status:** Done
 
@@ -88,11 +88,11 @@ Test that Engine correctly builds the linkage graph from identifiers.
 
 Test that Engine runs all validation rules correctly.
 
-**Spec Coverage:** `SPEC-INT_ENG-001`, `SPEC-INT_ENG-002`
+**Spec Coverage:** `SPEC-INTERNAL_ENGINE-001`, `SPEC-INTERNAL_ENGINE-002`
 
 ---
 
-## TEST-INT_ENG-004: Engine Structural Errors
+## TEST-INTERNAL_ENGINE-004: Engine Structural Errors
 
 **Status:** Done
 
@@ -100,11 +100,11 @@ Test that Engine runs all validation rules correctly.
 
 Test that Engine.AddStructuralErrors correctly appends errors.
 
-**Spec Coverage:** `SPEC-INT_ENG-001`, `SPEC-INT_ENG-002`
+**Spec Coverage:** `SPEC-INTERNAL_ENGINE-001`, `SPEC-INTERNAL_ENGINE-002`
 
 ---
 
-## TEST-INT_ENG-005: Engine Report Generation
+## TEST-INTERNAL_ENGINE-005: Engine Report Generation
 
 **Status:** Done
 
@@ -112,11 +112,11 @@ Test that Engine.AddStructuralErrors correctly appends errors.
 
 Test that Engine.BuildReport returns correct report structure.
 
-**Spec Coverage:** `SPEC-INT_ENG-001`, `SPEC-INT_ENG-002`
+**Spec Coverage:** `SPEC-INTERNAL_ENGINE-001`, `SPEC-INTERNAL_ENGINE-002`
 
 ---
 
-## TEST-INT_ENG-006: Engine Context Cancellation
+## TEST-INTERNAL_ENGINE-006: Engine Context Cancellation
 
 **Status:** Done
 
@@ -124,11 +124,11 @@ Test that Engine.BuildReport returns correct report structure.
 
 Test that Engine properly handles context cancellation.
 
-**Spec Coverage:** `SPEC-INT_ENG-001`, `SPEC-INT_ENG-002`
+**Spec Coverage:** `SPEC-INTERNAL_ENGINE-001`, `SPEC-INTERNAL_ENGINE-002`
 
 ---
 
-## TEST-INT_ENG-007: Engine Consistency Check
+## TEST-INTERNAL_ENGINE-007: Engine Consistency Check
 
 **Status:** Done
 
@@ -136,13 +136,13 @@ Test that Engine properly handles context cancellation.
 
 Test that Engine performs consistency checks between doc and code identifiers.
 
-**Spec Coverage:** `SPEC-INT_ENG-001`, `SPEC-INT_ENG-002`
+**Spec Coverage:** `SPEC-INTERNAL_ENGINE-001`, `SPEC-INTERNAL_ENGINE-002`
 
 ---
 
 ## Contract Test
 
-## TEST-INT_ENG-013: Engine Struct Contract Test
+## TEST-INTERNAL_ENGINE-013: Engine Struct Contract Test
 
 **Status:** Done
 
@@ -152,7 +152,7 @@ Test Engine struct initialization and field validation.
 
 ---
 
-## TEST-INT_ENG-014: Engine Run Contract Test
+## TEST-INTERNAL_ENGINE-014: Engine Run Contract Test
 
 **Status:** Done
 
@@ -162,7 +162,7 @@ Test Engine.Run execution and result generation.
 
 ---
 
-## TEST-INT_ENG-015: Engine Validation Contract Test
+## TEST-INTERNAL_ENGINE-015: Engine Validation Contract Test
 
 **Status:** Done
 
@@ -172,7 +172,7 @@ Test Engine validation logic.
 
 ---
 
-## TEST-INT_ENG-016: Engine AddStructuralErrors Contract Test
+## TEST-INTERNAL_ENGINE-016: Engine AddStructuralErrors Contract Test
 
 **Status:** Done
 
@@ -182,7 +182,7 @@ Test Engine.AddStructuralErrors functionality.
 
 ---
 
-## TEST-INT_ENG-017: Engine BuildReport Contract Test
+## TEST-INTERNAL_ENGINE-017: Engine BuildReport Contract Test
 
 **Status:** Done
 
@@ -192,7 +192,7 @@ Test Engine.BuildReport generation.
 
 ---
 
-## TEST-INT_ENG-018: Engine Context Contract Test
+## TEST-INTERNAL_ENGINE-018: Engine Context Contract Test
 
 **Status:** Done
 
@@ -202,7 +202,7 @@ Test Engine context handling.
 
 ---
 
-## TEST-INT_ENG-019: Engine Consistency Contract Test
+## TEST-INTERNAL_ENGINE-019: Engine Consistency Contract Test
 
 **Status:** Done
 
@@ -212,7 +212,7 @@ Test Engine consistency check.
 
 ---
 
-## TEST-INT_ENG-008: Engine Validation Rules
+## TEST-INTERNAL_ENGINE-008: Engine Validation Rules
 
 **Status:** Done
 
@@ -220,11 +220,11 @@ Test Engine consistency check.
 
 Test Engine validation rules including orphan detection.
 
-**Spec Coverage:** `SPEC-INT_ENG-001`, `SPEC-INT_ENG-002`
+**Spec Coverage:** `SPEC-INTERNAL_ENGINE-001`, `SPEC-INTERNAL_ENGINE-002`
 
 ---
 
-## TEST-INT_ENG-009: Engine Config Validation
+## TEST-INTERNAL_ENGINE-009: Engine Config Validation
 
 **Status:** Done
 
@@ -232,11 +232,11 @@ Test Engine validation rules including orphan detection.
 
 Test Engine configuration validation.
 
-**Spec Coverage:** `SPEC-INT_ENG-001`, `SPEC-INT_ENG-002`
+**Spec Coverage:** `SPEC-INTERNAL_ENGINE-001`, `SPEC-INTERNAL_ENGINE-002`
 
 ---
 
-## TEST-INT_ENG-010: Engine Pattern Matching
+## TEST-INTERNAL_ENGINE-010: Engine Pattern Matching
 
 **Status:** Done
 
@@ -244,11 +244,11 @@ Test Engine configuration validation.
 
 Test Engine pattern matching for identifiers.
 
-**Spec Coverage:** `SPEC-INT_ENG-001`, `SPEC-INT_ENG-002`
+**Spec Coverage:** `SPEC-INTERNAL_ENGINE-001`, `SPEC-INTERNAL_ENGINE-002`
 
 ---
 
-## TEST-INT_ENG-011: Engine Annotation Validation
+## TEST-INTERNAL_ENGINE-011: Engine Annotation Validation
 
 **Status:** Done
 
@@ -256,11 +256,11 @@ Test Engine pattern matching for identifiers.
 
 Test Engine annotation validation.
 
-**Spec Coverage:** `SPEC-INT_ENG-001`, `SPEC-INT_ENG-002`
+**Spec Coverage:** `SPEC-INTERNAL_ENGINE-001`, `SPEC-INTERNAL_ENGINE-002`
 
 ---
 
-## TEST-INT_ENG-012: Engine File Collection
+## TEST-INTERNAL_ENGINE-012: Engine File Collection
 
 **Status:** Done
 
@@ -268,11 +268,11 @@ Test Engine annotation validation.
 
 Test Engine file collection from configured paths.
 
-**Spec Coverage:** `SPEC-INT_ENG-001`, `SPEC-INT_ENG-002`
+**Spec Coverage:** `SPEC-INTERNAL_ENGINE-001`, `SPEC-INTERNAL_ENGINE-002`
 
 ---
 
-## TEST-INT_ENG-020: Engine Duplicate Heading Validation
+## TEST-INTERNAL_ENGINE-020: Engine Duplicate Heading Validation
 
 **Status:** Done
 
@@ -280,11 +280,11 @@ Test Engine file collection from configured paths.
 
 Test that Engine validates duplicate heading identifiers in documentation.
 
-**Spec Coverage:** `SPEC-INT_ENG-001`
+**Spec Coverage:** `SPEC-INTERNAL_ENGINE-001`
 
 ---
 
-## TEST-INT_ENG-021: Engine Duplicate Heading No Duplicates
+## TEST-INTERNAL_ENGINE-021: Engine Duplicate Heading No Duplicates
 
 **Status:** Done
 
@@ -292,11 +292,11 @@ Test that Engine validates duplicate heading identifiers in documentation.
 
 Test that Engine passes when headings have unique identifiers.
 
-**Spec Coverage:** `SPEC-INT_ENG-001`
+**Spec Coverage:** `SPEC-INTERNAL_ENGINE-001`
 
 ---
 
-## TEST-INT_ENG-022: Engine Contract Design Markers With Markers
+## TEST-INTERNAL_ENGINE-022: Engine Contract Design Markers With Markers
 
 **Status:** Done
 
@@ -304,11 +304,11 @@ Test that Engine passes when headings have unique identifiers.
 
 Test that Engine reports error when contract.md has markers.
 
-**Spec Coverage:** `SPEC-INT_ENG-001`
+**Spec Coverage:** `SPEC-INTERNAL_ENGINE-001`
 
 ---
 
-## TEST-INT_ENG-023: Engine Contract Design Markers Without Markers
+## TEST-INTERNAL_ENGINE-023: Engine Contract Design Markers Without Markers
 
 **Status:** Done
 
@@ -316,11 +316,11 @@ Test that Engine reports error when contract.md has markers.
 
 Test that Engine passes when contract.md has no markers.
 
-**Spec Coverage:** `SPEC-INT_ENG-001`
+**Spec Coverage:** `SPEC-INTERNAL_ENGINE-001`
 
 ---
 
-## TEST-INT_ENG-024: Engine Contract Design Markers Design File
+## TEST-INTERNAL_ENGINE-024: Engine Contract Design Markers Design File
 
 **Status:** Done
 
@@ -328,11 +328,11 @@ Test that Engine passes when contract.md has no markers.
 
 Test that Engine reports error when design.md has markers.
 
-**Spec Coverage:** `SPEC-INT_ENG-001`
+**Spec Coverage:** `SPEC-INTERNAL_ENGINE-001`
 
 ---
 
-## TEST-INT_ENG-025: Engine Package Exists
+## TEST-INTERNAL_ENGINE-025: Engine Package Exists
 
 **Status:** Done
 
@@ -340,11 +340,11 @@ Test that Engine reports error when design.md has markers.
 
 Test Engine.packageExists method.
 
-**Spec Coverage:** `SPEC-INT_ENG-001`
+**Spec Coverage:** `SPEC-INTERNAL_ENGINE-001`
 
 ---
 
-## TEST-INT_ENG-026: Engine Ignored Doc Path
+## TEST-INTERNAL_ENGINE-026: Engine Ignored Doc Path
 
 **Status:** Done
 
@@ -352,11 +352,11 @@ Test Engine.packageExists method.
 
 Test Engine.isIgnoredDocPath method.
 
-**Spec Coverage:** `SPEC-INT_ENG-001`
+**Spec Coverage:** `SPEC-INTERNAL_ENGINE-001`
 
 ---
 
-## TEST-INT_ENG-027: Engine Validate Doc Path Exists
+## TEST-INTERNAL_ENGINE-027: Engine Validate Doc Path Exists
 
 **Status:** Done
 
@@ -364,11 +364,11 @@ Test Engine.isIgnoredDocPath method.
 
 Test Engine.validateDocPathExists method.
 
-**Spec Coverage:** `SPEC-INT_ENG-001`
+**Spec Coverage:** `SPEC-INTERNAL_ENGINE-001`
 
 ---
 
-## TEST-INT_ENG-028: Engine Validate Related Files
+## TEST-INTERNAL_ENGINE-028: Engine Validate Related Files
 
 **Status:** Done
 
@@ -376,11 +376,11 @@ Test Engine.validateDocPathExists method.
 
 Test Engine.validateRelatedFiles when related_files is missing.
 
-**Spec Coverage:** `SPEC-INT_ENG-001`
+**Spec Coverage:** `SPEC-INTERNAL_ENGINE-001`
 
 ---
 
-## TEST-INT_ENG-029: Engine Validate Related Files Valid
+## TEST-INTERNAL_ENGINE-029: Engine Validate Related Files Valid
 
 **Status:** Done
 
@@ -388,4 +388,4 @@ Test Engine.validateRelatedFiles when related_files is missing.
 
 Test Engine.validateRelatedFiles when related_files is present.
 
-**Spec Coverage:** `SPEC-INT_ENG-001`
+**Spec Coverage:** `SPEC-INTERNAL_ENGINE-001`

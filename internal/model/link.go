@@ -5,7 +5,7 @@
 package model
 
 // LinkType represents the type of relationship between identifiers.
-// @implement SPEC-INT_MOD-012
+// @implement SPEC-INTERNAL_MODEL-012
 type LinkType string
 
 const (
@@ -19,7 +19,7 @@ const (
 )
 
 // ReverseLinkType returns the reverse link type.
-// @implement SPEC-INT_MOD-012
+// @implement SPEC-INTERNAL_MODEL-012
 func ReverseLinkType(lt LinkType) LinkType {
 	switch lt {
 	case LinkTests:
@@ -42,7 +42,7 @@ func ReverseLinkType(lt LinkType) LinkType {
 }
 
 // Link represents a directed relationship between two identifiers.
-// @implement SPEC-INT_MOD-013
+// @implement SPEC-INTERNAL_MODEL-013
 type Link struct {
 	From   string
 	To     string
@@ -52,7 +52,7 @@ type Link struct {
 }
 
 // NewLink creates a new link.
-// @implement SPEC-INT_MOD-015
+// @implement SPEC-INTERNAL_MODEL-015
 func NewLink(from, to string, linkType LinkType, source string, line int) *Link {
 	return &Link{
 		From:   from,

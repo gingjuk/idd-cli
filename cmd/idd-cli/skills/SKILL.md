@@ -163,11 +163,15 @@ func Login(email, password string) (string, error) {
 
 **Contract Test File (`*_contract_test.go`):**
 
-Contract tests explicitly validate that implementation satisfies contract interfaces:
+Contract tests explicitly validate that the implementation satisfies contract interfaces. Each test function is annotated with `@test-contract SPEC-<MODULE>-NNN` to declare which SPEC's contract is being verified.
 
 ```go
-// Contract: docs/auth/contract.md
-// Implements: SPEC-AUTH-001 (Authenticator interface)
+// Package auth provides contract tests for authentication.
+//
+// Spec: docs/internal/auth/spec.md
+// Test: docs/internal/auth/testing.md
+// Contract: docs/internal/auth/contract.md
+package auth
 
 // @test-contract SPEC-AUTH-001
 func TestContractLogin(t *testing.T) {
@@ -177,24 +181,24 @@ func TestContractLogin(t *testing.T) {
 
 ## Document Hierarchy
 
-All IDD documents stored in `docs/` directory, organized by module name:
+All IDD documents stored in `docs/` directory, organized by package path:
 
 ```text
 docs/
-├── <module>/
+├── <pkg_path>/           # mirrors the package directory (e.g., internal/auth, pkg/pattern)
 │   ├── spec.md           # SPEC-<MODULE>-NNN
-│   ├── contract.md      # Interface signatures (references SPECs)
-│   ├── testing.md       # TEST-<MODULE>-NNN
-│   └── design.md        # Architecture decisions (references SPECs)
+│   ├── contract.md       # Interface signatures (references SPECs)
+│   ├── testing.md        # TEST-<MODULE>-NNN
+│   └── design.md         # Architecture decisions (references SPECs)
 ```
 
 **Rules:**
 
-- One subdirectory per module (use module name, lowercase or as appropriate)
-- Document filenames are lowercase (spec.md, contract.md, testing.md, etc.)
-- Module prefix in identifiers must match the module name (e.g., `SPEC-AUTH-001` in `docs/auth/`)
-- contract.md and design.md do not have their own identifiers — they reference SPECs
-- If spec.md exceeds **1500 lines**, split into `spec-<feat>.md`; main spec.md becomes an index
+- `<pkg_path>` mirrors the package directory relative to project root (e.g., `internal/auth` → `docs/internal/auth/`)
+- `<MODULE>` in identifiers is derived from `<pkg_path>` using the abbreviation table (see **Module prefix** below)
+- Document filenames are lowercase: `spec.md`, `contract.md`, `testing.md`, `design.md`
+- `contract.md` and `design.md` do not have their own identifiers — they reference SPECs
+- If spec.md exceeds **1500 lines**, split into `spec-<feat>.md`; main `spec.md` becomes an index
 
 **Agent Responsibilities:**
 
@@ -220,12 +224,14 @@ markers:
     name: <description>
 
 related_files:
-  spec: spec.md
-  contract: contract.md
-  design: design.md
-  testing: testing.md
+  spec: docs/<pkg_path>/spec.md
+  contract: docs/<pkg_path>/contract.md
+  design: docs/<pkg_path>/design.md
+  testing: docs/<pkg_path>/testing.md
 ---
 ```
+
+`<pkg_path>` is the package directory path relative to the project root (e.g., `internal/auth`, `pkg/pattern`, `cmd/idd-cli`). All four entries are always required — use the full path even if the file does not exist yet.
 
 ## Document Templates
 
@@ -285,10 +291,10 @@ markers:
     name: <description>
 
 related_files:
-  spec: spec.md
-  contract: contract.md
-  design: design.md
-  testing: testing.md
+  spec: docs/<pkg_path>/spec.md
+  contract: docs/<pkg_path>/contract.md
+  design: docs/<pkg_path>/design.md
+  testing: docs/<pkg_path>/testing.md
 ---
 
 # Specification (<module>)
@@ -338,8 +344,10 @@ markers:
     name: <test description>
 
 related_files:
-  spec: spec.md
-  testing: testing.md
+  spec: docs/<pkg_path>/spec.md
+  contract: docs/<pkg_path>/contract.md
+  design: docs/<pkg_path>/design.md
+  testing: docs/<pkg_path>/testing.md
 ---
 
 # Test Cases (<module>)
@@ -356,8 +364,10 @@ related_files:
 ```markdown
 ---
 related_files:
-  spec: spec.md
-  design: design.md
+  spec: docs/<pkg_path>/spec.md
+  contract: docs/<pkg_path>/contract.md
+  design: docs/<pkg_path>/design.md
+  testing: docs/<pkg_path>/testing.md
 ---
 
 # Design (<module>)
@@ -387,8 +397,10 @@ related_files:
 ````markdown
 ---
 related_files:
-  spec: spec.md
-  contract: contract.md
+  spec: docs/<pkg_path>/spec.md
+  contract: docs/<pkg_path>/contract.md
+  design: docs/<pkg_path>/design.md
+  testing: docs/<pkg_path>/testing.md
 ---
 
 # Contracts (<module>)
@@ -409,13 +421,15 @@ type <Interface> interface {
 
 ### Code Annotation Templates
 
+Where `<pkg_path>` is the package directory relative to project root (e.g., `internal/auth`, `pkg/pattern`). `<MODULE>` is the abbreviated identifier derived from `<pkg_path>` — see **Module prefix** rules below.
+
 **Source file** (after package declaration):
 
 ```go
 // Package mymodule provides <description>.
 //
-// Spec: docs/<module>/spec.md
-// Contract: docs/<module>/contract.md
+// Spec: docs/<pkg_path>/spec.md
+// Contract: docs/<pkg_path>/contract.md
 package mymodule
 
 // @implement SPEC-<MODULE>-001
@@ -424,13 +438,13 @@ func PublicFunction() {
 }
 ```
 
-**Test file** (`<module>_test.go`):
+**Test file** (`<pkg>_test.go`):
 
 ```go
-// Package mymodule provides tests for authentication.
+// Package mymodule provides tests for <description>.
 //
-// Spec: docs/<module>/spec.md
-// Test: docs/<module>/testing.md
+// Spec: docs/<pkg_path>/spec.md
+// Test: docs/<pkg_path>/testing.md
 package mymodule
 
 // @test TEST-<MODULE>-001
@@ -439,15 +453,16 @@ func TestPublicFunction(t *testing.T) {
 }
 ```
 
-**Contract test file** (`<module>_contract_test.go`):
+**Contract test file** (`<pkg>_contract_test.go`):
 
-Contract tests validate that implementation satisfies contract interfaces:
+Contract tests validate that the implementation satisfies the contract interface. Each test function must be annotated with `@test-contract SPEC-<MODULE>-NNN` — referencing the SPEC whose contract is being verified.
 
 ```go
-// Package mymodule provides contract tests.
+// Package mymodule provides contract tests for <description>.
 //
-// Spec: docs/<module>/spec.md
-// Contract: docs/<module>/contract.md
+// Spec: docs/<pkg_path>/spec.md
+// Test: docs/<pkg_path>/testing.md
+// Contract: docs/<pkg_path>/contract.md
 package mymodule
 
 // @test-contract SPEC-<MODULE>-001
@@ -462,14 +477,27 @@ func TestContractPublicFunction(t *testing.T) {
 
 | Prefix | Meaning | Example |
 | ------ | ------- | ------- |
-| `SPEC-` | Functionality specification | `SPEC-BE-001` |
-| `TEST-` | Test case | `TEST-BE-001` |
+| `SPEC-` | Functionality specification | `SPEC-INTERNAL_AUTH-001` |
+| `TEST-` | Test case | `TEST-INTERNAL_AUTH-001` |
 
-**Module prefix** derived from directory name under `docs/`:
+**Module prefix** derived from `<pkg_path>` by a deterministic rule — no lookup table required:
 
-- `docs/backend/` → `BACKEND` or `BE`
-- `docs/auth/` → `AUTH`
-- `docs/trading/` → `TRADING` or `TR`
+1. Split `<pkg_path>` by `/`.
+2. Uppercase each component; replace hyphens (`-`) with underscores (`_`).
+3. Join components with `_`.
+
+**Examples:**
+
+| `<pkg_path>`          | `<MODULE>`              |
+|-----------------------|-------------------------|
+| `internal/auth`       | `INTERNAL_AUTH`         |
+| `internal/engine`     | `INTERNAL_ENGINE`       |
+| `internal/collector`  | `INTERNAL_COLLECTOR`    |
+| `internal/config`     | `INTERNAL_CONFIG`       |
+| `pkg/pattern`         | `PKG_PATTERN`           |
+| `pkg/walk`            | `PKG_WALK`              |
+| `cmd/idd-cli`         | `CMD_IDD_CLI`           |
+| `auth`                | `AUTH`                  |
 
 **Invalid (will be flagged by idd-cli):**
 
@@ -582,9 +610,10 @@ docs:
   patterns:
     - "docs/**/*.md"
   identifier_patterns:
-    spec: "SPEC-[A-Z]+-[0-9]+"
-    test: "TEST-[A-Z]+-[0-9]+"
-    test_contract: "TEST-[A-Z]+-[0-9]+"
+    spec: "SPEC-[A-Z0-9_]+-[0-9]+"
+    test: "TEST-[A-Z0-9_]+-[0-9]+"
+    test_contract: "TEST-[A-Z0-9_]+-[0-9]+"
+  ignore_paths: []          # glob patterns for doc paths to skip
 
 code:
   patterns:
@@ -593,16 +622,42 @@ code:
     - "@implement"
     - "@test"
     - "@test-contract"
+  ignore_paths: []          # glob patterns for source files to skip
 
 validation:
+  # Link consistency between SPEC **Tests:** and TEST **Spec Coverage:**
   require_doc_link_consistency: true
+  # Disallow identifiers with no connections in the graph
   allow_orphans: false
+  # Every SPEC must have at least one TEST in its **Tests:** field
   require_spec_test_coverage: true
+  # Every CONTRACT identifier must have a @test-contract annotation
+  require_contract_test_coverage: true
+  # design.md files must contain all required sections
+  require_design_sections: true
+  # Every identifier must appear in both docs and code annotations
+  require_doc_code_correspondence: true
+  # Every public function/type must have an @implement annotation
+  require_public_func_annotation: true
+  # Every .go file must have a package doc comment with Spec/Contract paths
+  require_package_doc_comment: true
+  # Every doc file must have a related_files field in frontmatter
+  require_related_files: true
+  # Every test function must have an @test or @test-contract annotation
+  require_test_annotation: true
+  # @implement/@test/@test-contract must include an identifier
+  require_annotation_identifier: true
+  # Multiple annotations of the same type must be comma-separated on one line
+  require_annotation_on_same_line: true
+  # Semantic similarity check between doc describe and code comments
+  consistency_check:
+    enabled: true
+    threshold: 0.3          # 0.0–1.0; below this triggers a warning
 
 output:
   file: "idd-report.json"
-  include_graph: true
-  verbose: true
+  include_graph: false
+  verbose: false
 ```
 
 **Validation Rules:**
@@ -615,6 +670,6 @@ output:
 6. **Frontmatter-Body Sync** — All identifiers in body must be in frontmatter, and vice versa
 7. **Annotation Placement** — `@implement`, `@test`, `@test-contract` must be on function/type declarations only
 8. **Package Doc Comment** — Every .go file must have a package doc comment after `package` declaration
-9. **Duplicate Heading Identifier (CRITICAL)** — H2 section headings MUST NOT have duplicate identifiers within the same file. If a file contains multiple sections (e.g., `## Test` and `## Contract Test`), each section must use its own sequential numbering range (e.g., `TEST-INT_ENG-001` to `TEST-INT_ENG-007` for Test, and `TEST-INT_ENG-013` to `TEST-INT_ENG-019` for Contract Test). idd-cli will detect and report this error. Never reuse identifiers across sections.
+9. **Duplicate Heading Identifier (CRITICAL)** — H2 section headings MUST NOT have duplicate identifiers within the same file. If a file contains multiple sections (e.g., `## Test` and `## Contract Test`), each section must use its own sequential numbering range (e.g., `TEST-INTERNAL_ENGINE-001` to `TEST-INTERNAL_ENGINE-007` for Test, and `TEST-INTERNAL_ENGINE-013` to `TEST-INTERNAL_ENGINE-019` for Contract Test). idd-cli will detect and report this error. Never reuse identifiers across sections.
 
 **Output:** JSON report with `valid`, `errors`, `warnings`, `stats`, and `graph` snapshot.

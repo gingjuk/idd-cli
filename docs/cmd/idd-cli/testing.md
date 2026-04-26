@@ -1,20 +1,20 @@
 ---
 markers:
-  - id: TEST-CMD_IDD-001
+  - id: TEST-CMD_IDD_CLI-001
     name: Core Validation Tests
-  - id: TEST-CMD_IDD-002
+  - id: TEST-CMD_IDD_CLI-002
     name: Module Integration Tests
 
 related_files:
-  spec: spec.md
-  contract: contract.md
-  design: design.md
-  testing: testing.md
+  spec: docs/cmd/idd-cli/spec.md
+  contract: docs/cmd/idd-cli/contract.md
+  design: docs/cmd/idd-cli/design.md
+  testing: docs/cmd/idd-cli/testing.md
 ---
 
 # Test Cases (backend)
 
-## TEST-CMD_IDD-001: Core Validation Tests
+## TEST-CMD_IDD_CLI-001: Core Validation Tests
 
 **Status:** Done
 
@@ -58,11 +58,11 @@ Test cases for the idd-cli core validation logic.
 | `TestLinkageGraph_Stats` | Tests statistics |
 | `TestLinkageGraph_ValidateCompleteness` | Tests completeness |
 
-**Spec Coverage:** `SPEC-CMD_IDD-001`, `SPEC-CMD_IDD-002`, `SPEC-CMD_IDD-003`, `SPEC-CMD_IDD-004`, `SPEC-CMD_IDD-005`, `SPEC-CMD_IDD-006`, `SPEC-CMD_IDD-007`, `SPEC-CMD_IDD-008`, `SPEC-CMD_IDD-009`, `SPEC-CMD_IDD-010`
+**Spec Coverage:** `SPEC-CMD_IDD_CLI-001`, `SPEC-CMD_IDD_CLI-002`, `SPEC-CMD_IDD_CLI-003`, `SPEC-CMD_IDD_CLI-004`, `SPEC-CMD_IDD_CLI-005`, `SPEC-CMD_IDD_CLI-006`, `SPEC-CMD_IDD_CLI-007`, `SPEC-CMD_IDD_CLI-008`, `SPEC-CMD_IDD_CLI-009`, `SPEC-CMD_IDD_CLI-010`
 
 ---
 
-## TEST-CMD_IDD-002: Module Integration Tests
+## TEST-CMD_IDD_CLI-002: Module Integration Tests
 
 **Status:** Done
 
@@ -102,4 +102,4 @@ Integration tests covering the interaction between modules including config load
 | `TestTFIDF_CosineSimilarity` | Tests cosine similarity computation |
 | `TestTFIDF_FindDuplicates` | Tests duplicate detection |
 
-**Spec Coverage:** `SPEC-CMD_IDD-001`, `SPEC-CMD_IDD-002`, `SPEC-CMD_IDD-003`, `SPEC-CMD_IDD-004`, `SPEC-CMD_IDD-005`, `SPEC-CMD_IDD-006`, `SPEC-CMD_IDD-007`, `SPEC-CMD_IDD-008`, `SPEC-CMD_IDD-009`, `SPEC-CMD_IDD-010`
+**Spec Coverage:** `SPEC-CMD_IDD_CLI-001`, `SPEC-CMD_IDD_CLI-002`, `SPEC-CMD_IDD_CLI-003`, `SPEC-CMD_IDD_CLI-004`, `SPEC-CMD_IDD_CLI-005`, `SPEC-CMD_IDD_CLI-006`, `SPEC-CMD_IDD_CLI-007`, `SPEC-CMD_IDD_CLI-008`, `SPEC-CMD_IDD_CLI-009`, `SPEC-CMD_IDD_CLI-010`

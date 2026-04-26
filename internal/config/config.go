@@ -13,7 +13,7 @@ import (
 )
 
 // Config is the root configuration structure that holds all settings for the IDD CLI validation tool.
-// @implement SPEC-INT_CFG-001
+// @implement SPEC-INTERNAL_CONFIG-001
 type Config struct {
 	Version    string           `yaml:"version"`
 	Docs       DocsConfig       `yaml:"docs"`
@@ -23,7 +23,7 @@ type Config struct {
 }
 
 // DocsConfig holds documentation-related configuration including patterns and ignore paths.
-// @implement SPEC-INT_CFG-002
+// @implement SPEC-INTERNAL_CONFIG-002
 type DocsConfig struct {
 	Patterns           []string           `yaml:"patterns"`
 	IdentifierPatterns IdentifierPatterns `yaml:"identifier_patterns"`
@@ -31,7 +31,7 @@ type DocsConfig struct {
 }
 
 // IdentifierPatterns defines regex patterns for matching SPEC, TEST, and other IDD identifiers.
-// @implement SPEC-INT_CFG-003
+// @implement SPEC-INTERNAL_CONFIG-003
 type IdentifierPatterns struct {
 	Spec         string `yaml:"spec"`
 	Test         string `yaml:"test"`
@@ -39,7 +39,7 @@ type IdentifierPatterns struct {
 }
 
 // CodeConfig holds code-related configuration including patterns and annotations.
-// @implement SPEC-INT_CFG-004
+// @implement SPEC-INTERNAL_CONFIG-004
 type CodeConfig struct {
 	Patterns    []string `yaml:"patterns"`
 	Annotations []string `yaml:"annotations"`
@@ -47,7 +47,7 @@ type CodeConfig struct {
 }
 
 // ValidationConfig holds validation rule settings for the IDD CLI.
-// @implement SPEC-INT_CFG-005
+// @implement SPEC-INTERNAL_CONFIG-005
 type ValidationConfig struct {
 	RequireDocLinkConsistency    bool             `yaml:"require_doc_link_consistency"`
 	AllowOrphans                 bool             `yaml:"allow_orphans"`
@@ -65,14 +65,14 @@ type ValidationConfig struct {
 }
 
 // ConsistencyCheck validates semantic consistency between doc describe and code comments.
-// @implement SPEC-INT_CFG-006
+// @implement SPEC-INTERNAL_CONFIG-006
 type ConsistencyCheck struct {
 	Enabled   bool    `yaml:"enabled"`
 	Threshold float64 `yaml:"threshold"` // 0.0-1.0, similarity score below this triggers warning
 }
 
 // OutputConfig holds output-related configuration settings.
-// @implement SPEC-INT_CFG-007
+// @implement SPEC-INTERNAL_CONFIG-007
 type OutputConfig struct {
 	File         string `yaml:"file"`
 	IncludeGraph bool   `yaml:"include_graph"`
@@ -80,7 +80,7 @@ type OutputConfig struct {
 }
 
 // Load reads and validates configuration from a YAML file at the given path.
-// @implement SPEC-INT_CFG-007
+// @implement SPEC-INTERNAL_CONFIG-007
 func Load(path string) (*Config, error) {
 	data, err := os.ReadFile(path)
 	if err != nil {
@@ -100,7 +100,7 @@ func Load(path string) (*Config, error) {
 }
 
 // Default returns a Config with sensible default values for the IDD CLI.
-// @implement SPEC-INT_CFG-008
+// @implement SPEC-INTERNAL_CONFIG-008
 func Default() *Config {
 	return &Config{
 		Version: "1.0",
@@ -149,7 +149,7 @@ func Default() *Config {
 }
 
 // Validate checks that configuration values are correct and sets defaults where appropriate.
-// @implement SPEC-INT_CFG-009
+// @implement SPEC-INTERNAL_CONFIG-009
 func (c *Config) Validate() error {
 	if c.Version == "" {
 		c.Version = "1.0"

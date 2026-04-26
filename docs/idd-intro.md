@@ -115,10 +115,6 @@ markers:
     name: Feature description
 
 related_files:
-  spec: spec.md
-  contract: contract.md
-  design: design.md
-  testing: testing.md
 ---
 ```
 

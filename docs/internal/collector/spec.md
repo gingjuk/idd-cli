@@ -1,52 +1,52 @@
 ---
 markers:
-  - id: SPEC-INT_COL-001
+  - id: SPEC-INTERNAL_COLLECTOR-001
     name: Document Collector
-  - id: SPEC-INT_COL-002
+  - id: SPEC-INTERNAL_COLLECTOR-002
     name: NewDocCollector
-  - id: SPEC-INT_COL-003
+  - id: SPEC-INTERNAL_COLLECTOR-003
     name: Code Collector
-  - id: SPEC-INT_COL-004
+  - id: SPEC-INTERNAL_COLLECTOR-004
     name: NewCodeCollector
-  - id: SPEC-INT_COL-005
+  - id: SPEC-INTERNAL_COLLECTOR-005
     name: Frontmatter Parsing
-  - id: SPEC-INT_COL-006
+  - id: SPEC-INTERNAL_COLLECTOR-006
     name: Frontmatter Validation
-  - id: SPEC-INT_COL-007
+  - id: SPEC-INTERNAL_COLLECTOR-007
     name: File Path Validation
-  - id: SPEC-INT_COL-008
+  - id: SPEC-INTERNAL_COLLECTOR-008
     name: Title Extraction
-  - id: SPEC-INT_COL-009
+  - id: SPEC-INTERNAL_COLLECTOR-009
     name: Module Prefix Validation
-  - id: SPEC-INT_COL-010
+  - id: SPEC-INTERNAL_COLLECTOR-010
     name: Document Structure Validation
-  - id: SPEC-INT_COL-011
+  - id: SPEC-INTERNAL_COLLECTOR-011
     name: Annotation Extraction
-  - id: SPEC-INT_COL-012
+  - id: SPEC-INTERNAL_COLLECTOR-012
     name: Function Context Extraction
-  - id: SPEC-INT_COL-013
+  - id: SPEC-INTERNAL_COLLECTOR-013
     name: Code Origin Tracking
-  - id: SPEC-INT_COL-014
+  - id: SPEC-INTERNAL_COLLECTOR-014
     name: Multi-Annotation Handling
-  - id: SPEC-INT_COL-015
+  - id: SPEC-INTERNAL_COLLECTOR-015
     name: Path Ignore Patterns
-  - id: SPEC-INT_COL-017
+  - id: SPEC-INTERNAL_COLLECTOR-017
     name: DocCollector.Collect
-  - id: SPEC-INT_COL-024
+  - id: SPEC-INTERNAL_COLLECTOR-024
     name: CodeCollector.Collect
-  - id: SPEC-INT_COL-025
+  - id: SPEC-INTERNAL_COLLECTOR-025
     name: SplitAnnotationRefs
 
 related_files:
-  spec: spec.md
-  contract: contract.md
-  design: design.md
-  testing: testing.md
+  spec: docs/internal/collector/spec.md
+  contract: docs/internal/collector/contract.md
+  design: docs/internal/collector/design.md
+  testing: docs/internal/collector/testing.md
 ---
 
 # Specification (collector)
 
-## SPEC-INT_COL-001: Document Collector
+## SPEC-INTERNAL_COLLECTOR-001: Document Collector
 
 **Contract:** `DocCollector`
 
@@ -75,11 +75,11 @@ The Document Collector (`DocCollector`) must collect IDD identifiers from markdo
 - Validate module prefix matches directory structure
 - Report errors for malformed markers (not wrapped in backticks)
 
-**Tests:** `TEST-INT_COL-001`
+**Tests:** `TEST-INTERNAL_COLLECTOR-001`
 
 **Public Functions:**
 
-## SPEC-INT_COL-016: DocCollector.NewDocCollector
+## SPEC-INTERNAL_COLLECTOR-016: DocCollector.NewDocCollector
 
 **Function Signature:**
 `func NewDocCollector(cfg *config.Config) *DocCollector`
@@ -94,7 +94,7 @@ The Document Collector (`DocCollector`) must collect IDD identifiers from markdo
 
 ---
 
-## SPEC-INT_COL-017: DocCollector.Collect
+## SPEC-INTERNAL_COLLECTOR-017: DocCollector.Collect
 
 **Function Signature:**
 `func (c *DocCollector) Collect(ctx context.Context, targetPath string) (*model.IdentifierSet, []*model.ValidationError, error)`
@@ -108,11 +108,11 @@ The Document Collector (`DocCollector`) must collect IDD identifiers from markdo
 
 **Returns:** IdentifierSet with collected identifiers, validation errors, and any error encountered
 
-**Tests:** `TEST-INT_COL-017`
+**Tests:** `TEST-INTERNAL_COLLECTOR-017`
 
 ---
 
-## SPEC-INT_COL-018: DocCollector.ParseFrontmatter
+## SPEC-INTERNAL_COLLECTOR-018: DocCollector.ParseFrontmatter
 
 **Function Signature:**
 `func ParseFrontmatter(content string) (*Frontmatter, error)`
@@ -127,7 +127,7 @@ The Document Collector (`DocCollector`) must collect IDD identifiers from markdo
 
 ---
 
-## SPEC-INT_COL-019: DocCollector.ValidateFrontmatterMarkers
+## SPEC-INTERNAL_COLLECTOR-019: DocCollector.ValidateFrontmatterMarkers
 
 **Function Signature:**
 `func ValidateFrontmatterMarkers(fm *Frontmatter, content string, filePath string) []string`
@@ -144,7 +144,7 @@ The Document Collector (`DocCollector`) must collect IDD identifiers from markdo
 
 ---
 
-## SPEC-INT_COL-020: DocCollector.ValidateDocumentStructure
+## SPEC-INTERNAL_COLLECTOR-020: DocCollector.ValidateDocumentStructure
 
 **Function Signature:**
 `func ValidateDocumentStructure(filePath string, idType string) error`
@@ -160,7 +160,7 @@ The Document Collector (`DocCollector`) must collect IDD identifiers from markdo
 
 ---
 
-## SPEC-INT_COL-021: DocCollector.ValidateModulePrefix
+## SPEC-INTERNAL_COLLECTOR-021: DocCollector.ValidateModulePrefix
 
 **Function Signature:**
 `func ValidateModulePrefix(id string, filePath string) error`
@@ -176,7 +176,7 @@ The Document Collector (`DocCollector`) must collect IDD identifiers from markdo
 
 ---
 
-## SPEC-INT_COL-022: DocCollector.GetExpectedFilename
+## SPEC-INTERNAL_COLLECTOR-022: DocCollector.GetExpectedFilename
 
 **Function Signature:**
 `func GetExpectedFilename(idType string) string`
@@ -201,13 +201,13 @@ The Document Collector (`DocCollector`) must collect IDD identifiers from markdo
 - [x] Ignores paths configured in `ignore_paths`
 - [x] Reports errors for bare markers (not wrapped in backticks)
 
-**Tests:** `TEST-INT_COL-001`
+**Tests:** `TEST-INTERNAL_COLLECTOR-001`
 
-**Related:** `CON-INT_COL-001`
+**Related:** `CON-INTERNAL_COLLECTOR-001`
 
 ---
 
-## SPEC-INT_COL-002: Code Collector
+## SPEC-INTERNAL_COLLECTOR-002: Code Collector
 
 **Contract:** `CodeCollector`
 
@@ -233,11 +233,11 @@ The Code Collector (`CodeCollector`) must collect IDD annotations from source co
 - Build identifiers from annotations with code location
 - Set origin to `model.OriginCode` for code-based identifiers
 
-**Tests:** `TEST-INT_COL-002`
+**Tests:** `TEST-INTERNAL_COLLECTOR-002`
 
 **Public Functions:**
 
-## SPEC-INT_COL-023: CodeCollector.NewCodeCollector
+## SPEC-INTERNAL_COLLECTOR-023: CodeCollector.NewCodeCollector
 
 **Function Signature:**
 `func NewCodeCollector(cfg *config.Config) *CodeCollector`
@@ -252,7 +252,7 @@ The Code Collector (`CodeCollector`) must collect IDD annotations from source co
 
 ---
 
-## SPEC-INT_COL-024: CodeCollector.Collect
+## SPEC-INTERNAL_COLLECTOR-024: CodeCollector.Collect
 
 **Function Signature:**
 `func (c *CodeCollector) Collect(ctx context.Context, targetPath string) (*model.IdentifierSet, error)`
@@ -266,16 +266,16 @@ The Code Collector (`CodeCollector`) must collect IDD annotations from source co
 
 **Returns:** IdentifierSet with collected identifiers from code, and any error encountered
 
-**Tests:** `TEST-INT_COL-024`
+**Tests:** `TEST-INTERNAL_COLLECTOR-024`
 
 ---
 
-## SPEC-INT_COL-025: CodeCollector.SplitAnnotationRefs
+## SPEC-INTERNAL_COLLECTOR-025: CodeCollector.SplitAnnotationRefs
 
 **Function Signature:**
 `func SplitAnnotationRefs(s string) []string`
 
-**Purpose:** Splits comma-separated IDD references from an annotation and trims whitespace. Used to handle multiple references in a single annotation like `@implement` `SPEC-INT_COL-001`, `SPEC-INT_COL-002`.
+**Purpose:** Splits comma-separated IDD references from an annotation and trims whitespace. Used to handle multiple references in a single annotation like `@implement` `SPEC-INTERNAL_COLLECTOR-001`, `SPEC-INTERNAL_COLLECTOR-002`.
 
 **Parameters:**
 
@@ -294,11 +294,11 @@ The Code Collector (`CodeCollector`) must collect IDD annotations from source co
 - [x] Ignores paths configured in `ignore_paths`
 - [x] Handles multiple annotations on same line
 
-**Tests:** `TEST-INT_COL-001`, `TEST-INT_COL-002`, `TEST-INT_COL-003`, `TEST-INT_COL-004`, `TEST-INT_COL-005`, `TEST-INT_COL-006`, `TEST-INT_COL-007`, `TEST-INT_COL-008`, `TEST-INT_COL-009`, `TEST-INT_COL-010`, `TEST-INT_COL-011`, `TEST-INT_COL-012`, `TEST-INT_COL-013`, `TEST-INT_COL-014`, `TEST-INT_COL-015`, `TEST-INT_COL-016`, `TEST-INT_COL-017`, `TEST-INT_COL-018`, `TEST-INT_COL-020`, `TEST-INT_COL-021`, `TEST-INT_COL-022`, `TEST-INT_COL-023`, `TEST-INT_COL-024`, `TEST-INT_COL-025`, `TEST-INT_COL-026`, `TEST-INT_COL-027`
+**Tests:** `TEST-INTERNAL_COLLECTOR-001`, `TEST-INTERNAL_COLLECTOR-002`, `TEST-INTERNAL_COLLECTOR-003`, `TEST-INTERNAL_COLLECTOR-004`, `TEST-INTERNAL_COLLECTOR-005`, `TEST-INTERNAL_COLLECTOR-006`, `TEST-INTERNAL_COLLECTOR-007`, `TEST-INTERNAL_COLLECTOR-008`, `TEST-INTERNAL_COLLECTOR-009`, `TEST-INTERNAL_COLLECTOR-010`, `TEST-INTERNAL_COLLECTOR-011`, `TEST-INTERNAL_COLLECTOR-012`, `TEST-INTERNAL_COLLECTOR-013`, `TEST-INTERNAL_COLLECTOR-014`, `TEST-INTERNAL_COLLECTOR-015`, `TEST-INTERNAL_COLLECTOR-016`, `TEST-INTERNAL_COLLECTOR-017`, `TEST-INTERNAL_COLLECTOR-018`, `TEST-INTERNAL_COLLECTOR-020`, `TEST-INTERNAL_COLLECTOR-021`, `TEST-INTERNAL_COLLECTOR-022`, `TEST-INTERNAL_COLLECTOR-023`, `TEST-INTERNAL_COLLECTOR-024`, `TEST-INTERNAL_COLLECTOR-025`, `TEST-INTERNAL_COLLECTOR-026`, `TEST-INTERNAL_COLLECTOR-027`
 
 ---
 
-## SPEC-INT_COL-003: Frontmatter Parsing
+## SPEC-INTERNAL_COLLECTOR-003: Frontmatter Parsing
 
 **Contract:** `ParseFrontmatter`
 
@@ -312,11 +312,11 @@ Frontmatter parsing must handle various YAML structures including markers with i
 
 **Implementation:** `internal/collector/frontmatter.go`
 
-**Tests:** `TEST-INT_COL-003`, `TEST-INT_COL-004`
+**Tests:** `TEST-INTERNAL_COLLECTOR-003`, `TEST-INTERNAL_COLLECTOR-004`
 
 ---
 
-## SPEC-INT_COL-004: Frontmatter Validation
+## SPEC-INTERNAL_COLLECTOR-004: Frontmatter Validation
 
 **Contract:** `ValidateFrontmatterMarkers`
 
@@ -330,11 +330,11 @@ Frontmatter validation must check that markers in YAML match the actual document
 
 **Implementation:** `internal/collector/frontmatter.go`
 
-**Tests:** `TEST-INT_COL-005`, `TEST-INT_COL-006`
+**Tests:** `TEST-INTERNAL_COLLECTOR-005`, `TEST-INTERNAL_COLLECTOR-006`
 
 ---
 
-## SPEC-INT_COL-005: File Path Validation
+## SPEC-INTERNAL_COLLECTOR-005: File Path Validation
 
 **Contract:** `ValidateDocumentStructure`
 
@@ -348,11 +348,11 @@ File path validation ensures proper document structure and naming conventions.
 
 **Implementation:** `internal/collector/doc_collector.go`
 
-**Tests:** `TEST-INT_COL-007`, `TEST-INT_COL-008`
+**Tests:** `TEST-INTERNAL_COLLECTOR-007`, `TEST-INTERNAL_COLLECTOR-008`
 
 ---
 
-## SPEC-INT_COL-006: Title Extraction
+## SPEC-INTERNAL_COLLECTOR-006: Title Extraction
 
 **Contract:** `ExtractTitle`
 
@@ -366,11 +366,11 @@ Extract document titles from markdown headings containing identifiers.
 
 **Implementation:** `internal/collector/doc_collector.go`
 
-**Tests:** `TEST-INT_COL-009`, `TEST-INT_COL-010`, `TEST-INT_COL-020`
+**Tests:** `TEST-INTERNAL_COLLECTOR-009`, `TEST-INTERNAL_COLLECTOR-010`, `TEST-INTERNAL_COLLECTOR-020`
 
 ---
 
-## SPEC-INT_COL-007: Module Prefix Validation
+## SPEC-INTERNAL_COLLECTOR-007: Module Prefix Validation
 
 **Contract:** `ValidateModulePrefix`
 
@@ -384,11 +384,11 @@ Validate that identifier module prefixes match directory structure.
 
 **Implementation:** `internal/collector/doc_collector.go`
 
-**Tests:** `TEST-INT_COL-011`, `TEST-INT_COL-012`
+**Tests:** `TEST-INTERNAL_COLLECTOR-011`, `TEST-INTERNAL_COLLECTOR-012`
 
 ---
 
-## SPEC-INT_COL-008: Document Structure Validation
+## SPEC-INTERNAL_COLLECTOR-008: Document Structure Validation
 
 **Contract:** `GetExpectedFilename`
 
@@ -402,11 +402,11 @@ Validate document structure including expected filenames by identifier type.
 
 **Implementation:** `internal/collector/doc_collector.go`
 
-**Tests:** `TEST-INT_COL-019`, `TEST-INT_COL-014`
+**Tests:** `TEST-INTERNAL_COLLECTOR-019`, `TEST-INTERNAL_COLLECTOR-014`
 
 ---
 
-## SPEC-INT_COL-009: Annotation Extraction
+## SPEC-INTERNAL_COLLECTOR-009: Annotation Extraction
 
 **Contract:** `ExtractAnnotations`
 
@@ -420,11 +420,11 @@ Extract IDD annotations from code including @implement, @test, @test-contract.
 
 **Implementation:** `internal/collector/code_collector.go`
 
-**Tests:** `TEST-INT_COL-015`, `TEST-INT_COL-024`
+**Tests:** `TEST-INTERNAL_COLLECTOR-015`, `TEST-INTERNAL_COLLECTOR-024`
 
 ---
 
-## SPEC-INT_COL-010: Function Context Extraction
+## SPEC-INTERNAL_COLLECTOR-010: Function Context Extraction
 
 **Contract:** `ExtractFunctionContext`
 
@@ -438,11 +438,11 @@ Extract function name and preceding comments as context for code annotations.
 
 **Implementation:** `internal/collector/code_collector.go`
 
-**Tests:** `TEST-INT_COL-016`, `TEST-INT_COL-025`
+**Tests:** `TEST-INTERNAL_COLLECTOR-016`, `TEST-INTERNAL_COLLECTOR-025`
 
 ---
 
-## SPEC-INT_COL-011: Code Origin Tracking
+## SPEC-INTERNAL_COLLECTOR-011: Code Origin Tracking
 
 **Contract:** `SetOrigin`
 
@@ -456,11 +456,11 @@ Set origin to OriginCode for code-based identifiers to distinguish from doc orig
 
 **Implementation:** `internal/collector/code_collector.go`
 
-**Tests:** `TEST-INT_COL-017`
+**Tests:** `TEST-INTERNAL_COLLECTOR-017`
 
 ---
 
-## SPEC-INT_COL-012: Multi-Annotation Handling
+## SPEC-INTERNAL_COLLECTOR-012: Multi-Annotation Handling
 
 **Contract:** `SplitAnnotationRefs`
 
@@ -474,11 +474,11 @@ Handle multiple annotations on the same line or multiple references in single an
 
 **Implementation:** `internal/collector/code_collector.go`
 
-**Tests:** `TEST-INT_COL-018`, `TEST-INT_COL-024`
+**Tests:** `TEST-INTERNAL_COLLECTOR-018`, `TEST-INTERNAL_COLLECTOR-024`
 
 ---
 
-## SPEC-INT_COL-013: Path Ignore Patterns
+## SPEC-INTERNAL_COLLECTOR-013: Path Ignore Patterns
 
 **Contract:** `ShouldIgnore`
 
@@ -492,11 +492,11 @@ Respect ignore_paths configuration when collecting from directories.
 
 **Implementation:** `internal/collector/doc_collector.go`, `internal/collector/code_collector.go`
 
-**Tests:** `TEST-INT_COL-013`
+**Tests:** `TEST-INTERNAL_COLLECTOR-013`
 
 ---
 
-## SPEC-INT_COL-014: Code File Discovery
+## SPEC-INTERNAL_COLLECTOR-014: Code File Discovery
 
 **Contract:** `DiscoverFiles`
 
@@ -510,11 +510,11 @@ Recursively discover source files with supported extensions (.go, .ts, .tsx, .js
 
 **Implementation:** `internal/collector/code_collector.go`
 
-**Tests:** `TEST-INT_COL-021`
+**Tests:** `TEST-INTERNAL_COLLECTOR-021`
 
 ---
 
-## SPEC-INT_COL-015: Language Support
+## SPEC-INTERNAL_COLLECTOR-015: Language Support
 
 **Contract:** `GetLanguagePatterns`
 
@@ -528,4 +528,4 @@ Support multiple programming languages with language-specific annotation pattern
 
 **Implementation:** `internal/collector/code_collector.go`
 
-**Tests:** `TEST-INT_COL-021`
+**Tests:** `TEST-INTERNAL_COLLECTOR-021`

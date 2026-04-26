@@ -1,36 +1,36 @@
 ---
 markers:
-  - id: SPEC-CMD_IDD-001
+  - id: SPEC-CMD_IDD_CLI-001
     name: IDD CLI Overview
-  - id: SPEC-CMD_IDD-002
+  - id: SPEC-CMD_IDD_CLI-002
     name: Graph Linkage Structure
-  - id: SPEC-CMD_IDD-003
+  - id: SPEC-CMD_IDD_CLI-003
     name: Engine Validation Rules
-  - id: SPEC-CMD_IDD-004
+  - id: SPEC-CMD_IDD_CLI-004
     name: Reporter Output
-  - id: SPEC-CMD_IDD-005
+  - id: SPEC-CMD_IDD_CLI-005
     name: Identifier Model
-  - id: SPEC-CMD_IDD-006
+  - id: SPEC-CMD_IDD_CLI-006
     name: Config Loading
-  - id: SPEC-CMD_IDD-007
+  - id: SPEC-CMD_IDD_CLI-007
     name: Similarity Analysis
-  - id: SPEC-CMD_IDD-008
+  - id: SPEC-CMD_IDD_CLI-008
     name: Embed Files
-  - id: SPEC-CMD_IDD-009
+  - id: SPEC-CMD_IDD_CLI-009
     name: CLI Main Entry
-  - id: SPEC-CMD_IDD-010
+  - id: SPEC-CMD_IDD_CLI-010
     name: Engine Contract Tests
 
 related_files:
-  spec: spec.md
-  contract: contract.md
-  design: design.md
-  testing: testing.md
+  spec: docs/cmd/idd-cli/spec.md
+  contract: docs/cmd/idd-cli/contract.md
+  design: docs/cmd/idd-cli/design.md
+  testing: docs/cmd/idd-cli/testing.md
 ---
 
 # Specification (backend)
 
-## SPEC-CMD_IDD-001: IDD CLI Overview
+## SPEC-CMD_IDD_CLI-001: IDD CLI Overview
 
 **Status:** Done
 
@@ -62,13 +62,13 @@ idd-cli is a CLI tool that validates bidirectional linkage consistency between I
 - [x] Generates JSON report with validation results
 - [x] Exits with non-zero code when validation fails
 
-**Tests:** `TEST-CMD_IDD-001`, `TEST-CMD_IDD-002`
+**Tests:** `TEST-CMD_IDD_CLI-001`, `TEST-CMD_IDD_CLI-002`
 
-**Related:** [`SPEC-CMD_IDD-002`](#spec-cmd_idd-002-graph-linkage-structure)
+**Related:** [`SPEC-CMD_IDD_CLI-002`](#spec-cmd_idd_cli-002-graph-linkage-structure)
 
 ---
 
-## SPEC-CMD_IDD-002: Graph Linkage Structure
+## SPEC-CMD_IDD_CLI-002: Graph Linkage Structure
 
 **Status:** Done
 
@@ -88,7 +88,7 @@ The LinkageGraph must efficiently represent bidirectional relationships between 
 - `Edge` — Directed relationship with verification status
 - `Index` — Fast lookup indexes by ID, type, backlinks
 
-**Tests:** `TEST-CMD_IDD-001`, `TEST-CMD_IDD-002`
+**Tests:** `TEST-CMD_IDD_CLI-001`, `TEST-CMD_IDD_CLI-002`
 
 **Public Functions:**
 
@@ -328,13 +328,13 @@ The LinkageGraph must efficiently represent bidirectional relationships between 
 - [x] Fast lookup of backlinks (nodes linking TO a node)
 - [x] Bidirectional link verification marks edges as verified/unverified
 
-**Tests:** `TEST-CMD_IDD-001`, `TEST-CMD_IDD-002`
+**Tests:** `TEST-CMD_IDD_CLI-001`, `TEST-CMD_IDD_CLI-002`
 
-**Related:** [`SPEC-CMD_IDD-001`](#spec-cmd_idd-001-idd-cli-overview)
+**Related:** [`SPEC-CMD_IDD_CLI-001`](#spec-cmd_idd_cli-001-idd-cli-overview)
 
 ---
 
-## SPEC-CMD_IDD-003: Configuration Module
+## SPEC-CMD_IDD_CLI-003: Configuration Module
 
 **Status:** Done
 
@@ -402,13 +402,13 @@ The configuration module must load IDD settings from YAML configuration files, s
 - [x] Identifier patterns are configurable via config file
 - [x] Reporter format can be set to JSON or Markdown
 
-**Tests:** `TEST-CMD_IDD-001`, `TEST-CMD_IDD-002`
+**Tests:** `TEST-CMD_IDD_CLI-001`, `TEST-CMD_IDD_CLI-002`
 
-**Related:** [`SPEC-CMD_IDD-001`](#spec-cmd_idd-001-idd-cli-overview)
+**Related:** [`SPEC-CMD_IDD_CLI-001`](#spec-cmd_idd_cli-001-idd-cli-overview)
 
 ---
 
-## SPEC-CMD_IDD-004: Validation Engine
+## SPEC-CMD_IDD_CLI-004: Validation Engine
 
 **Status:** Done
 
@@ -494,13 +494,13 @@ The validation engine orchestrates the collection of identifiers, building the l
 - [x] Orphan validation detects unreferenced identifiers
 - [x] Validation results include errors and warnings
 
-**Tests:** `TEST-CMD_IDD-001`, `TEST-CMD_IDD-002`
+**Tests:** `TEST-CMD_IDD_CLI-001`, `TEST-CMD_IDD_CLI-002`
 
-**Related:** [`SPEC-CMD_IDD-001`](#spec-cmd_idd-001-idd-cli-overview), [`SPEC-CMD_IDD-002`](#spec-cmd_idd-002-graph-linkage-structure)
+**Related:** [`SPEC-CMD_IDD_CLI-001`](#spec-cmd_idd_cli-001-idd-cli-overview), [`SPEC-CMD_IDD_CLI-002`](#spec-cmd_idd_cli-002-graph-linkage-structure)
 
 ---
 
-## SPEC-CMD_IDD-005: Identifier Model
+## SPEC-CMD_IDD_CLI-005: Identifier Model
 
 **Status:** Done
 
@@ -547,7 +547,7 @@ The identifier model defines data structures for representing IDD identifiers, a
 
 **Parameters:**
 
-- `id`: The identifier ID (e.g., "SPEC-CMD_IDD-001")
+- `id`: The identifier ID (e.g., "SPEC-CMD_IDD_CLI-001")
 - `idType`: The type of identifier (TypeSpec, TypeContract, etc.)
 - `title`: The title/name of the identifier
 - `source`: The file path where the identifier was found
@@ -837,13 +837,13 @@ The identifier model defines data structures for representing IDD identifiers, a
 - [x] IdentifierSet supports add, get, has, count, all, merge operations
 - [x] Annotations can be converted to identifiers
 
-**Tests:** `TEST-CMD_IDD-001`, `TEST-CMD_IDD-002`
+**Tests:** `TEST-CMD_IDD_CLI-001`, `TEST-CMD_IDD_CLI-002`
 
-**Related:** [`SPEC-CMD_IDD-002`](#spec-cmd_idd-002-graph-linkage-structure)
+**Related:** [`SPEC-CMD_IDD_CLI-002`](#spec-cmd_idd_cli-002-graph-linkage-structure)
 
 ---
 
-## SPEC-CMD_IDD-006: Reporter Module
+## SPEC-CMD_IDD_CLI-006: Reporter Module
 
 **Status:** Done
 
@@ -880,7 +880,7 @@ The reporter module generates validation reports in multiple formats (JSON, Mark
 
 **Returns:** A new Reporter instance
 
-**Tests:** `TEST-CMD_IDD-001`, `TEST-CMD_IDD-002`
+**Tests:** `TEST-CMD_IDD_CLI-001`, `TEST-CMD_IDD_CLI-002`
 
 ---
 
@@ -922,13 +922,13 @@ The reporter module generates validation reports in multiple formats (JSON, Mark
 - [x] Errors include identifier ID and source location
 - [x] Statistics are accurate
 
-**Tests:** `TEST-CMD_IDD-001`, `TEST-CMD_IDD-002`
+**Tests:** `TEST-CMD_IDD_CLI-001`, `TEST-CMD_IDD_CLI-002`
 
-**Related:** [`SPEC-CMD_IDD-001`](#spec-cmd_idd-001-idd-cli-overview)
+**Related:** [`SPEC-CMD_IDD_CLI-001`](#spec-cmd_idd_cli-001-idd-cli-overview)
 
 ---
 
-## SPEC-CMD_IDD-007: Similarity Analysis
+## SPEC-CMD_IDD_CLI-007: Similarity Analysis
 
 **Status:** Done
 
@@ -959,7 +959,7 @@ The similarity module provides TF-IDF based document similarity analysis to help
 
 **Returns:** A new TFIDF pointer
 
-**Tests:** `TEST-CMD_IDD-001`, `TEST-CMD_IDD-002`
+**Tests:** `TEST-CMD_IDD_CLI-001`, `TEST-CMD_IDD_CLI-002`
 
 ---
 
@@ -1091,9 +1091,9 @@ The similarity module provides TF-IDF based document similarity analysis to help
 - [x] Configurable similarity threshold
 - [x] Similar files are flagged for review
 
-**Tests:** `TEST-CMD_IDD-001`, `TEST-CMD_IDD-002`
+**Tests:** `TEST-CMD_IDD_CLI-001`, `TEST-CMD_IDD_CLI-002`
 
-**Related:** [`SPEC-CMD_IDD-001`](#spec-cmd_idd-001-idd-cli-overview)
+**Related:** [`SPEC-CMD_IDD_CLI-001`](#spec-cmd_idd_cli-001-idd-cli-overview)
 
 ---
 
@@ -1242,7 +1242,7 @@ The walk package provides file traversal utilities with pattern matching support
 
 ---
 
-## SPEC-CMD_IDD-008: Embed Files
+## SPEC-CMD_IDD_CLI-008: Embed Files
 
 **Status:** Done
 
@@ -1282,11 +1282,11 @@ The CLI must be able to embed skill files for distribution as a single binary.
 
 **Returns:** File contents and error if not found
 
-**Tests:** `TEST-CMD_IDD-001`, `TEST-CMD_IDD-002`
+**Tests:** `TEST-CMD_IDD_CLI-001`, `TEST-CMD_IDD_CLI-002`
 
 ---
 
-## SPEC-CMD_IDD-009: CLI Main Entry
+## SPEC-CMD_IDD_CLI-009: CLI Main Entry
 
 **Status:** Done
 
@@ -1321,11 +1321,11 @@ The CLI must provide a main entry point that parses flags and runs the validatio
 - `Module` — Module path
 - `Path` — File path
 
-**Tests:** `TEST-CMD_IDD-001`, `TEST-CMD_IDD-002`
+**Tests:** `TEST-CMD_IDD_CLI-001`, `TEST-CMD_IDD_CLI-002`
 
 ---
 
-## SPEC-CMD_IDD-010: Engine Contract Tests
+## SPEC-CMD_IDD_CLI-010: Engine Contract Tests
 
 **Status:** Done
 
@@ -1359,4 +1359,4 @@ type Rule interface {
 - `Name()` — Returns the rule name
 - `Validate(g *LinkageGraph)` — Validates the graph and returns errors
 
-**Tests:** `TEST-CMD_IDD-001`, `TEST-CMD_IDD-002`
+**Tests:** `TEST-CMD_IDD_CLI-001`, `TEST-CMD_IDD_CLI-002`

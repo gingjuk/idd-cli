@@ -1,9 +1,9 @@
 ---
 related_files:
-  spec: spec.md
-  contract: contract.md
-  design: design.md
-  testing: testing.md
+  spec: docs/cmd/idd-cli/spec.md
+  contract: docs/cmd/idd-cli/contract.md
+  design: docs/cmd/idd-cli/design.md
+  testing: docs/cmd/idd-cli/testing.md
 ---
 
 # Design (backend)

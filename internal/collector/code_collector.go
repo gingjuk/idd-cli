@@ -19,14 +19,14 @@ import (
 // CodeCollector collects IDD annotations from source code files (Go, TypeScript,
 // JavaScript), extracting @implement, @test, and @test-contract annotations.
 //
-// @implement SPEC-INT_COL-003
+// @implement SPEC-INTERNAL_COLLECTOR-003
 type CodeCollector struct {
 	cfg *config.Config
 }
 
 // NewCodeCollector creates a new CodeCollector with the given configuration.
 //
-// @implement SPEC-INT_COL-004
+// @implement SPEC-INTERNAL_COLLECTOR-004
 func NewCodeCollector(cfg *config.Config) *CodeCollector {
 	return &CodeCollector{cfg: cfg}
 }
@@ -35,7 +35,7 @@ func NewCodeCollector(cfg *config.Config) *CodeCollector {
 // target path. If targetPath is a directory, recursively walks to find all
 // .go, .ts, .tsx, .js files.
 //
-// @implement SPEC-INT_COL-024
+// @implement SPEC-INTERNAL_COLLECTOR-024
 func (c *CodeCollector) Collect(ctx context.Context, targetPath string) (*model.IdentifierSet, error) {
 	set := model.NewIdentifierSet()
 
@@ -220,9 +220,9 @@ func extractFunctionComment(lines []string, annotationLine int) string {
 
 // SplitAnnotationRefs splits comma-separated IDD references from an annotation
 // and trims whitespace. Used to handle multiple references in a single
-// annotation like `@implement` `SPEC-INT_COL-001`, `SPEC-INT_COL-002`.
+// annotation like `@implement` `SPEC-INTERNAL_COLLECTOR-001`, `SPEC-INTERNAL_COLLECTOR-002`.
 //
-// @implement SPEC-INT_COL-025
+// @implement SPEC-INTERNAL_COLLECTOR-025
 func SplitAnnotationRefs(s string) []string {
 	refs := strings.Split(s, ",")
 	for i, ref := range refs {

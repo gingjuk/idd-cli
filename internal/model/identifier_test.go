@@ -8,7 +8,7 @@ import (
 	"testing"
 )
 
-// @test TEST-INT_MOD-019
+// @test TEST-INTERNAL_MODEL-019
 func TestParseIdentifierType(t *testing.T) {
 	tests := []struct {
 		name    string
@@ -40,7 +40,7 @@ func TestParseIdentifierType(t *testing.T) {
 	}
 }
 
-// @test TEST-INT_MOD-020
+// @test TEST-INTERNAL_MODEL-020
 func TestNewIdentifier(t *testing.T) {
 	id := NewIdentifier("SPEC-001", TypeSpec, "Test Spec", "docs/test.md", 10)
 
@@ -67,7 +67,7 @@ func TestNewIdentifier(t *testing.T) {
 	}
 }
 
-// @test TEST-INT_MOD-001
+// @test TEST-INTERNAL_MODEL-001
 func TestIdentifierSet_Add_Get_Has(t *testing.T) {
 	set := NewIdentifierSet()
 	spec := NewIdentifier("SPEC-001", TypeSpec, "Test", "test.md", 1)
@@ -90,7 +90,7 @@ func TestIdentifierSet_Add_Get_Has(t *testing.T) {
 	}
 }
 
-// @test TEST-INT_MOD-002
+// @test TEST-INTERNAL_MODEL-002
 func TestIdentifierSet_Count(t *testing.T) {
 	set := NewIdentifierSet()
 	if set.Count() != 0 {
@@ -105,7 +105,7 @@ func TestIdentifierSet_Count(t *testing.T) {
 	}
 }
 
-// @test TEST-INT_MOD-003
+// @test TEST-INTERNAL_MODEL-003
 func TestIdentifierSet_All(t *testing.T) {
 	set := NewIdentifierSet()
 	set.Add(NewIdentifier("SPEC-001", TypeSpec, "", "", 0))
@@ -117,7 +117,7 @@ func TestIdentifierSet_All(t *testing.T) {
 	}
 }
 
-// @test TEST-INT_MOD-004
+// @test TEST-INTERNAL_MODEL-004
 func TestIdentifierSet_Merge(t *testing.T) {
 	set1 := NewIdentifierSet()
 	set1.Add(NewIdentifier("SPEC-001", TypeSpec, "", "", 0))
@@ -132,7 +132,7 @@ func TestIdentifierSet_Merge(t *testing.T) {
 	}
 }
 
-// @test TEST-INT_MOD-005
+// @test TEST-INTERNAL_MODEL-005
 func TestIdentifier_AddLink(t *testing.T) {
 	id := NewIdentifier("SPEC-001", TypeSpec, "", "", 0)
 	id.AddLink("TEST-001")
@@ -143,7 +143,7 @@ func TestIdentifier_AddLink(t *testing.T) {
 	}
 }
 
-// @test TEST-INT_MOD-022
+// @test TEST-INTERNAL_MODEL-022
 func TestNewAnnotation(t *testing.T) {
 	ann := NewAnnotation(TypeSpec, "SPEC-001", "test.go", "@implement SPEC-001", "context", 10)
 
@@ -161,7 +161,7 @@ func TestNewAnnotation(t *testing.T) {
 	}
 }
 
-// @test TEST-INT_MOD-006
+// @test TEST-INTERNAL_MODEL-006
 func TestAnnotation_ToIdentifier(t *testing.T) {
 	ann := NewAnnotation(TypeSpec, "SPEC-001", "test.go", "@implement SPEC-001", "context", 10)
 	id := ann.ToIdentifier()
@@ -180,7 +180,7 @@ func TestAnnotation_ToIdentifier(t *testing.T) {
 	}
 }
 
-// @test TEST-INT_MOD-007
+// @test TEST-INTERNAL_MODEL-007
 func TestValidationError_Error(t *testing.T) {
 	err := ValidationError{
 		Rule:    "test-rule",
@@ -193,7 +193,7 @@ func TestValidationError_Error(t *testing.T) {
 	}
 }
 
-// @test TEST-INT_MOD-021
+// @test TEST-INTERNAL_MODEL-021
 func TestNewValidationResult(t *testing.T) {
 	result := NewValidationResult()
 
@@ -208,7 +208,7 @@ func TestNewValidationResult(t *testing.T) {
 	}
 }
 
-// @test TEST-INT_MOD-008
+// @test TEST-INTERNAL_MODEL-008
 func TestValidationResult_AddError(t *testing.T) {
 	result := NewValidationResult()
 	result.AddError("rule1", "message", "source", "link", "code")
@@ -221,7 +221,7 @@ func TestValidationResult_AddError(t *testing.T) {
 	}
 }
 
-// @test TEST-INT_MOD-009
+// @test TEST-INTERNAL_MODEL-009
 func TestValidationResult_AddWarning(t *testing.T) {
 	result := NewValidationResult()
 	result.AddWarning("rule", "msg", "", "", "")
@@ -234,7 +234,7 @@ func TestValidationResult_AddWarning(t *testing.T) {
 	}
 }
 
-// @test TEST-INT_MOD-010
+// @test TEST-INTERNAL_MODEL-010
 func TestValidationResult_Sort(t *testing.T) {
 	result := NewValidationResult()
 	result.AddError("bbb", "msg2", "", "", "")
@@ -248,7 +248,7 @@ func TestValidationResult_Sort(t *testing.T) {
 	}
 }
 
-// @test TEST-INT_MOD-023
+// @test TEST-INTERNAL_MODEL-023
 func TestNewIdentifierWithDescribe(t *testing.T) {
 	id := NewIdentifierWithDescribe("SPEC-001", TypeSpec, "Test Spec", "Validates JWT tokens", "docs/test.md", 10)
 
@@ -275,7 +275,7 @@ func TestNewIdentifierWithDescribe(t *testing.T) {
 	}
 }
 
-// @test TEST-INT_MOD-024
+// @test TEST-INTERNAL_MODEL-024
 func TestNewAnnotationWithComment(t *testing.T) {
 	ann := NewAnnotationWithComment(TypeSpec, "SPEC-001", "test.go", "@implement SPEC-001", "context", "Validates authentication", 10)
 
@@ -287,7 +287,7 @@ func TestNewAnnotationWithComment(t *testing.T) {
 	}
 }
 
-// @test TEST-INT_MOD-011
+// @test TEST-INTERNAL_MODEL-011
 func TestAnnotation_ToIdentifier_WithFunctionComment(t *testing.T) {
 	ann := NewAnnotationWithComment(TypeSpec, "SPEC-001", "test.go", "@implement SPEC-001", "context", "Validates JWT tokens", 10)
 	id := ann.ToIdentifier()
@@ -297,7 +297,7 @@ func TestAnnotation_ToIdentifier_WithFunctionComment(t *testing.T) {
 	}
 }
 
-// @test TEST-INT_MOD-012
+// @test TEST-INTERNAL_MODEL-012
 func TestAnnotation_ToIdentifier_WithoutFunctionComment(t *testing.T) {
 	ann := NewAnnotation(TypeSpec, "SPEC-001", "test.go", "@implement SPEC-001", "context", 10)
 	id := ann.ToIdentifier()
@@ -307,7 +307,7 @@ func TestAnnotation_ToIdentifier_WithoutFunctionComment(t *testing.T) {
 	}
 }
 
-// @test TEST-INT_MOD-013
+// @test TEST-INTERNAL_MODEL-013
 func TestIdentifierSet_GetAll(t *testing.T) {
 	set := NewIdentifierSet()
 	spec1 := NewIdentifier("SPEC-001", TypeSpec, "", "file1.md", 1)
@@ -327,7 +327,7 @@ func TestIdentifierSet_GetAll(t *testing.T) {
 	}
 }
 
-// @test TEST-INT_MOD-014
+// @test TEST-INTERNAL_MODEL-014
 func TestIdentifierSet_AllIdentifiers(t *testing.T) {
 	set := NewIdentifierSet()
 	set.Add(NewIdentifier("SPEC-001", TypeSpec, "", "", 0))
@@ -340,7 +340,7 @@ func TestIdentifierSet_AllIdentifiers(t *testing.T) {
 	}
 }
 
-// @test TEST-INT_MOD-015
+// @test TEST-INTERNAL_MODEL-015
 func TestIdentifierSet_ByOrigin(t *testing.T) {
 	set := NewIdentifierSet()
 	docSpec := NewIdentifier("SPEC-001", TypeSpec, "", "doc.md", 0)
@@ -362,7 +362,7 @@ func TestIdentifierSet_ByOrigin(t *testing.T) {
 	}
 }
 
-// @test TEST-INT_MOD-016
+// @test TEST-INTERNAL_MODEL-016
 func TestIdentifierSet_HasOrigin(t *testing.T) {
 	set := NewIdentifierSet()
 	docSpec := NewIdentifier("SPEC-001", TypeSpec, "", "doc.md", 0)
@@ -382,7 +382,7 @@ func TestIdentifierSet_HasOrigin(t *testing.T) {
 	}
 }
 
-// @test TEST-INT_MOD-017
+// @test TEST-INTERNAL_MODEL-017
 func TestIdentifierSet_Get(t *testing.T) {
 	set := NewIdentifierSet()
 	spec := NewIdentifier("SPEC-001", TypeSpec, "", "", 0)
@@ -402,7 +402,7 @@ func TestIdentifierSet_Get(t *testing.T) {
 	}
 }
 
-// @test TEST-INT_MOD-018
+// @test TEST-INTERNAL_MODEL-018
 func TestValidationResult_Sort_MultipleRules(t *testing.T) {
 	result := NewValidationResult()
 	result.AddError("zzz", "msg3", "", "", "")

@@ -1,9 +1,9 @@
 ---
 related_files:
-  spec: spec.md
-  contract: contract.md
-  design: design.md
-  testing: testing.md
+  spec: docs/internal/graph/spec.md
+  contract: docs/internal/graph/contract.md
+  design: docs/internal/graph/design.md
+  testing: docs/internal/graph/testing.md
 ---
 
 # Design (graph)

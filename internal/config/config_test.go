@@ -10,7 +10,7 @@ import (
 	"testing"
 )
 
-// @test TEST-INT_CFG-002
+// @test TEST-INTERNAL_CONFIG-002
 func TestDefault(t *testing.T) {
 	cfg := Default()
 
@@ -27,7 +27,7 @@ func TestDefault(t *testing.T) {
 	}
 }
 
-// @test TEST-INT_CFG-001
+// @test TEST-INTERNAL_CONFIG-001
 func TestConfig_Validate(t *testing.T) {
 	tests := []struct {
 		name      string
@@ -92,7 +92,7 @@ func TestConfig_Validate(t *testing.T) {
 	}
 }
 
-// @test TEST-INT_CFG-003
+// @test TEST-INTERNAL_CONFIG-003
 func TestLoad(t *testing.T) {
 	tmpDir := t.TempDir()
 
@@ -125,7 +125,7 @@ validation:
 	}
 }
 
-// @test TEST-INT_CFG-002
+// @test TEST-INTERNAL_CONFIG-002
 func TestLoad_FileNotFound(t *testing.T) {
 	_, err := Load("/nonexistent/path/idd.yaml")
 	if err == nil {
@@ -133,7 +133,7 @@ func TestLoad_FileNotFound(t *testing.T) {
 	}
 }
 
-// @test TEST-INT_CFG-003
+// @test TEST-INTERNAL_CONFIG-003
 func TestLoad_InvalidYAML(t *testing.T) {
 	tmpDir := t.TempDir()
 

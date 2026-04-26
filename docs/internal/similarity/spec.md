@@ -1,36 +1,36 @@
 ---
 markers:
-  - id: SPEC-INT_SIM-001
+  - id: SPEC-INTERNAL_SIMILARITY-001
     name: TFIDF Structure
-  - id: SPEC-INT_SIM-002
+  - id: SPEC-INTERNAL_SIMILARITY-002
     name: Tokenize Function
-  - id: SPEC-INT_SIM-003
+  - id: SPEC-INTERNAL_SIMILARITY-003
     name: TF Computation
-  - id: SPEC-INT_SIM-004
+  - id: SPEC-INTERNAL_SIMILARITY-004
     name: IDF Computation
-  - id: SPEC-INT_SIM-005
+  - id: SPEC-INTERNAL_SIMILARITY-005
     name: TF-IDF Score
-  - id: SPEC-INT_SIM-006
+  - id: SPEC-INTERNAL_SIMILARITY-006
     name: TFIDF.Tokenize Method
-  - id: SPEC-INT_SIM-007
+  - id: SPEC-INTERNAL_SIMILARITY-007
     name: TFIDF.ComputeTF Method
-  - id: SPEC-INT_SIM-008
+  - id: SPEC-INTERNAL_SIMILARITY-008
     name: TFIDF.ComputeIDF Method
-  - id: SPEC-INT_SIM-009
+  - id: SPEC-INTERNAL_SIMILARITY-009
     name: TFIDF.Score Method
-  - id: SPEC-INT_SIM-010
+  - id: SPEC-INTERNAL_SIMILARITY-010
     name: TFIDF.CosineSimilarity Method
 
 related_files:
-  spec: spec.md
-  contract: contract.md
-  design: design.md
-  testing: testing.md
+  spec: docs/internal/similarity/spec.md
+  contract: docs/internal/similarity/contract.md
+  design: docs/internal/similarity/design.md
+  testing: docs/internal/similarity/testing.md
 ---
 
 # Specification (similarity)
 
-## SPEC-INT_SIM-001: TFIDF Structure
+## SPEC-INTERNAL_SIMILARITY-001: TFIDF Structure
 
 **Status:** Done
 
@@ -54,13 +54,13 @@ TFIDF provides TF-IDF based document similarity analysis.
 - [x] TFIDF computes TF, IDF, and TF-IDF
 - [x] TFIDF scores similarity between documents
 
-**Tests:** `TEST-INT_SIM-001`, `TEST-INT_SIM-002`, `TEST-INT_SIM-003`, `TEST-INT_SIM-004`, `TEST-INT_SIM-005`, `TEST-INT_SIM-006`
+**Tests:** `TEST-INTERNAL_SIMILARITY-001`, `TEST-INTERNAL_SIMILARITY-002`, `TEST-INTERNAL_SIMILARITY-003`, `TEST-INTERNAL_SIMILARITY-004`, `TEST-INTERNAL_SIMILARITY-005`, `TEST-INTERNAL_SIMILARITY-006`
 
-**Related:** `SPEC-INT_SIM-002` through `SPEC-INT_SIM-005`
+**Related:** `SPEC-INTERNAL_SIMILARITY-002` through `SPEC-INTERNAL_SIMILARITY-005`
 
 ---
 
-## SPEC-INT_SIM-002: Tokenize Function
+## SPEC-INTERNAL_SIMILARITY-002: Tokenize Function
 
 **Status:** Done
 
@@ -74,22 +74,22 @@ Tokenize text into lowercase alphanumeric tokens.
 
 **Implementation:** `internal/similarity/tfidf.go`
 
-**Tests:** `TEST-INT_SIM-001`
+**Tests:** `TEST-INTERNAL_SIMILARITY-001`
 
 **Public Functions:**
 
-## SPEC-INT_SIM-006: TFIDF.Tokenize
+## SPEC-INTERNAL_SIMILARITY-006: TFIDF.Tokenize
 
 **Function Signature:**
 `func (t *TFIDF) Tokenize(text string) []string`
 
 **Purpose:** Tokenizes text into lowercase alphanumeric tokens, filtering stop words.
 
-**Tests:** `TEST-INT_SIM-001`
+**Tests:** `TEST-INTERNAL_SIMILARITY-001`
 
 ---
 
-## SPEC-INT_SIM-003: TF Computation
+## SPEC-INTERNAL_SIMILARITY-003: TF Computation
 
 **Status:** Done
 
@@ -103,22 +103,22 @@ Compute term frequency for document tokens.
 
 **Implementation:** `internal/similarity/tfidf.go`
 
-**Tests:** `TEST-INT_SIM-002`
+**Tests:** `TEST-INTERNAL_SIMILARITY-002`
 
 **Public Functions:**
 
-## SPEC-INT_SIM-007: TFIDF.ComputeTF
+## SPEC-INTERNAL_SIMILARITY-007: TFIDF.ComputeTF
 
 **Function Signature:**
 `func (t *TFIDF) ComputeTF(tokens []string) map[string]float64`
 
 **Purpose:** Computes TF = (count of token) / (total tokens).
 
-**Tests:** `TEST-INT_SIM-002`
+**Tests:** `TEST-INTERNAL_SIMILARITY-002`
 
 ---
 
-## SPEC-INT_SIM-004: IDF Computation
+## SPEC-INTERNAL_SIMILARITY-004: IDF Computation
 
 **Status:** Done
 
@@ -132,22 +132,22 @@ Compute inverse document frequency across corpus.
 
 **Implementation:** `internal/similarity/tfidf.go`
 
-**Tests:** `TEST-INT_SIM-003`
+**Tests:** `TEST-INTERNAL_SIMILARITY-003`
 
 **Public Functions:**
 
-## SPEC-INT_SIM-008: TFIDF.ComputeIDF
+## SPEC-INTERNAL_SIMILARITY-008: TFIDF.ComputeIDF
 
 **Function Signature:**
 `func (t *TFIDF) ComputeIDF(documents [][]string)`
 
 **Purpose:** Computes IDF using formula log((N - df + 0.5) / (df + 0.5)).
 
-**Tests:** `TEST-INT_SIM-003`
+**Tests:** `TEST-INTERNAL_SIMILARITY-003`
 
 ---
 
-## SPEC-INT_SIM-005: TF-IDF Score
+## SPEC-INTERNAL_SIMILARITY-005: TF-IDF Score
 
 **Status:** Done
 
@@ -161,30 +161,30 @@ Compute similarity score between documents using TF-IDF.
 
 **Implementation:** `internal/similarity/tfidf.go`
 
-**Tests:** `TEST-INT_SIM-004`
+**Tests:** `TEST-INTERNAL_SIMILARITY-004`
 
 **Public Functions:**
 
-## SPEC-INT_SIM-009: TFIDF.Score
+## SPEC-INTERNAL_SIMILARITY-009: TFIDF.Score
 
 **Function Signature:**
 `func (t *TFIDF) Score(docText, codeText string) float64`
 
 **Purpose:** Computes similarity score between doc and code text.
 
-**Tests:** `TEST-INT_SIM-005`
+**Tests:** `TEST-INTERNAL_SIMILARITY-005`
 
 ---
 
-## SPEC-INT_SIM-010: TFIDF.CosineSimilarity Method
+## SPEC-INTERNAL_SIMILARITY-010: TFIDF.CosineSimilarity Method
 
 **Function Signature:**
 `func CosineSimilarity(vec1, vec2 map[string]float64) float64`
 
 **Purpose:** Computes cosine similarity between two TF-IDF vectors.
 
-**Tests:** `TEST-INT_SIM-005`, `TEST-INT_SIM-006`
+**Tests:** `TEST-INTERNAL_SIMILARITY-005`, `TEST-INTERNAL_SIMILARITY-006`
 
 ---
 
-**Related:** `SPEC-INT_SIM-001` through `SPEC-INT_SIM-004`
+**Related:** `SPEC-INTERNAL_SIMILARITY-001` through `SPEC-INTERNAL_SIMILARITY-004`

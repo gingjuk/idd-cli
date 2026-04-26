@@ -1,9 +1,9 @@
 ---
 related_files:
-  spec: spec.md
-  contract: contract.md
-  design: design.md
-  testing: testing.md
+  spec: docs/internal/collector/spec.md
+  contract: docs/internal/collector/contract.md
+  design: docs/internal/collector/design.md
+  testing: docs/internal/collector/testing.md
 ---
 
 # Contracts (collector)
@@ -152,4 +152,4 @@ Language patterns are defined in the annotation patterns configuration.
 
 ---
 
-**Related Specs:** `SPEC-INT_COL-001`, `SPEC-INT_COL-002`, `SPEC-INT_COL-006`, `SPEC-INT_COL-009`, `SPEC-INT_COL-010`, `SPEC-INT_COL-011`, `SPEC-INT_COL-012`, `SPEC-INT_COL-013`, `SPEC-INT_COL-014`, `SPEC-INT_COL-015`
+**Related Specs:** `SPEC-INTERNAL_COLLECTOR-001`, `SPEC-INTERNAL_COLLECTOR-002`, `SPEC-INTERNAL_COLLECTOR-006`, `SPEC-INTERNAL_COLLECTOR-009`, `SPEC-INTERNAL_COLLECTOR-010`, `SPEC-INTERNAL_COLLECTOR-011`, `SPEC-INTERNAL_COLLECTOR-012`, `SPEC-INTERNAL_COLLECTOR-013`, `SPEC-INTERNAL_COLLECTOR-014`, `SPEC-INTERNAL_COLLECTOR-015`

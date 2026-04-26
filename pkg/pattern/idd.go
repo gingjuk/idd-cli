@@ -19,7 +19,7 @@ import (
 //   - CONTRACT pattern: CONTRACT-[A-Z]+-[0-9]+
 //   - DESIGN pattern: DESIGN-[A-Z]+-[0-9]+
 //
-// @implement SPEC-PKG_PAT-001
+// @implement SPEC-PKG_PATTERN-001
 type IDDPattern struct {
 	Type    string
 	Regex   *regexp.Regexp
@@ -68,7 +68,7 @@ var Patterns = map[string]*IDDPattern{
 //   - @test → TEST
 //   - @test-contract → TEST
 //
-// @implement SPEC-PKG_PAT-002
+// @implement SPEC-PKG_PATTERN-002
 type AnnotationPattern struct {
 	Prefix string
 	Regex  *regexp.Regexp
@@ -97,7 +97,7 @@ var AnnotationPatterns = []AnnotationPattern{
 // It searches for pattern matches in the provided text and returns a list of
 // matching identifiers that are not quoted or backtick-wrapped.
 //
-// @implement SPEC-PKG_PAT-004
+// @implement SPEC-PKG_PATTERN-004
 func ExtractIDDReferences(content string) []string {
 	var refs []string
 	for _, pat := range Patterns {
@@ -137,7 +137,7 @@ func isQuoted(content, id string) bool {
 // ExtractAnnotations filters out identifiers that are wrapped in backticks or quotes.
 // It extracts IDD references from annotation comments like @implement, @test, and @test-contract.
 //
-// @implement SPEC-PKG_PAT-008
+// @implement SPEC-PKG_PATTERN-008
 func ExtractAnnotations(content string) []string {
 	var refs []string
 	for _, pat := range AnnotationPatterns {
@@ -153,7 +153,7 @@ func ExtractAnnotations(content string) []string {
 }
 
 // SplitAnnotationRefs splits comma-separated IDD references and trims whitespace.
-// @implement SPEC-PKG_PAT-005
+// @implement SPEC-PKG_PATTERN-005
 func SplitAnnotationRefs(s string) []string {
 	var refs []string
 	for _, part := range strings.Split(s, ",") {
@@ -169,7 +169,7 @@ func SplitAnnotationRefs(s string) []string {
 // It returns one of: "SPEC", "TEST", "CONTRACT", "DESIGN", "PATTERN", "WALK",
 // or an empty string if the reference does not match any known pattern.
 //
-// @implement SPEC-PKG_PAT-006
+// @implement SPEC-PKG_PATTERN-006
 func GetIdentifierType(ref string) string {
 	for name, pat := range Patterns {
 		if pat.Regex.MatchString(ref) {
@@ -183,7 +183,7 @@ func GetIdentifierType(ref string) string {
 // It returns the mapped type for known prefixes. @implement maps to SPEC,
 // @test maps to TEST. Returns empty string for unknown prefixes.
 //
-// @implement SPEC-PKG_PAT-003
+// @implement SPEC-PKG_PATTERN-003
 func GetAnnotationType(prefix string) string {
 	for _, pat := range AnnotationPatterns {
 		if pat.Prefix == prefix {
@@ -197,7 +197,7 @@ func GetAnnotationType(prefix string) string {
 // It checks if the identifier matches any of the known IDD patterns
 // (SPEC, CONTRACT, TEST, DESIGN, PATTERN, WALK) and returns an error if invalid.
 //
-// @implement SPEC-PKG_PAT-007
+// @implement SPEC-PKG_PATTERN-007
 func ValidateIDPattern(id string) error {
 	for _, pat := range Patterns {
 		if pat.Regex.MatchString(id) {
@@ -214,7 +214,7 @@ func ValidateIDPattern(id string) error {
 // - TYPE is not one of SPEC, CONTRACT, TEST, DESIGN, PATTERN, WALK
 // - MODULE contains non-uppercase letters or non-alphanumeric characters
 // - NUMBER is not purely digits
-// @implement SPEC-PKG_PAT-009
+// @implement SPEC-PKG_PATTERN-009
 func ValidateIdentifierFormat(id string) error {
 	parts := strings.Split(id, "-")
 

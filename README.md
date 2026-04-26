@@ -6,7 +6,7 @@ A CLI tool that validates **IDD (Intent-Driven Development)** documentation comp
 
 idd-cli validates that a project adheres to the IDD documentation system:
 
-- **Consistent identifiers**: All IDD markers use path-based module naming (e.g., `SPEC-INT_AUTH-001` for `internal/auth/`)
+- **Consistent identifiers**: All IDD markers use path-based module naming (e.g., `SPEC-INTERNAL_AUTH-001` for `internal/auth/`)
 - **Bidirectional links**: Specs, contracts, tests, and code all reference each other
 - **Package documentation**: Every Go package has proper doc comments with Spec/Contract paths
 - **Code-doc traceability**: Code annotations (`@implement`, `@test`, `@test-contract`) link to formal docs
@@ -70,8 +70,8 @@ Examples:
 
 | Identifier | Meaning |
 |------------|---------|
-| `SPEC-INT_AUTH-001` | Spec 001 for `internal/auth/` module |
-| `TEST-INT_ENG-001` | Test 001 for `internal/engine/` module |
+| `SPEC-INTERNAL_AUTH-001` | Spec 001 for `internal/auth/` module |
+| `TEST-INTERNAL_ENGINE-001` | Test 001 for `internal/engine/` module |
 | `SPEC-PKG_WALK-001` | Spec 001 for `pkg/walk/` module |
 
 ### Module Abbreviation Rules
@@ -80,9 +80,9 @@ Directories are abbreviated to ensure readable identifiers:
 
 | Directory | Abbreviation |
 |----------|--------------|
-| `internal/<mod>` | `INT_<MOD>` (e.g., `internal/auth` → `INT_AUTH`) |
+| `internal/<mod>` | `INT_<MOD>` (e.g., `internal/auth` → `INTERNAL_AUTH`) |
 | `pkg/<mod>` | `PKG_<MOD>` (e.g., `pkg/walk` → `PKG_WALK`) |
-| `cmd/<mod>` | `CMD_<MOD>` (e.g., `cmd/idd-cli` → `CMD_IDD`) |
+| `cmd/<mod>` | `CMD_<MOD>` (e.g., `cmd/idd-cli` → `CMD_IDD_CLI`) |
 
 Directories ≤4 characters are kept uppercase (e.g., `auth` → `AUTH`).
 
@@ -93,13 +93,13 @@ Each module should have documentation under `docs/<path>/`:
 ```text
 docs/
 ├── internal/
-│   ├── auth/           # INT_AUTH
-│   │   ├── spec.md    # SPEC-INT_AUTH-001
+│   ├── auth/           # INTERNAL_AUTH
+│   │   ├── spec.md    # SPEC-INTERNAL_AUTH-001
 │   │   ├── contract.md
 │   │   ├── testing.md
 │   │   └── design.md
-│   ├── engine/         # INT_ENG
-│   └── model/          # INT_MOD
+│   ├── engine/         # INTERNAL_ENGINE
+│   └── model/          # INTERNAL_MODEL
 └── pkg/
     └── walk/          # PKG_WALK
 ```
@@ -113,13 +113,13 @@ docs/
 // Contract: docs/internal/auth/contract.md
 package auth
 
-// @implement SPEC-INT_AUTH-001
+// @implement SPEC-INTERNAL_AUTH-001
 func Login(email, password string) error { ... }
 
-// @test TEST-INT_AUTH-001
+// @test TEST-INTERNAL_AUTH-001
 func TestLogin(t *testing.T) { ... }
 
-// @test-contract TEST-INT_AUTH-001
+// @test-contract TEST-INTERNAL_AUTH-001
 func TestLoginContract(t *testing.T) { ... }
 ```
 

@@ -19,14 +19,14 @@ import (
 // DocCollector collects IDD identifiers from markdown documentation files,
 // parsing frontmatter markers and extracting identifier references from content.
 //
-// @implement SPEC-INT_COL-001
+// @implement SPEC-INTERNAL_COLLECTOR-001
 type DocCollector struct {
 	cfg *config.Config
 }
 
 // NewDocCollector creates a new DocCollector with the given configuration.
 //
-// @implement SPEC-INT_COL-002
+// @implement SPEC-INTERNAL_COLLECTOR-002
 func NewDocCollector(cfg *config.Config) *DocCollector {
 	return &DocCollector{cfg: cfg}
 }
@@ -34,7 +34,7 @@ func NewDocCollector(cfg *config.Config) *DocCollector {
 // Collect collects IDD identifiers from markdown files at the target path.
 // If targetPath is a directory, recursively walks to find all .md files.
 //
-// @implement SPEC-INT_COL-017
+// @implement SPEC-INTERNAL_COLLECTOR-017
 func (c *DocCollector) Collect(ctx context.Context, targetPath string) (*model.IdentifierSet, []*model.ValidationError, error) {
 	set := model.NewIdentifierSet()
 	var errors []*model.ValidationError

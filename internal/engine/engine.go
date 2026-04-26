@@ -26,7 +26,7 @@ import (
 // identifiers through the complete validation workflow.
 // The Engine holds the configuration, a linkage graph for tracking relationships
 // between identifiers, and accumulates validation results.
-// @implement SPEC-CMD_IDD-001, SPEC-CMD_IDD-002, SPEC-CMD_IDD-003, SPEC-CMD_IDD-004, SPEC-CMD_IDD-005, SPEC-CMD_IDD-006, SPEC-CMD_IDD-007, SPEC-INT_ENG-001
+// @implement SPEC-CMD_IDD_CLI-001, SPEC-CMD_IDD_CLI-002, SPEC-CMD_IDD_CLI-003, SPEC-CMD_IDD_CLI-004, SPEC-CMD_IDD_CLI-005, SPEC-CMD_IDD_CLI-006, SPEC-CMD_IDD_CLI-007, SPEC-INTERNAL_ENGINE-001
 type Engine struct {
 	cfg    *config.Config
 	graph  *graph.LinkageGraph
@@ -36,7 +36,7 @@ type Engine struct {
 // New creates a new Engine instance with the given configuration.
 // It initializes the engine with an empty linkage graph and validation result,
 // preparing it to run validation against identifiers.
-// @implement SPEC-INT_ENG-002
+// @implement SPEC-INTERNAL_ENGINE-002
 func New(cfg *config.Config) *Engine {
 	return &Engine{
 		cfg:    cfg,
@@ -48,7 +48,7 @@ func New(cfg *config.Config) *Engine {
 // Run executes the validation pipeline for the given identifiers.
 // It builds the linkage graph from the identifiers, runs all validation rules
 // based on configuration, and returns the accumulated validation result.
-// @implement SPEC-INT_ENG-004
+// @implement SPEC-INTERNAL_ENGINE-004
 func (e *Engine) Run(ctx context.Context, ids *model.IdentifierSet) (*model.ValidationResult, error) {
 	e.buildGraph(ids)
 	e.result.Stats = e.graph.Stats()
@@ -1286,7 +1286,7 @@ func (e *Engine) shouldIgnorePath(path string) bool {
 
 // BuildReport generates a complete validation report with tool information,
 // configuration summary, and the accumulated validation result.
-// @implement SPEC-CMD_IDD-004
+// @implement SPEC-CMD_IDD_CLI-004
 func (e *Engine) BuildReport() *model.Report {
 	return &model.Report{
 		Tool:      "idd-cli",

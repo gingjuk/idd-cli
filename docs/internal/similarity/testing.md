@@ -1,28 +1,28 @@
 ---
 markers:
-  - id: TEST-INT_SIM-001
+  - id: TEST-INTERNAL_SIMILARITY-001
     name: Similarity Test 1
-  - id: TEST-INT_SIM-002
+  - id: TEST-INTERNAL_SIMILARITY-002
     name: Similarity Test 2
-  - id: TEST-INT_SIM-003
+  - id: TEST-INTERNAL_SIMILARITY-003
     name: Similarity Test 3
-  - id: TEST-INT_SIM-004
+  - id: TEST-INTERNAL_SIMILARITY-004
     name: Similarity Test 4
-  - id: TEST-INT_SIM-005
+  - id: TEST-INTERNAL_SIMILARITY-005
     name: Similarity Test 5
-  - id: TEST-INT_SIM-006
+  - id: TEST-INTERNAL_SIMILARITY-006
     name: Similarity Test 6
 
 related_files:
-  spec: spec.md
-  contract: contract.md
-  design: design.md
-  testing: testing.md
+  spec: docs/internal/similarity/spec.md
+  contract: docs/internal/similarity/contract.md
+  design: docs/internal/similarity/design.md
+  testing: docs/internal/similarity/testing.md
 ---
 
 # Test Cases (similarity)
 
-## TEST-INT_SIM-001: TFIDF Tokenize
+## TEST-INTERNAL_SIMILARITY-001: TFIDF Tokenize
 
 **Status:** Done
 
@@ -30,11 +30,11 @@ related_files:
 
 Test text tokenization.
 
-**Spec Coverage:** `SPEC-INT_SIM-001`, `SPEC-INT_SIM-002`, `SPEC-INT_SIM-005`
+**Spec Coverage:** `SPEC-INTERNAL_SIMILARITY-001`, `SPEC-INTERNAL_SIMILARITY-002`, `SPEC-INTERNAL_SIMILARITY-005`
 
 ---
 
-## TEST-INT_SIM-002: TF Computation
+## TEST-INTERNAL_SIMILARITY-002: TF Computation
 
 **Status:** Done
 
@@ -42,11 +42,11 @@ Test text tokenization.
 
 Test term frequency computation.
 
-**Spec Coverage:** `SPEC-INT_SIM-001`, `SPEC-INT_SIM-003`, `SPEC-INT_SIM-005`
+**Spec Coverage:** `SPEC-INTERNAL_SIMILARITY-001`, `SPEC-INTERNAL_SIMILARITY-003`, `SPEC-INTERNAL_SIMILARITY-005`
 
 ---
 
-## TEST-INT_SIM-003: IDF Computation
+## TEST-INTERNAL_SIMILARITY-003: IDF Computation
 
 **Status:** Done
 
@@ -54,11 +54,11 @@ Test term frequency computation.
 
 Test inverse document frequency computation.
 
-**Spec Coverage:** `SPEC-INT_SIM-001`, `SPEC-INT_SIM-004`, `SPEC-INT_SIM-005`
+**Spec Coverage:** `SPEC-INTERNAL_SIMILARITY-001`, `SPEC-INTERNAL_SIMILARITY-004`, `SPEC-INTERNAL_SIMILARITY-005`
 
 ---
 
-## TEST-INT_SIM-004: TF-IDF Vectorize
+## TEST-INTERNAL_SIMILARITY-004: TF-IDF Vectorize
 
 **Status:** Done
 
@@ -66,11 +66,11 @@ Test inverse document frequency computation.
 
 Test TF-IDF vectorization.
 
-**Spec Coverage:** `SPEC-INT_SIM-001`, `SPEC-INT_SIM-005`
+**Spec Coverage:** `SPEC-INTERNAL_SIMILARITY-001`, `SPEC-INTERNAL_SIMILARITY-005`
 
 ---
 
-## TEST-INT_SIM-005: Cosine Similarity
+## TEST-INTERNAL_SIMILARITY-005: Cosine Similarity
 
 **Status:** Done
 
@@ -78,11 +78,11 @@ Test TF-IDF vectorization.
 
 Test cosine similarity computation.
 
-**Spec Coverage:** `SPEC-INT_SIM-001`, `SPEC-INT_SIM-005`, `SPEC-INT_SIM-010`
+**Spec Coverage:** `SPEC-INTERNAL_SIMILARITY-001`, `SPEC-INTERNAL_SIMILARITY-005`, `SPEC-INTERNAL_SIMILARITY-010`
 
 ---
 
-## TEST-INT_SIM-006: Score Computation
+## TEST-INTERNAL_SIMILARITY-006: Score Computation
 
 **Status:** Done
 
@@ -90,4 +90,4 @@ Test cosine similarity computation.
 
 Test computing similarity score between documents.
 
-**Spec Coverage:** `SPEC-INT_SIM-001`, `SPEC-INT_SIM-005`
+**Spec Coverage:** `SPEC-INTERNAL_SIMILARITY-001`, `SPEC-INTERNAL_SIMILARITY-005`

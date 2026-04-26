@@ -3,7 +3,7 @@
 // Spec: docs/internal/engine/spec.md
 // Test: docs/internal/engine/testing.md
 
-// @test TEST-CMD_IDD-001, TEST-CMD_IDD-002
+// @test TEST-CMD_IDD_CLI-001, TEST-CMD_IDD_CLI-002
 package engine
 
 import (
@@ -368,7 +368,7 @@ func TestEngine_BuildReport(t *testing.T) {
 	}
 }
 
-// @test TEST-INT_ENG-001
+// @test TEST-INTERNAL_ENGINE-001
 func TestEngine_PackageDocComment_Valid(t *testing.T) {
 	// Valid format: package doc comment before package declaration
 	tmpDir := t.TempDir()
@@ -409,7 +409,7 @@ package foo
 	}
 }
 
-// @test TEST-INT_ENG-002
+// @test TEST-INTERNAL_ENGINE-002
 func TestEngine_PackageDocComment_MissingPackageDoc(t *testing.T) {
 	// Missing package doc comment line (has Spec and Contract but no "Package foo provides")
 	tmpDir := t.TempDir()
@@ -452,7 +452,7 @@ package foo
 	}
 }
 
-// @test TEST-INT_ENG-003
+// @test TEST-INTERNAL_ENGINE-003
 func TestEngine_PackageDocComment_MissingPackageName(t *testing.T) {
 	// Has comment but not a package doc comment (no "Package xxx" pattern)
 	tmpDir := t.TempDir()
@@ -497,7 +497,7 @@ package foo
 	}
 }
 
-// @test TEST-INT_ENG-004
+// @test TEST-INTERNAL_ENGINE-004
 func TestEngine_PackageDocComment_PackageAfterComments(t *testing.T) {
 	// Package declaration AFTER comments (correct order)
 	tmpDir := t.TempDir()
@@ -537,7 +537,7 @@ package bar
 	}
 }
 
-// @test TEST-INT_ENG-005
+// @test TEST-INTERNAL_ENGINE-005
 func TestEngine_PackageDocComment_Disabled(t *testing.T) {
 	// When RequirePackageDocComment is false, no errors should be generated
 	tmpDir := t.TempDir()
@@ -573,7 +573,7 @@ func TestEngine_PackageDocComment_Disabled(t *testing.T) {
 	}
 }
 
-// @test TEST-INT_ENG-006
+// @test TEST-INTERNAL_ENGINE-006
 func TestEngine_PackageDocComment_TestFile_RequiresSpecAndTest(t *testing.T) {
 	tmpDir := t.TempDir()
 	code := `// Package foo provides testing utilities for foo module.
@@ -612,7 +612,7 @@ package foo
 	}
 }
 
-// @test TEST-INT_ENG-007
+// @test TEST-INTERNAL_ENGINE-007
 func TestEngine_PackageDocComment_TestFile_MissingTest(t *testing.T) {
 	tmpDir := t.TempDir()
 	code := `// Package foo provides testing utilities for foo module.
@@ -656,7 +656,7 @@ package foo
 	}
 }
 
-// @test TEST-INT_ENG-020
+// @test TEST-INTERNAL_ENGINE-020
 func TestEngine_validateDuplicateHeadingIdentifiers(t *testing.T) {
 	cfg := config.Default()
 	cfg.Validation.AllowOrphans = true
@@ -697,7 +697,7 @@ More content
 	}
 }
 
-// @test TEST-INT_ENG-021
+// @test TEST-INTERNAL_ENGINE-021
 func TestEngine_validateDuplicateHeadingIdentifiers_NoDuplicates(t *testing.T) {
 	cfg := config.Default()
 	cfg.Validation.AllowOrphans = true
@@ -733,7 +733,7 @@ More content
 	}
 }
 
-// @test TEST-INT_ENG-022
+// @test TEST-INTERNAL_ENGINE-022
 func TestEngine_validateContractDesignMarkers_WithMarkers(t *testing.T) {
 	cfg := config.Default()
 	cfg.Validation.AllowOrphans = true
@@ -774,7 +774,7 @@ markers:
 	}
 }
 
-// @test TEST-INT_ENG-023
+// @test TEST-INTERNAL_ENGINE-023
 func TestEngine_validateContractDesignMarkers_WithoutMarkers(t *testing.T) {
 	cfg := config.Default()
 	cfg.Validation.AllowOrphans = true
@@ -811,7 +811,7 @@ related_files:
 	}
 }
 
-// @test TEST-INT_ENG-024
+// @test TEST-INTERNAL_ENGINE-024
 func TestEngine_validateContractDesignMarkers_DesignFile(t *testing.T) {
 	cfg := config.Default()
 	cfg.Validation.AllowOrphans = true
@@ -849,7 +849,7 @@ markers:
 	}
 }
 
-// @test TEST-INT_ENG-025
+// @test TEST-INTERNAL_ENGINE-025
 func TestEngine_packageExists(t *testing.T) {
 	cfg := config.Default()
 	eng := New(cfg)
@@ -871,7 +871,7 @@ func TestEngine_packageExists(t *testing.T) {
 	}
 }
 
-// @test TEST-INT_ENG-026
+// @test TEST-INTERNAL_ENGINE-026
 func TestEngine_isIgnoredDocPath(t *testing.T) {
 	cfg := config.Default()
 	cfg.Docs.IgnorePaths = []string{"docs/backend/**", "docs/internal/auth"}
@@ -890,7 +890,7 @@ func TestEngine_isIgnoredDocPath(t *testing.T) {
 	}
 }
 
-// @test TEST-INT_ENG-027
+// @test TEST-INTERNAL_ENGINE-027
 func TestEngine_validateDocPathExists_NoWarning(t *testing.T) {
 	cfg := config.Default()
 	cfg.Validation.AllowOrphans = true
@@ -903,7 +903,7 @@ func TestEngine_validateDocPathExists_NoWarning(t *testing.T) {
 	// The actual number of warnings depends on the docs structure
 }
 
-// @test TEST-INT_ENG-028
+// @test TEST-INTERNAL_ENGINE-028
 func TestEngine_validateRelatedFiles(t *testing.T) {
 	cfg := config.Default()
 	cfg.Validation.AllowOrphans = true
@@ -944,7 +944,7 @@ Content
 	}
 }
 
-// @test TEST-INT_ENG-029
+// @test TEST-INTERNAL_ENGINE-029
 func TestEngine_validateRelatedFiles_Valid(t *testing.T) {
 	cfg := config.Default()
 	cfg.Validation.AllowOrphans = true
@@ -983,7 +983,7 @@ Content
 	}
 }
 
-// @test TEST-INT_ENG-007
+// @test TEST-INTERNAL_ENGINE-007
 func TestEngine_PackageDocComment_MainPackageSkipped(t *testing.T) {
 	// main package should be skipped
 	tmpDir := t.TempDir()

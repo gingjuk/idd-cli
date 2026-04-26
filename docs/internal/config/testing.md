@@ -1,22 +1,20 @@
 ---
 markers:
-  - id: TEST-INT_CFG-001
+  - id: TEST-INTERNAL_CONFIG-001
     name: Config Default
-  - id: TEST-INT_CFG-002
+  - id: TEST-INTERNAL_CONFIG-002
     name: Config Load
-  - id: TEST-INT_CFG-003
+  - id: TEST-INTERNAL_CONFIG-003
     name: Config Validation
 
 related_files:
-  spec: spec.md
-  contract: contract.md
-  design: design.md
-  testing: testing.md
+  spec: docs/internal/config/spec.md
+  testing: docs/internal/config/testing.md
 ---
 
 # Test Cases (config)
 
-## TEST-INT_CFG-001: Config Default
+## TEST-INTERNAL_CONFIG-001: Config Default
 
 **Status:** Done
 
@@ -24,11 +22,11 @@ related_files:
 
 Test that Default() returns a valid configuration with expected defaults.
 
-**Spec Coverage:** `SPEC-INT_CFG-001`, `SPEC-INT_CFG-008`
+**Spec Coverage:** `SPEC-INTERNAL_CONFIG-001`, `SPEC-INTERNAL_CONFIG-008`
 
 ---
 
-## TEST-INT_CFG-002: Config Load
+## TEST-INTERNAL_CONFIG-002: Config Load
 
 **Status:** Done
 
@@ -36,11 +34,11 @@ Test that Default() returns a valid configuration with expected defaults.
 
 Test loading configuration from file.
 
-**Spec Coverage:** `SPEC-INT_CFG-002`, `SPEC-INT_CFG-007`
+**Spec Coverage:** `SPEC-INTERNAL_CONFIG-002`, `SPEC-INTERNAL_CONFIG-007`
 
 ---
 
-## TEST-INT_CFG-003: Config Validation
+## TEST-INTERNAL_CONFIG-003: Config Validation
 
 **Status:** Done
 
@@ -48,4 +46,4 @@ Test loading configuration from file.
 
 Test configuration validation logic.
 
-**Spec Coverage:** `SPEC-INT_CFG-003`, `SPEC-INT_CFG-004`, `SPEC-INT_CFG-005`, `SPEC-INT_CFG-006`, `SPEC-INT_CFG-009`
+**Spec Coverage:** `SPEC-INTERNAL_CONFIG-003`, `SPEC-INTERNAL_CONFIG-004`, `SPEC-INTERNAL_CONFIG-005`, `SPEC-INTERNAL_CONFIG-006`, `SPEC-INTERNAL_CONFIG-009`

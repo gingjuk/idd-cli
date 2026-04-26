@@ -1,36 +1,36 @@
 ---
 markers:
-  - id: TEST-INT_RPT-001
+  - id: TEST-INTERNAL_REPORTER-001
     name: Reporter Test 1
-  - id: TEST-INT_RPT-002
+  - id: TEST-INTERNAL_REPORTER-002
     name: Reporter Test 2
-  - id: TEST-INT_RPT-003
+  - id: TEST-INTERNAL_REPORTER-003
     name: Reporter Test 3
-  - id: TEST-INT_RPT-004
+  - id: TEST-INTERNAL_REPORTER-004
     name: Reporter Test 4
-  - id: TEST-INT_RPT-005
+  - id: TEST-INTERNAL_REPORTER-005
     name: Reporter Test 5
-  - id: TEST-INT_RPT-006
+  - id: TEST-INTERNAL_REPORTER-006
     name: Reporter Test 6
-  - id: TEST-INT_RPT-007
+  - id: TEST-INTERNAL_REPORTER-007
     name: Reporter Test 7
-  - id: TEST-INT_RPT-008
+  - id: TEST-INTERNAL_REPORTER-008
     name: Reporter Test 8
-  - id: TEST-INT_RPT-009
+  - id: TEST-INTERNAL_REPORTER-009
     name: Reporter Test 9
-  - id: TEST-INT_RPT-010
+  - id: TEST-INTERNAL_REPORTER-010
     name: Reporter Test 10
 
 related_files:
-  spec: spec.md
-  contract: contract.md
-  design: design.md
-  testing: testing.md
+  spec: docs/internal/reporter/spec.md
+  contract: docs/internal/reporter/contract.md
+  design: docs/internal/reporter/design.md
+  testing: docs/internal/reporter/testing.md
 ---
 
 # Test Cases (reporter)
 
-## TEST-INT_RPT-001: Reporter New
+## TEST-INTERNAL_REPORTER-001: Reporter New
 
 **Status:** Done
 
@@ -38,11 +38,11 @@ related_files:
 
 Test reporter creation.
 
-**Spec Coverage:** `SPEC-INT_RPT-003`
+**Spec Coverage:** `SPEC-INTERNAL_REPORTER-003`
 
 ---
 
-## TEST-INT_RPT-002: Reporter Generate
+## TEST-INTERNAL_REPORTER-002: Reporter Generate
 
 **Status:** Done
 
@@ -50,11 +50,11 @@ Test reporter creation.
 
 Test report generation.
 
-**Spec Coverage:** `SPEC-INT_RPT-003`
+**Spec Coverage:** `SPEC-INTERNAL_REPORTER-003`
 
 ---
 
-## TEST-INT_RPT-003: JSON Output
+## TEST-INTERNAL_REPORTER-003: JSON Output
 
 **Status:** Done
 
@@ -62,11 +62,11 @@ Test report generation.
 
 Test JSON output format.
 
-**Spec Coverage:** `SPEC-INT_RPT-005`
+**Spec Coverage:** `SPEC-INTERNAL_REPORTER-005`
 
 ---
 
-## TEST-INT_RPT-004: Markdown Output
+## TEST-INTERNAL_REPORTER-004: Markdown Output
 
 **Status:** Done
 
@@ -74,11 +74,11 @@ Test JSON output format.
 
 Test Markdown output format.
 
-**Spec Coverage:** `SPEC-INT_RPT-005`
+**Spec Coverage:** `SPEC-INTERNAL_REPORTER-005`
 
 ---
 
-## TEST-INT_RPT-005: Write Stdout
+## TEST-INTERNAL_REPORTER-005: Write Stdout
 
 **Status:** Done
 
@@ -86,11 +86,11 @@ Test Markdown output format.
 
 Test writing to stdout.
 
-**Spec Coverage:** `SPEC-INT_RPT-005`
+**Spec Coverage:** `SPEC-INTERNAL_REPORTER-005`
 
 ---
 
-## TEST-INT_RPT-006: Write File
+## TEST-INTERNAL_REPORTER-006: Write File
 
 **Status:** Done
 
@@ -98,11 +98,11 @@ Test writing to stdout.
 
 Test writing to file.
 
-**Spec Coverage:** `SPEC-INT_RPT-005`
+**Spec Coverage:** `SPEC-INTERNAL_REPORTER-005`
 
 ---
 
-## TEST-INT_RPT-007: Empty Result
+## TEST-INTERNAL_REPORTER-007: Empty Result
 
 **Status:** Done
 
@@ -110,11 +110,11 @@ Test writing to file.
 
 Test with empty result.
 
-**Spec Coverage:** `SPEC-INT_RPT-004`
+**Spec Coverage:** `SPEC-INTERNAL_REPORTER-004`
 
 ---
 
-## TEST-INT_RPT-008: Error Result
+## TEST-INTERNAL_REPORTER-008: Error Result
 
 **Status:** Done
 
@@ -122,11 +122,11 @@ Test with empty result.
 
 Test with error result.
 
-**Spec Coverage:** `SPEC-INT_RPT-004`
+**Spec Coverage:** `SPEC-INTERNAL_REPORTER-004`
 
 ---
 
-## TEST-INT_RPT-009: Warning Result
+## TEST-INTERNAL_REPORTER-009: Warning Result
 
 **Status:** Done
 
@@ -134,11 +134,11 @@ Test with error result.
 
 Test with warning result.
 
-**Spec Coverage:** `SPEC-INT_RPT-004`
+**Spec Coverage:** `SPEC-INTERNAL_REPORTER-004`
 
 ---
 
-## TEST-INT_RPT-010: Complete Report
+## TEST-INTERNAL_REPORTER-010: Complete Report
 
 **Status:** Done
 
@@ -146,4 +146,4 @@ Test with warning result.
 
 Test complete report with all fields.
 
-**Spec Coverage:** `SPEC-INT_RPT-001`, `SPEC-INT_RPT-003`, `SPEC-INT_RPT-004`, `SPEC-INT_RPT-005`
+**Spec Coverage:** `SPEC-INTERNAL_REPORTER-001`, `SPEC-INTERNAL_REPORTER-003`, `SPEC-INTERNAL_REPORTER-004`, `SPEC-INTERNAL_REPORTER-005`

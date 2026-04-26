@@ -1,70 +1,70 @@
 ---
 markers:
-  - id: TEST-INT_MOD-001
+  - id: TEST-INTERNAL_MODEL-001
     name: Model Test 1
-  - id: TEST-INT_MOD-002
+  - id: TEST-INTERNAL_MODEL-002
     name: Model Test 2
-  - id: TEST-INT_MOD-003
+  - id: TEST-INTERNAL_MODEL-003
     name: Model Test 3
-  - id: TEST-INT_MOD-004
+  - id: TEST-INTERNAL_MODEL-004
     name: Model Test 4
-  - id: TEST-INT_MOD-005
+  - id: TEST-INTERNAL_MODEL-005
     name: Model Test 5
-  - id: TEST-INT_MOD-006
+  - id: TEST-INTERNAL_MODEL-006
     name: Model Test 6
-  - id: TEST-INT_MOD-007
+  - id: TEST-INTERNAL_MODEL-007
     name: Model Test 7
-  - id: TEST-INT_MOD-008
+  - id: TEST-INTERNAL_MODEL-008
     name: Model Test 8
-  - id: TEST-INT_MOD-009
+  - id: TEST-INTERNAL_MODEL-009
     name: Model Test 9
-  - id: TEST-INT_MOD-010
+  - id: TEST-INTERNAL_MODEL-010
     name: Model Test 10
-  - id: TEST-INT_MOD-011
+  - id: TEST-INTERNAL_MODEL-011
     name: Model Test 11
-  - id: TEST-INT_MOD-012
+  - id: TEST-INTERNAL_MODEL-012
     name: Model Test 12
-  - id: TEST-INT_MOD-013
+  - id: TEST-INTERNAL_MODEL-013
     name: Model Test 13
-  - id: TEST-INT_MOD-014
+  - id: TEST-INTERNAL_MODEL-014
     name: Model Test 14
-  - id: TEST-INT_MOD-015
+  - id: TEST-INTERNAL_MODEL-015
     name: Model Test 15
-  - id: TEST-INT_MOD-016
+  - id: TEST-INTERNAL_MODEL-016
     name: Model Test 16
-  - id: TEST-INT_MOD-017
+  - id: TEST-INTERNAL_MODEL-017
     name: Model Test 17
-  - id: TEST-INT_MOD-018
+  - id: TEST-INTERNAL_MODEL-018
     name: Model Test 18
-  - id: TEST-INT_MOD-019
+  - id: TEST-INTERNAL_MODEL-019
     name: Model Test 19
-  - id: TEST-INT_MOD-020
+  - id: TEST-INTERNAL_MODEL-020
     name: Model Test 20
-  - id: TEST-INT_MOD-021
+  - id: TEST-INTERNAL_MODEL-021
     name: Model Test 21
-  - id: TEST-INT_MOD-022
+  - id: TEST-INTERNAL_MODEL-022
     name: Model Test 22
-  - id: TEST-INT_MOD-023
+  - id: TEST-INTERNAL_MODEL-023
     name: Model Test 23
-  - id: TEST-INT_MOD-024
+  - id: TEST-INTERNAL_MODEL-024
     name: Model Test 24
-  - id: TEST-INT_MOD-028
+  - id: TEST-INTERNAL_MODEL-028
     name: Link Type Constants
-  - id: TEST-INT_MOD-029
+  - id: TEST-INTERNAL_MODEL-029
     name: Reverse Link Type
-  - id: TEST-INT_MOD-030
+  - id: TEST-INTERNAL_MODEL-030
     name: New Link
 
 related_files:
-  spec: spec.md
-  contract: contract.md
-  design: design.md
-  testing: testing.md
+  spec: docs/internal/model/spec.md
+  contract: docs/internal/model/contract.md
+  design: docs/internal/model/design.md
+  testing: docs/internal/model/testing.md
 ---
 
 # Test Cases (model)
 
-## TEST-INT_MOD-001: ParseIdentifierType
+## TEST-INTERNAL_MODEL-001: ParseIdentifierType
 
 **Status:** Done
 
@@ -72,11 +72,11 @@ related_files:
 
 Test identifier type parsing.
 
-**Spec Coverage:** `SPEC-INT_MOD-001`
+**Spec Coverage:** `SPEC-INTERNAL_MODEL-001`
 
 ---
 
-## TEST-INT_MOD-002: NewIdentifier
+## TEST-INTERNAL_MODEL-002: NewIdentifier
 
 **Status:** Done
 
@@ -84,11 +84,11 @@ Test identifier type parsing.
 
 Test identifier creation.
 
-**Spec Coverage:** `SPEC-INT_MOD-002`
+**Spec Coverage:** `SPEC-INTERNAL_MODEL-002`
 
 ---
 
-## TEST-INT_MOD-003: Identifier AddLink
+## TEST-INTERNAL_MODEL-003: Identifier AddLink
 
 **Status:** Done
 
@@ -96,11 +96,11 @@ Test identifier creation.
 
 Test adding links to identifiers.
 
-**Spec Coverage:** `SPEC-INT_MOD-003`
+**Spec Coverage:** `SPEC-INTERNAL_MODEL-003`
 
 ---
 
-## TEST-INT_MOD-004: IdentifierSet Basics
+## TEST-INTERNAL_MODEL-004: IdentifierSet Basics
 
 **Status:** Done
 
@@ -108,11 +108,11 @@ Test adding links to identifiers.
 
 Test identifier set basic operations.
 
-**Spec Coverage:** `SPEC-INT_MOD-004`
+**Spec Coverage:** `SPEC-INTERNAL_MODEL-004`
 
 ---
 
-## TEST-INT_MOD-005: IdentifierSet Get Has
+## TEST-INTERNAL_MODEL-005: IdentifierSet Get Has
 
 **Status:** Done
 
@@ -120,11 +120,11 @@ Test identifier set basic operations.
 
 Test set access operations.
 
-**Spec Coverage:** `SPEC-INT_MOD-005`
+**Spec Coverage:** `SPEC-INTERNAL_MODEL-005`
 
 ---
 
-## TEST-INT_MOD-006: IdentifierSet Count All
+## TEST-INTERNAL_MODEL-006: IdentifierSet Count All
 
 **Status:** Done
 
@@ -132,11 +132,11 @@ Test set access operations.
 
 Test count and retrieval operations.
 
-**Spec Coverage:** `SPEC-INT_MOD-006`
+**Spec Coverage:** `SPEC-INTERNAL_MODEL-006`
 
 ---
 
-## TEST-INT_MOD-007: IdentifierSet Merge
+## TEST-INTERNAL_MODEL-007: IdentifierSet Merge
 
 **Status:** Done
 
@@ -144,11 +144,11 @@ Test count and retrieval operations.
 
 Test merging identifier sets.
 
-**Spec Coverage:** `SPEC-INT_MOD-007`
+**Spec Coverage:** `SPEC-INTERNAL_MODEL-007`
 
 ---
 
-## TEST-INT_MOD-008: NewAnnotation
+## TEST-INTERNAL_MODEL-008: NewAnnotation
 
 **Status:** Done
 
@@ -156,11 +156,11 @@ Test merging identifier sets.
 
 Test annotation creation.
 
-**Spec Coverage:** `SPEC-INT_MOD-008`
+**Spec Coverage:** `SPEC-INTERNAL_MODEL-008`
 
 ---
 
-## TEST-INT_MOD-009: Annotation ToIdentifier
+## TEST-INTERNAL_MODEL-009: Annotation ToIdentifier
 
 **Status:** Done
 
@@ -168,11 +168,11 @@ Test annotation creation.
 
 Test annotation conversion.
 
-**Spec Coverage:** `SPEC-INT_MOD-009`
+**Spec Coverage:** `SPEC-INTERNAL_MODEL-009`
 
 ---
 
-## TEST-INT_MOD-010: Validation Result Init
+## TEST-INTERNAL_MODEL-010: Validation Result Init
 
 **Status:** Done
 
@@ -180,11 +180,11 @@ Test annotation conversion.
 
 Test validation result initialization.
 
-**Spec Coverage:** `SPEC-INT_MOD-010`
+**Spec Coverage:** `SPEC-INTERNAL_MODEL-010`
 
 ---
 
-## TEST-INT_MOD-011: Validation Result Add Error
+## TEST-INTERNAL_MODEL-011: Validation Result Add Error
 
 **Status:** Done
 
@@ -192,11 +192,11 @@ Test validation result initialization.
 
 Test adding errors to result.
 
-**Spec Coverage:** `SPEC-INT_MOD-011`
+**Spec Coverage:** `SPEC-INTERNAL_MODEL-011`
 
 ---
 
-## TEST-INT_MOD-012: Link Type Enum
+## TEST-INTERNAL_MODEL-012: Link Type Enum
 
 **Status:** Done
 
@@ -204,11 +204,11 @@ Test adding errors to result.
 
 Test link type values.
 
-**Spec Coverage:** `SPEC-INT_MOD-012`
+**Spec Coverage:** `SPEC-INTERNAL_MODEL-012`
 
 ---
 
-## TEST-INT_MOD-013: Link Structure
+## TEST-INTERNAL_MODEL-013: Link Structure
 
 **Status:** Done
 
@@ -216,11 +216,11 @@ Test link type values.
 
 Test link structure.
 
-**Spec Coverage:** `SPEC-INT_MOD-013`
+**Spec Coverage:** `SPEC-INTERNAL_MODEL-013`
 
 ---
 
-## TEST-INT_MOD-014: Origin Type
+## TEST-INTERNAL_MODEL-014: Origin Type
 
 **Status:** Done
 
@@ -228,11 +228,11 @@ Test link structure.
 
 Test origin type values.
 
-**Spec Coverage:** `SPEC-INT_MOD-014`
+**Spec Coverage:** `SPEC-INTERNAL_MODEL-014`
 
 ---
 
-## TEST-INT_MOD-015: Origin Operations
+## TEST-INTERNAL_MODEL-015: Origin Operations
 
 **Status:** Done
 
@@ -240,11 +240,11 @@ Test origin type values.
 
 Test setting and getting origin.
 
-**Spec Coverage:** `SPEC-INT_MOD-015`
+**Spec Coverage:** `SPEC-INTERNAL_MODEL-015`
 
 ---
 
-## TEST-INT_MOD-016: NewIdentifierWithDescribe
+## TEST-INTERNAL_MODEL-016: NewIdentifierWithDescribe
 
 **Status:** Done
 
@@ -252,11 +252,11 @@ Test setting and getting origin.
 
 Test identifier creation with describe.
 
-**Spec Coverage:** `SPEC-INT_MOD-011`
+**Spec Coverage:** `SPEC-INTERNAL_MODEL-011`
 
 ---
 
-## TEST-INT_MOD-017: Identifier Origin Methods
+## TEST-INTERNAL_MODEL-017: Identifier Origin Methods
 
 **Status:** Done
 
@@ -264,11 +264,11 @@ Test identifier creation with describe.
 
 Test origin getter and setter.
 
-**Spec Coverage:** `SPEC-INT_MOD-017`
+**Spec Coverage:** `SPEC-INTERNAL_MODEL-017`
 
 ---
 
-## TEST-INT_MOD-018: Identifier Core
+## TEST-INTERNAL_MODEL-018: Identifier Core
 
 **Status:** Done
 
@@ -276,11 +276,11 @@ Test origin getter and setter.
 
 Test identifier core fields.
 
-**Spec Coverage:** `SPEC-INT_MOD-018`
+**Spec Coverage:** `SPEC-INTERNAL_MODEL-018`
 
 ---
 
-## TEST-INT_MOD-019: Identifier Title
+## TEST-INTERNAL_MODEL-019: Identifier Title
 
 **Status:** Done
 
@@ -288,11 +288,11 @@ Test identifier core fields.
 
 Test getting identifier title.
 
-**Spec Coverage:** `SPEC-INT_MOD-001`
+**Spec Coverage:** `SPEC-INTERNAL_MODEL-001`
 
 ---
 
-## TEST-INT_MOD-020: Identifier Module
+## TEST-INTERNAL_MODEL-020: Identifier Module
 
 **Status:** Done
 
@@ -300,11 +300,11 @@ Test getting identifier title.
 
 Test getting identifier module.
 
-**Spec Coverage:** `SPEC-INT_MOD-002`
+**Spec Coverage:** `SPEC-INTERNAL_MODEL-002`
 
 ---
 
-## TEST-INT_MOD-021: Identifier Number
+## TEST-INTERNAL_MODEL-021: Identifier Number
 
 **Status:** Done
 
@@ -312,11 +312,11 @@ Test getting identifier module.
 
 Test getting identifier number.
 
-**Spec Coverage:** `SPEC-INT_MOD-003`
+**Spec Coverage:** `SPEC-INTERNAL_MODEL-003`
 
 ---
 
-## TEST-INT_MOD-022: Identifier LocalID
+## TEST-INTERNAL_MODEL-022: Identifier LocalID
 
 **Status:** Done
 
@@ -324,11 +324,11 @@ Test getting identifier number.
 
 Test getting identifier local ID.
 
-**Spec Coverage:** `SPEC-INT_MOD-004`
+**Spec Coverage:** `SPEC-INTERNAL_MODEL-004`
 
 ---
 
-## TEST-INT_MOD-023: Identifier String
+## TEST-INTERNAL_MODEL-023: Identifier String
 
 **Status:** Done
 
@@ -336,11 +336,11 @@ Test getting identifier local ID.
 
 Test identifier string representation.
 
-**Spec Coverage:** `SPEC-INT_MOD-005`
+**Spec Coverage:** `SPEC-INTERNAL_MODEL-005`
 
 ---
 
-## TEST-INT_MOD-024: Identifier Equals
+## TEST-INTERNAL_MODEL-024: Identifier Equals
 
 **Status:** Done
 
@@ -348,11 +348,11 @@ Test identifier string representation.
 
 Test identifier equality check.
 
-**Spec Coverage:** `SPEC-INT_MOD-006`
+**Spec Coverage:** `SPEC-INTERNAL_MODEL-006`
 
 ---
 
-## TEST-INT_MOD-025: Link Type Definition
+## TEST-INTERNAL_MODEL-025: Link Type Definition
 
 **Status:** Done
 
@@ -360,11 +360,11 @@ Test identifier equality check.
 
 Test link type enum values.
 
-**Spec Coverage:** `SPEC-INT_MOD-012`
+**Spec Coverage:** `SPEC-INTERNAL_MODEL-012`
 
 ---
 
-## TEST-INT_MOD-026: Link Structure
+## TEST-INTERNAL_MODEL-026: Link Structure
 
 **Status:** Done
 
@@ -372,11 +372,11 @@ Test link type enum values.
 
 Test link structure creation.
 
-**Spec Coverage:** `SPEC-INT_MOD-013`
+**Spec Coverage:** `SPEC-INTERNAL_MODEL-013`
 
 ---
 
-## TEST-INT_MOD-027: Link Operations
+## TEST-INTERNAL_MODEL-027: Link Operations
 
 **Status:** Done
 
@@ -384,11 +384,11 @@ Test link structure creation.
 
 Test link operations.
 
-**Spec Coverage:** `SPEC-INT_MOD-013`
+**Spec Coverage:** `SPEC-INTERNAL_MODEL-013`
 
 ---
 
-## TEST-INT_MOD-028: Link Type Constants
+## TEST-INTERNAL_MODEL-028: Link Type Constants
 
 **Status:** Done
 
@@ -396,11 +396,11 @@ Test link operations.
 
 Test link type constant values.
 
-**Spec Coverage:** `SPEC-INT_MOD-012`
+**Spec Coverage:** `SPEC-INTERNAL_MODEL-012`
 
 ---
 
-## TEST-INT_MOD-029: Reverse Link Type
+## TEST-INTERNAL_MODEL-029: Reverse Link Type
 
 **Status:** Done
 
@@ -408,11 +408,11 @@ Test link type constant values.
 
 Test reversing link types (tests -> implements, etc).
 
-**Spec Coverage:** `SPEC-INT_MOD-013`
+**Spec Coverage:** `SPEC-INTERNAL_MODEL-013`
 
 ---
 
-## TEST-INT_MOD-030: New Link
+## TEST-INTERNAL_MODEL-030: New Link
 
 **Status:** Done
 
@@ -420,4 +420,4 @@ Test reversing link types (tests -> implements, etc).
 
 Test creating a new link.
 
-**Spec Coverage:** `SPEC-INT_MOD-013`
+**Spec Coverage:** `SPEC-INTERNAL_MODEL-013`

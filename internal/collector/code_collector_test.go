@@ -14,7 +14,7 @@ import (
 	"github.com/jingxu9x/idd-cli/internal/model"
 )
 
-// @test TEST-INT_COL-027
+// @test TEST-INTERNAL_COLLECTOR-027
 func TestExtractFunctionComment(t *testing.T) {
 	// idd:ignore start
 	tests := []struct {
@@ -76,7 +76,7 @@ func TestExtractFunctionComment(t *testing.T) {
 	}
 }
 
-// @test TEST-INT_COL-022
+// @test TEST-INTERNAL_COLLECTOR-022
 func TestExtractFunctionComment_OutOfBounds(t *testing.T) {
 	lines := []string{"// @implement SPEC-BE-001"} // idd:ignore
 	result := extractFunctionComment(lines, 10)
@@ -90,7 +90,7 @@ func TestExtractFunctionComment_OutOfBounds(t *testing.T) {
 	}
 }
 
-// @test TEST-INT_COL-023
+// @test TEST-INTERNAL_COLLECTOR-023
 func TestExtractFunctionComment_PointerReceiver(t *testing.T) {
 	// idd:ignore start
 	lines := []string{
@@ -105,24 +105,24 @@ func TestExtractFunctionComment_PointerReceiver(t *testing.T) {
 	}
 }
 
-// @test TEST-INT_COL-024
+// @test TEST-INTERNAL_COLLECTOR-024
 func TestCodeCollector_Collect(t *testing.T) {
 	tmpDir := t.TempDir()
 
 	// idd:ignore start
 	code := `package main
 
-// @implement SPEC-CMD_IDD-001
+// @implement SPEC-CMD_IDD_CLI-001
 func Authenticate() error {
 	return nil
 }
 
-// @implement SPEC-CMD_IDD-002
+// @implement SPEC-CMD_IDD_CLI-002
 type Payment interface {
 	Process(amount float64) error
 }
 
-// @test TEST-CMD_IDD-001
+// @test TEST-CMD_IDD_CLI-001
 // Test authentication
 func TestAuth(t *testing.T) {}
 `
@@ -139,36 +139,36 @@ func TestAuth(t *testing.T) {}
 		t.Fatalf("Collect failed: %v", err)
 	}
 
-	if !set.Has("SPEC-CMD_IDD-001") {
-		t.Error("Should have SPEC-CMD_IDD-001")
+	if !set.Has("SPEC-CMD_IDD_CLI-001") {
+		t.Error("Should have SPEC-CMD_IDD_CLI-001")
 	}
-	if !set.Has("SPEC-CMD_IDD-002") {
-		t.Error("Should have SPEC-CMD_IDD-002")
+	if !set.Has("SPEC-CMD_IDD_CLI-002") {
+		t.Error("Should have SPEC-CMD_IDD_CLI-002")
 	}
-	if !set.Has("TEST-CMD_IDD-001") {
-		t.Error("Should have TEST-CMD_IDD-001")
+	if !set.Has("TEST-CMD_IDD_CLI-001") {
+		t.Error("Should have TEST-CMD_IDD_CLI-001")
 	}
 
-	specID, ok := set.Get("SPEC-CMD_IDD-001")
+	specID, ok := set.Get("SPEC-CMD_IDD_CLI-001")
 	if !ok {
-		t.Fatal("SPEC-CMD_IDD-001 not found")
+		t.Fatal("SPEC-CMD_IDD_CLI-001 not found")
 	}
 	if specID.Describe == "" {
-		t.Error("SPEC-CMD_IDD-001 should have Describe extracted from function comment")
+		t.Error("SPEC-CMD_IDD_CLI-001 should have Describe extracted from function comment")
 	}
 	if specID.Origin != model.OriginCode {
 		t.Errorf("Origin = %v, want %v", specID.Origin, model.OriginCode)
 	}
 }
 
-// @test TEST-INT_COL-025
+// @test TEST-INTERNAL_COLLECTOR-025
 func TestCodeCollector_CollectGoFile(t *testing.T) {
 	tmpDir := t.TempDir()
 
 	// idd:ignore start
 	code := `package main
 
-// @implement SPEC-CMD_IDD-002
+// @implement SPEC-CMD_IDD_CLI-002
 func Register() error {
 	return nil
 }
@@ -186,19 +186,19 @@ func Register() error {
 		t.Fatalf("Collect failed: %v", err)
 	}
 
-	if !set.Has("SPEC-CMD_IDD-002") {
-		t.Error("Should have SPEC-CMD_IDD-002")
+	if !set.Has("SPEC-CMD_IDD_CLI-002") {
+		t.Error("Should have SPEC-CMD_IDD_CLI-002")
 	}
 }
 
-// @test TEST-INT_COL-026
+// @test TEST-INTERNAL_COLLECTOR-026
 func TestCodeCollector_MultipleAnnotations(t *testing.T) {
 	tmpDir := t.TempDir()
 
 	// idd:ignore start
 	code := `package main
 
-// @implement SPEC-CMD_IDD-001, SPEC-CMD_IDD-002
+// @implement SPEC-CMD_IDD_CLI-001, SPEC-CMD_IDD_CLI-002
 func Multiple() error {
 	return nil
 }
@@ -216,10 +216,10 @@ func Multiple() error {
 		t.Fatalf("Collect failed: %v", err)
 	}
 
-	if !set.Has("SPEC-CMD_IDD-001") {
-		t.Error("Should have SPEC-CMD_IDD-001")
+	if !set.Has("SPEC-CMD_IDD_CLI-001") {
+		t.Error("Should have SPEC-CMD_IDD_CLI-001")
 	}
-	if !set.Has("SPEC-CMD_IDD-002") {
-		t.Error("Should have SPEC-CMD_IDD-002")
+	if !set.Has("SPEC-CMD_IDD_CLI-002") {
+		t.Error("Should have SPEC-CMD_IDD_CLI-002")
 	}
 }

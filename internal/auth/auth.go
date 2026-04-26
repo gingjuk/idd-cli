@@ -6,7 +6,7 @@ package auth
 
 // LoginRequest represents user login credentials (email, password).
 //
-// @implement SPEC-INT_AUTH-001
+// @implement SPEC-INTERNAL_AUTH-001
 type LoginRequest struct {
 	Email    string
 	Password string
@@ -14,8 +14,8 @@ type LoginRequest struct {
 
 // LoginResponse represents authentication result with token.
 //
-// @test TEST-INT_AUTH-001
-// @implement SPEC-INT_AUTH-001
+// @test TEST-INTERNAL_AUTH-001
+// @implement SPEC-INTERNAL_AUTH-001
 type LoginResponse struct {
 	Token string
 }

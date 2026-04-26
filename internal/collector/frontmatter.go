@@ -13,14 +13,14 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-// @implement SPEC-INT_COL-005
+// @implement SPEC-INTERNAL_COLLECTOR-005
 type Marker struct {
 	ID       string `yaml:"id"`
 	Name     string `yaml:"name"`
 	Describe string `yaml:"describe"`
 }
 
-// @implement SPEC-INT_COL-006
+// @implement SPEC-INTERNAL_COLLECTOR-006
 type RelatedFiles struct {
 	Spec     string `yaml:"spec,omitempty"`
 	Contract string `yaml:"contract,omitempty"`
@@ -28,13 +28,13 @@ type RelatedFiles struct {
 	Testing  string `yaml:"testing,omitempty"`
 }
 
-// @implement SPEC-INT_COL-007
+// @implement SPEC-INTERNAL_COLLECTOR-007
 type Frontmatter struct {
 	Markers      []Marker      `yaml:"markers"`
 	RelatedFiles *RelatedFiles `yaml:"related_files,omitempty"`
 }
 
-// @implement SPEC-INT_COL-008
+// @implement SPEC-INTERNAL_COLLECTOR-008
 func ParseFrontmatter(content string) (*Frontmatter, error) {
 	lines := strings.Split(content, "\n")
 	startIdx, endIdx := -1, -1
@@ -71,7 +71,7 @@ func ParseFrontmatter(content string) (*Frontmatter, error) {
 	return &fm, nil
 }
 
-// @implement SPEC-INT_COL-009
+// @implement SPEC-INTERNAL_COLLECTOR-009
 func ValidateFrontmatterMarkers(fm *Frontmatter, content string, filePath string) []string {
 	var errors []string
 	if fm == nil {
@@ -116,7 +116,7 @@ func ValidateFrontmatterMarkers(fm *Frontmatter, content string, filePath string
 	return errors
 }
 
-// @implement SPEC-INT_COL-010
+// @implement SPEC-INTERNAL_COLLECTOR-010
 func ValidateMarkerFormatting(content string, filePath string) []string {
 	var errors []string
 	lines := strings.Split(content, "\n")
@@ -226,7 +226,7 @@ func extractHeadingLines(content string) map[string]string {
 	return result
 }
 
-// @implement SPEC-INT_COL-011
+// @implement SPEC-INTERNAL_COLLECTOR-011
 func ValidateHeadingFormat(id, heading string) error {
 	colonIdx := strings.Index(heading, ":")
 	if colonIdx == -1 {
@@ -315,7 +315,7 @@ func extractIDDRefs(line string) []string {
 	return refs
 }
 
-// @implement SPEC-INT_COL-012
+// @implement SPEC-INTERNAL_COLLECTOR-012
 func GetExpectedFilename(idType string) string {
 	switch strings.ToUpper(idType) {
 	case "SPEC":
@@ -330,7 +330,7 @@ func GetExpectedFilename(idType string) string {
 	return ""
 }
 
-// @implement SPEC-INT_COL-013
+// @implement SPEC-INTERNAL_COLLECTOR-013
 func ValidateDocumentStructure(filePath string, idType string) error {
 	filename := strings.ToLower(filepath.Base(filePath))
 
@@ -359,7 +359,7 @@ func isRootDocFile(filePath string) bool {
 	return false
 }
 
-// @implement SPEC-INT_COL-014
+// @implement SPEC-INTERNAL_COLLECTOR-014
 func ExtractModuleName(filePath string) string {
 	parts := strings.Split(filepath.Dir(filePath), string(filepath.Separator))
 	for i, part := range parts {
@@ -376,7 +376,7 @@ func ExtractModuleName(filePath string) string {
 	return ""
 }
 
-// @implement SPEC-INT_COL-015
+// @implement SPEC-INTERNAL_COLLECTOR-015
 func ValidateModulePrefix(id string, filePath string) error {
 	moduleFromPath := ExtractModuleName(filePath)
 	if moduleFromPath == "" {

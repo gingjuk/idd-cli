@@ -1,76 +1,76 @@
 ---
 markers:
-  - id: TEST-INT_COL-001
+  - id: TEST-INTERNAL_COLLECTOR-001
     name: Document Collector Tests
-  - id: TEST-INT_COL-002
+  - id: TEST-INTERNAL_COLLECTOR-002
     name: Code Collector Tests
-  - id: TEST-INT_COL-003
+  - id: TEST-INTERNAL_COLLECTOR-003
     name: Frontmatter Parsing Tests
-  - id: TEST-INT_COL-004
+  - id: TEST-INTERNAL_COLLECTOR-004
     name: Frontmatter Validation Tests
-  - id: TEST-INT_COL-005
+  - id: TEST-INTERNAL_COLLECTOR-005
     name: File Path Validation Tests
-  - id: TEST-INT_COL-006
+  - id: TEST-INTERNAL_COLLECTOR-006
     name: Title Extraction Tests
-  - id: TEST-INT_COL-007
+  - id: TEST-INTERNAL_COLLECTOR-007
     name: Module Prefix Tests
-  - id: TEST-INT_COL-008
+  - id: TEST-INTERNAL_COLLECTOR-008
     name: Document Structure Tests
-  - id: TEST-INT_COL-009
+  - id: TEST-INTERNAL_COLLECTOR-009
     name: Annotation Extraction Tests
-  - id: TEST-INT_COL-010
+  - id: TEST-INTERNAL_COLLECTOR-010
     name: Function Context Tests
-  - id: TEST-INT_COL-011
+  - id: TEST-INTERNAL_COLLECTOR-011
     name: Code Origin Tests
-  - id: TEST-INT_COL-012
+  - id: TEST-INTERNAL_COLLECTOR-012
     name: Multi-Annotation Tests
-  - id: TEST-INT_COL-013
+  - id: TEST-INTERNAL_COLLECTOR-013
     name: Path Ignore Tests
-  - id: TEST-INT_COL-019
+  - id: TEST-INTERNAL_COLLECTOR-019
     name: Document Type Matching Tests
-  - id: TEST-INT_COL-014
+  - id: TEST-INTERNAL_COLLECTOR-014
     name: Code File Discovery Tests
-  - id: TEST-INT_COL-015
+  - id: TEST-INTERNAL_COLLECTOR-015
     name: Language Support Tests
-  - id: TEST-INT_COL-016
+  - id: TEST-INTERNAL_COLLECTOR-016
     name: Collector Integration Tests
-  - id: TEST-INT_COL-017
+  - id: TEST-INTERNAL_COLLECTOR-017
     name: Edge Case Tests
-  - id: TEST-INT_COL-018
+  - id: TEST-INTERNAL_COLLECTOR-018
     name: Error Handling Tests
-  - id: TEST-INT_COL-020
+  - id: TEST-INTERNAL_COLLECTOR-020
     name: Marker Extraction Tests
-  - id: TEST-INT_COL-021
+  - id: TEST-INTERNAL_COLLECTOR-021
     name: IDD Reference Tests
-  - id: TEST-INT_COL-022
+  - id: TEST-INTERNAL_COLLECTOR-022
     name: Code Collector Basic Collection
-  - id: TEST-INT_COL-023
+  - id: TEST-INTERNAL_COLLECTOR-023
     name: Code Collector Go File
-  - id: TEST-INT_COL-024
+  - id: TEST-INTERNAL_COLLECTOR-024
     name: Code Collector Multiple Annotations
-  - id: TEST-INT_COL-025
+  - id: TEST-INTERNAL_COLLECTOR-025
     name: Code Collector Function Context
-  - id: TEST-INT_COL-026
+  - id: TEST-INTERNAL_COLLECTOR-026
     name: Code Collector Multi-File
-  - id: TEST-INT_COL-027
+  - id: TEST-INTERNAL_COLLECTOR-027
     name: Code Collector Integration
-  - id: TEST-INT_COL-028
+  - id: TEST-INTERNAL_COLLECTOR-028
     name: Doc Collector Section Title Extraction
-  - id: TEST-INT_COL-029
+  - id: TEST-INTERNAL_COLLECTOR-029
     name: Doc Collector Multi-Section Handling
 
 related_files:
-  spec: spec.md
-  contract: contract.md
-  design: design.md
-  testing: testing.md
+  spec: docs/internal/collector/spec.md
+  contract: docs/internal/collector/contract.md
+  design: docs/internal/collector/design.md
+  testing: docs/internal/collector/testing.md
 ---
 
 # Test Cases
 
 ## Test
 
-## TEST-INT_COL-001: Document Collector Tests
+## TEST-INTERNAL_COLLECTOR-001: Document Collector Tests
 
 **Status:** Done
 
@@ -117,11 +117,11 @@ Test the `DocCollector` for collecting identifiers from markdown documentation.
 | `TestIsKnownAbbreviation` | Tests abbreviation validation |
 | `TestValidateModulePrefix` | Tests prefix matching |
 
-**Spec Coverage:** `SPEC-INT_COL-001`, `SPEC-INT_COL-002`
+**Spec Coverage:** `SPEC-INTERNAL_COLLECTOR-001`, `SPEC-INTERNAL_COLLECTOR-002`
 
 ---
 
-## TEST-INT_COL-002: Code Collector Tests
+## TEST-INTERNAL_COLLECTOR-002: Code Collector Tests
 
 **Status:** Done
 
@@ -144,11 +144,11 @@ Test the `CodeCollector` for collecting annotations from source code.
 | `TestExtractFunctionComment_OutOfBounds` | Edge case for line bounds |
 | `TestExtractFunctionComment_PointerReceiver` | Tests pointer receiver methods |
 
-**Spec Coverage:** `SPEC-INT_COL-002`
+**Spec Coverage:** `SPEC-INTERNAL_COLLECTOR-002`
 
 ---
 
-## TEST-INT_COL-003: ParseFrontmatter Tests
+## TEST-INTERNAL_COLLECTOR-003: ParseFrontmatter Tests
 
 **Status:** Done
 
@@ -156,11 +156,11 @@ Test the `CodeCollector` for collecting annotations from source code.
 
 Test frontmatter YAML parsing with various valid and invalid inputs.
 
-**Spec Coverage:** `SPEC-INT_COL-002`, `SPEC-INT_COL-003`
+**Spec Coverage:** `SPEC-INTERNAL_COLLECTOR-002`, `SPEC-INTERNAL_COLLECTOR-003`
 
 ---
 
-## TEST-INT_COL-004: Frontmatter Edge Cases
+## TEST-INTERNAL_COLLECTOR-004: Frontmatter Edge Cases
 
 **Status:** Done
 
@@ -168,11 +168,11 @@ Test frontmatter YAML parsing with various valid and invalid inputs.
 
 Test frontmatter parsing edge cases like code blocks and empty content.
 
-**Spec Coverage:** `SPEC-INT_COL-002`, `SPEC-INT_COL-003`
+**Spec Coverage:** `SPEC-INTERNAL_COLLECTOR-002`, `SPEC-INTERNAL_COLLECTOR-003`
 
 ---
 
-## TEST-INT_COL-005: Marker Validation
+## TEST-INTERNAL_COLLECTOR-005: Marker Validation
 
 **Status:** Done
 
@@ -180,11 +180,11 @@ Test frontmatter parsing edge cases like code blocks and empty content.
 
 Test validation that frontmatter markers match actual headings.
 
-**Spec Coverage:** `SPEC-INT_COL-002`, `SPEC-INT_COL-004`
+**Spec Coverage:** `SPEC-INTERNAL_COLLECTOR-002`, `SPEC-INTERNAL_COLLECTOR-004`
 
 ---
 
-## TEST-INT_COL-006: Validation Errors
+## TEST-INTERNAL_COLLECTOR-006: Validation Errors
 
 **Status:** Done
 
@@ -192,11 +192,11 @@ Test validation that frontmatter markers match actual headings.
 
 Test error reporting for malformed markers.
 
-**Spec Coverage:** `SPEC-INT_COL-002`, `SPEC-INT_COL-004`
+**Spec Coverage:** `SPEC-INTERNAL_COLLECTOR-002`, `SPEC-INTERNAL_COLLECTOR-004`
 
 ---
 
-## TEST-INT_COL-007: File Path Structure
+## TEST-INTERNAL_COLLECTOR-007: File Path Structure
 
 **Status:** Done
 
@@ -204,11 +204,11 @@ Test error reporting for malformed markers.
 
 Test document structure validation by file path.
 
-**Spec Coverage:** `SPEC-INT_COL-002`, `SPEC-INT_COL-005`
+**Spec Coverage:** `SPEC-INTERNAL_COLLECTOR-002`, `SPEC-INTERNAL_COLLECTOR-005`
 
 ---
 
-## TEST-INT_COL-008: Expected Filename
+## TEST-INTERNAL_COLLECTOR-008: Expected Filename
 
 **Status:** Done
 
@@ -216,11 +216,11 @@ Test document structure validation by file path.
 
 Test expected filename generation by identifier type.
 
-**Spec Coverage:** `SPEC-INT_COL-002`, `SPEC-INT_COL-005`
+**Spec Coverage:** `SPEC-INTERNAL_COLLECTOR-002`, `SPEC-INTERNAL_COLLECTOR-005`
 
 ---
 
-## TEST-INT_COL-009: Title From Heading
+## TEST-INTERNAL_COLLECTOR-009: Title From Heading
 
 **Status:** Done
 
@@ -228,11 +228,11 @@ Test expected filename generation by identifier type.
 
 Test extracting title from markdown heading.
 
-**Spec Coverage:** `SPEC-INT_COL-002`, `SPEC-INT_COL-006`
+**Spec Coverage:** `SPEC-INTERNAL_COLLECTOR-002`, `SPEC-INTERNAL_COLLECTOR-006`
 
 ---
 
-## TEST-INT_COL-010: Title Not Found
+## TEST-INTERNAL_COLLECTOR-010: Title Not Found
 
 **Status:** Done
 
@@ -240,11 +240,11 @@ Test extracting title from markdown heading.
 
 Test handling when no heading found.
 
-**Spec Coverage:** `SPEC-INT_COL-002`, `SPEC-INT_COL-006`
+**Spec Coverage:** `SPEC-INTERNAL_COLLECTOR-002`, `SPEC-INTERNAL_COLLECTOR-006`
 
 ---
 
-## TEST-INT_COL-011: Module Prefix Validation
+## TEST-INTERNAL_COLLECTOR-011: Module Prefix Validation
 
 **Status:** Done
 
@@ -252,11 +252,11 @@ Test handling when no heading found.
 
 Test module prefix matching against directory structure.
 
-**Spec Coverage:** `SPEC-INT_COL-002`, `SPEC-INT_COL-007`
+**Spec Coverage:** `SPEC-INTERNAL_COLLECTOR-002`, `SPEC-INTERNAL_COLLECTOR-007`
 
 ---
 
-## TEST-INT_COL-012: Known Abbreviations
+## TEST-INTERNAL_COLLECTOR-012: Known Abbreviations
 
 **Status:** Done
 
@@ -264,11 +264,11 @@ Test module prefix matching against directory structure.
 
 Test recognition of known module abbreviations.
 
-**Spec Coverage:** `SPEC-INT_COL-002`, `SPEC-INT_COL-007`
+**Spec Coverage:** `SPEC-INTERNAL_COLLECTOR-002`, `SPEC-INTERNAL_COLLECTOR-007`
 
 ---
 
-## TEST-INT_COL-019: Document Type Matching
+## TEST-INTERNAL_COLLECTOR-019: Document Type Matching
 
 **Status:** Done
 
@@ -276,11 +276,11 @@ Test recognition of known module abbreviations.
 
 Test validation that document type matches filename.
 
-**Spec Coverage:** `SPEC-INT_COL-008`
+**Spec Coverage:** `SPEC-INTERNAL_COLLECTOR-008`
 
 ---
 
-## TEST-INT_COL-014: Root Document Detection
+## TEST-INTERNAL_COLLECTOR-014: Root Document Detection
 
 **Status:** Done
 
@@ -288,11 +288,11 @@ Test validation that document type matches filename.
 
 Test detection of root-level vs module-level documents.
 
-**Spec Coverage:** `SPEC-INT_COL-002`, `SPEC-INT_COL-008`
+**Spec Coverage:** `SPEC-INTERNAL_COLLECTOR-002`, `SPEC-INTERNAL_COLLECTOR-008`
 
 ---
 
-## TEST-INT_COL-015: Extract Annotations
+## TEST-INTERNAL_COLLECTOR-015: Extract Annotations
 
 **Status:** Done
 
@@ -300,11 +300,11 @@ Test detection of root-level vs module-level documents.
 
 Test extraction of @implement, @test, @test-contract annotations.
 
-**Spec Coverage:** `SPEC-INT_COL-002`, `SPEC-INT_COL-009`
+**Spec Coverage:** `SPEC-INTERNAL_COLLECTOR-002`, `SPEC-INTERNAL_COLLECTOR-009`
 
 ---
 
-## TEST-INT_COL-016: Function Context
+## TEST-INTERNAL_COLLECTOR-016: Function Context
 
 **Status:** Done
 
@@ -312,11 +312,11 @@ Test extraction of @implement, @test, @test-contract annotations.
 
 Test extraction of function name and preceding comments.
 
-**Spec Coverage:** `SPEC-INT_COL-002`, `SPEC-INT_COL-010`
+**Spec Coverage:** `SPEC-INTERNAL_COLLECTOR-002`, `SPEC-INTERNAL_COLLECTOR-010`
 
 ---
 
-## TEST-INT_COL-017: Origin Code Tracking
+## TEST-INTERNAL_COLLECTOR-017: Origin Code Tracking
 
 **Status:** Done
 
@@ -324,11 +324,11 @@ Test extraction of function name and preceding comments.
 
 Test setting origin to OriginCode for code annotations.
 
-**Spec Coverage:** `SPEC-INT_COL-002`, `SPEC-INT_COL-011`
+**Spec Coverage:** `SPEC-INTERNAL_COLLECTOR-002`, `SPEC-INTERNAL_COLLECTOR-011`
 
 ---
 
-## TEST-INT_COL-018: Multiple Annotations
+## TEST-INTERNAL_COLLECTOR-018: Multiple Annotations
 
 **Status:** Done
 
@@ -336,11 +336,11 @@ Test setting origin to OriginCode for code annotations.
 
 Test handling multiple annotations on same line.
 
-**Spec Coverage:** `SPEC-INT_COL-002`, `SPEC-INT_COL-012`
+**Spec Coverage:** `SPEC-INTERNAL_COLLECTOR-002`, `SPEC-INTERNAL_COLLECTOR-012`
 
 ---
 
-## TEST-INT_COL-013: Path Ignore Tests
+## TEST-INTERNAL_COLLECTOR-013: Path Ignore Tests
 
 **Status:** Done
 
@@ -348,11 +348,11 @@ Test handling multiple annotations on same line.
 
 Test respecting ignore_paths configuration.
 
-**Spec Coverage:** `SPEC-INT_COL-002`, `SPEC-INT_COL-013`
+**Spec Coverage:** `SPEC-INTERNAL_COLLECTOR-002`, `SPEC-INTERNAL_COLLECTOR-013`
 
 ---
 
-## TEST-INT_COL-020: IDD Reference Extraction
+## TEST-INTERNAL_COLLECTOR-020: IDD Reference Extraction
 
 **Status:** Done
 
@@ -360,11 +360,11 @@ Test respecting ignore_paths configuration.
 
 Test IDD reference regex from markdown content.
 
-**Spec Coverage:** `SPEC-INT_COL-002`, `SPEC-INT_COL-006`
+**Spec Coverage:** `SPEC-INTERNAL_COLLECTOR-002`, `SPEC-INTERNAL_COLLECTOR-006`
 
 ---
 
-## TEST-INT_COL-021: Collector Integration
+## TEST-INTERNAL_COLLECTOR-021: Collector Integration
 
 **Status:** Done
 
@@ -372,11 +372,11 @@ Test IDD reference regex from markdown content.
 
 Test end-to-end collection from both docs and code.
 
-**Spec Coverage:** `SPEC-INT_COL-002`, `SPEC-INT_COL-014`, `SPEC-INT_COL-015`
+**Spec Coverage:** `SPEC-INTERNAL_COLLECTOR-002`, `SPEC-INTERNAL_COLLECTOR-014`, `SPEC-INTERNAL_COLLECTOR-015`
 
 ---
 
-## TEST-INT_COL-022: Code Collector Basic Collection
+## TEST-INTERNAL_COLLECTOR-022: Code Collector Basic Collection
 
 **Status:** Done
 
@@ -384,11 +384,11 @@ Test end-to-end collection from both docs and code.
 
 Test basic code annotation collection.
 
-**Spec Coverage:** `SPEC-INT_COL-002`
+**Spec Coverage:** `SPEC-INTERNAL_COLLECTOR-002`
 
 ---
 
-## TEST-INT_COL-023: Code Collector Go File
+## TEST-INTERNAL_COLLECTOR-023: Code Collector Go File
 
 **Status:** Done
 
@@ -396,11 +396,11 @@ Test basic code annotation collection.
 
 Test Go file annotation extraction.
 
-**Spec Coverage:** `SPEC-INT_COL-002`
+**Spec Coverage:** `SPEC-INTERNAL_COLLECTOR-002`
 
 ---
 
-## TEST-INT_COL-024: Code Collector Multiple Annotations
+## TEST-INTERNAL_COLLECTOR-024: Code Collector Multiple Annotations
 
 **Status:** Done
 
@@ -408,11 +408,11 @@ Test Go file annotation extraction.
 
 Test handling multiple annotations.
 
-**Spec Coverage:** `SPEC-INT_COL-002`, `SPEC-INT_COL-009`, `SPEC-INT_COL-012`
+**Spec Coverage:** `SPEC-INTERNAL_COLLECTOR-002`, `SPEC-INTERNAL_COLLECTOR-009`, `SPEC-INTERNAL_COLLECTOR-012`
 
 ---
 
-## TEST-INT_COL-025: Code Collector Function Context
+## TEST-INTERNAL_COLLECTOR-025: Code Collector Function Context
 
 **Status:** Done
 
@@ -420,11 +420,11 @@ Test handling multiple annotations.
 
 Test function context extraction.
 
-**Spec Coverage:** `SPEC-INT_COL-002`, `SPEC-INT_COL-010`
+**Spec Coverage:** `SPEC-INTERNAL_COLLECTOR-002`, `SPEC-INTERNAL_COLLECTOR-010`
 
 ---
 
-## TEST-INT_COL-026: Code Collector Multi-File
+## TEST-INTERNAL_COLLECTOR-026: Code Collector Multi-File
 
 **Status:** Done
 
@@ -432,11 +432,11 @@ Test function context extraction.
 
 Test multi-file annotation collection.
 
-**Spec Coverage:** `SPEC-INT_COL-002`
+**Spec Coverage:** `SPEC-INTERNAL_COLLECTOR-002`
 
 ---
 
-## TEST-INT_COL-027: Code Collector Integration
+## TEST-INTERNAL_COLLECTOR-027: Code Collector Integration
 
 **Status:** Done
 
@@ -444,11 +444,11 @@ Test multi-file annotation collection.
 
 Integration test for code collector.
 
-**Spec Coverage:** `SPEC-INT_COL-002`
+**Spec Coverage:** `SPEC-INTERNAL_COLLECTOR-002`
 
 ---
 
-## TEST-INT_COL-028: Doc Collector Section Title Extraction
+## TEST-INTERNAL_COLLECTOR-028: Doc Collector Section Title Extraction
 
 **Status:** Done
 
@@ -456,11 +456,11 @@ Integration test for code collector.
 
 Test that DocCollector correctly extracts section titles from documentation.
 
-**Spec Coverage:** `SPEC-INT_COL-002`, `SPEC-INT_COL-003`
+**Spec Coverage:** `SPEC-INTERNAL_COLLECTOR-002`, `SPEC-INTERNAL_COLLECTOR-003`
 
 ---
 
-## TEST-INT_COL-029: Doc Collector Multi-Section Handling
+## TEST-INTERNAL_COLLECTOR-029: Doc Collector Multi-Section Handling
 
 **Status:** Done
 
@@ -468,7 +468,7 @@ Test that DocCollector correctly extracts section titles from documentation.
 
 Test that DocCollector handles documents with multiple sections.
 
-**Spec Coverage:** `SPEC-INT_COL-002`, `SPEC-INT_COL-004`
+**Spec Coverage:** `SPEC-INTERNAL_COLLECTOR-002`, `SPEC-INTERNAL_COLLECTOR-004`
 
 ---
 

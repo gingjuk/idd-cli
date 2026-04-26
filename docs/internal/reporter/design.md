@@ -1,9 +1,9 @@
 ---
 related_files:
-  spec: spec.md
-  contract: contract.md
-  design: design.md
-  testing: testing.md
+  spec: docs/internal/reporter/spec.md
+  contract: docs/internal/reporter/contract.md
+  design: docs/internal/reporter/design.md
+  testing: docs/internal/reporter/testing.md
 ---
 
 # Design (reporter)

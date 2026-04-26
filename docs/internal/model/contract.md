@@ -1,9 +1,9 @@
 ---
 related_files:
-  spec: spec.md
-  contract: contract.md
-  design: design.md
-  testing: testing.md
+  spec: docs/internal/model/spec.md
+  contract: docs/internal/model/contract.md
+  design: docs/internal/model/design.md
+  testing: docs/internal/model/testing.md
 ---
 
 # Contract (model)
@@ -31,4 +31,4 @@ The model package provides data structures for representing IDD identifiers, ann
 - [x] IdentifierSet supports add, get, has, count, all, merge operations
 - [x] Annotations can be converted to identifiers
 
-**Related:** `SPEC-INT_MOD-001` through `SPEC-INT_MOD-018`
+**Related:** `SPEC-INTERNAL_MODEL-001` through `SPEC-INTERNAL_MODEL-018`

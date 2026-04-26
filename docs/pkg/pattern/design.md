@@ -1,9 +1,9 @@
 ---
 related_files:
-  spec: spec.md
-  contract: contract.md
-  design: design.md
-  testing: testing.md
+  spec: docs/pkg/pattern/spec.md
+  contract: docs/pkg/pattern/contract.md
+  design: docs/pkg/pattern/design.md
+  testing: docs/pkg/pattern/testing.md
 ---
 
 # Design (pattern)

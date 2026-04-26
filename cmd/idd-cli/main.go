@@ -93,7 +93,7 @@ Example:
 	RunE: generateSkill,
 }
 
-// @implement SPEC-CMD_IDD-009, SPEC-CMD_IDD-010
+// @implement SPEC-CMD_IDD_CLI-009, SPEC-CMD_IDD_CLI-010
 type SkillInfo struct {
 	Name          string `json:"name"`
 	Description   string `json:"description"`

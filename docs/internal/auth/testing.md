@@ -1,18 +1,18 @@
 ---
 markers:
-  - id: TEST-INT_AUTH-001
+  - id: TEST-INTERNAL_AUTH-001
     name: Authentication Tests
 
 related_files:
-  spec: spec.md
-  contract: contract.md
-  design: design.md
-  testing: testing.md
+  spec: docs/internal/auth/spec.md
+  contract: docs/internal/auth/contract.md
+  design: docs/internal/auth/design.md
+  testing: docs/internal/auth/testing.md
 ---
 
 # Test Cases (auth)
 
-## TEST-INT_AUTH-001: Authentication Module Tests
+## TEST-INTERNAL_AUTH-001: Authentication Module Tests
 
 **Status:** Done
 
@@ -27,4 +27,4 @@ Test cases for the authentication module types and functionality.
 | Unit tests for LoginRequest | Validates LoginRequest struct creation |
 | Unit tests for LoginResponse | Validates LoginResponse struct creation |
 
-**Spec Coverage:** `SPEC-INT_AUTH-001`
+**Spec Coverage:** `SPEC-INTERNAL_AUTH-001`
