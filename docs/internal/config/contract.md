@@ -40,3 +40,19 @@ type Config struct {
 ## Default Contract
 
 `Default() *Config` returns a fully populated Config with sensible defaults. Never returns nil.
+
+## IdentifierPatterns
+
+```go
+type IdentifierPatterns struct {
+    Spec         string
+    Test         string
+    TestContract string
+}
+```
+
+Defines regex patterns for extracting SPEC, TEST, and TEST-CONTRACT identifiers from documentation files.
+
+## Validate
+
+`Validate() error` checks configuration values and applies defaults where fields are missing or out of range. Returns nil on success. Mutates the Config in-place (sets defaults).
