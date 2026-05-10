@@ -6,6 +6,7 @@ package model
 
 import (
 	"fmt"
+	"path/filepath"
 	"sort"
 	"strings"
 )
@@ -166,7 +167,7 @@ func (s *IdentifierSet) Has(id string) bool {
 	return ok && len(ids) > 0
 }
 
-// All returns all unique identifiers as a slice (one per ID).
+// All returns all unique identifiers as a slice (one per ID), sorted by ID.
 // @implement SPEC-INTERNAL_MODEL-006
 func (s *IdentifierSet) All() []*Identifier {
 	result := make([]*Identifier, 0, len(s.byID))
@@ -175,23 +176,25 @@ func (s *IdentifierSet) All() []*Identifier {
 			result = append(result, ids[0])
 		}
 	}
+	sort.Slice(result, func(i, j int) bool { return result[i].ID < result[j].ID })
 	return result
 }
 
-// AllIdentifiers returns all identifiers including duplicates (multiple origins).
+// AllIdentifiers returns all identifiers including duplicates (multiple origins), sorted by ID.
 // @implement SPEC-INTERNAL_MODEL-006
 func (s *IdentifierSet) AllIdentifiers() []*Identifier {
 	result := make([]*Identifier, 0)
 	for _, ids := range s.byID {
 		result = append(result, ids...)
 	}
+	sort.Slice(result, func(i, j int) bool { return result[i].ID < result[j].ID })
 	return result
 }
 
-// ByOrigin returns all identifiers with the specified origin.
+// ByOrigin returns all identifiers with the specified origin, sorted by ID.
 // @implement SPEC-INTERNAL_MODEL-004
 func (s *IdentifierSet) ByOrigin(origin Origin) []*Identifier {
-	var result []*Identifier
+	result := make([]*Identifier, 0)
 	for _, ids := range s.byID {
 		for _, id := range ids {
 			if id.Origin == origin {
@@ -199,6 +202,7 @@ func (s *IdentifierSet) ByOrigin(origin Origin) []*Identifier {
 			}
 		}
 	}
+	sort.Slice(result, func(i, j int) bool { return result[i].ID < result[j].ID })
 	return result
 }
 
@@ -221,6 +225,52 @@ func (s *IdentifierSet) HasOrigin(id string, origin Origin) bool {
 // @implement SPEC-INTERNAL_MODEL-006
 func (s *IdentifierSet) Count() int {
 	return len(s.byID)
+}
+
+// DuplicateDocGroups returns groups of doc-origin identifiers that share the same ID
+// across multiple source directories (packages), indicating a naming conflict.
+// Multiple files in the same directory referencing the same ID are not a conflict.
+func (s *IdentifierSet) DuplicateDocGroups() [][]*Identifier {
+	return s.duplicatesAcrossDirectories(OriginDoc)
+}
+
+// DuplicateCodeGroups returns groups of code-origin identifiers that share the same ID
+// across multiple source packages, indicating a naming conflict.
+func (s *IdentifierSet) DuplicateCodeGroups() [][]*Identifier {
+	return s.duplicatesAcrossDirectories(OriginCode)
+}
+
+func (s *IdentifierSet) duplicatesAcrossDirectories(origin Origin) [][]*Identifier {
+	// byDir maps idString -> directory -> first Identifier from that directory
+	byDir := make(map[string]map[string]*Identifier)
+	for _, ids := range s.byID {
+		for _, id := range ids {
+			if id.Origin != origin {
+				continue
+			}
+			dir := filepath.Dir(id.Source)
+			if byDir[id.ID] == nil {
+				byDir[id.ID] = make(map[string]*Identifier)
+			}
+			if _, exists := byDir[id.ID][dir]; !exists {
+				byDir[id.ID][dir] = id
+			}
+		}
+	}
+
+	var groups [][]*Identifier
+	for _, dirMap := range byDir {
+		if len(dirMap) <= 1 {
+			continue
+		}
+		group := make([]*Identifier, 0, len(dirMap))
+		for _, id := range dirMap {
+			group = append(group, id)
+		}
+		sort.Slice(group, func(i, j int) bool { return group[i].Source < group[j].Source })
+		groups = append(groups, group)
+	}
+	return groups
 }
 
 // Merge combines another identifier set into this one.

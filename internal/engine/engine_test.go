@@ -1018,3 +1018,110 @@ func main() {}
 		}
 	}
 }
+
+func TestEngine_DuplicateIDs_DocSide(t *testing.T) {
+	cfg := &config.Config{Version: "1.0"}
+	ids := model.NewIdentifierSet()
+
+	// Same ID in two different doc directories → conflict
+	a := model.NewIdentifier("SPEC-BE-001", model.TypeSpec, "Spec A", "docs/backend/spec.md", 1)
+	a.SetOrigin(model.OriginDoc)
+	b := model.NewIdentifier("SPEC-BE-001", model.TypeSpec, "Spec B", "docs/billing/spec.md", 1)
+	b.SetOrigin(model.OriginDoc)
+	ids.Add(a)
+	ids.Add(b)
+
+	eng := New(cfg)
+	result, err := eng.Run(context.Background(), ids)
+	if err != nil {
+		t.Fatalf("Run failed: %v", err)
+	}
+
+	found := false
+	for _, e := range result.Errors {
+		if e.Rule == "duplicate-id" {
+			found = true
+			break
+		}
+	}
+	if !found {
+		t.Error("expected duplicate-id error for same ID in different doc directories")
+	}
+}
+
+func TestEngine_DuplicateIDs_SameDir_NoError(t *testing.T) {
+	cfg := &config.Config{Version: "1.0"}
+	ids := model.NewIdentifierSet()
+
+	// Same ID in two files of the same doc directory → not a conflict
+	a := model.NewIdentifier("SPEC-BE-001", model.TypeSpec, "Spec A", "docs/backend/spec.md", 1)
+	a.SetOrigin(model.OriginDoc)
+	b := model.NewIdentifier("SPEC-BE-001", model.TypeSpec, "Spec B", "docs/backend/testing.md", 1)
+	b.SetOrigin(model.OriginDoc)
+	ids.Add(a)
+	ids.Add(b)
+
+	eng := New(cfg)
+	result, err := eng.Run(context.Background(), ids)
+	if err != nil {
+		t.Fatalf("Run failed: %v", err)
+	}
+
+	for _, e := range result.Errors {
+		if e.Rule == "duplicate-id" {
+			t.Errorf("unexpected duplicate-id error for same directory: %s", e.Message)
+		}
+	}
+}
+
+func TestEngine_DuplicateIDs_CodeSide(t *testing.T) {
+	cfg := &config.Config{Version: "1.0"}
+	ids := model.NewIdentifierSet()
+
+	// Same ID @implement in two different code packages → conflict
+	a := model.NewIdentifier("SPEC-BE-001", model.TypeSpec, "", "internal/backend/service.go", 10)
+	a.SetOrigin(model.OriginCode)
+	b := model.NewIdentifier("SPEC-BE-001", model.TypeSpec, "", "internal/billing/service.go", 20)
+	b.SetOrigin(model.OriginCode)
+	ids.Add(a)
+	ids.Add(b)
+
+	eng := New(cfg)
+	result, err := eng.Run(context.Background(), ids)
+	if err != nil {
+		t.Fatalf("Run failed: %v", err)
+	}
+
+	found := false
+	for _, e := range result.Errors {
+		if e.Rule == "duplicate-id" {
+			found = true
+			break
+		}
+	}
+	if !found {
+		t.Error("expected duplicate-id error for same ID in different code packages")
+	}
+}
+
+func TestEngine_DuplicateIDs_RenameSuggestion(t *testing.T) {
+	cfg := &config.Config{Version: "1.0"}
+	ids := model.NewIdentifierSet()
+
+	a := model.NewIdentifier("SPEC-BE-001", model.TypeSpec, "Spec A", "docs/backend/spec.md", 1)
+	a.SetOrigin(model.OriginDoc)
+	b := model.NewIdentifier("SPEC-BE-001", model.TypeSpec, "Spec B", "docs/billing/spec.md", 1)
+	b.SetOrigin(model.OriginDoc)
+	ids.Add(a)
+	ids.Add(b)
+
+	eng := New(cfg)
+	result, _ := eng.Run(context.Background(), ids)
+
+	for _, e := range result.Errors {
+		if e.Rule == "duplicate-id" && strings.Contains(e.Message, "consider renaming") {
+			return
+		}
+	}
+	t.Error("expected rename suggestion in duplicate-id error message")
+}

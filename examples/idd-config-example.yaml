@@ -38,6 +38,9 @@ code:
     - "@test"
     - "@test-contract"
 
+  # Paths to ignore during scanning (glob patterns)
+  ignore_paths: []
+
 # Validation rules
 validation:
   # Allow orphan identifiers (not linked from anywhere)
@@ -48,6 +51,12 @@ validation:
 
   # Require all specs to have at least one test link
   require_spec_test_coverage: true
+
+  # Require all contracts to have at least one @test-contract annotation
+  require_contract_test_coverage: true
+
+  # Require design.md files to contain required sections
+  require_design_sections: true
 
   # Check doc describe field matches code function comment (default: true)
   require_doc_code_correspondence: true

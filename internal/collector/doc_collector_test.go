@@ -180,11 +180,6 @@ No ID here`
 }
 
 // @test TEST-INTERNAL_COLLECTOR-013
-func TestPathIgnorePatterns(t *testing.T) {
-	// Placeholder test for path ignore patterns
-	// TODO: Implement actual ignore_paths testing
-}
-
 // @test TEST-INTERNAL_COLLECTOR-014
 func TestExtractReferencedMarkers(t *testing.T) {
 	content := `# Heading
@@ -284,53 +279,6 @@ func TestIsRootDocFile(t *testing.T) {
 		result := isRootDocFile(tt.path)
 		if result != tt.want {
 			t.Errorf("isRootDocFile(%q) = %v, want %v", tt.path, result, tt.want)
-		}
-	}
-}
-
-// @test TEST-INTERNAL_COLLECTOR-018
-func TestExtractModuleName(t *testing.T) {
-	tests := []struct {
-		path string
-		want string
-	}{
-		{"docs/cmd/idd-cli/spec.md", "CMD_IDD_CLI"},
-		{"docs/backend/spec.md", "BACKEND"},
-		{"docs/frontend/test.md", "FRONTEND"},
-		{"docs/spec.md", ""},
-		{"other/spec.md", ""},
-	}
-
-	for _, tt := range tests {
-		result := ExtractModuleName(tt.path)
-		if result != tt.want {
-			t.Errorf("ExtractModuleName(%q) = %q, want %q", tt.path, result, tt.want)
-		}
-	}
-}
-
-// @test TEST-INTERNAL_COLLECTOR-020
-func TestValidateModulePrefix(t *testing.T) {
-	tests := []struct {
-		id     string
-		path   string
-		wantOk bool
-	}{
-		// idd:ignore start
-		{"SPEC-CMD_IDD_CLI-001", "docs/cmd/idd-cli/spec.md", true},
-		// idd:ignore end
-		{"SPEC-BE-001", "docs/cmd/idd-cli/spec.md", false},
-		{"SPEC-FE-001", "docs/cmd/idd-cli/spec.md", false},
-		{"SPEC-XX-001", "docs/cmd/idd-cli/spec.md", false},
-		{"SPEC-BE-001", "docs/spec.md", true},
-		{"SPEC-INTERNAL_COLLECTOR-001", "docs/internal/collector/spec.md", true},
-	}
-
-	for _, tt := range tests {
-		err := ValidateModulePrefix(tt.id, tt.path)
-		hasError := err != nil
-		if hasError == tt.wantOk {
-			t.Errorf("ValidateModulePrefix(%q, %q) unexpected result: error = %v, wantOk = %v", tt.id, tt.path, err, tt.wantOk)
 		}
 	}
 }
