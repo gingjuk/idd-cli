@@ -1231,6 +1231,9 @@ func (e *Engine) validatePkgDocFiles() {
 
 	dirFiles := make(map[string]map[string]bool)
 	e.walkDocFiles(func(path string, lines []string) {
+		if e.isIgnoredDocPath(path) {
+			return
+		}
 		dir := filepath.Clean(filepath.Dir(path))
 		if docsRoots[dir] {
 			return // skip files sitting directly in the docs root
