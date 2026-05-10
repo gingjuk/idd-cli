@@ -179,8 +179,7 @@ No ID here`
 	}
 }
 
-// @test TEST-INTERNAL_COLLECTOR-013
-// @test TEST-INTERNAL_COLLECTOR-014
+// @test TEST-INTERNAL_COLLECTOR-013, TEST-INTERNAL_COLLECTOR-014
 func TestExtractReferencedMarkers(t *testing.T) {
 	content := `# Heading
 See SPEC-BE-001 and TEST-BE-001 for details.

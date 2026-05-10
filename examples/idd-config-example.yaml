@@ -73,6 +73,9 @@ validation:
   # Require @implement/@test/@test-contract annotations have identifiers
   require_annotation_identifier: true
 
+  # Require each pkg docs directory to contain spec.md, contract.md, testing.md, design.md
+  require_pkg_doc_files: true
+
   # Require annotation types not split across consecutive lines
   # e.g., ALLOWED: // @test TEST-AUTH-001, TEST-AUTH-002
   # e.g., NOT ALLOWED: // @test TEST-AUTH-001 \n // @test TEST-AUTH-002

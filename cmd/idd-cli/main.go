@@ -189,7 +189,7 @@ func run(cmd *cobra.Command, args []string) error {
 	}
 
 	codeColl := collector.NewCodeCollector(cfg)
-	codeSet, err := codeColl.Collect(ctx, targetPath)
+	codeSet, err := codeColl.Collect(ctx, ".")
 	if err != nil {
 		return fmt.Errorf("failed to collect code identifiers: %w", err)
 	}

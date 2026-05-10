@@ -61,6 +61,7 @@ type ValidationConfig struct {
 	RequireTestAnnotation        bool             `yaml:"require_test_annotation"`
 	RequireAnnotationIdentifier  bool             `yaml:"require_annotation_identifier"`
 	RequireAnnotationOnSameLine  bool             `yaml:"require_annotation_on_same_line"`
+	RequirePkgDocFiles           bool             `yaml:"require_pkg_doc_files"`
 	ConsistencyCheck             ConsistencyCheck `yaml:"consistency_check"`
 }
 
@@ -136,6 +137,7 @@ func Default() *Config {
 			RequireTestAnnotation:        true,
 			RequireAnnotationIdentifier:  true,
 			RequireAnnotationOnSameLine:  true,
+			RequirePkgDocFiles:           true,
 			ConsistencyCheck: ConsistencyCheck{
 				Enabled:   true,
 				Threshold: 0.3,

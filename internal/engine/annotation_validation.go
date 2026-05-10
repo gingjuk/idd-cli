@@ -48,7 +48,7 @@ func (e *Engine) validateAnnotationIdentifiers() {
 			if hasIdentifier && !hasProperSpacing {
 				e.result.AddError(
 					"annotation-format",
-					"annotation should have a space before identifier (e.g. `// @implement SPEC-FOO-001`)",
+					"annotation should have a space before identifier (e.g. `// @implement SPEC-FOO-001`)", // idd:ignore
 					fmt.Sprintf("%s:%d", path, i+1),
 					"",
 					"",
@@ -58,7 +58,7 @@ func (e *Engine) validateAnnotationIdentifiers() {
 			if hasImplement && !specIdRegex.MatchString(line) {
 				e.result.AddError(
 					"annotation-missing-identifier",
-					"@implement missing identifier (e.g. `// @implement SPEC-FOO-001`)",
+					"@implement missing identifier (e.g. `// @implement SPEC-FOO-001`)", // idd:ignore
 					fmt.Sprintf("%s:%d", path, i+1),
 					"",
 					"",
@@ -67,7 +67,7 @@ func (e *Engine) validateAnnotationIdentifiers() {
 			if hasTestContract && !specIdRegex.MatchString(line) {
 				e.result.AddError(
 					"annotation-missing-identifier",
-					"@test-contract missing identifier (e.g. `// @test-contract TEST-FOO-001`)",
+					"@test-contract missing identifier (e.g. `// @test-contract TEST-FOO-001`)", // idd:ignore
 					fmt.Sprintf("%s:%d", path, i+1),
 					"",
 					"",

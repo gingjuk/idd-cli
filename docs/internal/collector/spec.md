@@ -26,10 +26,7 @@ markers:
     name: Function Context Extraction
   - id: SPEC-INTERNAL_COLLECTOR-013
     name: Code Origin Tracking
-  - id: SPEC-INTERNAL_COLLECTOR-014
-    name: Multi-Annotation Handling
-  - id: SPEC-INTERNAL_COLLECTOR-015
-    name: Path Ignore Patterns
+
   - id: SPEC-INTERNAL_COLLECTOR-017
     name: DocCollector.Collect
   - id: SPEC-INTERNAL_COLLECTOR-024
@@ -294,7 +291,7 @@ The Code Collector (`CodeCollector`) must collect IDD annotations from source co
 - [x] Ignores paths configured in `ignore_paths`
 - [x] Handles multiple annotations on same line
 
-**Tests:** `TEST-INTERNAL_COLLECTOR-001`, `TEST-INTERNAL_COLLECTOR-002`, `TEST-INTERNAL_COLLECTOR-003`, `TEST-INTERNAL_COLLECTOR-004`, `TEST-INTERNAL_COLLECTOR-005`, `TEST-INTERNAL_COLLECTOR-006`, `TEST-INTERNAL_COLLECTOR-007`, `TEST-INTERNAL_COLLECTOR-008`, `TEST-INTERNAL_COLLECTOR-009`, `TEST-INTERNAL_COLLECTOR-010`, `TEST-INTERNAL_COLLECTOR-011`, `TEST-INTERNAL_COLLECTOR-012`, `TEST-INTERNAL_COLLECTOR-013`, `TEST-INTERNAL_COLLECTOR-014`, `TEST-INTERNAL_COLLECTOR-015`, `TEST-INTERNAL_COLLECTOR-016`, `TEST-INTERNAL_COLLECTOR-017`, `TEST-INTERNAL_COLLECTOR-018`, `TEST-INTERNAL_COLLECTOR-020`, `TEST-INTERNAL_COLLECTOR-021`, `TEST-INTERNAL_COLLECTOR-022`, `TEST-INTERNAL_COLLECTOR-023`, `TEST-INTERNAL_COLLECTOR-024`, `TEST-INTERNAL_COLLECTOR-025`, `TEST-INTERNAL_COLLECTOR-026`, `TEST-INTERNAL_COLLECTOR-027`
+**Tests:** `TEST-INTERNAL_COLLECTOR-001`, `TEST-INTERNAL_COLLECTOR-002`, `TEST-INTERNAL_COLLECTOR-003`, `TEST-INTERNAL_COLLECTOR-004`, `TEST-INTERNAL_COLLECTOR-005`, `TEST-INTERNAL_COLLECTOR-006`, `TEST-INTERNAL_COLLECTOR-007`, `TEST-INTERNAL_COLLECTOR-008`, `TEST-INTERNAL_COLLECTOR-009`, `TEST-INTERNAL_COLLECTOR-010`, `TEST-INTERNAL_COLLECTOR-011`, `TEST-INTERNAL_COLLECTOR-012`, `TEST-INTERNAL_COLLECTOR-013`, `TEST-INTERNAL_COLLECTOR-014`, `TEST-INTERNAL_COLLECTOR-015`, `TEST-INTERNAL_COLLECTOR-016`, `TEST-INTERNAL_COLLECTOR-017`, `TEST-INTERNAL_COLLECTOR-021`, `TEST-INTERNAL_COLLECTOR-022`, `TEST-INTERNAL_COLLECTOR-023`, `TEST-INTERNAL_COLLECTOR-024`, `TEST-INTERNAL_COLLECTOR-025`, `TEST-INTERNAL_COLLECTOR-026`, `TEST-INTERNAL_COLLECTOR-027`
 
 ---
 
@@ -366,7 +363,7 @@ Extract document titles from markdown headings containing identifiers.
 
 **Implementation:** `internal/collector/doc_collector.go`
 
-**Tests:** `TEST-INTERNAL_COLLECTOR-009`, `TEST-INTERNAL_COLLECTOR-010`, `TEST-INTERNAL_COLLECTOR-020`
+**Tests:** `TEST-INTERNAL_COLLECTOR-009`, `TEST-INTERNAL_COLLECTOR-010`
 
 ---
 
@@ -474,7 +471,7 @@ Handle multiple annotations on the same line or multiple references in single an
 
 **Implementation:** `internal/collector/code_collector.go`
 
-**Tests:** `TEST-INTERNAL_COLLECTOR-018`, `TEST-INTERNAL_COLLECTOR-024`
+**Tests:** `TEST-INTERNAL_COLLECTOR-024`
 
 ---
 
@@ -495,37 +492,3 @@ Respect ignore_paths configuration when collecting from directories.
 **Tests:** `TEST-INTERNAL_COLLECTOR-013`
 
 ---
-
-## SPEC-INTERNAL_COLLECTOR-014: Code File Discovery
-
-**Contract:** `DiscoverFiles`
-
-**Design:** `CollectorModule`
-
-**Status:** Done
-
-**Requirement:**
-
-Recursively discover source files with supported extensions (.go, .ts, .tsx, .js).
-
-**Implementation:** `internal/collector/code_collector.go`
-
-**Tests:** `TEST-INTERNAL_COLLECTOR-021`
-
----
-
-## SPEC-INTERNAL_COLLECTOR-015: Language Support
-
-**Contract:** `GetLanguagePatterns`
-
-**Design:** `CollectorModule`
-
-**Status:** Done
-
-**Requirement:**
-
-Support multiple programming languages with language-specific annotation patterns.
-
-**Implementation:** `internal/collector/code_collector.go`
-
-**Tests:** `TEST-INTERNAL_COLLECTOR-021`

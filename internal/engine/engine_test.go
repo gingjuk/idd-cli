@@ -1019,6 +1019,122 @@ func main() {}
 	}
 }
 
+func TestEngine_PkgDocFiles_MissingFiles(t *testing.T) {
+	tmpDir := t.TempDir()
+	docsDir := filepath.Join(tmpDir, "docs", "backend")
+	if err := os.MkdirAll(docsDir, 0755); err != nil {
+		t.Fatalf("mkdir: %v", err)
+	}
+	// Only spec.md present; contract.md, testing.md, design.md missing.
+	if err := os.WriteFile(filepath.Join(docsDir, "spec.md"), []byte("# SPEC-BE-001\n"), 0644); err != nil {
+		t.Fatalf("write: %v", err)
+	}
+
+	cfg := &config.Config{
+		Version: "1.0",
+		Docs:    config.DocsConfig{Patterns: []string{filepath.Join(tmpDir, "docs/**/*.md")}},
+		Validation: config.ValidationConfig{
+			RequirePkgDocFiles: true,
+		},
+	}
+
+	eng := New(cfg)
+	result, err := eng.Run(context.Background(), model.NewIdentifierSet())
+	if err != nil {
+		t.Fatalf("Run failed: %v", err)
+	}
+
+	missing := map[string]bool{}
+	for _, e := range result.Errors {
+		if e.Rule == "pkg-doc-files" {
+			missing[e.Message] = true
+		}
+	}
+	for _, f := range []string{"contract.md", "testing.md", "design.md"} {
+		found := false
+		for msg := range missing {
+			if strings.Contains(msg, f) {
+				found = true
+				break
+			}
+		}
+		if !found {
+			t.Errorf("expected pkg-doc-files error for missing %s", f)
+		}
+	}
+	// spec.md is present — should not appear in errors.
+	for msg := range missing {
+		if strings.Contains(msg, "spec.md") {
+			t.Errorf("unexpected pkg-doc-files error for spec.md: %s", msg)
+		}
+	}
+}
+
+func TestEngine_PkgDocFiles_AllPresent(t *testing.T) {
+	tmpDir := t.TempDir()
+	docsDir := filepath.Join(tmpDir, "docs", "backend")
+	if err := os.MkdirAll(docsDir, 0755); err != nil {
+		t.Fatalf("mkdir: %v", err)
+	}
+	for _, f := range []string{"spec.md", "contract.md", "testing.md", "design.md"} {
+		if err := os.WriteFile(filepath.Join(docsDir, f), []byte("# content\n"), 0644); err != nil {
+			t.Fatalf("write: %v", err)
+		}
+	}
+
+	cfg := &config.Config{
+		Version: "1.0",
+		Docs:    config.DocsConfig{Patterns: []string{filepath.Join(tmpDir, "docs/**/*.md")}},
+		Validation: config.ValidationConfig{
+			RequirePkgDocFiles: true,
+		},
+	}
+
+	eng := New(cfg)
+	result, err := eng.Run(context.Background(), model.NewIdentifierSet())
+	if err != nil {
+		t.Fatalf("Run failed: %v", err)
+	}
+
+	for _, e := range result.Errors {
+		if e.Rule == "pkg-doc-files" {
+			t.Errorf("unexpected pkg-doc-files error: %s", e.Message)
+		}
+	}
+}
+
+func TestEngine_PkgDocFiles_RootLevelSkipped(t *testing.T) {
+	tmpDir := t.TempDir()
+	docsDir := filepath.Join(tmpDir, "docs")
+	if err := os.MkdirAll(docsDir, 0755); err != nil {
+		t.Fatalf("mkdir: %v", err)
+	}
+	// Root-level docs/spec.md — should not trigger pkg-doc-files check.
+	if err := os.WriteFile(filepath.Join(docsDir, "spec.md"), []byte("# SPEC-001\n"), 0644); err != nil {
+		t.Fatalf("write: %v", err)
+	}
+
+	cfg := &config.Config{
+		Version: "1.0",
+		Docs:    config.DocsConfig{Patterns: []string{filepath.Join(tmpDir, "docs/**/*.md")}},
+		Validation: config.ValidationConfig{
+			RequirePkgDocFiles: true,
+		},
+	}
+
+	eng := New(cfg)
+	result, err := eng.Run(context.Background(), model.NewIdentifierSet())
+	if err != nil {
+		t.Fatalf("Run failed: %v", err)
+	}
+
+	for _, e := range result.Errors {
+		if e.Rule == "pkg-doc-files" {
+			t.Errorf("root-level docs should be skipped, got: %s", e.Message)
+		}
+	}
+}
+
 func TestEngine_DuplicateIDs_DocSide(t *testing.T) {
 	cfg := &config.Config{Version: "1.0"}
 	ids := model.NewIdentifierSet()

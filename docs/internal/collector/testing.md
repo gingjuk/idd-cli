@@ -36,10 +36,7 @@ markers:
     name: Collector Integration Tests
   - id: TEST-INTERNAL_COLLECTOR-017
     name: Edge Case Tests
-  - id: TEST-INTERNAL_COLLECTOR-018
-    name: Error Handling Tests
-  - id: TEST-INTERNAL_COLLECTOR-020
-    name: Marker Extraction Tests
+
   - id: TEST-INTERNAL_COLLECTOR-021
     name: IDD Reference Tests
   - id: TEST-INTERNAL_COLLECTOR-022
@@ -328,18 +325,6 @@ Test setting origin to OriginCode for code annotations.
 
 ---
 
-## TEST-INTERNAL_COLLECTOR-018: Multiple Annotations
-
-**Status:** Done
-
-**Purpose:**
-
-Test handling multiple annotations on same line.
-
-**Spec Coverage:** `SPEC-INTERNAL_COLLECTOR-002`, `SPEC-INTERNAL_COLLECTOR-012`
-
----
-
 ## TEST-INTERNAL_COLLECTOR-013: Path Ignore Tests
 
 **Status:** Done
@@ -352,18 +337,6 @@ Test respecting ignore_paths configuration.
 
 ---
 
-## TEST-INTERNAL_COLLECTOR-020: IDD Reference Extraction
-
-**Status:** Done
-
-**Purpose:**
-
-Test IDD reference regex from markdown content.
-
-**Spec Coverage:** `SPEC-INTERNAL_COLLECTOR-002`, `SPEC-INTERNAL_COLLECTOR-006`
-
----
-
 ## TEST-INTERNAL_COLLECTOR-021: Collector Integration
 
 **Status:** Done
@@ -372,7 +345,7 @@ Test IDD reference regex from markdown content.
 
 Test end-to-end collection from both docs and code.
 
-**Spec Coverage:** `SPEC-INTERNAL_COLLECTOR-002`, `SPEC-INTERNAL_COLLECTOR-014`, `SPEC-INTERNAL_COLLECTOR-015`
+**Spec Coverage:** `SPEC-INTERNAL_COLLECTOR-002`
 
 ---
 

@@ -22,6 +22,7 @@ code:
     - "@implement"
     - "@test"
     - "@test-contract"
+  ignore_paths: []
 
 validation:
   allow_orphans: false
@@ -36,6 +37,10 @@ validation:
   require_annotation_on_same_line: true
   require_test_annotation: true
   require_design_sections: true
+  require_pkg_doc_files: true
+  consistency_check:
+    enabled: true
+    threshold: 0.3
 
 output:
   file: "idd-report.json"
