@@ -192,6 +192,10 @@ func (e *Engine) validate() {
 		e.validateRelatedFiles()
 	}
 
+	if e.cfg.Validation.RequirePkgDocFiles {
+		e.validatePkgDocFiles()
+	}
+
 	if e.cfg.Validation.RequireTestAnnotation {
 		e.validateTestAnnotations()
 	}
@@ -1209,6 +1213,45 @@ func (e *Engine) validateRelatedFiles() {
 			)
 		}
 	})
+}
+
+// validatePkgDocFiles checks that every pkg docs directory contains all four
+// required documentation files: spec.md, contract.md, testing.md, design.md.
+func (e *Engine) validatePkgDocFiles() {
+	required := []string{"spec.md", "contract.md", "testing.md", "design.md"}
+
+	// Derive the docs root directories from configured patterns so the check
+	// works with both relative ("docs/**/*.md") and absolute paths (tests).
+	docsRoots := make(map[string]bool)
+	for _, pat := range e.cfg.Docs.Patterns {
+		slash := filepath.ToSlash(pat)
+		base := strings.SplitN(slash, "**", 2)[0]
+		docsRoots[filepath.Clean(base)] = true
+	}
+
+	dirFiles := make(map[string]map[string]bool)
+	e.walkDocFiles(func(path string, lines []string) {
+		dir := filepath.Clean(filepath.Dir(path))
+		if docsRoots[dir] {
+			return // skip files sitting directly in the docs root
+		}
+		if dirFiles[dir] == nil {
+			dirFiles[dir] = make(map[string]bool)
+		}
+		dirFiles[dir][filepath.Base(path)] = true
+	})
+
+	for dir, files := range dirFiles {
+		for _, req := range required {
+			if !files[req] {
+				e.result.AddError(
+					"pkg-doc-files",
+					fmt.Sprintf("pkg doc directory '%s' missing required file: %s", dir, req),
+					dir, "", "",
+				)
+			}
+		}
+	}
 }
 
 // walkCodeFiles iterates over all code files matching the configured patterns
