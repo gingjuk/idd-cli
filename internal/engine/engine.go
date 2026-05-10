@@ -50,6 +50,7 @@ func New(cfg *config.Config) *Engine {
 // based on configuration, and returns the accumulated validation result.
 // @implement SPEC-INTERNAL_ENGINE-004
 func (e *Engine) Run(ctx context.Context, ids *model.IdentifierSet) (*model.ValidationResult, error) {
+	e.validateDuplicateIDs(ids)
 	e.buildGraph(ids)
 	e.result.Stats = e.graph.Stats()
 	e.validate()
@@ -87,6 +88,13 @@ func (e *Engine) buildGraph(ids *model.IdentifierSet) {
 			if _, exists := node.Metadata["describe_"+string(id.Origin)]; !exists {
 				node.Metadata["describe_"+string(id.Origin)] = id.Describe
 			}
+		}
+		srcKey := "source_" + string(id.Origin)
+		if _, exists := node.Metadata[srcKey]; !exists && id.Source != "" {
+			node.Metadata[srcKey] = id.Source
+		}
+		if _, exists := node.Metadata["source_file"]; !exists && id.Source != "" {
+			node.Metadata["source_file"] = id.Source
 		}
 	}
 
@@ -137,7 +145,13 @@ func (e *Engine) inferLinkType(fromType model.IdentifierType, toRef string) mode
 func (e *Engine) validate() {
 	if e.cfg.Validation.RequireSpecTestCoverage {
 		for _, err := range e.graph.ValidateCompleteness() {
-			e.result.AddError(err.Rule, err.Message, err.Source, err.Link, err.Code)
+			source := err.Source
+			if source == "" && err.Link != "" {
+				if node, ok := e.graph.GetNode(err.Link); ok {
+					source = nodeSource(node)
+				}
+			}
+			e.result.AddError(err.Rule, err.Message, source, err.Link, err.Code)
 		}
 	}
 
@@ -210,7 +224,7 @@ func (e *Engine) validateNoOrphans() {
 				e.result.AddWarning(
 					"orphan-detection",
 					fmt.Sprintf("%s is not referenced by any identifier", node.ID),
-					node.ID,
+					nodeSource(node),
 					"",
 					"",
 				)
@@ -218,7 +232,7 @@ func (e *Engine) validateNoOrphans() {
 				e.result.AddError(
 					"orphan-detection",
 					fmt.Sprintf("%s has no connections", node.ID),
-					node.ID,
+					nodeSource(node),
 					"",
 					"",
 				)
@@ -250,7 +264,7 @@ func (e *Engine) validateContractTestCoverage() {
 				e.result.AddError(
 					"contract-test-coverage",
 					fmt.Sprintf("%s has no @test-contract TEST annotation", node.ID),
-					node.ID,
+					nodeSource(node),
 					"",
 					"",
 				)
@@ -506,7 +520,7 @@ func (e *Engine) validateContractDesignMarkers() {
 			if strings.HasPrefix(trimmed, "markers:") {
 				e.result.AddError(
 					"frontmatter-markers",
-					fmt.Sprintf("%s should not have markers field in frontmatter (file: %s)", filepath.Base(path), path),
+					fmt.Sprintf("%s should not have a markers field in frontmatter", filepath.Base(path)),
 					path,
 					"",
 					"",
@@ -632,8 +646,8 @@ func (e *Engine) validateDocCodeCorrespondence() {
 		if hasDoc && !hasCode {
 			e.result.AddError(
 				"doc-code-correspondence",
-				fmt.Sprintf("%s is documented but has no code annotation", node.ID),
-				node.ID,
+				fmt.Sprintf("%s is documented but missing @implement annotation in code", node.ID),
+				nodeSourceByOrigin(node, model.OriginDoc),
 				"",
 				"",
 			)
@@ -642,8 +656,8 @@ func (e *Engine) validateDocCodeCorrespondence() {
 		if hasCode && !hasDoc {
 			e.result.AddError(
 				"doc-code-correspondence",
-				fmt.Sprintf("%s has code annotation but no documentation", node.ID),
-				node.ID,
+				fmt.Sprintf("%s has @implement annotation in code but no documentation", node.ID),
+				nodeSourceByOrigin(node, model.OriginCode),
 				"",
 				"",
 			)
@@ -675,12 +689,35 @@ func (e *Engine) validateConsistency() {
 			e.result.AddWarning(
 				"consistency-check",
 				fmt.Sprintf("%s has low similarity between doc and code (score: %.2f < threshold: %.2f)", node.ID, score, threshold),
-				node.ID,
+				nodeSource(node),
 				fmt.Sprintf("doc: %s | code: %s", truncate(docDescribe, 50), truncate(codeDescribe, 50)),
 				fmt.Sprintf("%.3f", score),
 			)
 		}
 	}
+}
+
+// nodeSource returns the source file path for a graph node from metadata,
+// falling back to the node ID when no source was recorded.
+func nodeSource(node *graph.Node) string {
+	if node.Metadata != nil {
+		if src, ok := node.Metadata["source_file"].(string); ok && src != "" {
+			return src
+		}
+	}
+	return node.ID
+}
+
+// nodeSourceByOrigin returns the source file for the specific origin (doc/code),
+// falling back to nodeSource when not available.
+func nodeSourceByOrigin(node *graph.Node, origin model.Origin) string {
+	if node.Metadata != nil {
+		key := "source_" + string(origin)
+		if src, ok := node.Metadata[key].(string); ok && src != "" {
+			return src
+		}
+	}
+	return nodeSource(node)
 }
 
 // truncate truncates a string to the specified maximum length, appending
@@ -857,6 +894,7 @@ func (e *Engine) validatePackageDocComment() {
 			return
 		}
 
+		dir := filepath.Dir(path)
 		isTestFile := strings.HasSuffix(path, "_test.go")
 		isContractTestFile := strings.HasSuffix(path, "_contract_test.go")
 
@@ -904,7 +942,7 @@ func (e *Engine) validatePackageDocComment() {
 		if packageDocLine == -1 {
 			e.result.AddError(
 				"package-doc-comment",
-				fmt.Sprintf("package %s missing package doc comment", packageName),
+				fmt.Sprintf(`package %s missing package doc comment; add "// Package %s ..." before package declaration`, packageName, packageName),
 				path, "", "",
 			)
 			return
@@ -912,7 +950,7 @@ func (e *Engine) validatePackageDocComment() {
 		if specLine == -1 {
 			e.result.AddError(
 				"package-doc-comment",
-				fmt.Sprintf("package %s missing Spec path", packageName),
+				fmt.Sprintf(`package %s missing Spec path; add "// Spec: docs/%s/spec.md" after package doc comment`, packageName, dir),
 				path, "", "",
 			)
 			return
@@ -922,7 +960,7 @@ func (e *Engine) validatePackageDocComment() {
 			if testOrContractLine == -1 {
 				e.result.AddError(
 					"package-doc-comment",
-					fmt.Sprintf("package %s missing Test path", packageName),
+					fmt.Sprintf(`package %s missing Test path; add "// Test: docs/%s/testing.md" after package doc comment`, packageName, dir),
 					path, "", "",
 				)
 				return
@@ -930,7 +968,7 @@ func (e *Engine) validatePackageDocComment() {
 			if isContractTestFile && contractLine == -1 {
 				e.result.AddError(
 					"package-doc-comment",
-					fmt.Sprintf("package %s missing Contract path", packageName),
+					fmt.Sprintf(`package %s missing Contract path; add "// Contract: docs/%s/contract.md" after package doc comment`, packageName, dir),
 					path, "", "",
 				)
 				return
@@ -939,7 +977,7 @@ func (e *Engine) validatePackageDocComment() {
 			if contractLine == -1 {
 				e.result.AddError(
 					"package-doc-comment",
-					fmt.Sprintf("package %s missing Contract path", packageName),
+					fmt.Sprintf(`package %s missing Contract path; add "// Contract: docs/%s/contract.md" after package doc comment`, packageName, dir),
 					path, "", "",
 				)
 				return
@@ -956,7 +994,7 @@ func (e *Engine) validatePackageDocComment() {
 		if !blankLineBetweenPackageAndSpec {
 			e.result.AddError(
 				"package-doc-comment",
-				fmt.Sprintf("package %s missing blank line between Package describe and Spec", packageName),
+				fmt.Sprintf("package %s missing blank line between package doc comment and Spec path", packageName),
 				path, "", "",
 			)
 		}

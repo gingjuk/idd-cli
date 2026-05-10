@@ -130,15 +130,6 @@ func (c *DocCollector) collectFile(path string, set *model.IdentifierSet) []*mod
 				})
 			}
 
-			if err := ValidateModulePrefix(ref, path); err != nil {
-				errors = append(errors, &model.ValidationError{
-					Rule:    "module-prefix-mismatch",
-					Message: err.Error(),
-					Source:  path,
-					Link:    ref,
-				})
-			}
-
 			if frontmatterIDs[ref] {
 				continue
 			}
@@ -161,14 +152,6 @@ func (c *DocCollector) collectFile(path string, set *model.IdentifierSet) []*mod
 			if err := ValidateDocumentStructure(path, string(idType)); err != nil {
 				errors = append(errors, &model.ValidationError{
 					Rule:    "document-structure",
-					Message: err.Error(),
-					Source:  path,
-					Link:    marker.ID,
-				})
-			}
-			if err := ValidateModulePrefix(marker.ID, path); err != nil {
-				errors = append(errors, &model.ValidationError{
-					Rule:    "module-prefix-mismatch",
 					Message: err.Error(),
 					Source:  path,
 					Link:    marker.ID,
