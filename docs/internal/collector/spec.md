@@ -492,4 +492,3 @@ Respect ignore_paths configuration when collecting from directories.
 **Tests:** `TEST-INTERNAL_COLLECTOR-013`
 
 ---
-

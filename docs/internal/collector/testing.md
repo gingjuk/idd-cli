@@ -325,7 +325,6 @@ Test setting origin to OriginCode for code annotations.
 
 ---
 
-
 ## TEST-INTERNAL_COLLECTOR-013: Path Ignore Tests
 
 **Status:** Done
@@ -337,7 +336,6 @@ Test respecting ignore_paths configuration.
 **Spec Coverage:** `SPEC-INTERNAL_COLLECTOR-002`, `SPEC-INTERNAL_COLLECTOR-013`
 
 ---
-
 
 ## TEST-INTERNAL_COLLECTOR-021: Collector Integration
 
