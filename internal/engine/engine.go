@@ -733,13 +733,22 @@ func truncate(s string, maxLen int) string {
 	return s[:maxLen] + "..."
 }
 
-// validatePublicFuncAnnotations checks that all public functions and types
-// have @implement annotations directly above their declarations. This ensures
-// every public API is properly tracked in the IDD system.
+// validatePublicFuncAnnotations enforces the relaxed @implement placement rules:
+//  1. Public functions/types MUST carry an @implement annotation.
+//  2. Private functions/types MAY carry an @implement annotation; when they do,
+//     it must still be placed directly above the declaration.
+//
+// Doc/code correspondence for any annotated identifier is enforced separately
+// in validateDocCodeCorrespondence — every @implement (public or private) must
+// have a matching doc entry.
 func (e *Engine) validatePublicFuncAnnotations() {
 	publicFuncRegex := regexp.MustCompile(`^func\s+([A-Z][a-zA-Z0-9]*)\s*\(`)
-	publicMethodRegex := regexp.MustCompile(`^func\s+\([^)]+\)\s*([A-Z][a-zA-Z0-9]*)\s*\(`)
 	publicTypeRegex := regexp.MustCompile(`^type\s+([A-Z][a-zA-Z0-9]*)\s*`)
+	// "any" regexes match both exported and unexported declarations. Used for
+	// placement validation, which accepts @implement above private targets too.
+	anyFuncRegex := regexp.MustCompile(`^func\s+([a-zA-Z][a-zA-Z0-9]*)\s*\(`)
+	anyMethodRegex := regexp.MustCompile(`^func\s+\([^)]+\)\s*([a-zA-Z][a-zA-Z0-9]*)\s*\(`)
+	anyTypeRegex := regexp.MustCompile(`^type\s+([a-zA-Z][a-zA-Z0-9]*)\s*`)
 	// Only match lines where @implement appears at start of comment (after // and optional space)
 	implementAtStartRegex := regexp.MustCompile(`^\s*//\s*@implement\b`)
 
@@ -747,11 +756,14 @@ func (e *Engine) validatePublicFuncAnnotations() {
 		annotated := make(map[string]bool)
 		annotatedLine := make(map[string]int)
 
-		// First pass: find all @implement annotations and their target functions
+		// First pass: find all @implement annotations and their target
+		// functions/types — both public and private. Private targets won't be
+		// required to carry @implement, but recognising them here keeps the
+		// placement check from flagging valid private placements as errors.
 		type anno struct {
-			line      int
-			funcName  string
-			isMethod  bool
+			line     int
+			funcName string
+			isMethod bool
 		}
 		var annotations []anno
 
@@ -773,21 +785,21 @@ func (e *Engine) validatePublicFuncAnnotations() {
 			if !implementAtStartRegex.MatchString(line) {
 				continue
 			}
-			// Find the next function/type after this @implement line
+			// Find the next function/type after this @implement line (public or private).
 			for j := i + 1; j < len(lines); j++ {
 				nextLine := strings.TrimSpace(lines[j])
 				if strings.HasPrefix(nextLine, "//") || nextLine == "" {
 					continue // skip comment lines and blank lines
 				}
-				if match := publicFuncRegex.FindStringSubmatch(nextLine); len(match) > 1 {
+				if match := anyFuncRegex.FindStringSubmatch(nextLine); len(match) > 1 {
 					annotations = append(annotations, anno{i, match[1], false})
 					break
 				}
-				if match := publicMethodRegex.FindStringSubmatch(nextLine); len(match) > 1 {
+				if match := anyMethodRegex.FindStringSubmatch(nextLine); len(match) > 1 {
 					annotations = append(annotations, anno{i, match[1], true})
 					break
 				}
-				if match := publicTypeRegex.FindStringSubmatch(nextLine); len(match) > 1 {
+				if match := anyTypeRegex.FindStringSubmatch(nextLine); len(match) > 1 {
 					annotations = append(annotations, anno{i, match[1], false})
 					break
 				}
@@ -796,8 +808,9 @@ func (e *Engine) validatePublicFuncAnnotations() {
 			}
 		}
 
-		// Check for duplicate annotations on the same function
-		// Use "method:" prefix for methods to distinguish from standalone functions with same name
+		// Check for duplicate annotations on the same function/type (public or
+		// private). Use "method:" prefix for methods to distinguish from
+		// standalone functions with the same name.
 		for _, a := range annotations {
 			key := a.funcName
 			if a.isMethod {
@@ -806,7 +819,7 @@ func (e *Engine) validatePublicFuncAnnotations() {
 			if annotated[key] {
 				e.result.AddError(
 					"duplicate-annotation",
-					fmt.Sprintf("public function/type %s has multiple @implement annotations; use comma-separated identifiers on a single line", a.funcName),
+					fmt.Sprintf("function/type %s has multiple @implement annotations; use comma-separated identifiers on a single line", a.funcName),
 					fmt.Sprintf("%s:%d", path, a.line+1),
 					"",
 					"",
@@ -816,14 +829,30 @@ func (e *Engine) validatePublicFuncAnnotations() {
 			annotatedLine[a.funcName] = a.line + 1
 		}
 
-		// Second pass: check @implement not directly above function/type
+		// Second pass: any @implement that isn't placed directly above a
+		// function/type (public or private) is a placement error.
+		ignoreScope = false
 		for i, line := range lines {
+			// Honor // idd:ignore start/end scope markers here too — otherwise
+			// fixtures in test source files would still trip placement checks
+			// even when the annotation lookup is suppressed above.
+			if strings.Contains(line, "// idd:ignore start") || strings.Contains(line, "//idd:ignore-start") {
+				ignoreScope = true
+				continue
+			}
+			if strings.Contains(line, "// idd:ignore end") || strings.Contains(line, "//idd:ignore-end") {
+				ignoreScope = false
+				continue
+			}
+			if ignoreScope {
+				continue
+			}
 			if !implementAtStartRegex.MatchString(line) {
 				continue
 			}
 			if i+1 < len(lines) {
 				nextLine := strings.TrimSpace(lines[i+1])
-				if publicFuncRegex.MatchString(nextLine) || publicMethodRegex.MatchString(nextLine) || publicTypeRegex.MatchString(nextLine) {
+				if anyFuncRegex.MatchString(nextLine) || anyMethodRegex.MatchString(nextLine) || anyTypeRegex.MatchString(nextLine) {
 					continue // valid placement, handled in first pass
 				}
 			}

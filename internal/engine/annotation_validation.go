@@ -26,7 +26,23 @@ func (e *Engine) validateAnnotationIdentifiers() {
 	annotationAtStartRegex := regexp.MustCompile(`(?i)^\s*//\s*@(implement|test|test-contract)\b`)
 
 	e.walkCodeFiles(func(path string, lines []string) {
+		ignoreScope := false
 		for i, line := range lines {
+			// Honor // idd:ignore start/end scope markers so callers can
+			// exclude fixture content (e.g. raw string fixtures in tests) from
+			// the identifier check.
+			if strings.Contains(line, "// idd:ignore start") || strings.Contains(line, "//idd:ignore-start") {
+				ignoreScope = true
+				continue
+			}
+			if strings.Contains(line, "// idd:ignore end") || strings.Contains(line, "//idd:ignore-end") {
+				ignoreScope = false
+				continue
+			}
+			if ignoreScope {
+				continue
+			}
+
 			trimmed := strings.TrimSpace(line)
 			if !strings.HasPrefix(trimmed, "//") {
 				continue
@@ -82,7 +98,21 @@ func (e *Engine) validateConsecutiveAnnotations() {
 	annotationRegex := regexp.MustCompile(`(?i)^\s*//\s*@(\w+)\s+`)
 
 	e.walkCodeFiles(func(path string, lines []string) {
+		ignoreScope := false
 		for i := 0; i < len(lines)-1; i++ {
+			// Honor // idd:ignore start/end scope markers.
+			if strings.Contains(lines[i], "// idd:ignore start") || strings.Contains(lines[i], "//idd:ignore-start") {
+				ignoreScope = true
+				continue
+			}
+			if strings.Contains(lines[i], "// idd:ignore end") || strings.Contains(lines[i], "//idd:ignore-end") {
+				ignoreScope = false
+				continue
+			}
+			if ignoreScope {
+				continue
+			}
+
 			currentLine := strings.TrimSpace(lines[i])
 			if !strings.HasPrefix(currentLine, "//") {
 				continue
