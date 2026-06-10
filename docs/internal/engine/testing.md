@@ -44,6 +44,40 @@ markers:
     name: Engine Validate Related Files
   - id: TEST-INTERNAL_ENGINE-029
     name: Engine Validate Related Files Valid
+  - id: TEST-INTERNAL_ENGINE-030
+    name: Engine Package Doc Comment Main Package Skipped
+  - id: TEST-INTERNAL_ENGINE-031
+    name: Engine Package Doc Files Missing Files
+  - id: TEST-INTERNAL_ENGINE-032
+    name: Engine Package Doc Files All Present
+  - id: TEST-INTERNAL_ENGINE-033
+    name: Engine Package Doc Files Root Level Skipped
+  - id: TEST-INTERNAL_ENGINE-034
+    name: Engine Duplicate IDs Doc Side
+  - id: TEST-INTERNAL_ENGINE-035
+    name: Engine Duplicate IDs Same Dir No Error
+  - id: TEST-INTERNAL_ENGINE-036
+    name: Engine Duplicate IDs Code Side
+  - id: TEST-INTERNAL_ENGINE-037
+    name: Engine Duplicate IDs Rename Suggestion
+  - id: TEST-INTERNAL_ENGINE-038
+    name: Engine Public Func Annotation Private Func Allowed
+  - id: TEST-INTERNAL_ENGINE-039
+    name: Engine Public Func Annotation Private Method Allowed
+  - id: TEST-INTERNAL_ENGINE-040
+    name: Engine Public Func Annotation Private Type Allowed
+  - id: TEST-INTERNAL_ENGINE-041
+    name: Engine Public Func Annotation Public Still Required
+  - id: TEST-INTERNAL_ENGINE-042
+    name: Engine Public Func Annotation Garbage After Implement Still Errors
+  - id: TEST-INTERNAL_ENGINE-043
+    name: Engine Private Implement Requires Doc
+  - id: TEST-INTERNAL_ENGINE-044
+    name: Engine Annotation Identifier Honors Ignore Scope
+  - id: TEST-INTERNAL_ENGINE-045
+    name: Engine Annotation Placement Honors Ignore Scope
+  - id: TEST-INTERNAL_ENGINE-046
+    name: Engine Consecutive Annotations Honors Ignore Scope
 
 related_files:
   spec: docs/internal/engine/spec.md
@@ -387,5 +421,228 @@ Test Engine.validateRelatedFiles when related_files is missing.
 **Purpose:**
 
 Test Engine.validateRelatedFiles when related_files is present.
+
+**Spec Coverage:** `SPEC-INTERNAL_ENGINE-001`
+
+---
+
+## TEST-INTERNAL_ENGINE-030: Engine Package Doc Comment Main Package Skipped
+
+**Status:** Done
+
+**Purpose:**
+
+Test that the package-doc-comment check skips the main package (which has no
+hosted package, only a `main` function).
+
+**Spec Coverage:** `SPEC-INTERNAL_ENGINE-001`
+
+---
+
+## TEST-INTERNAL_ENGINE-031: Engine Package Doc Files Missing Files
+
+**Status:** Done
+
+**Purpose:**
+
+Test that Engine reports an error when a package's `pkgDocFiles` declares files
+that do not exist on disk.
+
+**Spec Coverage:** `SPEC-INTERNAL_ENGINE-001`
+
+---
+
+## TEST-INTERNAL_ENGINE-032: Engine Package Doc Files All Present
+
+**Status:** Done
+
+**Purpose:**
+
+Test that Engine passes when all files declared in `pkgDocFiles` exist on disk.
+
+**Spec Coverage:** `SPEC-INTERNAL_ENGINE-001`
+
+---
+
+## TEST-INTERNAL_ENGINE-033: Engine Package Doc Files Root Level Skipped
+
+**Status:** Done
+
+**Purpose:**
+
+Test that the `pkgDocFiles` check is skipped for root-level packages
+(single-segment import paths).
+
+**Spec Coverage:** `SPEC-INTERNAL_ENGINE-001`
+
+---
+
+## TEST-INTERNAL_ENGINE-034: Engine Duplicate IDs Doc Side
+
+**Status:** Done
+
+**Purpose:**
+
+Test that Engine reports an error when the same identifier appears twice in
+documentation headings.
+
+**Spec Coverage:** `SPEC-INTERNAL_ENGINE-001`
+
+---
+
+## TEST-INTERNAL_ENGINE-035: Engine Duplicate IDs Same Dir No Error
+
+**Status:** Done
+
+**Purpose:**
+
+Test that Engine does not flag duplicate identifiers that are intentionally
+co-located in the same source file (test/cont variants).
+
+**Spec Coverage:** `SPEC-INTERNAL_ENGINE-001`
+
+---
+
+## TEST-INTERNAL_ENGINE-036: Engine Duplicate IDs Code Side
+
+**Status:** Done
+
+**Purpose:**
+
+Test that Engine reports an error when the same identifier is declared in
+multiple Go source files.
+
+**Spec Coverage:** `SPEC-INTERNAL_ENGINE-001`
+
+---
+
+## TEST-INTERNAL_ENGINE-037: Engine Duplicate IDs Rename Suggestion
+
+**Status:** Done
+
+**Purpose:**
+
+Test that Engine's duplicate-ID error message includes a rename suggestion to
+help the user resolve the conflict.
+
+**Spec Coverage:** `SPEC-INTERNAL_ENGINE-001`
+
+---
+
+## TEST-INTERNAL_ENGINE-038: Engine Public Func Annotation Private Func Allowed
+
+**Status:** Done
+
+**Purpose:**
+
+Test that `validatePublicFuncAnnotations` does not require an `@implement`
+annotation on private (lowercase) functions.
+
+**Spec Coverage:** `SPEC-INTERNAL_ENGINE-001`
+
+---
+
+## TEST-INTERNAL_ENGINE-039: Engine Public Func Annotation Private Method Allowed
+
+**Status:** Done
+
+**Purpose:**
+
+Test that `validatePublicFuncAnnotations` does not require an `@implement`
+annotation on private methods (methods of public types with lowercase names).
+
+**Spec Coverage:** `SPEC-INTERNAL_ENGINE-001`
+
+---
+
+## TEST-INTERNAL_ENGINE-040: Engine Public Func Annotation Private Type Allowed
+
+**Status:** Done
+
+**Purpose:**
+
+Test that `validatePublicFuncAnnotations` does not require `@implement` on
+methods of a private type even when the method itself is exported.
+
+**Spec Coverage:** `SPEC-INTERNAL_ENGINE-001`
+
+---
+
+## TEST-INTERNAL_ENGINE-041: Engine Public Func Annotation Public Still Required
+
+**Status:** Done
+
+**Purpose:**
+
+Test that `validatePublicFuncAnnotations` still flags an exported function
+with no `@implement` annotation.
+
+**Spec Coverage:** `SPEC-INTERNAL_ENGINE-001`
+
+---
+
+## TEST-INTERNAL_ENGINE-042: Engine Public Func Annotation Garbage After Implement Still Errors
+
+**Status:** Done
+
+**Purpose:**
+
+Test that garbage tokens following `@implement` (which make the annotation
+unparseable) still surface as a validation error, not silently pass.
+
+**Spec Coverage:** `SPEC-INTERNAL_ENGINE-001`
+
+---
+
+## TEST-INTERNAL_ENGINE-043: Engine Private Implement Requires Doc
+
+**Status:** Done
+
+**Purpose:**
+
+Test that an `@implement` on a private function still requires a matching doc
+entry — the doc-code-correspondence check applies regardless of visibility.
+
+**Spec Coverage:** `SPEC-INTERNAL_ENGINE-001`
+
+---
+
+## TEST-INTERNAL_ENGINE-044: Engine Annotation Identifier Honors Ignore Scope
+
+**Status:** Done
+
+**Purpose:**
+
+Test that `validateAnnotationIdentifiers` skips content inside an
+`// idd:ignore start/end` block. Without scope honoring, the validator would
+report every annotation inside a fixture that looks like a real `@implement`
+statement.
+
+**Spec Coverage:** `SPEC-INTERNAL_ENGINE-001`
+
+---
+
+## TEST-INTERNAL_ENGINE-045: Engine Annotation Placement Honors Ignore Scope
+
+**Status:** Done
+
+**Purpose:**
+
+Test that the placement pass of `validatePublicFuncAnnotations` skips content
+inside an `// idd:ignore start/end` block — not just the first and third
+passes.
+
+**Spec Coverage:** `SPEC-INTERNAL_ENGINE-001`
+
+---
+
+## TEST-INTERNAL_ENGINE-046: Engine Consecutive Annotations Honors Ignore Scope
+
+**Status:** Done
+
+**Purpose:**
+
+Test that `validateConsecutiveAnnotations` skips content inside an
+`// idd:ignore start/end` block.
 
 **Spec Coverage:** `SPEC-INTERNAL_ENGINE-001`

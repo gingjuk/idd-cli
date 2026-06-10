@@ -17,6 +17,7 @@ import (
 	"github.com/jingxu9x/idd-cli/internal/model"
 )
 
+// @test TEST-INTERNAL_ENGINE-007
 func TestEngine_ConsistencyCheck_Warning(t *testing.T) {
 	cfg := &config.Config{
 		Version: "1.0",
@@ -60,6 +61,7 @@ func TestEngine_ConsistencyCheck_Warning(t *testing.T) {
 	}
 }
 
+// @test TEST-INTERNAL_ENGINE-007
 func TestEngine_ConsistencyCheck_NoWarning(t *testing.T) {
 	cfg := &config.Config{
 		Version: "1.0",
@@ -94,6 +96,7 @@ func TestEngine_ConsistencyCheck_NoWarning(t *testing.T) {
 	}
 }
 
+// @test TEST-INTERNAL_ENGINE-007
 func TestEngine_ConsistencyCheck_Disabled(t *testing.T) {
 	cfg := &config.Config{
 		Version: "1.0",
@@ -128,6 +131,7 @@ func TestEngine_ConsistencyCheck_Disabled(t *testing.T) {
 	}
 }
 
+// @test TEST-INTERNAL_ENGINE-007
 func TestEngine_ConsistencyCheck_MissingDescribe(t *testing.T) {
 	cfg := &config.Config{
 		Version: "1.0",
@@ -162,6 +166,7 @@ func TestEngine_ConsistencyCheck_MissingDescribe(t *testing.T) {
 	}
 }
 
+// @test TEST-INTERNAL_ENGINE-007
 func TestEngine_ConsistencyCheck_CodeOnly(t *testing.T) {
 	cfg := &config.Config{
 		Version: "1.0",
@@ -192,6 +197,7 @@ func TestEngine_ConsistencyCheck_CodeOnly(t *testing.T) {
 	}
 }
 
+// @test TEST-INTERNAL_ENGINE-007
 func TestEngine_ConsistencyCheck_HighThreshold(t *testing.T) {
 	cfg := &config.Config{
 		Version: "1.0",
@@ -231,6 +237,7 @@ func TestEngine_ConsistencyCheck_HighThreshold(t *testing.T) {
 	}
 }
 
+// @test TEST-INTERNAL_ENGINE-007
 func TestEngine_ConsistencyCheck_LowSimilarity(t *testing.T) {
 	cfg := &config.Config{
 		Version: "1.0",
@@ -270,6 +277,7 @@ func TestEngine_ConsistencyCheck_LowSimilarity(t *testing.T) {
 	}
 }
 
+// @test TEST-INTERNAL_ENGINE-004
 func TestEngine_AddStructuralErrors(t *testing.T) {
 	cfg := config.Default()
 	eng := New(cfg)
@@ -284,6 +292,7 @@ func TestEngine_AddStructuralErrors(t *testing.T) {
 	}
 }
 
+// @test TEST-INTERNAL_ENGINE-002
 func TestEngine_inferLinkType(t *testing.T) {
 	cfg := config.Default()
 	eng := New(cfg)
@@ -306,6 +315,7 @@ func TestEngine_inferLinkType(t *testing.T) {
 	}
 }
 
+// @test TEST-INTERNAL_ENGINE-003
 func TestEngine_validateBidirectional(t *testing.T) {
 	cfg := &config.Config{
 		Version: "1.0",
@@ -328,6 +338,7 @@ func TestEngine_validateBidirectional(t *testing.T) {
 	}
 }
 
+// @test TEST-INTERNAL_ENGINE-003
 func TestEngine_validateDocCodeCorrespondence(t *testing.T) {
 	cfg := config.Default()
 	eng := New(cfg)
@@ -352,6 +363,7 @@ func TestEngine_validateDocCodeCorrespondence(t *testing.T) {
 	}
 }
 
+// @test TEST-INTERNAL_ENGINE-005
 func TestEngine_BuildReport(t *testing.T) {
 	cfg := config.Default()
 	eng := New(cfg)
@@ -983,7 +995,7 @@ Content
 	}
 }
 
-// @test TEST-INTERNAL_ENGINE-007
+// @test TEST-INTERNAL_ENGINE-030
 func TestEngine_PackageDocComment_MainPackageSkipped(t *testing.T) {
 	// main package should be skipped
 	tmpDir := t.TempDir()
@@ -1019,6 +1031,7 @@ func main() {}
 	}
 }
 
+// @test TEST-INTERNAL_ENGINE-031
 func TestEngine_PkgDocFiles_MissingFiles(t *testing.T) {
 	tmpDir := t.TempDir()
 	docsDir := filepath.Join(tmpDir, "docs", "backend")
@@ -1070,6 +1083,7 @@ func TestEngine_PkgDocFiles_MissingFiles(t *testing.T) {
 	}
 }
 
+// @test TEST-INTERNAL_ENGINE-032
 func TestEngine_PkgDocFiles_AllPresent(t *testing.T) {
 	tmpDir := t.TempDir()
 	docsDir := filepath.Join(tmpDir, "docs", "backend")
@@ -1103,6 +1117,7 @@ func TestEngine_PkgDocFiles_AllPresent(t *testing.T) {
 	}
 }
 
+// @test TEST-INTERNAL_ENGINE-033
 func TestEngine_PkgDocFiles_RootLevelSkipped(t *testing.T) {
 	tmpDir := t.TempDir()
 	docsDir := filepath.Join(tmpDir, "docs")
@@ -1135,6 +1150,7 @@ func TestEngine_PkgDocFiles_RootLevelSkipped(t *testing.T) {
 	}
 }
 
+// @test TEST-INTERNAL_ENGINE-034
 func TestEngine_DuplicateIDs_DocSide(t *testing.T) {
 	cfg := &config.Config{Version: "1.0"}
 	ids := model.NewIdentifierSet()
@@ -1165,6 +1181,7 @@ func TestEngine_DuplicateIDs_DocSide(t *testing.T) {
 	}
 }
 
+// @test TEST-INTERNAL_ENGINE-035
 func TestEngine_DuplicateIDs_SameDir_NoError(t *testing.T) {
 	cfg := &config.Config{Version: "1.0"}
 	ids := model.NewIdentifierSet()
@@ -1190,6 +1207,7 @@ func TestEngine_DuplicateIDs_SameDir_NoError(t *testing.T) {
 	}
 }
 
+// @test TEST-INTERNAL_ENGINE-036
 func TestEngine_DuplicateIDs_CodeSide(t *testing.T) {
 	cfg := &config.Config{Version: "1.0"}
 	ids := model.NewIdentifierSet()
@@ -1220,6 +1238,7 @@ func TestEngine_DuplicateIDs_CodeSide(t *testing.T) {
 	}
 }
 
+// @test TEST-INTERNAL_ENGINE-037
 func TestEngine_DuplicateIDs_RenameSuggestion(t *testing.T) {
 	cfg := &config.Config{Version: "1.0"}
 	ids := model.NewIdentifierSet()
@@ -1240,4 +1259,374 @@ func TestEngine_DuplicateIDs_RenameSuggestion(t *testing.T) {
 		}
 	}
 	t.Error("expected rename suggestion in duplicate-id error message")
+}
+
+// TestEngine_PublicFuncAnnotation_PrivateFuncAllowed verifies that @implement
+// annotations above private functions are allowed (no annotation-placement error).
+// @test TEST-INTERNAL_ENGINE-038
+func TestEngine_PublicFuncAnnotation_PrivateFuncAllowed(t *testing.T) {
+	tmpDir := t.TempDir()
+	// idd:ignore start
+	code := `package foo
+
+// helper does internal work.
+// @implement SPEC-FOO-001
+func helper() {}
+`
+	// idd:ignore end
+	if err := os.WriteFile(filepath.Join(tmpDir, "foo.go"), []byte(code), 0644); err != nil {
+		t.Fatalf("write: %v", err)
+	}
+
+	cfg := &config.Config{
+		Version: "1.0",
+		Code: config.CodeConfig{
+			Patterns: []string{filepath.Join(tmpDir, "*.go")},
+		},
+		Validation: config.ValidationConfig{
+			RequirePublicFuncAnnotation: true,
+		},
+	}
+
+	eng := New(cfg)
+	result, err := eng.Run(context.Background(), model.NewIdentifierSet())
+	if err != nil {
+		t.Fatalf("Run failed: %v", err)
+	}
+
+	for _, e := range result.Errors {
+		if e.Rule == "annotation-placement" {
+			t.Errorf("unexpected annotation-placement error above private func: %s", e.Message)
+		}
+	}
+}
+
+// TestEngine_PublicFuncAnnotation_PrivateMethodAllowed verifies that @implement
+// annotations above private methods are allowed (no annotation-placement error).
+// @test TEST-INTERNAL_ENGINE-039
+func TestEngine_PublicFuncAnnotation_PrivateMethodAllowed(t *testing.T) {
+	tmpDir := t.TempDir()
+	// idd:ignore start
+	code := `package foo
+
+type bar struct{}
+
+// process is an internal helper method.
+// @implement SPEC-FOO-002
+func (b *bar) process() {}
+`
+	// idd:ignore end
+	if err := os.WriteFile(filepath.Join(tmpDir, "foo.go"), []byte(code), 0644); err != nil {
+		t.Fatalf("write: %v", err)
+	}
+
+	cfg := &config.Config{
+		Version: "1.0",
+		Code: config.CodeConfig{
+			Patterns: []string{filepath.Join(tmpDir, "*.go")},
+		},
+		Validation: config.ValidationConfig{
+			RequirePublicFuncAnnotation: true,
+		},
+	}
+
+	eng := New(cfg)
+	result, err := eng.Run(context.Background(), model.NewIdentifierSet())
+	if err != nil {
+		t.Fatalf("Run failed: %v", err)
+	}
+
+	for _, e := range result.Errors {
+		if e.Rule == "annotation-placement" {
+			t.Errorf("unexpected annotation-placement error above private method: %s", e.Message)
+		}
+	}
+}
+
+// TestEngine_PublicFuncAnnotation_PrivateTypeAllowed verifies that @implement
+// annotations above private types are allowed (no annotation-placement error).
+// @test TEST-INTERNAL_ENGINE-040
+func TestEngine_PublicFuncAnnotation_PrivateTypeAllowed(t *testing.T) {
+	tmpDir := t.TempDir()
+	// idd:ignore start
+	code := `package foo
+
+// internalState holds private state.
+// @implement SPEC-FOO-003
+type internalState struct {
+	value int
+}
+`
+	// idd:ignore end
+	if err := os.WriteFile(filepath.Join(tmpDir, "foo.go"), []byte(code), 0644); err != nil {
+		t.Fatalf("write: %v", err)
+	}
+
+	cfg := &config.Config{
+		Version: "1.0",
+		Code: config.CodeConfig{
+			Patterns: []string{filepath.Join(tmpDir, "*.go")},
+		},
+		Validation: config.ValidationConfig{
+			RequirePublicFuncAnnotation: true,
+		},
+	}
+
+	eng := New(cfg)
+	result, err := eng.Run(context.Background(), model.NewIdentifierSet())
+	if err != nil {
+		t.Fatalf("Run failed: %v", err)
+	}
+
+	for _, e := range result.Errors {
+		if e.Rule == "annotation-placement" {
+			t.Errorf("unexpected annotation-placement error above private type: %s", e.Message)
+		}
+	}
+}
+
+// idd:ignore end
+
+// TestEngine_PublicFuncAnnotation_PublicStillRequired confirms that public
+// functions without @implement still produce a public-func-annotation error.
+// @test TEST-INTERNAL_ENGINE-041
+func TestEngine_PublicFuncAnnotation_PublicStillRequired(t *testing.T) {
+	tmpDir := t.TempDir()
+	// idd:ignore start
+	code := `package foo
+
+// Bar is a public function missing @implement.
+func Bar() {}
+`
+	// idd:ignore end
+	if err := os.WriteFile(filepath.Join(tmpDir, "foo.go"), []byte(code), 0644); err != nil {
+		t.Fatalf("write: %v", err)
+	}
+
+	cfg := &config.Config{
+		Version: "1.0",
+		Code: config.CodeConfig{
+			Patterns: []string{filepath.Join(tmpDir, "*.go")},
+		},
+		Validation: config.ValidationConfig{
+			RequirePublicFuncAnnotation: true,
+		},
+	}
+
+	eng := New(cfg)
+	result, err := eng.Run(context.Background(), model.NewIdentifierSet())
+	if err != nil {
+		t.Fatalf("Run failed: %v", err)
+	}
+
+	found := false
+	for _, e := range result.Errors {
+		if e.Rule == "public-func-annotation" && strings.Contains(e.Message, "Bar") {
+			found = true
+			break
+		}
+	}
+	if !found {
+		t.Error("expected public-func-annotation error for public function missing @implement")
+	}
+}
+
+// idd:ignore end
+
+// TestEngine_PublicFuncAnnotation_GarbageAfterImplementStillErrors confirms that
+// an @implement followed by something that is not a function/type (e.g. a
+// variable or arbitrary code) still triggers annotation-placement.
+// @test TEST-INTERNAL_ENGINE-042
+func TestEngine_PublicFuncAnnotation_GarbageAfterImplementStillErrors(t *testing.T) {
+	tmpDir := t.TempDir()
+	// idd:ignore start
+	code := `package foo
+
+// @implement SPEC-FOO-004
+var x = 5
+`
+	// idd:ignore end
+	if err := os.WriteFile(filepath.Join(tmpDir, "foo.go"), []byte(code), 0644); err != nil {
+		t.Fatalf("write: %v", err)
+	}
+
+	cfg := &config.Config{
+		Version: "1.0",
+		Code: config.CodeConfig{
+			Patterns: []string{filepath.Join(tmpDir, "*.go")},
+		},
+		Validation: config.ValidationConfig{
+			RequirePublicFuncAnnotation: true,
+		},
+	}
+
+	eng := New(cfg)
+	result, err := eng.Run(context.Background(), model.NewIdentifierSet())
+	if err != nil {
+		t.Fatalf("Run failed: %v", err)
+	}
+
+	found := false
+	for _, e := range result.Errors {
+		if e.Rule == "annotation-placement" {
+			found = true
+			break
+		}
+	}
+	if !found {
+		t.Error("expected annotation-placement error when @implement is above a non-func/type declaration")
+	}
+}
+
+// TestEngine_PrivateImplement_RequiresDoc verifies the third rule: any
+// implement annotation (even on a private function) must have a corresponding
+// doc entry. This is enforced by doc-code-correspondence, not by
+// validatePublicFuncAnnotations.
+// @test TEST-INTERNAL_ENGINE-043
+func TestEngine_PrivateImplement_RequiresDoc(t *testing.T) {
+	cfg := config.Default()
+	eng := New(cfg)
+
+	// Simulate the collector having parsed an @implement annotation from a
+	// private function. The identifier exists on the code side with no
+	// matching doc-side identifier.
+	ids := model.NewIdentifierSet()
+	codeOnly := model.NewIdentifier("SPEC-FOO-099", model.TypeSpec, "", "internal/foo/foo.go", 5)
+	codeOnly.SetOrigin(model.OriginCode)
+	ids.Add(codeOnly)
+
+	eng.Run(context.Background(), ids)
+
+	found := false
+	for _, e := range eng.result.Errors {
+		if e.Rule == "doc-code-correspondence" && strings.Contains(e.Message, "SPEC-FOO-099") {
+			found = true
+			break
+		}
+	}
+	if !found {
+		t.Error("expected doc-code-correspondence error for @implement without matching doc")
+	}
+}
+
+// TestEngine_AnnotationIdentifier_HonorsIgnoreScope verifies that
+// validateAnnotationIdentifiers honors the idd-ignore scope markers so
+// fixtures embedded in the test source are not reported as real violations.
+// @test TEST-INTERNAL_ENGINE-044
+func TestEngine_AnnotationIdentifier_HonorsIgnoreScope(t *testing.T) {
+	tmpDir := t.TempDir()
+	// This block contains two comments that would normally trip the validator:
+	//   1. an @implement with no identifier
+	//   2. an @implement above a non-function declaration (placement)
+	// The // idd:ignore start/end scope should silence both.
+	code := "package foo\n\n" +
+		"// idd:ignore start\n" +
+		"// @implement\n" +
+		"var ignored1 = 1\n" +
+		"// idd:ignore end\n"
+	if err := os.WriteFile(filepath.Join(tmpDir, "foo.go"), []byte(code), 0644); err != nil {
+		t.Fatalf("write: %v", err)
+	}
+
+	cfg := &config.Config{
+		Version: "1.0",
+		Code: config.CodeConfig{
+			Patterns: []string{filepath.Join(tmpDir, "*.go")},
+		},
+		Validation: config.ValidationConfig{
+			RequireAnnotationIdentifier: true,
+		},
+	}
+
+	eng := New(cfg)
+	result, err := eng.Run(context.Background(), model.NewIdentifierSet())
+	if err != nil {
+		t.Fatalf("Run failed: %v", err)
+	}
+
+	for _, e := range result.Errors {
+		if e.Rule == "annotation-missing-identifier" {
+			t.Errorf("expected no annotation-missing-identifier errors inside idd:ignore scope, got: %s @ %s", e.Message, e.Source)
+		}
+	}
+}
+
+// TestEngine_AnnotationPlacement_HonorsIgnoreScope verifies that the placement
+// pass of validatePublicFuncAnnotations skips content inside an // idd:ignore
+// start/end block — not just the first and third passes.
+// @test TEST-INTERNAL_ENGINE-045
+func TestEngine_AnnotationPlacement_HonorsIgnoreScope(t *testing.T) {
+	tmpDir := t.TempDir()
+	// An @implement followed by a `var` is normally a placement error. The
+	// ignore scope should silence it.
+	code := "package foo\n\n" +
+		"// idd:ignore start\n" +
+		"// @implement SPEC-IGNORE-001\n" +
+		"var ignored = 1\n" +
+		"// idd:ignore end\n"
+	if err := os.WriteFile(filepath.Join(tmpDir, "foo.go"), []byte(code), 0644); err != nil {
+		t.Fatalf("write: %v", err)
+	}
+
+	cfg := &config.Config{
+		Version: "1.0",
+		Code: config.CodeConfig{
+			Patterns: []string{filepath.Join(tmpDir, "*.go")},
+		},
+		Validation: config.ValidationConfig{
+			RequirePublicFuncAnnotation: true,
+		},
+	}
+
+	eng := New(cfg)
+	result, err := eng.Run(context.Background(), model.NewIdentifierSet())
+	if err != nil {
+		t.Fatalf("Run failed: %v", err)
+	}
+
+	for _, e := range result.Errors {
+		if e.Rule == "annotation-placement" {
+			t.Errorf("expected no annotation-placement errors inside idd:ignore scope, got: %s @ %s", e.Message, e.Source)
+		}
+	}
+}
+
+// TestEngine_ConsecutiveAnnotations_HonorsIgnoreScope verifies that
+// validateConsecutiveAnnotations skips content inside an // idd:ignore
+// start/end block.
+// @test TEST-INTERNAL_ENGINE-046
+func TestEngine_ConsecutiveAnnotations_HonorsIgnoreScope(t *testing.T) {
+	tmpDir := t.TempDir()
+	// Two consecutive @implement comments would normally trip
+	// annotation-consecutive-line. The ignore scope should silence it.
+	code := "package foo\n\n" +
+		"// idd:ignore start\n" +
+		"// @implement SPEC-A-001\n" +
+		"// @implement SPEC-B-001\n" +
+		"// idd:ignore end\n"
+	if err := os.WriteFile(filepath.Join(tmpDir, "foo.go"), []byte(code), 0644); err != nil {
+		t.Fatalf("write: %v", err)
+	}
+
+	cfg := &config.Config{
+		Version: "1.0",
+		Code: config.CodeConfig{
+			Patterns: []string{filepath.Join(tmpDir, "*.go")},
+		},
+		Validation: config.ValidationConfig{
+			RequireAnnotationOnSameLine: true,
+		},
+	}
+
+	eng := New(cfg)
+	result, err := eng.Run(context.Background(), model.NewIdentifierSet())
+	if err != nil {
+		t.Fatalf("Run failed: %v", err)
+	}
+
+	for _, e := range result.Errors {
+		if e.Rule == "annotation-consecutive-line" {
+			t.Errorf("expected no annotation-consecutive-line errors inside idd:ignore scope, got: %s @ %s", e.Message, e.Source)
+		}
+	}
 }
