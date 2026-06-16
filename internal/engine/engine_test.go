@@ -745,6 +745,143 @@ More content
 	}
 }
 
+func TestEngine_validateSpecRequiredFields(t *testing.T) {
+	tests := []struct {
+		name           string
+		doc            string
+		wantFields     []string
+		wantErrorCount int
+	}{
+		{
+			name: "all required fields present",
+			doc: `---
+markers:
+  - id: SPEC-BE-001
+    name: User Login
+---
+
+## SPEC-BE-001: User Login
+
+**Contract:** implements interface Authenticator
+
+**Design:** implements architecture AuthModule
+
+**Requirement:**
+
+Users can log in with email and password.
+
+**Tests:** TEST-BE-001
+`,
+		},
+		{
+			name: "missing contract and design",
+			doc: `---
+markers:
+  - id: SPEC-BE-001
+    name: User Login
+---
+
+## SPEC-BE-001: User Login
+
+**Requirement:**
+
+Users can log in with email and password.
+
+**Tests:** TEST-BE-001
+`,
+			wantFields:     []string{"Contract", "Design"},
+			wantErrorCount: 2,
+		},
+		{
+			name: "missing requirement and tests",
+			doc: `---
+markers:
+  - id: SPEC-BE-001
+    name: User Login
+---
+
+## SPEC-BE-001: User Login
+
+**Contract:** implements interface Authenticator
+
+**Design:** implements architecture AuthModule
+`,
+			wantFields:     []string{"Requirement", "Tests"},
+			wantErrorCount: 2,
+		},
+		{
+			name: "checks each spec section independently",
+			doc: `---
+markers:
+  - id: SPEC-BE-001
+    name: Complete
+  - id: SPEC-BE-002
+    name: Missing Tests
+---
+
+## SPEC-BE-001: Complete
+
+**Contract:** implements interface Authenticator
+
+**Design:** implements architecture AuthModule
+
+**Requirement:** Complete requirement.
+
+**Tests:** TEST-BE-001
+
+## SPEC-BE-002: Missing Tests
+
+**Contract:** implements interface Authenticator
+
+**Design:** implements architecture AuthModule
+
+**Requirement:** Missing tests only.
+`,
+			wantFields:     []string{"Tests"},
+			wantErrorCount: 1,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			tmpDir := t.TempDir()
+			docsDir := filepath.Join(tmpDir, "docs", "backend")
+			if err := os.MkdirAll(docsDir, 0755); err != nil {
+				t.Fatalf("Failed to create docs dir: %v", err)
+			}
+			if err := os.WriteFile(filepath.Join(docsDir, "spec.md"), []byte(tt.doc), 0644); err != nil {
+				t.Fatalf("Failed to write spec.md: %v", err)
+			}
+
+			cfg := config.Default()
+			cfg.Docs.Patterns = []string{filepath.Join(tmpDir, "docs/**/*.md")}
+			eng := New(cfg)
+
+			eng.validateSpecRequiredFields()
+
+			if len(eng.result.Errors) != tt.wantErrorCount {
+				t.Fatalf("Expected %d errors, got %d: %v", tt.wantErrorCount, len(eng.result.Errors), eng.result.Errors)
+			}
+
+			for _, field := range tt.wantFields {
+				found := false
+				for _, err := range eng.result.Errors {
+					if err.Rule == "spec-required-fields" && err.Code == field {
+						found = true
+						if !strings.Contains(err.Message, "define it as:") {
+							t.Errorf("Expected missing field message to include field definition, got %q", err.Message)
+						}
+						break
+					}
+				}
+				if !found {
+					t.Errorf("Expected missing field error for %s", field)
+				}
+			}
+		})
+	}
+}
+
 // @test TEST-INTERNAL_ENGINE-022
 func TestEngine_validateContractDesignMarkers_WithMarkers(t *testing.T) {
 	cfg := config.Default()

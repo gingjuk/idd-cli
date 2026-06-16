@@ -83,6 +83,14 @@ Factory function to create a new Engine instance with configuration.
 
 ## SPEC-INTERNAL_ENGINE-004: Engine.Run
 
+**Contract:** `Run`
+
+**Design:** `EngineModule`
+
+**Requirement:**
+
+Execute the validation pipeline for the given identifiers and return the accumulated validation result.
+
 **Function Signature:**
 `func (e *Engine) Run(ctx context.Context, ids *model.IdentifierSet) (*model.ValidationResult, error)`
 

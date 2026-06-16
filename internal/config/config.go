@@ -51,6 +51,7 @@ type CodeConfig struct {
 type ValidationConfig struct {
 	RequireDocLinkConsistency    bool             `yaml:"require_doc_link_consistency"`
 	AllowOrphans                 bool             `yaml:"allow_orphans"`
+	RequireSpecFields            bool             `yaml:"require_spec_fields"`
 	RequireSpecTestCoverage      bool             `yaml:"require_spec_test_coverage"`
 	RequireContractTestCoverage  bool             `yaml:"require_contract_test_coverage"`
 	RequireDesignSections        bool             `yaml:"require_design_sections"`
@@ -127,6 +128,7 @@ func Default() *Config {
 		Validation: ValidationConfig{
 			AllowOrphans:                 false,
 			RequireDocLinkConsistency:    true,
+			RequireSpecFields:            true,
 			RequireSpecTestCoverage:      true,
 			RequireContractTestCoverage:  true,
 			RequireDesignSections:        true,

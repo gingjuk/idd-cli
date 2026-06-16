@@ -148,9 +148,10 @@ func TestDoSomethingContract() {
 ## Validation Rules
 
 1. **Completeness** — Every SPEC must have at least one TEST link
-2. **Bidirectional** — If SPEC→TEST exists, TEST→SPEC must also exist
-3. **Orphan Detection** — No identifiers with zero connections
-4. **Consistency** — Cross-reference chain consistency
+2. **SPEC Required Fields** — Every frontmatter-declared SPEC section in `spec.md` must include `Contract`, `Design`, `Requirement`, and `Tests`
+3. **Bidirectional** — If SPEC→TEST exists, TEST→SPEC must also exist
+4. **Orphan Detection** — No identifiers with zero connections
+5. **Consistency** — Cross-reference chain consistency
 
 ## Configuration Example
 
@@ -175,6 +176,7 @@ code:
 
 validation:
   require_doc_link_consistency: true
+  require_spec_fields: true
   allow_orphans: false
   require_spec_test_coverage: true
 

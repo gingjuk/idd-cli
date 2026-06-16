@@ -93,6 +93,14 @@ The Document Collector (`DocCollector`) must collect IDD identifiers from markdo
 
 ## SPEC-INTERNAL_COLLECTOR-017: DocCollector.Collect
 
+**Contract:** `Collect`
+
+**Design:** `CollectorModule`
+
+**Requirement:**
+
+Collect IDD identifiers from markdown files at the target path, returning collected identifiers, structural validation errors, and any traversal error.
+
 **Function Signature:**
 `func (c *DocCollector) Collect(ctx context.Context, targetPath string) (*model.IdentifierSet, []*model.ValidationError, error)`
 
@@ -251,6 +259,14 @@ The Code Collector (`CodeCollector`) must collect IDD annotations from source co
 
 ## SPEC-INTERNAL_COLLECTOR-024: CodeCollector.Collect
 
+**Contract:** `Collect`
+
+**Design:** `CollectorModule`
+
+**Requirement:**
+
+Collect IDD identifiers from code annotations in source files at the target path.
+
 **Function Signature:**
 `func (c *CodeCollector) Collect(ctx context.Context, targetPath string) (*model.IdentifierSet, error)`
 
@@ -268,6 +284,14 @@ The Code Collector (`CodeCollector`) must collect IDD annotations from source co
 ---
 
 ## SPEC-INTERNAL_COLLECTOR-025: CodeCollector.SplitAnnotationRefs
+
+**Contract:** `SplitAnnotationRefs`
+
+**Design:** `CollectorModule`
+
+**Requirement:**
+
+Split comma-separated IDD annotation references into individual trimmed identifiers.
 
 **Function Signature:**
 `func SplitAnnotationRefs(s string) []string`

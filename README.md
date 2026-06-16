@@ -132,6 +132,7 @@ idd-cli enforces these rules:
 | Rule | Description |
 |------|-------------|
 | `package-doc-comment` | Every package has doc comment with Spec/Contract paths |
+| `spec-required-fields` | Every frontmatter-declared SPEC section in `spec.md` has `Contract`, `Design`, `Requirement`, and `Tests` fields |
 | `doc-link-consistency` | All forward links have corresponding backlinks |
 | `orphan-detection` | No undefined or unreferenced identifiers |
 | `doc-code-correspondence` | Doc references match actual code |

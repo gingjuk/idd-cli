@@ -113,6 +113,14 @@ LinkageGraph manages nodes and edges for IDD identifier validation.
 
 ## SPEC-INTERNAL_GRAPH-006: NewLinkageGraph
 
+**Contract:** `NewLinkageGraph`
+
+**Design:** `GraphModule`
+
+**Requirement:**
+
+Create a new empty linkage graph.
+
 **Function Signature:**
 `func NewLinkageGraph() *LinkageGraph`
 
@@ -124,6 +132,14 @@ LinkageGraph manages nodes and edges for IDD identifier validation.
 
 ## SPEC-INTERNAL_GRAPH-007: LinkageGraph.AddNode
 
+**Contract:** `AddNode`
+
+**Design:** `GraphModule`
+
+**Requirement:**
+
+Add a node to the graph if it does not already exist.
+
 **Function Signature:**
 `func (g *LinkageGraph) AddNode(id string, idType model.IdentifierType) *Node`
 
@@ -134,6 +150,14 @@ LinkageGraph manages nodes and edges for IDD identifier validation.
 ---
 
 ## SPEC-INTERNAL_GRAPH-008: LinkageGraph.AddEdge
+
+**Contract:** `AddEdge`
+
+**Design:** `GraphModule`
+
+**Requirement:**
+
+Add a directed edge between two graph nodes.
 
 **Function Signature:**
 `func (g *LinkageGraph) AddEdge(from, to string, edgeType model.LinkType, source string, line int)`
@@ -197,6 +221,10 @@ Factory function to create a new LinkageGraph instance.
 **Contract:** `LinkageGraph`
 
 **Design:** `GraphModule`
+
+**Requirement:**
+
+Create a new empty linkage graph with initialized maps.
 
 **Function Signature:**
 `func NewLinkageGraph() *LinkageGraph`

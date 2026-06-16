@@ -27,6 +27,7 @@ code:
 validation:
   allow_orphans: false
   require_doc_link_consistency: true
+  require_spec_fields: true
   require_spec_test_coverage: true
   require_contract_test_coverage: true
   require_doc_code_correspondence: true

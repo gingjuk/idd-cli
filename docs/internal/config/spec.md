@@ -118,7 +118,7 @@ CodeConfig holds code-related configuration including patterns and annotations.
 
 **Requirement:**
 
-ValidationConfig holds validation rule settings for the IDD CLI.
+ValidationConfig holds validation rule settings for the IDD CLI, including the `require_spec_fields` toggle that requires each frontmatter-declared SPEC section to include `Contract`, `Design`, `Requirement`, and `Tests`.
 
 **Implementation:** `internal/config/config.go`
 

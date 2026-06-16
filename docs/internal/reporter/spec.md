@@ -46,6 +46,14 @@ Reporter generates validation reports in JSON and Markdown formats.
 
 ## SPEC-INTERNAL_REPORTER-003: Reporter.New
 
+**Contract:** `New`
+
+**Design:** `ReporterModule`
+
+**Requirement:**
+
+Create a new Reporter with the given configuration and output format, defaulting to JSON when format is empty.
+
 **Function Signature:**
 `func New(cfg *config.Config, format string) *Reporter`
 
@@ -62,6 +70,14 @@ Reporter generates validation reports in JSON and Markdown formats.
 
 ## SPEC-INTERNAL_REPORTER-004: Reporter.Generate
 
+**Contract:** `Generate`
+
+**Design:** `ReporterModule`
+
+**Requirement:**
+
+Generate a complete report from a validation result, including tool metadata, config summary, and the validation result.
+
 **Function Signature:**
 `func (r *Reporter) Generate(result *model.ValidationResult) (*model.Report, error)`
 
@@ -76,6 +92,14 @@ Reporter generates validation reports in JSON and Markdown formats.
 **Tests:** `TEST-INTERNAL_REPORTER-002`
 
 ## SPEC-INTERNAL_REPORTER-005: Reporter.Write
+
+**Contract:** `Write`
+
+**Design:** `ReporterModule`
+
+**Requirement:**
+
+Write the report to stdout or the specified output file path.
 
 **Function Signature:**
 `func (r *Reporter) Write(report *model.Report, output string) error`

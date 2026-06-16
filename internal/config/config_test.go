@@ -22,6 +22,10 @@ func TestDefault(t *testing.T) {
 		t.Error("ConsistencyCheck should be enabled by default")
 	}
 
+	if !cfg.Validation.RequireSpecFields {
+		t.Error("RequireSpecFields should be enabled by default")
+	}
+
 	if cfg.Validation.ConsistencyCheck.Threshold != 0.3 {
 		t.Errorf("ConsistencyCheck.Threshold = %f, want 0.3", cfg.Validation.ConsistencyCheck.Threshold)
 	}
