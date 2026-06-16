@@ -19,14 +19,15 @@ code:
   patterns:
     - "**/*.go"
   annotations:
-    - "@implement"
-    - "@test"
-    - "@test-contract"
+    spec: "@implement"
+    test: "@test"
+    test_contract: "@test-contract"
   ignore_paths: []
 
 validation:
   allow_orphans: false
   require_doc_link_consistency: true
+  require_spec_fields: true
   require_spec_test_coverage: true
   require_contract_test_coverage: true
   require_doc_code_correspondence: true

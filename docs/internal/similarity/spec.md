@@ -80,6 +80,14 @@ Tokenize text into lowercase alphanumeric tokens.
 
 ## SPEC-INTERNAL_SIMILARITY-006: TFIDF.Tokenize
 
+**Contract:** `Tokenize`
+
+**Design:** `SimilarityModule`
+
+**Requirement:**
+
+Tokenize text into lowercase alphanumeric tokens while filtering stop words.
+
 **Function Signature:**
 `func (t *TFIDF) Tokenize(text string) []string`
 
@@ -108,6 +116,14 @@ Compute term frequency for document tokens.
 **Public Functions:**
 
 ## SPEC-INTERNAL_SIMILARITY-007: TFIDF.ComputeTF
+
+**Contract:** `ComputeTF`
+
+**Design:** `SimilarityModule`
+
+**Requirement:**
+
+Compute term frequency as count of token divided by total token count.
 
 **Function Signature:**
 `func (t *TFIDF) ComputeTF(tokens []string) map[string]float64`
@@ -138,6 +154,14 @@ Compute inverse document frequency across corpus.
 
 ## SPEC-INTERNAL_SIMILARITY-008: TFIDF.ComputeIDF
 
+**Contract:** `ComputeIDF`
+
+**Design:** `SimilarityModule`
+
+**Requirement:**
+
+Compute inverse document frequency across tokenized documents.
+
 **Function Signature:**
 `func (t *TFIDF) ComputeIDF(documents [][]string)`
 
@@ -167,6 +191,14 @@ Compute similarity score between documents using TF-IDF.
 
 ## SPEC-INTERNAL_SIMILARITY-009: TFIDF.Score
 
+**Contract:** `Score`
+
+**Design:** `SimilarityModule`
+
+**Requirement:**
+
+Compute a similarity score between documentation text and code text.
+
 **Function Signature:**
 `func (t *TFIDF) Score(docText, codeText string) float64`
 
@@ -177,6 +209,14 @@ Compute similarity score between documents using TF-IDF.
 ---
 
 ## SPEC-INTERNAL_SIMILARITY-010: TFIDF.CosineSimilarity Method
+
+**Contract:** `CosineSimilarity`
+
+**Design:** `SimilarityModule`
+
+**Requirement:**
+
+Compute cosine similarity between two TF-IDF vectors.
 
 **Function Signature:**
 `func CosineSimilarity(vec1, vec2 map[string]float64) float64`

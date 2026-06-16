@@ -436,9 +436,9 @@ type Report struct {
 // ConfigSummary summarizes the config used for the run.
 // @implement SPEC-INTERNAL_MODEL-010
 type ConfigSummary struct {
-	DocPatterns  []string `json:"doc_patterns"`
-	CodePatterns []string `json:"code_patterns"`
-	Annotations  []string `json:"annotations"`
+	DocPatterns  []string          `json:"doc_patterns"`
+	CodePatterns []string          `json:"code_patterns"`
+	Annotations  map[string]string `json:"annotations"`
 }
 
 // GraphSnapshot is a summary of the linkage graph for the report.

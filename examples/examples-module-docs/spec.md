@@ -2,6 +2,12 @@
 markers:
   - id: SPEC-EXAMPLE-001
     name: User Authentication
+
+related_files:
+  spec: examples/examples-module-docs/spec.md
+  contract: examples/examples-module-docs/contract.md
+  design: examples/examples-module-docs/design.md
+  testing: examples/examples-module-docs/testing.md
 ---
 
 # Specification Examples
@@ -11,6 +17,10 @@ This directory contains example IDD documents showing the expected format.
 ## SPEC-EXAMPLE-001: User Authentication
 
 **Status:** Done
+
+**Contract:** implements interface `PasswordHasher`
+
+**Design:** implements architecture `Graph-First Architecture`
 
 **Requirement:**
 

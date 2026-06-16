@@ -32,11 +32,11 @@ code:
     - "**/*.tsx"
     - "**/*.js"
 
-  # Annotation markers to look for in code
+  # Annotation markers to look for in code (keyed by identifier type)
   annotations:
-    - "@implement"
-    - "@test"
-    - "@test-contract"
+    spec: "@implement"
+    test: "@test"
+    test_contract: "@test-contract"
 
   # Paths to ignore during scanning (glob patterns)
   ignore_paths: []
@@ -48,6 +48,9 @@ validation:
 
   # Require doc link consistency between specs and tests
   require_doc_link_consistency: true
+
+  # Require each frontmatter-declared SPEC section to include Contract, Design, Requirement, and Tests fields
+  require_spec_fields: true
 
   # Require all specs to have at least one test link
   require_spec_test_coverage: true

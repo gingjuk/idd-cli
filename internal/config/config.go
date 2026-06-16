@@ -41,9 +41,9 @@ type IdentifierPatterns struct {
 // CodeConfig holds code-related configuration including patterns and annotations.
 // @implement SPEC-INTERNAL_CONFIG-004
 type CodeConfig struct {
-	Patterns    []string `yaml:"patterns"`
-	Annotations []string `yaml:"annotations"`
-	IgnorePaths []string `yaml:"ignore_paths"`
+	Patterns    []string          `yaml:"patterns"`
+	Annotations map[string]string `yaml:"annotations"`
+	IgnorePaths []string          `yaml:"ignore_paths"`
 }
 
 // ValidationConfig holds validation rule settings for the IDD CLI.
@@ -51,6 +51,7 @@ type CodeConfig struct {
 type ValidationConfig struct {
 	RequireDocLinkConsistency    bool             `yaml:"require_doc_link_consistency"`
 	AllowOrphans                 bool             `yaml:"allow_orphans"`
+	RequireSpecFields            bool             `yaml:"require_spec_fields"`
 	RequireSpecTestCoverage      bool             `yaml:"require_spec_test_coverage"`
 	RequireContractTestCoverage  bool             `yaml:"require_contract_test_coverage"`
 	RequireDesignSections        bool             `yaml:"require_design_sections"`
@@ -121,12 +122,17 @@ func Default() *Config {
 			},
 		},
 		Code: CodeConfig{
-			Patterns:    []string{"**/*.go"},
-			Annotations: []string{"@implement", "@test", "@test-contract"},
+			Patterns: []string{"**/*.go"},
+			Annotations: map[string]string{
+				"spec":          "@implement",
+				"test":          "@test",
+				"test_contract": "@test-contract",
+			},
 		},
 		Validation: ValidationConfig{
 			AllowOrphans:                 false,
 			RequireDocLinkConsistency:    true,
+			RequireSpecFields:            true,
 			RequireSpecTestCoverage:      true,
 			RequireContractTestCoverage:  true,
 			RequireDesignSections:        true,
@@ -150,6 +156,12 @@ func Default() *Config {
 	}
 }
 
+// expectedAnnotationKeys returns the canonical set of annotation keys that must
+// match between docs.identifier_patterns and code.annotations.
+func expectedAnnotationKeys() map[string]bool {
+	return map[string]bool{"spec": true, "test": true, "test_contract": true}
+}
+
 // Validate checks that configuration values are correct and sets defaults where appropriate.
 // @implement SPEC-INTERNAL_CONFIG-009
 func (c *Config) Validate() error {
@@ -163,13 +175,37 @@ func (c *Config) Validate() error {
 		c.Code.Patterns = []string{"**/*.go"}
 	}
 	if len(c.Code.Annotations) == 0 {
-		c.Code.Annotations = []string{"@implement", "@test", "@test-contract"}
+		c.Code.Annotations = map[string]string{
+			"spec":          "@implement",
+			"test":          "@test",
+			"test_contract": "@test-contract",
+		}
+	}
+	if err := c.validateAnnotationKeys(); err != nil {
+		return err
 	}
 	if c.Validation.ConsistencyCheck.Threshold <= 0 {
 		c.Validation.ConsistencyCheck.Threshold = 0.3
 	}
 	if c.Validation.ConsistencyCheck.Threshold > 1.0 {
 		c.Validation.ConsistencyCheck.Threshold = 1.0
+	}
+	return nil
+}
+
+// validateAnnotationKeys checks that code.annotations keys match
+// docs.identifier_patterns keys (spec, test, test_contract).
+func (c *Config) validateAnnotationKeys() error {
+	expected := expectedAnnotationKeys()
+	for key := range c.Code.Annotations {
+		if !expected[key] {
+			return fmt.Errorf("code.annotations has unknown key %q; expected keys: spec, test, test_contract", key)
+		}
+	}
+	for key := range expected {
+		if _, ok := c.Code.Annotations[key]; !ok {
+			return fmt.Errorf("code.annotations is missing key %q (required by docs.identifier_patterns)", key)
+		}
 	}
 	return nil
 }

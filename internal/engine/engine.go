@@ -163,6 +163,9 @@ func (e *Engine) validate() {
 		e.validateDesignSections()
 	}
 
+	if e.cfg.Validation.RequireSpecFields {
+		e.validateSpecRequiredFields()
+	}
 	e.validateContractDesignMarkers()
 	e.validateDocPathExists()
 
@@ -457,6 +460,113 @@ func (e *Engine) validateContractInterfaceConsistency() {
 			}
 		}
 	})
+}
+
+type specRequiredField struct {
+	name       string
+	definition string
+	regex      *regexp.Regexp
+}
+
+var specRequiredFields = []specRequiredField{
+	{
+		name:       "Contract",
+		definition: "**Contract:** implements interface `<InterfaceName>`",
+		regex:      regexp.MustCompile(`(?i)^\s*\*\*Contract:\*\*`),
+	},
+	{
+		name:       "Design",
+		definition: "**Design:** implements architecture `<ComponentName>`",
+		regex:      regexp.MustCompile(`(?i)^\s*\*\*Design:\*\*`),
+	},
+	{
+		name:       "Requirement",
+		definition: "**Requirement:** [What this spec describes]",
+		regex:      regexp.MustCompile(`(?i)^\s*\*\*Requirement:\*\*`),
+	},
+	{
+		name:       "Tests",
+		definition: "**Tests:** `TEST-<MODULE>-001`",
+		regex:      regexp.MustCompile(`(?i)^\s*\*\*Tests:\*\*`),
+	},
+}
+
+// validateSpecRequiredFields checks that every SPEC section in spec.md contains
+// the fields required by the IDD spec template.
+func (e *Engine) validateSpecRequiredFields() {
+	headingRegex := regexp.MustCompile(`(?i)^#{2}\s+(SPEC-[A-Z0-9_]+-[0-9]+)(?::\s*.*)?$`)
+	nextSectionRegex := regexp.MustCompile(`^#{1,2}\s+`)
+
+	e.walkDocFiles(func(path string, lines []string) {
+		if !strings.HasSuffix(path, "spec.md") {
+			return
+		}
+
+		markerIDs := specFrontmatterMarkerIDs(lines)
+		for i := 0; i < len(lines); i++ {
+			trimmed := strings.TrimSpace(lines[i])
+			matches := headingRegex.FindStringSubmatch(trimmed)
+			if len(matches) <= 1 {
+				continue
+			}
+
+			specID := matches[1]
+			if !markerIDs[specID] {
+				continue
+			}
+			found := make(map[string]bool, len(specRequiredFields))
+
+			for j := i + 1; j < len(lines); j++ {
+				nextTrimmed := strings.TrimSpace(lines[j])
+				if nextSectionRegex.MatchString(nextTrimmed) {
+					break
+				}
+				for _, field := range specRequiredFields {
+					if field.regex.MatchString(nextTrimmed) {
+						found[field.name] = true
+					}
+				}
+			}
+
+			for _, field := range specRequiredFields {
+				if found[field.name] {
+					continue
+				}
+				e.result.AddError(
+					"spec-required-fields",
+					fmt.Sprintf("SPEC %s missing required field **%s:**; define it as: %s", specID, field.name, field.definition),
+					fmt.Sprintf("%s:%d", path, i+1),
+					specID,
+					field.name,
+				)
+			}
+		}
+	})
+}
+
+func specFrontmatterMarkerIDs(lines []string) map[string]bool {
+	markerIDs := make(map[string]bool)
+	idRegex := regexp.MustCompile(`^\s*-\s+id:\s*(SPEC-[A-Z0-9_]+-[0-9]+)\s*$`)
+	inFrontmatter := false
+
+	for _, line := range lines {
+		trimmed := strings.TrimSpace(line)
+		if trimmed == "---" {
+			if !inFrontmatter {
+				inFrontmatter = true
+				continue
+			}
+			break
+		}
+		if !inFrontmatter {
+			continue
+		}
+		if matches := idRegex.FindStringSubmatch(line); len(matches) > 1 {
+			markerIDs[matches[1]] = true
+		}
+	}
+
+	return markerIDs
 }
 
 // validateDuplicateHeadingIdentifiers checks that H2 headings within the same

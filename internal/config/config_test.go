@@ -22,6 +22,10 @@ func TestDefault(t *testing.T) {
 		t.Error("ConsistencyCheck should be enabled by default")
 	}
 
+	if !cfg.Validation.RequireSpecFields {
+		t.Error("RequireSpecFields should be enabled by default")
+	}
+
 	if cfg.Validation.ConsistencyCheck.Threshold != 0.3 {
 		t.Errorf("ConsistencyCheck.Threshold = %f, want 0.3", cfg.Validation.ConsistencyCheck.Threshold)
 	}
@@ -130,6 +134,87 @@ func TestLoad_FileNotFound(t *testing.T) {
 	_, err := Load("/nonexistent/path/idd.yaml")
 	if err == nil {
 		t.Error("Expected error for nonexistent file")
+	}
+}
+
+// @test TEST-INTERNAL_CONFIG-002
+func TestValidateAnnotationKeys(t *testing.T) {
+	tests := []struct {
+		name    string
+		cfg     *Config
+		wantErr bool
+	}{
+		{
+			name: "all keys present",
+			cfg: &Config{
+				Code: CodeConfig{
+					Annotations: map[string]string{
+						"spec":          "@implement",
+						"test":          "@test",
+						"test_contract": "@test-contract",
+					},
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name: "missing spec key",
+			cfg: &Config{
+				Code: CodeConfig{
+					Annotations: map[string]string{
+						"test":          "@test",
+						"test_contract": "@test-contract",
+					},
+				},
+			},
+			wantErr: true,
+		},
+		{
+			name: "missing test key",
+			cfg: &Config{
+				Code: CodeConfig{
+					Annotations: map[string]string{
+						"spec":          "@implement",
+						"test_contract": "@test-contract",
+					},
+				},
+			},
+			wantErr: true,
+		},
+		{
+			name: "unknown key",
+			cfg: &Config{
+				Code: CodeConfig{
+					Annotations: map[string]string{
+						"spec":          "@implement",
+						"test":          "@test",
+						"test_contract": "@test-contract",
+						"extra":         "@something",
+					},
+				},
+			},
+			wantErr: true,
+		},
+		{
+			name: "partial keys",
+			cfg: &Config{
+				Code: CodeConfig{
+					Annotations: map[string]string{
+						"spec": "@implement",
+					},
+				},
+			},
+			wantErr: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := tt.cfg.Validate()
+			if (err != nil) != tt.wantErr {
+				t.Errorf("Validate() error = %v, wantErr = %v", err, tt.wantErr)
+			}
+		})
 	}
 }
 
