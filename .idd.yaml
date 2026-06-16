@@ -19,9 +19,9 @@ code:
   patterns:
     - "**/*.go"
   annotations:
-    - "@implement"
-    - "@test"
-    - "@test-contract"
+    spec: "@implement"
+    test: "@test"
+    test_contract: "@test-contract"
   ignore_paths: []
 
 validation:

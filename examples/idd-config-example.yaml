@@ -32,11 +32,11 @@ code:
     - "**/*.tsx"
     - "**/*.js"
 
-  # Annotation markers to look for in code
+  # Annotation markers to look for in code (keyed by identifier type)
   annotations:
-    - "@implement"
-    - "@test"
-    - "@test-contract"
+    spec: "@implement"
+    test: "@test"
+    test_contract: "@test-contract"
 
   # Paths to ignore during scanning (glob patterns)
   ignore_paths: []

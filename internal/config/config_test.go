@@ -137,6 +137,87 @@ func TestLoad_FileNotFound(t *testing.T) {
 	}
 }
 
+// @test TEST-INTERNAL_CONFIG-002
+func TestValidateAnnotationKeys(t *testing.T) {
+	tests := []struct {
+		name    string
+		cfg     *Config
+		wantErr bool
+	}{
+		{
+			name: "all keys present",
+			cfg: &Config{
+				Code: CodeConfig{
+					Annotations: map[string]string{
+						"spec":          "@implement",
+						"test":          "@test",
+						"test_contract": "@test-contract",
+					},
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name: "missing spec key",
+			cfg: &Config{
+				Code: CodeConfig{
+					Annotations: map[string]string{
+						"test":          "@test",
+						"test_contract": "@test-contract",
+					},
+				},
+			},
+			wantErr: true,
+		},
+		{
+			name: "missing test key",
+			cfg: &Config{
+				Code: CodeConfig{
+					Annotations: map[string]string{
+						"spec":          "@implement",
+						"test_contract": "@test-contract",
+					},
+				},
+			},
+			wantErr: true,
+		},
+		{
+			name: "unknown key",
+			cfg: &Config{
+				Code: CodeConfig{
+					Annotations: map[string]string{
+						"spec":          "@implement",
+						"test":          "@test",
+						"test_contract": "@test-contract",
+						"extra":         "@something",
+					},
+				},
+			},
+			wantErr: true,
+		},
+		{
+			name: "partial keys",
+			cfg: &Config{
+				Code: CodeConfig{
+					Annotations: map[string]string{
+						"spec": "@implement",
+					},
+				},
+			},
+			wantErr: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := tt.cfg.Validate()
+			if (err != nil) != tt.wantErr {
+				t.Errorf("Validate() error = %v, wantErr = %v", err, tt.wantErr)
+			}
+		})
+	}
+}
+
 // @test TEST-INTERNAL_CONFIG-003
 func TestLoad_InvalidYAML(t *testing.T) {
 	tmpDir := t.TempDir()
