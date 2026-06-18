@@ -46,19 +46,19 @@ related_files:
 
 ## SPEC-INTERNAL_MODEL-001: Identifier Type Parsing
 
-**Contract:** `ParseIdentifierType`
-
 **Design:** `ModelModule`
 
-**Status:** Done
+**Contract:** `ParseIdentifierType`
 
 **Requirement:**
 
 Parse identifier type from string representation.
 
-**Implementation:** `internal/model/identifier.go`
-
 **Tests:** `TEST-INTERNAL_MODEL-001`
+
+**Status:** Done
+
+**Implementation:** `internal/model/identifier.go`
 
 **Public Functions:**
 
@@ -67,44 +67,46 @@ Parse identifier type from string representation.
 **Function Signature:**
 `func ParseIdentifierType(s string) (IdentifierType, error)`
 
----
-
 ## SPEC-INTERNAL_MODEL-002: Identifier Creation
-
-**Contract:** `NewIdentifier`
 
 **Design:** `ModelModule`
 
-**Status:** Done
+**Contract:** `NewIdentifier`
 
 **Requirement:**
 
 Create a new identifier with given fields.
 
-**Implementation:** `internal/model/identifier.go`
-
 **Tests:** `TEST-INTERNAL_MODEL-002`
 
+**Status:** Done
+
+**Implementation:** `internal/model/identifier.go`
+
 **Public Functions:**
+
+---
 
 ## SPEC-INTERNAL_MODEL-026: Identifier.NewIdentifier
 
 **Function Signature:**
 `func NewIdentifier(id string, idType IdentifierType, title, source string, line int) *Identifier`
 
----
-
 ## SPEC-INTERNAL_MODEL-003: Identifier Link Management
-
-**Contract:** `AddLink`
 
 **Design:** `ModelModule`
 
-**Status:** Done
+**Contract:** `AddLink`
 
 **Requirement:**
 
 Identifiers store forward links to dependencies.
+
+**Tests:** `TEST-INTERNAL_MODEL-003`
+
+---
+
+**Status:** Done
 
 **Implementation:** `internal/model/identifier.go`
 
@@ -114,21 +116,21 @@ Identifiers store forward links to dependencies.
 - [x] AddLink adds forward reference
 - [x] Backlinks are computed from forward links
 
-**Tests:** `TEST-INTERNAL_MODEL-003`
-
 ---
 
 ## SPEC-INTERNAL_MODEL-004: IdentifierSet Collection
 
-**Contract:** `IdentifierSet`
-
 **Design:** `ModelModule`
 
-**Status:** Done
+**Contract:** `IdentifierSet`
 
 **Requirement:**
 
 IdentifierSet stores identifiers by type and ID.
+
+**Tests:** `TEST-INTERNAL_MODEL-004`
+
+**Status:** Done
 
 **Implementation:** `internal/model/identifier.go`
 
@@ -136,25 +138,23 @@ IdentifierSet stores identifiers by type and ID.
 
 - `IdentifierSet` — Collection with type slices and byID map
 
-**Tests:** `TEST-INTERNAL_MODEL-004`
-
 ---
 
 ## SPEC-INTERNAL_MODEL-005: IdentifierSet Access Operations
 
-**Contract:** `IdentifierSet`
-
 **Design:** `ModelModule`
 
-**Status:** Done
+**Contract:** `IdentifierSet`
 
 **Requirement:**
 
 IdentifierSet provides Get, Has operations.
 
-**Implementation:** `internal/model/identifier.go`
-
 **Tests:** `TEST-INTERNAL_MODEL-005`
+
+**Status:** Done
+
+**Implementation:** `internal/model/identifier.go`
 
 **Public Functions:**
 
@@ -162,113 +162,111 @@ IdentifierSet provides Get, Has operations.
 
 ## SPEC-INTERNAL_MODEL-028: IdentifierSet.Has
 
----
-
 ## SPEC-INTERNAL_MODEL-006: IdentifierSet Count and All
-
-**Contract:** `IdentifierSet`
 
 **Design:** `ModelModule`
 
-**Status:** Done
+**Contract:** `IdentifierSet`
 
 **Requirement:**
 
 IdentifierSet provides Count and All operations.
 
-**Implementation:** `internal/model/identifier.go`
-
 **Tests:** `TEST-INTERNAL_MODEL-006`
 
+**Status:** Done
+
+**Implementation:** `internal/model/identifier.go`
+
 **Public Functions:**
+
+---
 
 ## SPEC-INTERNAL_MODEL-029: IdentifierSet.Count
 
 ## SPEC-INTERNAL_MODEL-030: IdentifierSet.All
 
----
-
 ## SPEC-INTERNAL_MODEL-007: IdentifierSet Merge Operation
-
-**Contract:** `IdentifierSet`
 
 **Design:** `ModelModule`
 
-**Status:** Done
+**Contract:** `IdentifierSet`
 
 **Requirement:**
 
 Combine two identifier sets.
 
-**Implementation:** `internal/model/identifier.go`
-
 **Tests:** `TEST-INTERNAL_MODEL-007`
+
+**Status:** Done
+
+**Implementation:** `internal/model/identifier.go`
 
 **Public Functions:**
 
-## SPEC-INTERNAL_MODEL-031: IdentifierSet.Merge
-
 ---
+
+## SPEC-INTERNAL_MODEL-031: IdentifierSet.Merge
 
 ## SPEC-INTERNAL_MODEL-008: Annotation Creation
 
-**Contract:** `NewAnnotation`
-
 **Design:** `ModelModule`
 
-**Status:** Done
+**Contract:** `NewAnnotation`
 
 **Requirement:**
 
 Create annotation from code.
 
-**Implementation:** `internal/model/identifier.go`
-
 **Tests:** `TEST-INTERNAL_MODEL-008`
+
+**Status:** Done
+
+**Implementation:** `internal/model/identifier.go`
 
 **Public Functions:**
 
-## SPEC-INTERNAL_MODEL-032: Annotation.NewAnnotation
-
 ---
+
+## SPEC-INTERNAL_MODEL-032: Annotation.NewAnnotation
 
 ## SPEC-INTERNAL_MODEL-009: Annotation Conversion
 
-**Contract:** `Annotation`
-
 **Design:** `ModelModule`
 
-**Status:** Done
+**Contract:** `Annotation`
 
 **Requirement:**
 
 Convert annotation to identifier.
 
-**Implementation:** `internal/model/identifier.go`
-
 **Tests:** `TEST-INTERNAL_MODEL-009`
+
+**Status:** Done
+
+**Implementation:** `internal/model/identifier.go`
 
 **Public Functions:**
 
-## SPEC-INTERNAL_MODEL-033: Annotation.ToIdentifier
-
 ---
+
+## SPEC-INTERNAL_MODEL-033: Annotation.ToIdentifier
 
 ## SPEC-INTERNAL_MODEL-010: Validation Result Types
 
-**Contract:** `ValidationResult`
-
 **Design:** `ModelModule`
 
-**Status:** Done
+**Contract:** `ValidationResult`
 
 **Requirement:**
 
 Validation result stores errors and warnings.
 
-**Implementation:** `internal/model/identifier.go`
-
 **Tests:** `TEST-INTERNAL_MODEL-010`
+
+**Status:** Done
+
+**Implementation:** `internal/model/identifier.go`
 
 **Key Types:**
 
@@ -277,21 +275,23 @@ Validation result stores errors and warnings.
 
 ---
 
-## SPEC-INTERNAL_MODEL-011: Validation Result Operations
+---
 
-**Contract:** `ValidationResult`
+## SPEC-INTERNAL_MODEL-011: Validation Result Operations
 
 **Design:** `ModelModule`
 
-**Status:** Done
+**Contract:** `ValidationResult`
 
 **Requirement:**
 
 Add errors/warnings and sort results.
 
-**Implementation:** `internal/model/identifier.go`
-
 **Tests:** `TEST-INTERNAL_MODEL-011`, `TEST-INTERNAL_MODEL-016`
+
+**Status:** Done
+
+**Implementation:** `internal/model/identifier.go`
 
 **Public Functions:**
 
@@ -303,19 +303,21 @@ Add errors/warnings and sort results.
 
 **Tests:** `TEST-INTERNAL_MODEL-011`, `TEST-INTERNAL_MODEL-016`
 
----
-
 ## SPEC-INTERNAL_MODEL-012: Link Type Definition
-
-**Contract:** `LinkType`
 
 **Design:** `ModelModule`
 
-**Status:** Done
+**Contract:** `LinkType`
 
 **Requirement:**
 
 LinkType enum for edge types.
+
+**Tests:** `TEST-INTERNAL_MODEL-012`, `TEST-INTERNAL_MODEL-028`
+
+---
+
+**Status:** Done
 
 **Implementation:** `internal/model/link.go`
 
@@ -323,21 +325,21 @@ LinkType enum for edge types.
 
 - `LinkType` — Enum for LinkTests, LinkImplements, LinkReferences
 
-**Tests:** `TEST-INTERNAL_MODEL-012`, `TEST-INTERNAL_MODEL-028`
-
 ---
 
 ## SPEC-INTERNAL_MODEL-013: Link Structure
 
-**Contract:** `Link`
-
 **Design:** `ModelModule`
 
-**Status:** Done
+**Contract:** `Link`
 
 **Requirement:**
 
 Link represents a reference from one identifier to another.
+
+**Tests:** `TEST-INTERNAL_MODEL-013`, `TEST-INTERNAL_MODEL-029`, `TEST-INTERNAL_MODEL-030`
+
+**Status:** Done
 
 **Implementation:** `internal/model/link.go`
 
@@ -345,21 +347,21 @@ Link represents a reference from one identifier to another.
 
 - `Link` — Reference with type and target ID
 
-**Tests:** `TEST-INTERNAL_MODEL-013`, `TEST-INTERNAL_MODEL-029`, `TEST-INTERNAL_MODEL-030`
-
 ---
 
 ## SPEC-INTERNAL_MODEL-014: Origin Type Definition
 
-**Contract:** `Origin`
-
 **Design:** `ModelModule`
 
-**Status:** Done
+**Contract:** `Origin`
 
 **Requirement:**
 
 Origin represents the source location type of an identifier.
+
+**Tests:** `TEST-INTERNAL_MODEL-014`
+
+**Status:** Done
 
 **Implementation:** `internal/model/identifier.go`
 
@@ -369,21 +371,21 @@ Origin represents the source location type of an identifier.
 - `OriginDoc` — Indicates identifier came from documentation
 - `OriginCode` — Indicates identifier came from source code
 
-**Tests:** `TEST-INTERNAL_MODEL-014`
-
 ---
 
 ## SPEC-INTERNAL_MODEL-015: Origin Operations
 
-**Contract:** `Origin`
-
 **Design:** `ModelModule`
 
-**Status:** Done
+**Contract:** `Origin`
 
 **Requirement:**
 
 Set and check identifier origin.
+
+**Tests:** `TEST-INTERNAL_MODEL-015`
+
+**Status:** Done
 
 **Implementation:** `internal/model/identifier.go`
 
@@ -392,21 +394,21 @@ Set and check identifier origin.
 - `SetOrigin(o Origin)`
 - `Origin() Origin`
 
-**Tests:** `TEST-INTERNAL_MODEL-015`
-
 ---
 
 ## SPEC-INTERNAL_MODEL-017: Identifier Origin Methods
 
-**Contract:** `SetOrigin`
-
 **Design:** `ModelModule`
 
-**Status:** Done
+**Contract:** `SetOrigin`
 
 **Requirement:**
 
 Methods to get/set identifier origin.
+
+**Tests:** `TEST-INTERNAL_MODEL-017`
+
+**Status:** Done
 
 **Implementation:** `internal/model/identifier.go`
 
@@ -415,30 +417,28 @@ Methods to get/set identifier origin.
 - `SetOrigin(origin Origin)` — implemented as part of `SPEC-INTERNAL_MODEL-017`
 - `GetOrigin() Origin` — not present in code (only SetOrigin exists)
 
-**Tests:** `TEST-INTERNAL_MODEL-017`
-
 **Note:** `GetOrigin()` method does not exist in code. Only `SetOrigin()` is implemented.
 
 ---
 
 ## SPEC-INTERNAL_MODEL-018: Identifier Model Core
 
-**Contract:** `Identifier`
-
 **Design:** `ModelModule`
 
-**Status:** Done
+**Contract:** `Identifier`
 
 **Requirement:**
 
 Core identifier type with all fields.
+
+**Tests:** `TEST-INTERNAL_MODEL-018`
+
+**Status:** Done
 
 **Implementation:** `internal/model/identifier.go`
 
 **Key Types:**
 
 - `Identifier` — IDD identifier with type, module, number, links
-
-**Tests:** `TEST-INTERNAL_MODEL-018`
 
 **Tests:** ``

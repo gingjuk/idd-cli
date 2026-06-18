@@ -30,14 +30,17 @@ related_files:
 
 ## SPEC-PKG_PATTERN-001: IDD Pattern Regex
 
-**Status:** Done
+**Design:** `PatternModule`
 
 **Contract:** `IDDPattern`
-**Design:** `PatternModule`
 
 **Requirement:**
 
 Define regex patterns for IDD identifier recognition.
+
+**Tests:** `TEST-PKG_PATTERN-001`
+
+**Status:** Done
 
 **Implementation:** `pkg/pattern/idd.go`
 
@@ -47,20 +50,21 @@ Define regex patterns for IDD identifier recognition.
 - TEST pattern: `TEST-[A-Z]+-[0-9]+`
 - CONTRACT pattern: `CONTRACT-[A-Z]+-[0-9]+`
 - DESIGN pattern: `DESIGN-[A-Z]+-[0-9]+`
-**Tests:** `TEST-PKG_PATTERN-001`
-
 ---
 
 ## SPEC-PKG_PATTERN-002: Code Annotation Pattern
 
-**Status:** Done
+**Design:** `PatternModule`
 
 **Contract:** `AnnotationPattern`
-**Design:** `PatternModule`
 
 **Requirement:**
 
 Define regex patterns for code annotations (@implement, @test, @test-contract).
+
+**Tests:** `TEST-PKG_PATTERN-002`
+
+**Status:** Done
 
 **Implementation:** `pkg/pattern/idd.go`
 
@@ -68,20 +72,21 @@ Define regex patterns for code annotations (@implement, @test, @test-contract).
 
 - Annotation prefix pattern
 - Annotation value pattern
-**Tests:** `TEST-PKG_PATTERN-002`
-
 ---
 
 ## SPEC-PKG_PATTERN-003: Annotation Type Mapping
 
-**Status:** Done
+**Design:** `PatternModule`
 
 **Contract:** `GetAnnotationType`
-**Design:** `PatternModule`
 
 **Requirement:**
 
 Map annotation prefixes to identifier types.
+
+**Tests:** `TEST-PKG_PATTERN-003`
+
+**Status:** Done
 
 **Implementation:** `pkg/pattern/idd.go`
 
@@ -89,20 +94,21 @@ Map annotation prefixes to identifier types.
 
 - `GetAnnotationType(prefix string) string`
 - Maps: @implement → SPEC, @test → TEST, @test-contract → TEST
-**Tests:** `TEST-PKG_PATTERN-003`
-
 ---
 
 ## SPEC-PKG_PATTERN-004: Reference Extraction
 
-**Status:** Done
+**Design:** `PatternModule`
 
 **Contract:** `ExtractIDDReferences`
-**Design:** `PatternModule`
 
 **Requirement:**
 
 Extract IDD references from content.
+
+**Tests:** `TEST-PKG_PATTERN-004`
+
+**Status:** Done
 
 **Implementation:** `pkg/pattern/idd.go`
 
@@ -110,20 +116,21 @@ Extract IDD references from content.
 
 - `ExtractIDDReferences(content string) []string`
 - Extracts all IDD identifier references from text
-**Tests:** `TEST-PKG_PATTERN-004`
-
 ---
 
 ## SPEC-PKG_PATTERN-005: Reference Splitting
 
-**Status:** Done
+**Design:** `PatternModule`
 
 **Contract:** `SplitAnnotationRefs`
-**Design:** `PatternModule`
 
 **Requirement:**
 
 Split comma-separated IDD references.
+
+**Tests:** `TEST-PKG_PATTERN-005`
+
+**Status:** Done
 
 **Implementation:** `pkg/pattern/idd.go`
 
@@ -131,20 +138,21 @@ Split comma-separated IDD references.
 
 - `SplitAnnotationRefs(s string) []string`
 - Trims whitespace from each reference
-**Tests:** `TEST-PKG_PATTERN-005`
-
 ---
 
 ## SPEC-PKG_PATTERN-006: Identifier Type Detection
 
-**Status:** Done
+**Design:** `PatternModule`
 
 **Contract:** `GetIdentifierType`
-**Design:** `PatternModule`
 
 **Requirement:**
 
 Determine identifier type from reference string.
+
+**Tests:** `TEST-PKG_PATTERN-006`
+
+**Status:** Done
 
 **Implementation:** `pkg/pattern/idd.go`
 
@@ -152,20 +160,21 @@ Determine identifier type from reference string.
 
 - `GetIdentifierType(ref string) string`
 - Returns "SPEC", "TEST", "CONTRACT", "DESIGN" or empty
-**Tests:** `TEST-PKG_PATTERN-006`
-
 ---
 
 ## SPEC-PKG_PATTERN-007: Pattern Validation
 
-**Status:** Done
+**Design:** `PatternModule`
 
 **Contract:** `ValidateIDPattern`
-**Design:** `PatternModule`
 
 **Requirement:**
 
 Validate identifier against IDD pattern.
+
+**Tests:** `TEST-PKG_PATTERN-007`
+
+**Status:** Done
 
 **Implementation:** `pkg/pattern/idd.go`
 
@@ -173,20 +182,21 @@ Validate identifier against IDD pattern.
 
 - `ValidateIDPattern(id string) error`
 - Validates against known patterns
-**Tests:** `TEST-PKG_PATTERN-007`
-
 ---
 
 ## SPEC-PKG_PATTERN-008: IDD Reference Filter
 
-**Status:** Done
+**Design:** `PatternModule`
 
 **Contract:** `ExtractAnnotations`
-**Design:** `PatternModule`
 
 **Requirement:**
 
 Filter out quoted/backtick-wrapped identifiers.
+
+**Tests:** `TEST-PKG_PATTERN-008`
+
+**Status:** Done
 
 **Implementation:** `pkg/pattern/idd.go`
 
@@ -194,20 +204,20 @@ Filter out quoted/backtick-wrapped identifiers.
 
 - `ExtractAnnotations(content string) []string`
 - Filters out identifiers in backticks or quotes
-**Tests:** `TEST-PKG_PATTERN-008`
-
 ---
 
 ## SPEC-PKG_PATTERN-009: Pattern Constants
 
-**Status:** Done
+**Design:** `PatternModule`
 
 **Contract:** `PatternConstants`
-**Design:** `PatternModule`
 
 **Requirement:**
 
 Define pattern constants for reuse.
+
+**Tests:** `TEST-PKG_PATTERN-007`
+**Status:** Done
 
 **Implementation:** `pkg/pattern/idd.go`
 
@@ -216,4 +226,3 @@ Define pattern constants for reuse.
 - Pattern strings
 - Annotation prefixes
 
-**Tests:** `TEST-PKG_PATTERN-007`

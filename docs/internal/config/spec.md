@@ -30,178 +30,178 @@ Configuration module for idd-cli.
 
 ## SPEC-INTERNAL_CONFIG-001: Config Structure
 
-**Status:** Done
+**Design:** `ConfigModule`
 
 **Contract:** `Config`
-
-**Design:** `ConfigModule`
 
 **Requirement:**
 
 Config is the root configuration structure that holds all settings for the IDD CLI validation tool.
 
+**Tests:** `TEST-INTERNAL_CONFIG-001`
+
+**Status:** Done
+
 **Implementation:** `internal/config/config.go`
 
 **Code Annotation:** `@implement SPEC-INTERNAL_CONFIG-001`
-
-**Tests:** `TEST-INTERNAL_CONFIG-001`
 
 ---
 
 ## SPEC-INTERNAL_CONFIG-002: Docs Config Structure
 
-**Status:** Done
+**Design:** `ConfigModule`
 
 **Contract:** `DocsConfig`
-
-**Design:** `ConfigModule`
 
 **Requirement:**
 
 DocsConfig holds documentation-related configuration including patterns and ignore paths.
 
+**Tests:** `TEST-INTERNAL_CONFIG-002`
+
+**Status:** Done
+
 **Implementation:** `internal/config/config.go`
 
 **Code Annotation:** `@implement SPEC-INTERNAL_CONFIG-002`
-
-**Tests:** `TEST-INTERNAL_CONFIG-002`
 
 ---
 
 ## SPEC-INTERNAL_CONFIG-003: Identifier Patterns Structure
 
-**Status:** Done
+**Design:** `ConfigModule`
 
 **Contract:** `IdentifierPatterns`
-
-**Design:** `ConfigModule`
 
 **Requirement:**
 
 IdentifierPatterns defines regex patterns for matching SPEC, TEST, and other IDD identifiers.
 
+**Tests:** `TEST-INTERNAL_CONFIG-003`
+
+**Status:** Done
+
 **Implementation:** `internal/config/config.go`
 
 **Code Annotation:** `@implement SPEC-INTERNAL_CONFIG-003`
-
-**Tests:** `TEST-INTERNAL_CONFIG-003`
 
 ---
 
 ## SPEC-INTERNAL_CONFIG-004: Code Config Structure
 
-**Status:** Done
+**Design:** `ConfigModule`
 
 **Contract:** `CodeConfig`
-
-**Design:** `ConfigModule`
 
 **Requirement:**
 
 CodeConfig holds code-related configuration including patterns and annotations.
 
+**Tests:** `TEST-INTERNAL_CONFIG-003`
+
+**Status:** Done
+
 **Implementation:** `internal/config/config.go`
 
 **Code Annotation:** `@implement SPEC-INTERNAL_CONFIG-004`
-
-**Tests:** `TEST-INTERNAL_CONFIG-003`
 
 ---
 
 ## SPEC-INTERNAL_CONFIG-005: Validation Config Structure
 
-**Status:** Done
+**Design:** `ConfigModule`
 
 **Contract:** `ValidationConfig`
 
-**Design:** `ConfigModule`
-
 **Requirement:**
 
-ValidationConfig holds validation rule settings for the IDD CLI, including the `require_spec_fields` toggle that requires each frontmatter-declared SPEC section to include `Contract`, `Design`, `Requirement`, and `Tests`.
+ValidationConfig holds validation rule settings for the IDD CLI, including the `require_spec_fields` toggle that requires each frontmatter-declared SPEC section to include `Design`, `Contract`, `Requirement`, and `Tests` in that order before any optional fields.
+
+**Tests:** `TEST-INTERNAL_CONFIG-003`
+
+**Status:** Done
 
 **Implementation:** `internal/config/config.go`
 
 **Code Annotation:** `@implement SPEC-INTERNAL_CONFIG-005`
 
-**Tests:** `TEST-INTERNAL_CONFIG-003`
-
 ---
 
 ## SPEC-INTERNAL_CONFIG-006: Output Config Structure
 
-**Status:** Done
+**Design:** `ConfigModule`
 
 **Contract:** `OutputConfig`
-
-**Design:** `ConfigModule`
 
 **Requirement:**
 
 OutputConfig holds output-related configuration settings.
 
+**Tests:** `TEST-INTERNAL_CONFIG-003`
+
+**Status:** Done
+
 **Implementation:** `internal/config/config.go`
 
 **Code Annotation:** `@implement SPEC-INTERNAL_CONFIG-006`
-
-**Tests:** `TEST-INTERNAL_CONFIG-003`
 
 ---
 
 ## SPEC-INTERNAL_CONFIG-007: Load Config Function
 
-**Status:** Done
+**Design:** `ConfigModule`
 
 **Contract:** `Load`
-
-**Design:** `ConfigModule`
 
 **Requirement:**
 
 Load configuration from YAML files with validation.
 
+**Tests:** `TEST-INTERNAL_CONFIG-002`
+
+**Status:** Done
+
 **Implementation:** `internal/config/config.go`
 
 **Code Annotation:** `@implement SPEC-INTERNAL_CONFIG-007`
-
-**Tests:** `TEST-INTERNAL_CONFIG-002`
 
 ---
 
 ## SPEC-INTERNAL_CONFIG-008: Default Config Function
 
-**Status:** Done
+**Design:** `ConfigModule`
 
 **Contract:** `Default`
-
-**Design:** `ConfigModule`
 
 **Requirement:**
 
 Return sensible default configuration.
 
+**Tests:** `TEST-INTERNAL_CONFIG-001`
+
+**Status:** Done
+
 **Implementation:** `internal/config/config.go`
 
 **Code Annotation:** `@implement SPEC-INTERNAL_CONFIG-008`
-
-**Tests:** `TEST-INTERNAL_CONFIG-001`
 
 ---
 
 ## SPEC-INTERNAL_CONFIG-009: Validate Config Function
 
-**Status:** Done
+**Design:** `ConfigModule`
 
 **Contract:** `Validate`
-
-**Design:** `ConfigModule`
 
 **Requirement:**
 
 Validate configuration values are correct.
 
+**Tests:** `TEST-INTERNAL_CONFIG-003`
+**Status:** Done
+
 **Implementation:** `internal/config/config.go`
 
 **Code Annotation:** `@implement SPEC-INTERNAL_CONFIG-009`
 
-**Tests:** `TEST-INTERNAL_CONFIG-003`

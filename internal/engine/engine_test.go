@@ -747,10 +747,12 @@ More content
 
 func TestEngine_validateSpecRequiredFields(t *testing.T) {
 	tests := []struct {
-		name           string
-		doc            string
-		wantFields     []string
-		wantErrorCount int
+		name                   string
+		doc                    string
+		wantFields             []string
+		wantOrderError         bool
+		wantOptionalOrderError bool
+		wantErrorCount         int
 	}{
 		{
 			name: "all required fields present",
@@ -762,15 +764,19 @@ markers:
 
 ## SPEC-BE-001: User Login
 
-**Contract:** implements interface Authenticator
-
 **Design:** implements architecture AuthModule
+
+**Contract:** implements interface Authenticator
 
 **Requirement:**
 
 Users can log in with email and password.
 
 **Tests:** TEST-BE-001
+
+**Status:** Done
+
+**Implementation:** auth.go
 `,
 		},
 		{
@@ -810,6 +816,54 @@ markers:
 			wantErrorCount: 2,
 		},
 		{
+			name: "fields must be in template order",
+			doc: `---
+markers:
+  - id: SPEC-BE-001
+    name: User Login
+---
+
+## SPEC-BE-001: User Login
+
+**Contract:** implements interface Authenticator
+
+**Design:** implements architecture AuthModule
+
+**Requirement:**
+
+Users can log in with email and password.
+
+**Tests:** TEST-BE-001
+`,
+			wantOrderError: true,
+			wantErrorCount: 1,
+		},
+		{
+			name: "optional fields must follow required fields",
+			doc: `---
+markers:
+  - id: SPEC-BE-001
+    name: User Login
+---
+
+## SPEC-BE-001: User Login
+
+**Design:** implements architecture AuthModule
+
+**Status:** Done
+
+**Contract:** implements interface Authenticator
+
+**Requirement:**
+
+Users can log in with email and password.
+
+**Tests:** TEST-BE-001
+`,
+			wantOptionalOrderError: true,
+			wantErrorCount:         1,
+		},
+		{
 			name: "checks each spec section independently",
 			doc: `---
 markers:
@@ -821,9 +875,9 @@ markers:
 
 ## SPEC-BE-001: Complete
 
-**Contract:** implements interface Authenticator
-
 **Design:** implements architecture AuthModule
+
+**Contract:** implements interface Authenticator
 
 **Requirement:** Complete requirement.
 
@@ -876,6 +930,36 @@ markers:
 				}
 				if !found {
 					t.Errorf("Expected missing field error for %s", field)
+				}
+			}
+			if tt.wantOrderError {
+				found := false
+				for _, err := range eng.result.Errors {
+					if err.Rule == "spec-required-fields" && err.Code == "field-order" {
+						found = true
+						if !strings.Contains(err.Message, "**Design:**, **Contract:**, **Requirement:**, **Tests:**") {
+							t.Errorf("Expected order error to include expected field order, got %q", err.Message)
+						}
+						break
+					}
+				}
+				if !found {
+					t.Errorf("Expected field order error")
+				}
+			}
+			if tt.wantOptionalOrderError {
+				found := false
+				for _, err := range eng.result.Errors {
+					if err.Rule == "spec-required-fields" && err.Code == "optional-field-order" {
+						found = true
+						if !strings.Contains(err.Message, "optional field **Status:** appears before required fields are complete") {
+							t.Errorf("Expected optional field order error to include offending field, got %q", err.Message)
+						}
+						break
+					}
+				}
+				if !found {
+					t.Errorf("Expected optional field order error")
 				}
 			}
 		})
