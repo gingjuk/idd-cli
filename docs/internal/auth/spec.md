@@ -8,6 +8,7 @@ related_files:
   contract: docs/internal/auth/contract.md
   design: docs/internal/auth/design.md
   testing: docs/internal/auth/testing.md
+
 ---
 
 # Specification (auth)
@@ -38,4 +39,3 @@ Authentication module provides user login and token generation functionality for
 - [x] LoginResponse struct contains token field
 - [x] Authentication types are annotated with @implement; tests use @test-contract for CONTRACT coverage
 - [x] Test annotations link to `TEST-INTERNAL_AUTH-001`
-

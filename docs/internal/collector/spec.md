@@ -39,6 +39,7 @@ related_files:
   contract: docs/internal/collector/contract.md
   design: docs/internal/collector/design.md
   testing: docs/internal/collector/testing.md
+
 ---
 
 # Specification (collector)
@@ -515,4 +516,3 @@ Respect ignore_paths configuration when collecting from directories.
 **Status:** Done
 
 **Implementation:** `internal/collector/doc_collector.go`, `internal/collector/code_collector.go`
-

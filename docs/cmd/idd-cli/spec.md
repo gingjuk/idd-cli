@@ -26,6 +26,7 @@ related_files:
   contract: docs/cmd/idd-cli/contract.md
   design: docs/cmd/idd-cli/design.md
   testing: docs/cmd/idd-cli/testing.md
+
 ---
 
 # Specification (backend)

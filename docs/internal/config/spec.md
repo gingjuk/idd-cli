@@ -22,6 +22,7 @@ markers:
 related_files:
   spec: docs/internal/config/spec.md
   testing: docs/internal/config/testing.md
+
 ---
 
 # Specification (config)
@@ -204,4 +205,3 @@ Validate configuration values are correct.
 **Implementation:** `internal/config/config.go`
 
 **Code Annotation:** `@implement SPEC-INTERNAL_CONFIG-009`
-

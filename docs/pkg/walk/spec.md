@@ -12,6 +12,7 @@ related_files:
   contract: docs/pkg/walk/contract.md
   design: docs/pkg/walk/design.md
   testing: docs/pkg/walk/testing.md
+
 ---
 
 # Specification (walk)
@@ -40,6 +41,7 @@ Walk filesystem matching files against glob patterns.
 `func Walk(patterns []string, visitor FileVisitor) error`
 
 **Purpose:** Walks the filesystem matching files against the given glob patterns.
+
 ---
 
 ## SPEC-PKG_WALK-002: Extension Matching
@@ -66,6 +68,7 @@ Check if file path has any of the specified extensions.
 `func MatchAnyExtensions(path string, extensions []string) bool`
 
 **Purpose:** Checks if a file path has any of the specified extensions.
+
 ---
 
 ## SPEC-PKG_WALK-003: File Visitor Pattern

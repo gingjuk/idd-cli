@@ -40,6 +40,7 @@ related_files:
   contract: docs/internal/model/contract.md
   design: docs/internal/model/design.md
   testing: docs/internal/model/testing.md
+
 ---
 
 # Specification (model)

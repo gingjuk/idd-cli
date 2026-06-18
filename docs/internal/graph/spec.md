@@ -24,6 +24,7 @@ related_files:
   contract: docs/internal/graph/contract.md
   design: docs/internal/graph/design.md
   testing: docs/internal/graph/testing.md
+
 ---
 
 # Specification (graph)

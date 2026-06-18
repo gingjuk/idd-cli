@@ -14,6 +14,7 @@ related_files:
   contract: docs/internal/reporter/contract.md
   design: docs/internal/reporter/design.md
   testing: docs/internal/reporter/testing.md
+
 ---
 
 # Specification (reporter)

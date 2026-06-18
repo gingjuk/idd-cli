@@ -24,6 +24,7 @@ related_files:
   contract: docs/pkg/pattern/contract.md
   design: docs/pkg/pattern/design.md
   testing: docs/pkg/pattern/testing.md
+
 ---
 
 # Specification (pattern)
@@ -50,6 +51,7 @@ Define regex patterns for IDD identifier recognition.
 - TEST pattern: `TEST-[A-Z]+-[0-9]+`
 - CONTRACT pattern: `CONTRACT-[A-Z]+-[0-9]+`
 - DESIGN pattern: `DESIGN-[A-Z]+-[0-9]+`
+
 ---
 
 ## SPEC-PKG_PATTERN-002: Code Annotation Pattern
@@ -72,6 +74,7 @@ Define regex patterns for code annotations (@implement, @test, @test-contract).
 
 - Annotation prefix pattern
 - Annotation value pattern
+
 ---
 
 ## SPEC-PKG_PATTERN-003: Annotation Type Mapping
@@ -94,6 +97,7 @@ Map annotation prefixes to identifier types.
 
 - `GetAnnotationType(prefix string) string`
 - Maps: @implement → SPEC, @test → TEST, @test-contract → TEST
+
 ---
 
 ## SPEC-PKG_PATTERN-004: Reference Extraction
@@ -116,6 +120,7 @@ Extract IDD references from content.
 
 - `ExtractIDDReferences(content string) []string`
 - Extracts all IDD identifier references from text
+
 ---
 
 ## SPEC-PKG_PATTERN-005: Reference Splitting
@@ -138,6 +143,7 @@ Split comma-separated IDD references.
 
 - `SplitAnnotationRefs(s string) []string`
 - Trims whitespace from each reference
+
 ---
 
 ## SPEC-PKG_PATTERN-006: Identifier Type Detection
@@ -160,6 +166,7 @@ Determine identifier type from reference string.
 
 - `GetIdentifierType(ref string) string`
 - Returns "SPEC", "TEST", "CONTRACT", "DESIGN" or empty
+
 ---
 
 ## SPEC-PKG_PATTERN-007: Pattern Validation
@@ -182,6 +189,7 @@ Validate identifier against IDD pattern.
 
 - `ValidateIDPattern(id string) error`
 - Validates against known patterns
+
 ---
 
 ## SPEC-PKG_PATTERN-008: IDD Reference Filter
@@ -204,6 +212,7 @@ Filter out quoted/backtick-wrapped identifiers.
 
 - `ExtractAnnotations(content string) []string`
 - Filters out identifiers in backticks or quotes
+
 ---
 
 ## SPEC-PKG_PATTERN-009: Pattern Constants
@@ -225,4 +234,3 @@ Define pattern constants for reuse.
 
 - Pattern strings
 - Annotation prefixes
-

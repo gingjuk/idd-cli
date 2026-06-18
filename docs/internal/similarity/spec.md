@@ -26,6 +26,7 @@ related_files:
   contract: docs/internal/similarity/contract.md
   design: docs/internal/similarity/design.md
   testing: docs/internal/similarity/testing.md
+
 ---
 
 # Specification (similarity)

@@ -12,6 +12,7 @@ related_files:
   contract: docs/internal/engine/contract.md
   design: docs/internal/engine/design.md
   testing: docs/internal/engine/testing.md
+
 ---
 
 # Specification (engine)
@@ -109,4 +110,3 @@ Execute the validation pipeline for the given identifiers and return the accumul
 - [x] Builds linkage graph from identifiers
 - [x] Runs all enabled validation rules
 - [x] Returns accumulated validation result
-
