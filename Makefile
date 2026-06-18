@@ -3,7 +3,7 @@
 BINARY_NAME=idd-cli
 VERSION=1.0.0
 GO=go
-LINT:=golangci-lint-v2
+LINT:=golangci-lint
 GOCOVBIN:=$(shell $(GO) env GOPATH)/bin/go-test-coverage
 
 build:

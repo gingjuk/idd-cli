@@ -110,33 +110,33 @@ Contract test file (`*_contract_test.go`) uses `@test-contract SPEC` to validate
 1. **Implements contract** — Each SPEC declares which contract interface it implements
 2. **Implements design** — SPEC details (function signatures, behaviors) realize the architecture defined in design.md
 
-**Spec implements Contract and Design:**
+**Spec implements Design and Contract:**
 
-Each SPEC in `spec.md` must state which contract and design it implements:
+Each SPEC in `spec.md` must state which design and contract it implements. Required fields must appear first, in this exact order: `Design`, `Contract`, `Requirement`, `Tests`. Optional fields must come after all required fields.
 
 ```markdown
 ## SPEC-AUTH-001: User Login
 
-**Contract:** `contract.md` — implements interface `Authenticator`
-
 **Design:** `design.md` — implements architecture `AuthModule`
+
+**Contract:** `contract.md` — implements interface `Authenticator`
 
 **Requirement:** Login with email/password returning JWT token.
 
-**Implementation:** `internal/auth/auth.go`
-
 **Tests:** `TEST-AUTH-001`
+
+**Implementation:** `internal/auth/auth.go`
 ```
 
 **Required fields:**
 
 | Field | Required | Description |
 |-------|----------|-------------|
-| Contract | Yes | Which contract interface this SPEC implements |
 | Design | Yes | Which design component this SPEC implements |
+| Contract | Yes | Which contract interface this SPEC implements |
 | Requirement | Yes | What this SPEC describes |
-| Implementation | No | Path to source code |
 | Tests | Yes | TEST identifiers that validate this SPEC |
+| Implementation | No | Path to source code; must appear after required fields |
 
 **Test validates SPEC (not contract directly):**
 
@@ -301,11 +301,13 @@ related_files:
 
 ## SPEC-<MODULE>-001: <Title>
 
-**Contract:** implements interface `<InterfaceName>`
-
 **Design:** implements architecture `<ComponentName>`
 
+**Contract:** implements interface `<InterfaceName>`
+
 **Requirement:** [What this spec describes]
+
+**Tests:** `TEST-<MODULE>-001`
 
 **Input Sources:** [API endpoints, user inputs, external dependencies]
 
@@ -327,11 +329,10 @@ func FunctionName(param1 string, param2 int) (Result, error)
 - `Result`, Description of return value
 - `error`, Error description
 
-**Tests:** `TEST-<MODULE>-001`
 ````
 
-**Required sections:** Contract, Design, Requirement, Tests
-**Optional sections:** Input Sources, Implementation, Implements (with Parameters/Returns)
+**Required sections:** Design, Contract, Requirement, Tests
+**Optional sections:** Input Sources, Implementation, Implements (with Parameters/Returns). Optional sections must come after all required sections.
 
 **Interface/Class method naming:** When documenting an interface method or class member method, use `<InterfaceName>.<Method>` as the title (e.g., `Reporter.Write`). The Implements section signature should show the full method signature.
 
@@ -522,8 +523,8 @@ contract.md (Authenticator interface)
     ↑ Implements
     |
 SPEC-AUTH-001 (in spec.md)
-    ├── **Contract:** contract.md — implements interface Authenticator
     ├── **Design:** design.md — implements architecture AuthModule
+    ├── **Contract:** contract.md — implements interface Authenticator
     └── **Tests:** TEST-AUTH-001
             ↑ Spec Coverage
             |

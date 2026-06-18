@@ -26,21 +26,24 @@ related_files:
   contract: docs/cmd/idd-cli/contract.md
   design: docs/cmd/idd-cli/design.md
   testing: docs/cmd/idd-cli/testing.md
+
 ---
 
 # Specification (backend)
 
 ## SPEC-CMD_IDD_CLI-001: IDD CLI Overview
 
-**Status:** Done
+**Design:** `IDDCLIModule`
 
 **Contract:** `CLI`
-
-**Design:** `IDDCLIModule`
 
 **Requirement:**
 
 idd-cli is a CLI tool that validates bidirectional linkage consistency between IDD (Intent-Driven Development) identifiers across documentation and source code.
+
+**Tests:** `TEST-CMD_IDD_CLI-001`, `TEST-CMD_IDD_CLI-002`
+
+**Status:** Done
 
 **Implementation:** `cmd/idd-cli/main.go`, `internal/engine/engine.go`
 
@@ -62,23 +65,21 @@ idd-cli is a CLI tool that validates bidirectional linkage consistency between I
 - [x] Generates JSON report with validation results
 - [x] Exits with non-zero code when validation fails
 
-**Tests:** `TEST-CMD_IDD_CLI-001`, `TEST-CMD_IDD_CLI-002`
-
 **Related:** [`SPEC-CMD_IDD_CLI-002`](#spec-cmd_idd_cli-002-graph-linkage-structure)
-
----
 
 ## SPEC-CMD_IDD_CLI-002: Graph Linkage Structure
 
-**Status:** Done
+**Design:** `IDDCLIModule`
 
 **Contract:** `LinkageGraph`
-
-**Design:** `IDDCLIModule`
 
 **Requirement:**
 
 The LinkageGraph must efficiently represent bidirectional relationships between IDD identifiers, supporting fast lookup by ID, type, and link direction.
+
+**Tests:** `TEST-CMD_IDD_CLI-001`, `TEST-CMD_IDD_CLI-002`
+
+**Status:** Done
 
 **Implementation:** `internal/graph/graph.go`
 
@@ -87,8 +88,6 @@ The LinkageGraph must efficiently represent bidirectional relationships between 
 - `Node` — Identifier with incoming/outgoing edges
 - `Edge` — Directed relationship with verification status
 - `Index` — Fast lookup indexes by ID, type, backlinks
-
-**Tests:** `TEST-CMD_IDD_CLI-001`, `TEST-CMD_IDD_CLI-002`
 
 **Public Functions:**
 
@@ -334,17 +333,21 @@ The LinkageGraph must efficiently represent bidirectional relationships between 
 
 ---
 
+---
+
 ## SPEC-CMD_IDD_CLI-003: Configuration Module
 
-**Status:** Done
+**Design:** `IDDCLIModule`
 
 **Contract:** `Config`
-
-**Design:** `IDDCLIModule`
 
 **Requirement:**
 
 The configuration module must load IDD settings from YAML configuration files, supporting CLI flag overrides, sensible defaults, and pattern-based file discovery.
+
+**Tests:** `TEST-CMD_IDD_CLI-001`, `TEST-CMD_IDD_CLI-002`
+
+**Status:** Done
 
 **Implementation:** `internal/config/config.go`
 
@@ -369,8 +372,6 @@ The configuration module must load IDD settings from YAML configuration files, s
 - `path`: Path to the YAML configuration file
 
 **Returns:** Parsed Config pointer or error if file cannot be read or validation fails
-
----
 
 ### Config.Default
 
@@ -402,23 +403,25 @@ The configuration module must load IDD settings from YAML configuration files, s
 - [x] Identifier patterns are configurable via config file
 - [x] Reporter format can be set to JSON or Markdown
 
-**Tests:** `TEST-CMD_IDD_CLI-001`, `TEST-CMD_IDD_CLI-002`
-
 **Related:** [`SPEC-CMD_IDD_CLI-001`](#spec-cmd_idd_cli-001-idd-cli-overview)
+
+---
 
 ---
 
 ## SPEC-CMD_IDD_CLI-004: Validation Engine
 
-**Status:** Done
+**Design:** `IDDCLIModule`
 
 **Contract:** `Engine`
-
-**Design:** `IDDCLIModule`
 
 **Requirement:**
 
 The validation engine orchestrates the collection of identifiers, building the linkage graph, and running validation rules to detect orphaned or improperly linked identifiers.
+
+**Tests:** `TEST-CMD_IDD_CLI-001`, `TEST-CMD_IDD_CLI-002`
+
+**Status:** Done
 
 **Implementation:** `internal/engine/engine.go`
 
@@ -443,8 +446,6 @@ The validation engine orchestrates the collection of identifiers, building the l
 - `cfg`: Configuration pointer with validation rules and settings
 
 **Returns:** A new Engine ready to run validation
-
----
 
 ### Engine.Run
 
@@ -494,23 +495,25 @@ The validation engine orchestrates the collection of identifiers, building the l
 - [x] Orphan validation detects unreferenced identifiers
 - [x] Validation results include errors and warnings
 
-**Tests:** `TEST-CMD_IDD_CLI-001`, `TEST-CMD_IDD_CLI-002`
-
 **Related:** [`SPEC-CMD_IDD_CLI-001`](#spec-cmd_idd_cli-001-idd-cli-overview), [`SPEC-CMD_IDD_CLI-002`](#spec-cmd_idd_cli-002-graph-linkage-structure)
+
+---
 
 ---
 
 ## SPEC-CMD_IDD_CLI-005: Identifier Model
 
-**Status:** Done
+**Design:** `IDDCLIModule`
 
 **Contract:** `Identifier`
-
-**Design:** `IDDCLIModule`
 
 **Requirement:**
 
 The identifier model defines data structures for representing IDD identifiers, annotations, and the identifier set collection with support for links and merging.
+
+**Tests:** `TEST-CMD_IDD_CLI-001`, `TEST-CMD_IDD_CLI-002`
+
+**Status:** Done
 
 **Implementation:** `internal/model/identifier.go`
 
@@ -536,8 +539,6 @@ The identifier model defines data structures for representing IDD identifiers, a
 
 **Returns:** The corresponding IdentifierType or an error if the string is not a valid type.
 
----
-
 ### Identifier.NewIdentifier
 
 **Function Signature:**
@@ -547,7 +548,7 @@ The identifier model defines data structures for representing IDD identifiers, a
 
 **Parameters:**
 
-- `id`: The identifier ID (e.g., "SPEC-CMD_IDD_CLI-001")
+- `id`: The identifier ID (e.g., `SPEC-CMD_IDD_CLI-001`)
 - `idType`: The type of identifier (TypeSpec, TypeContract, etc.)
 - `title`: The title/name of the identifier
 - `source`: The file path where the identifier was found
@@ -837,23 +838,27 @@ The identifier model defines data structures for representing IDD identifiers, a
 - [x] IdentifierSet supports add, get, has, count, all, merge operations
 - [x] Annotations can be converted to identifiers
 
-**Tests:** `TEST-CMD_IDD_CLI-001`, `TEST-CMD_IDD_CLI-002`
-
 **Related:** [`SPEC-CMD_IDD_CLI-002`](#spec-cmd_idd_cli-002-graph-linkage-structure)
+
+---
 
 ---
 
 ## SPEC-CMD_IDD_CLI-006: Reporter Module
 
-**Status:** Done
+**Design:** `IDDCLIModule`
 
 **Contract:** `Reporter`
-
-**Design:** `IDDCLIModule`
 
 **Requirement:**
 
 The reporter module generates validation reports in multiple formats (JSON, Markdown), presenting errors, warnings, and statistics clearly.
+
+**Tests:** `TEST-CMD_IDD_CLI-001`, `TEST-CMD_IDD_CLI-002`
+
+### Reporter.Generate
+
+**Status:** Done
 
 **Implementation:** `internal/reporter/reporter.go`
 
@@ -879,12 +884,6 @@ The reporter module generates validation reports in multiple formats (JSON, Mark
 - `format`: Output format ("json" or "markdown")
 
 **Returns:** A new Reporter instance
-
-**Tests:** `TEST-CMD_IDD_CLI-001`, `TEST-CMD_IDD_CLI-002`
-
----
-
-### Reporter.Generate
 
 **Function Signature:**
 `func (r *Reporter) Generate(result *model.ValidationResult) (*model.Report, error)`
@@ -928,17 +927,23 @@ The reporter module generates validation reports in multiple formats (JSON, Mark
 
 ---
 
+---
+
 ## SPEC-CMD_IDD_CLI-007: Similarity Analysis
 
-**Status:** Done
+**Design:** `IDDCLIModule`
 
 **Contract:** `TFIDF`
-
-**Design:** `IDDCLIModule`
 
 **Requirement:**
 
 The similarity module provides TF-IDF based document similarity analysis to help detect duplicate or very similar documentation files.
+
+**Tests:** `TEST-CMD_IDD_CLI-001`, `TEST-CMD_IDD_CLI-002`
+
+### TFIDF.Tokenize
+
+**Status:** Done
 
 **Implementation:** `internal/similarity/tfidf.go`
 
@@ -958,12 +963,6 @@ The similarity module provides TF-IDF based document similarity analysis to help
 **Purpose:** Creates a new TFIDF indexer with an empty IDF cache.
 
 **Returns:** A new TFIDF pointer
-
-**Tests:** `TEST-CMD_IDD_CLI-001`, `TEST-CMD_IDD_CLI-002`
-
----
-
-### TFIDF.Tokenize
 
 **Function Signature:**
 `func (t *TFIDF) Tokenize(text string) []string`
@@ -1242,17 +1241,21 @@ The walk package provides file traversal utilities with pattern matching support
 
 ---
 
+---
+
 ## SPEC-CMD_IDD_CLI-008: Embed Files
 
-**Status:** Done
+**Design:** `IDDCLIModule`
 
 **Contract:** `Embed`
-
-**Design:** `IDDCLIModule`
 
 **Requirement:**
 
 The CLI must be able to embed skill files for distribution as a single binary.
+
+**Tests:** `TEST-CMD_IDD_CLI-001`, `TEST-CMD_IDD_CLI-002`
+
+**Status:** Done
 
 **Implementation:** `cmd/idd-cli/embed.go`
 
@@ -1282,21 +1285,21 @@ The CLI must be able to embed skill files for distribution as a single binary.
 
 **Returns:** File contents and error if not found
 
-**Tests:** `TEST-CMD_IDD_CLI-001`, `TEST-CMD_IDD_CLI-002`
-
 ---
 
 ## SPEC-CMD_IDD_CLI-009: CLI Main Entry
 
-**Status:** Done
+**Design:** `IDDCLIModule`
 
 **Contract:** `SkillInfo`
-
-**Design:** `IDDCLIModule`
 
 **Requirement:**
 
 The CLI must provide a main entry point that parses flags and runs the validation engine.
+
+**Tests:** `TEST-CMD_IDD_CLI-001`, `TEST-CMD_IDD_CLI-002`
+
+**Status:** Done
 
 **Implementation:** `cmd/idd-cli/main.go`
 
@@ -1321,21 +1324,20 @@ The CLI must provide a main entry point that parses flags and runs the validatio
 - `Module` — Module path
 - `Path` — File path
 
-**Tests:** `TEST-CMD_IDD_CLI-001`, `TEST-CMD_IDD_CLI-002`
-
 ---
 
 ## SPEC-CMD_IDD_CLI-010: Engine Contract Tests
 
-**Status:** Done
+**Design:** `IDDCLIModule`
 
 **Contract:** `Rule`
-
-**Design:** `IDDCLIModule`
 
 **Requirement:**
 
 The engine package must define a Rule interface that all validation rules implement.
+
+**Tests:** `TEST-CMD_IDD_CLI-001`, `TEST-CMD_IDD_CLI-002`
+**Status:** Done
 
 **Implementation:** `internal/engine/engine_contract_test.go`
 
@@ -1358,5 +1360,3 @@ type Rule interface {
 
 - `Name()` — Returns the rule name
 - `Validate(g *LinkageGraph)` — Validates the graph and returns errors
-
-**Tests:** `TEST-CMD_IDD_CLI-001`, `TEST-CMD_IDD_CLI-002`

@@ -12,21 +12,24 @@ related_files:
   contract: docs/pkg/walk/contract.md
   design: docs/pkg/walk/design.md
   testing: docs/pkg/walk/testing.md
+
 ---
 
 # Specification (walk)
 
 ## SPEC-PKG_WALK-001: Walk Function
 
-**Contract:** `Walk`
-
 **Design:** `WalkModule`
 
-**Status:** Done
+**Contract:** `Walk`
 
 **Requirement:**
 
 Walk filesystem matching files against glob patterns.
+
+**Tests:** `TEST-PKG_WALK-001`, `TEST-PKG_WALK-002`, `TEST-PKG_WALK-003`, `TEST-PKG_WALK-004`, `TEST-PKG_WALK-005`, `TEST-PKG_WALK-006`, `TEST-PKG_WALK-007`, `TEST-PKG_WALK-008`
+
+**Status:** Done
 
 **Implementation:** `pkg/walk/files.go`
 
@@ -38,21 +41,22 @@ Walk filesystem matching files against glob patterns.
 `func Walk(patterns []string, visitor FileVisitor) error`
 
 **Purpose:** Walks the filesystem matching files against the given glob patterns.
-**Tests:** `TEST-PKG_WALK-001`, `TEST-PKG_WALK-002`, `TEST-PKG_WALK-003`, `TEST-PKG_WALK-004`, `TEST-PKG_WALK-005`, `TEST-PKG_WALK-006`, `TEST-PKG_WALK-007`, `TEST-PKG_WALK-008`
 
 ---
 
 ## SPEC-PKG_WALK-002: Extension Matching
 
-**Contract:** `MatchAnyExtensions`
-
 **Design:** `WalkModule`
 
-**Status:** Done
+**Contract:** `MatchAnyExtensions`
 
 **Requirement:**
 
 Check if file path has any of the specified extensions.
+
+**Tests:** `TEST-PKG_WALK-001`, `TEST-PKG_WALK-002`, `TEST-PKG_WALK-003`, `TEST-PKG_WALK-004`, `TEST-PKG_WALK-005`, `TEST-PKG_WALK-006`, `TEST-PKG_WALK-007`, `TEST-PKG_WALK-008`
+
+**Status:** Done
 
 **Implementation:** `pkg/walk/files.go`
 
@@ -64,27 +68,26 @@ Check if file path has any of the specified extensions.
 `func MatchAnyExtensions(path string, extensions []string) bool`
 
 **Purpose:** Checks if a file path has any of the specified extensions.
-**Tests:** `TEST-PKG_WALK-001`, `TEST-PKG_WALK-002`, `TEST-PKG_WALK-003`, `TEST-PKG_WALK-004`, `TEST-PKG_WALK-005`, `TEST-PKG_WALK-006`, `TEST-PKG_WALK-007`, `TEST-PKG_WALK-008`
 
 ---
 
 ## SPEC-PKG_WALK-003: File Visitor Pattern
 
-**Contract:** `FileVisitor`
-
 **Design:** `WalkModule`
 
-**Status:** Done
+**Contract:** `FileVisitor`
 
 **Requirement:**
 
 Visitor pattern for file traversal callbacks.
+
+**Tests:** `TEST-PKG_WALK-001`, `TEST-PKG_WALK-002`, `TEST-PKG_WALK-003`, `TEST-PKG_WALK-004`, `TEST-PKG_WALK-005`, `TEST-PKG_WALK-006`, `TEST-PKG_WALK-007`, `TEST-PKG_WALK-008`
+
+**Status:** Done
 
 **Implementation:** `pkg/walk/files.go`
 
 **Key Types:**
 
 - `FileVisitor` — Callback function type for file visitation
-**Tests:** `TEST-PKG_WALK-001`, `TEST-PKG_WALK-002`, `TEST-PKG_WALK-003`, `TEST-PKG_WALK-004`, `TEST-PKG_WALK-005`, `TEST-PKG_WALK-006`, `TEST-PKG_WALK-007`, `TEST-PKG_WALK-008`
-
 **Related:** `SPEC-PKG_WALK-001`, `SPEC-PKG_WALK-002`

@@ -12,21 +12,24 @@ related_files:
   contract: docs/internal/engine/contract.md
   design: docs/internal/engine/design.md
   testing: docs/internal/engine/testing.md
+
 ---
 
 # Specification (engine)
 
 ## SPEC-INTERNAL_ENGINE-001: Engine Core Struct
 
-**Contract:** `Engine`
-
 **Design:** `EngineModule`
 
-**Status:** Done
+**Contract:** `Engine`
 
 **Requirement:**
 
 The validation engine is the core orchestration component that coordinates collection, graph building, and validation rules.
+
+**Tests:** `TEST-INTERNAL_ENGINE-001`, `TEST-INTERNAL_ENGINE-002`, `TEST-INTERNAL_ENGINE-003`, `TEST-INTERNAL_ENGINE-004`, `TEST-INTERNAL_ENGINE-005`, `TEST-INTERNAL_ENGINE-006`, `TEST-INTERNAL_ENGINE-007`, `TEST-INTERNAL_ENGINE-008`, `TEST-INTERNAL_ENGINE-009`, `TEST-INTERNAL_ENGINE-010`, `TEST-INTERNAL_ENGINE-011`, `TEST-INTERNAL_ENGINE-012`
+
+**Status:** Done
 
 **Implementation:** `internal/engine/engine.go`
 
@@ -40,23 +43,23 @@ The validation engine is the core orchestration component that coordinates colle
 - [x] Engine coordinates validation pipeline
 - [x] Engine supports context for cancellation
 
-**Tests:** `TEST-INTERNAL_ENGINE-001`, `TEST-INTERNAL_ENGINE-002`, `TEST-INTERNAL_ENGINE-003`, `TEST-INTERNAL_ENGINE-004`, `TEST-INTERNAL_ENGINE-005`, `TEST-INTERNAL_ENGINE-006`, `TEST-INTERNAL_ENGINE-007`, `TEST-INTERNAL_ENGINE-008`, `TEST-INTERNAL_ENGINE-009`, `TEST-INTERNAL_ENGINE-010`, `TEST-INTERNAL_ENGINE-011`, `TEST-INTERNAL_ENGINE-012`
-
 **Related:** `SPEC-INTERNAL_ENGINE-001`, `SPEC-INTERNAL_ENGINE-002`
-
----
 
 ## SPEC-INTERNAL_ENGINE-002: Engine.New
 
-**Contract:** `New`
-
 **Design:** `EngineModule`
 
-**Status:** Done
+**Contract:** `New`
 
 **Requirement:**
 
 Factory function to create a new Engine instance with configuration.
+
+**Tests:** `TEST-INTERNAL_ENGINE-002`, `TEST-INTERNAL_ENGINE-003`
+
+---
+
+**Status:** Done
 
 **Implementation:** `internal/engine/engine.go`
 
@@ -77,20 +80,19 @@ Factory function to create a new Engine instance with configuration.
 - [x] Empty graph initialized
 - [x] Empty result initialized
 
-**Tests:** `TEST-INTERNAL_ENGINE-002`, `TEST-INTERNAL_ENGINE-003`
-
 ---
 
 ## SPEC-INTERNAL_ENGINE-004: Engine.Run
 
-**Contract:** `Run`
-
 **Design:** `EngineModule`
+
+**Contract:** `Run`
 
 **Requirement:**
 
 Execute the validation pipeline for the given identifiers and return the accumulated validation result.
 
+**Tests:** `TEST-INTERNAL_ENGINE-004`, `TEST-INTERNAL_ENGINE-005`
 **Function Signature:**
 `func (e *Engine) Run(ctx context.Context, ids *model.IdentifierSet) (*model.ValidationResult, error)`
 
@@ -108,5 +110,3 @@ Execute the validation pipeline for the given identifiers and return the accumul
 - [x] Builds linkage graph from identifiers
 - [x] Runs all enabled validation rules
 - [x] Returns accumulated validation result
-
-**Tests:** `TEST-INTERNAL_ENGINE-004`, `TEST-INTERNAL_ENGINE-005`

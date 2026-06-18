@@ -49,7 +49,7 @@ validation:
   # Require doc link consistency between specs and tests
   require_doc_link_consistency: true
 
-  # Require each frontmatter-declared SPEC section to include Contract, Design, Requirement, and Tests fields
+  # Require each frontmatter-declared SPEC section to include Design, Contract, Requirement, and Tests fields in that order before optional fields
   require_spec_fields: true
 
   # Require all specs to have at least one test link

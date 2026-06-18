@@ -8,21 +8,23 @@ related_files:
   contract: docs/internal/auth/contract.md
   design: docs/internal/auth/design.md
   testing: docs/internal/auth/testing.md
+
 ---
 
 # Specification (auth)
 
 ## SPEC-INTERNAL_AUTH-001: Authentication Module
 
-**Status:** Done
+**Design:** `AuthModule`
 
 **Contract:** `LoginRequest`
-
-**Design:** `AuthModule`
 
 **Requirement:**
 
 Authentication module provides user login and token generation functionality for idd-cli. It defines the core types for authentication requests and responses.
+
+**Tests:** `TEST-INTERNAL_AUTH-001`
+**Status:** Done
 
 **Implementation:** `internal/auth/auth.go`
 
@@ -37,5 +39,3 @@ Authentication module provides user login and token generation functionality for
 - [x] LoginResponse struct contains token field
 - [x] Authentication types are annotated with @implement; tests use @test-contract for CONTRACT coverage
 - [x] Test annotations link to `TEST-INTERNAL_AUTH-001`
-
-**Tests:** `TEST-INTERNAL_AUTH-001`

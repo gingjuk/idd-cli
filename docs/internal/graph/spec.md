@@ -24,21 +24,24 @@ related_files:
   contract: docs/internal/graph/contract.md
   design: docs/internal/graph/design.md
   testing: docs/internal/graph/testing.md
+
 ---
 
 # Specification (graph)
 
 ## SPEC-INTERNAL_GRAPH-001: Graph Node Structure
 
-**Contract:** `Node`
-
 **Design:** `GraphModule`
 
-**Status:** Done
+**Contract:** `Node`
 
 **Requirement:**
 
 Node represents an IDD identifier within the linkage graph with incoming and outgoing edges.
+
+**Tests:** `TEST-INTERNAL_GRAPH-001`, `TEST-INTERNAL_GRAPH-002`, `TEST-INTERNAL_GRAPH-003`, `TEST-INTERNAL_GRAPH-004`, `TEST-INTERNAL_GRAPH-005`, `TEST-INTERNAL_GRAPH-006`, `TEST-INTERNAL_GRAPH-007`, `TEST-INTERNAL_GRAPH-008`, `TEST-INTERNAL_GRAPH-009`, `TEST-INTERNAL_GRAPH-010`, `TEST-INTERNAL_GRAPH-011`, `TEST-INTERNAL_GRAPH-012`, `TEST-INTERNAL_GRAPH-013`, `TEST-INTERNAL_GRAPH-014`, `TEST-INTERNAL_GRAPH-015`
+
+**Status:** Done
 
 **Implementation:** `internal/graph/graph.go`
 
@@ -52,23 +55,21 @@ Node represents an IDD identifier within the linkage graph with incoming and out
 - [x] Node tracks incoming and outgoing edges
 - [x] Node provides methods to access edges
 
-**Tests:** `TEST-INTERNAL_GRAPH-001`, `TEST-INTERNAL_GRAPH-002`, `TEST-INTERNAL_GRAPH-003`, `TEST-INTERNAL_GRAPH-004`, `TEST-INTERNAL_GRAPH-005`, `TEST-INTERNAL_GRAPH-006`, `TEST-INTERNAL_GRAPH-007`, `TEST-INTERNAL_GRAPH-008`, `TEST-INTERNAL_GRAPH-009`, `TEST-INTERNAL_GRAPH-010`, `TEST-INTERNAL_GRAPH-011`, `TEST-INTERNAL_GRAPH-012`, `TEST-INTERNAL_GRAPH-013`, `TEST-INTERNAL_GRAPH-014`, `TEST-INTERNAL_GRAPH-015`
-
 **Related:** `SPEC-INTERNAL_GRAPH-002`, `SPEC-INTERNAL_GRAPH-003`
-
----
 
 ## SPEC-INTERNAL_GRAPH-002: Graph Edge Structure
 
-**Contract:** `Edge`
-
 **Design:** `GraphModule`
 
-**Status:** Done
+**Contract:** `Edge`
 
 **Requirement:**
 
 Edge represents a directed relationship between two nodes in the linkage graph.
+
+**Tests:** `TEST-INTERNAL_GRAPH-001`, `TEST-INTERNAL_GRAPH-002`, `TEST-INTERNAL_GRAPH-003`, `TEST-INTERNAL_GRAPH-004`, `TEST-INTERNAL_GRAPH-005`, `TEST-INTERNAL_GRAPH-006`, `TEST-INTERNAL_GRAPH-007`, `TEST-INTERNAL_GRAPH-008`, `TEST-INTERNAL_GRAPH-009`, `TEST-INTERNAL_GRAPH-010`, `TEST-INTERNAL_GRAPH-011`, `TEST-INTERNAL_GRAPH-012`, `TEST-INTERNAL_GRAPH-013`, `TEST-INTERNAL_GRAPH-014`, `TEST-INTERNAL_GRAPH-015`
+
+**Status:** Done
 
 **Implementation:** `internal/graph/graph.go`
 
@@ -83,23 +84,25 @@ Edge represents a directed relationship between two nodes in the linkage graph.
 - [x] Edge tracks source file and line number
 - [x] Edge tracks verification status
 
-**Tests:** `TEST-INTERNAL_GRAPH-001`, `TEST-INTERNAL_GRAPH-002`, `TEST-INTERNAL_GRAPH-003`, `TEST-INTERNAL_GRAPH-004`, `TEST-INTERNAL_GRAPH-005`, `TEST-INTERNAL_GRAPH-006`, `TEST-INTERNAL_GRAPH-007`, `TEST-INTERNAL_GRAPH-008`, `TEST-INTERNAL_GRAPH-009`, `TEST-INTERNAL_GRAPH-010`, `TEST-INTERNAL_GRAPH-011`, `TEST-INTERNAL_GRAPH-012`, `TEST-INTERNAL_GRAPH-013`, `TEST-INTERNAL_GRAPH-014`, `TEST-INTERNAL_GRAPH-015`
-
 **Related:** `SPEC-INTERNAL_GRAPH-001`, `SPEC-INTERNAL_GRAPH-003`
+
+---
 
 ---
 
 ## SPEC-INTERNAL_GRAPH-003: Linkage Graph Structure
 
-**Contract:** `LinkageGraph`
-
 **Design:** `GraphModule`
 
-**Status:** Done
+**Contract:** `LinkageGraph`
 
 **Requirement:**
 
 LinkageGraph manages nodes and edges for IDD identifier validation.
+
+**Tests:** `TEST-INTERNAL_GRAPH-001`, `TEST-INTERNAL_GRAPH-002`, `TEST-INTERNAL_GRAPH-003`, `TEST-INTERNAL_GRAPH-004`, `TEST-INTERNAL_GRAPH-005`, `TEST-INTERNAL_GRAPH-006`, `TEST-INTERNAL_GRAPH-007`, `TEST-INTERNAL_GRAPH-008`, `TEST-INTERNAL_GRAPH-009`, `TEST-INTERNAL_GRAPH-010`, `TEST-INTERNAL_GRAPH-011`, `TEST-INTERNAL_GRAPH-012`, `TEST-INTERNAL_GRAPH-013`, `TEST-INTERNAL_GRAPH-014`, `TEST-INTERNAL_GRAPH-015`
+
+**Status:** Done
 
 **Implementation:** `internal/graph/graph.go`
 
@@ -107,78 +110,78 @@ LinkageGraph manages nodes and edges for IDD identifier validation.
 
 - `LinkageGraph` — Main graph structure with nodes, edges, and index
 
-**Tests:** `TEST-INTERNAL_GRAPH-001`, `TEST-INTERNAL_GRAPH-002`, `TEST-INTERNAL_GRAPH-003`, `TEST-INTERNAL_GRAPH-004`, `TEST-INTERNAL_GRAPH-005`, `TEST-INTERNAL_GRAPH-006`, `TEST-INTERNAL_GRAPH-007`, `TEST-INTERNAL_GRAPH-008`, `TEST-INTERNAL_GRAPH-009`, `TEST-INTERNAL_GRAPH-010`, `TEST-INTERNAL_GRAPH-011`, `TEST-INTERNAL_GRAPH-012`, `TEST-INTERNAL_GRAPH-013`, `TEST-INTERNAL_GRAPH-014`, `TEST-INTERNAL_GRAPH-015`
-
 **Public Functions:**
 
 ## SPEC-INTERNAL_GRAPH-006: NewLinkageGraph
 
-**Contract:** `NewLinkageGraph`
-
 **Design:** `GraphModule`
+
+**Contract:** `NewLinkageGraph`
 
 **Requirement:**
 
 Create a new empty linkage graph.
+
+**Tests:** `TEST-INTERNAL_GRAPH-006`
 
 **Function Signature:**
 `func NewLinkageGraph() *LinkageGraph`
 
 **Purpose:** Creates a new empty linkage graph.
 
-**Tests:** `TEST-INTERNAL_GRAPH-006`
-
 ---
 
 ## SPEC-INTERNAL_GRAPH-007: LinkageGraph.AddNode
 
-**Contract:** `AddNode`
-
 **Design:** `GraphModule`
+
+**Contract:** `AddNode`
 
 **Requirement:**
 
 Add a node to the graph if it does not already exist.
+
+**Tests:** `TEST-INTERNAL_GRAPH-007`
 
 **Function Signature:**
 `func (g *LinkageGraph) AddNode(id string, idType model.IdentifierType) *Node`
 
 **Purpose:** Adds a node to the graph if it doesn't exist.
 
-**Tests:** `TEST-INTERNAL_GRAPH-007`
-
 ---
 
 ## SPEC-INTERNAL_GRAPH-008: LinkageGraph.AddEdge
 
-**Contract:** `AddEdge`
-
 **Design:** `GraphModule`
+
+**Contract:** `AddEdge`
 
 **Requirement:**
 
 Add a directed edge between two graph nodes.
+
+**Tests:** `TEST-INTERNAL_GRAPH-008`
 
 **Function Signature:**
 `func (g *LinkageGraph) AddEdge(from, to string, edgeType model.LinkType, source string, line int)`
 
 **Purpose:** Adds a directed edge between two nodes.
 
-**Tests:** `TEST-INTERNAL_GRAPH-008`
-
 ---
 
 ## SPEC-INTERNAL_GRAPH-004: Graph Index Structure
 
-**Contract:** `Index`
-
 **Design:** `GraphModule`
 
-**Status:** Done
+**Contract:** `Index`
 
 **Requirement:**
 
 Index provides fast lookup structures for nodes by ID, type, and backlinks.
+
+**Tests:** `TEST-INTERNAL_GRAPH-001`, `TEST-INTERNAL_GRAPH-002`, `TEST-INTERNAL_GRAPH-003`, `TEST-INTERNAL_GRAPH-004`, `TEST-INTERNAL_GRAPH-005`, `TEST-INTERNAL_GRAPH-006`, `TEST-INTERNAL_GRAPH-007`, `TEST-INTERNAL_GRAPH-008`, `TEST-INTERNAL_GRAPH-009`, `TEST-INTERNAL_GRAPH-010`, `TEST-INTERNAL_GRAPH-011`, `TEST-INTERNAL_GRAPH-012`, `TEST-INTERNAL_GRAPH-013`, `TEST-INTERNAL_GRAPH-014`, `TEST-INTERNAL_GRAPH-015`
+
+**Status:** Done
 
 **Implementation:** `internal/graph/graph.go`
 
@@ -192,39 +195,41 @@ Index provides fast lookup structures for nodes by ID, type, and backlinks.
 - [x] Index stores nodes by type for filtering
 - [x] Index stores backlinks for reverse edge lookup
 
-**Tests:** `TEST-INTERNAL_GRAPH-001`, `TEST-INTERNAL_GRAPH-002`, `TEST-INTERNAL_GRAPH-003`, `TEST-INTERNAL_GRAPH-004`, `TEST-INTERNAL_GRAPH-005`, `TEST-INTERNAL_GRAPH-006`, `TEST-INTERNAL_GRAPH-007`, `TEST-INTERNAL_GRAPH-008`, `TEST-INTERNAL_GRAPH-009`, `TEST-INTERNAL_GRAPH-010`, `TEST-INTERNAL_GRAPH-011`, `TEST-INTERNAL_GRAPH-012`, `TEST-INTERNAL_GRAPH-013`, `TEST-INTERNAL_GRAPH-014`, `TEST-INTERNAL_GRAPH-015`
-
 **Related:** `SPEC-INTERNAL_GRAPH-003`, `SPEC-INTERNAL_GRAPH-005`
-
----
 
 ## SPEC-INTERNAL_GRAPH-005: Graph Factory Function
 
-**Contract:** `NewLinkageGraph`
-
 **Design:** `GraphModule`
 
-**Status:** Done
+**Contract:** `NewLinkageGraph`
 
 **Requirement:**
 
 Factory function to create a new LinkageGraph instance.
 
-**Implementation:** `internal/graph/graph.go`
-
 **Tests:** `TEST-INTERNAL_GRAPH-009`, `TEST-INTERNAL_GRAPH-010`, `TEST-INTERNAL_GRAPH-011`, `TEST-INTERNAL_GRAPH-012`, `TEST-INTERNAL_GRAPH-013`, `TEST-INTERNAL_GRAPH-014`, `TEST-INTERNAL_GRAPH-015`
+
+**Status:** Done
+
+**Implementation:** `internal/graph/graph.go`
 
 **Public Functions:**
 
+---
+
 ## SPEC-INTERNAL_GRAPH-009: NewLinkageGraph
 
-**Contract:** `LinkageGraph`
-
 **Design:** `GraphModule`
+
+**Contract:** `LinkageGraph`
 
 **Requirement:**
 
 Create a new empty linkage graph with initialized maps.
+
+**Tests:** `TEST-INTERNAL_GRAPH-009`
+
+---
 
 **Function Signature:**
 `func NewLinkageGraph() *LinkageGraph`
@@ -238,9 +243,5 @@ Create a new empty linkage graph with initialized maps.
 - [x] Creates empty node map
 - [x] Creates empty edge slice
 - [x] Initializes index with empty lookup maps
-
-**Tests:** `TEST-INTERNAL_GRAPH-009`
-
----
 
 **Related:** `SPEC-INTERNAL_GRAPH-001`, `SPEC-INTERNAL_GRAPH-002`, `SPEC-INTERNAL_GRAPH-003`, `SPEC-INTERNAL_GRAPH-004`

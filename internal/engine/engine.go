@@ -470,14 +470,14 @@ type specRequiredField struct {
 
 var specRequiredFields = []specRequiredField{
 	{
-		name:       "Contract",
-		definition: "**Contract:** implements interface `<InterfaceName>`",
-		regex:      regexp.MustCompile(`(?i)^\s*\*\*Contract:\*\*`),
-	},
-	{
 		name:       "Design",
 		definition: "**Design:** implements architecture `<ComponentName>`",
 		regex:      regexp.MustCompile(`(?i)^\s*\*\*Design:\*\*`),
+	},
+	{
+		name:       "Contract",
+		definition: "**Contract:** implements interface `<InterfaceName>`",
+		regex:      regexp.MustCompile(`(?i)^\s*\*\*Contract:\*\*`),
 	},
 	{
 		name:       "Requirement",
@@ -496,6 +496,8 @@ var specRequiredFields = []specRequiredField{
 func (e *Engine) validateSpecRequiredFields() {
 	headingRegex := regexp.MustCompile(`(?i)^#{2}\s+(SPEC-[A-Z0-9_]+-[0-9]+)(?::\s*.*)?$`)
 	nextSectionRegex := regexp.MustCompile(`^#{1,2}\s+`)
+	fieldRegex := regexp.MustCompile(`^\s*\*\*([^*:]+):\*\*`)
+	expectedOrder := specRequiredFieldOrder()
 
 	e.walkDocFiles(func(path string, lines []string) {
 		if !strings.HasSuffix(path, "spec.md") {
@@ -515,23 +517,48 @@ func (e *Engine) validateSpecRequiredFields() {
 				continue
 			}
 			found := make(map[string]bool, len(specRequiredFields))
+			foundOrder := make([]string, 0, len(specRequiredFields))
+			optionalFieldOrderError := false
 
 			for j := i + 1; j < len(lines); j++ {
 				nextTrimmed := strings.TrimSpace(lines[j])
 				if nextSectionRegex.MatchString(nextTrimmed) {
 					break
 				}
+				requiredField := false
 				for _, field := range specRequiredFields {
 					if field.regex.MatchString(nextTrimmed) {
-						found[field.name] = true
+						if !found[field.name] {
+							foundOrder = append(foundOrder, field.name)
+							found[field.name] = true
+						}
+						requiredField = true
+						break
 					}
 				}
+				if requiredField || len(foundOrder) == len(specRequiredFields) || optionalFieldOrderError {
+					continue
+				}
+				fieldMatches := fieldRegex.FindStringSubmatch(nextTrimmed)
+				if len(fieldMatches) <= 1 {
+					continue
+				}
+				optionalFieldOrderError = true
+				e.result.AddError(
+					"spec-required-fields",
+					fmt.Sprintf("SPEC %s optional field **%s:** appears before required fields are complete; optional fields must come after required fields: %s", specID, fieldMatches[1], expectedOrder),
+					fmt.Sprintf("%s:%d", path, j+1),
+					specID,
+					"optional-field-order",
+				)
 			}
 
+			missingField := false
 			for _, field := range specRequiredFields {
 				if found[field.name] {
 					continue
 				}
+				missingField = true
 				e.result.AddError(
 					"spec-required-fields",
 					fmt.Sprintf("SPEC %s missing required field **%s:**; define it as: %s", specID, field.name, field.definition),
@@ -540,8 +567,38 @@ func (e *Engine) validateSpecRequiredFields() {
 					field.name,
 				)
 			}
+			if missingField || specRequiredFieldsInOrder(foundOrder) {
+				continue
+			}
+			e.result.AddError(
+				"spec-required-fields",
+				fmt.Sprintf("SPEC %s required fields are out of order; expected order: %s", specID, expectedOrder),
+				fmt.Sprintf("%s:%d", path, i+1),
+				specID,
+				"field-order",
+			)
 		}
 	})
+}
+
+func specRequiredFieldsInOrder(foundOrder []string) bool {
+	if len(foundOrder) != len(specRequiredFields) {
+		return false
+	}
+	for i, field := range specRequiredFields {
+		if foundOrder[i] != field.name {
+			return false
+		}
+	}
+	return true
+}
+
+func specRequiredFieldOrder() string {
+	parts := make([]string, 0, len(specRequiredFields))
+	for _, field := range specRequiredFields {
+		parts = append(parts, fmt.Sprintf("**%s:**", field.name))
+	}
+	return strings.Join(parts, ", ")
 }
 
 func specFrontmatterMarkerIDs(lines []string) map[string]bool {
