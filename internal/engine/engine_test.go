@@ -315,6 +315,66 @@ func TestEngine_inferLinkType(t *testing.T) {
 	}
 }
 
+// @test TEST-INTERNAL_ENGINE-004
+func TestEngine_ValidateCompleteness_UsesDocSourceForMissingDocFields(t *testing.T) {
+	tests := []struct {
+		name       string
+		docID      *model.Identifier
+		codeID     *model.Identifier
+		wantRule   string
+		wantSource string
+	}{
+		{
+			name:       "test missing spec coverage",
+			docID:      model.NewIdentifier("TEST-BE-001", model.TypeTest, "Kanban", "docs/backend/testing.md", 12),
+			codeID:     model.NewIdentifier("TEST-BE-001", model.TypeTest, "", "internal/service/flow_workspace_test.go", 34),
+			wantRule:   "test-missing-coverage",
+			wantSource: "docs/backend/testing.md",
+		},
+		{
+			name:       "spec missing tests",
+			docID:      model.NewIdentifier("SPEC-BE-001", model.TypeSpec, "Kanban", "docs/backend/spec.md", 12),
+			codeID:     model.NewIdentifier("SPEC-BE-001", model.TypeSpec, "", "internal/service/flow_workspace.go", 34),
+			wantRule:   "spec-missing-tests",
+			wantSource: "docs/backend/spec.md",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			cfg := &config.Config{
+				Version: "1.0",
+				Validation: config.ValidationConfig{
+					RequireSpecTestCoverage: true,
+				},
+			}
+			eng := New(cfg)
+			ids := model.NewIdentifierSet()
+
+			tt.codeID.SetOrigin(model.OriginCode)
+			ids.Add(tt.codeID)
+			tt.docID.SetOrigin(model.OriginDoc)
+			ids.Add(tt.docID)
+
+			result, err := eng.Run(context.Background(), ids)
+			if err != nil {
+				t.Fatalf("Run failed: %v", err)
+			}
+
+			for _, err := range result.Errors {
+				if err.Rule != tt.wantRule {
+					continue
+				}
+				if err.Source != tt.wantSource {
+					t.Fatalf("Source = %q, want %q", err.Source, tt.wantSource)
+				}
+				return
+			}
+			t.Fatalf("Expected %s error, got %v", tt.wantRule, result.Errors)
+		})
+	}
+}
+
 // @test TEST-INTERNAL_ENGINE-003
 func TestEngine_validateBidirectional(t *testing.T) {
 	cfg := &config.Config{

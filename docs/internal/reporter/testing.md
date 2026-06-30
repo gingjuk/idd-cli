@@ -20,6 +20,12 @@ markers:
     name: Reporter Test 9
   - id: TEST-INTERNAL_REPORTER-010
     name: Reporter Test 10
+  - id: TEST-INTERNAL_REPORTER-011
+    name: JSON LLM Output
+  - id: TEST-INTERNAL_REPORTER-012
+    name: LLM Markdown Output
+  - id: TEST-INTERNAL_REPORTER-013
+    name: LLM Finding Enrichment
 
 related_files:
   spec: docs/internal/reporter/spec.md
@@ -147,3 +153,39 @@ Test with warning result.
 Test complete report with all fields.
 
 **Spec Coverage:** `SPEC-INTERNAL_REPORTER-001`, `SPEC-INTERNAL_REPORTER-003`, `SPEC-INTERNAL_REPORTER-004`, `SPEC-INTERNAL_REPORTER-005`
+
+---
+
+## TEST-INTERNAL_REPORTER-011: JSON LLM Output
+
+**Status:** Done
+
+**Purpose:**
+
+Test that default JSON output is valid JSON using schema `idd.llm_report.v1` and includes summary, finding group, and finding fields.
+
+**Spec Coverage:** `SPEC-INTERNAL_REPORTER-011`
+
+---
+
+## TEST-INTERNAL_REPORTER-012: LLM Markdown Output
+
+**Status:** Done
+
+**Purpose:**
+
+Test that `llm-markdown` output is action-oriented and includes status, problem, fix, location, and related identifier context.
+
+**Spec Coverage:** `SPEC-INTERNAL_REPORTER-011`
+
+---
+
+## TEST-INTERNAL_REPORTER-013: LLM Finding Enrichment
+
+**Status:** Done
+
+**Purpose:**
+
+Test that validation errors are converted into self-contained findings with severity, rule metadata, structured locations, related identifiers, and grouped summaries for repeated rule failures.
+
+**Spec Coverage:** `SPEC-INTERNAL_REPORTER-012`

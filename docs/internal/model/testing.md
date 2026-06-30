@@ -54,6 +54,8 @@ markers:
     name: Reverse Link Type
   - id: TEST-INTERNAL_MODEL-030
     name: New Link
+  - id: TEST-INTERNAL_MODEL-031
+    name: LLM Report Types
 
 related_files:
   spec: docs/internal/model/spec.md
@@ -421,3 +423,15 @@ Test reversing link types (tests -> implements, etc).
 Test creating a new link.
 
 **Spec Coverage:** `SPEC-INTERNAL_MODEL-013`
+
+---
+
+## TEST-INTERNAL_MODEL-031: LLM Report Types
+
+**Status:** Done
+
+**Purpose:**
+
+Test that LLM report model types can represent and serialize finding-centered validation output.
+
+**Spec Coverage:** `SPEC-INTERNAL_MODEL-037`

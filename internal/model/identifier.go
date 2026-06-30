@@ -467,3 +467,63 @@ type EdgeSummary struct {
 	Source   string `json:"source,omitempty"`
 	Line     int    `json:"line,omitempty"`
 }
+
+// LLMReport is a finding-centered report shape for LLM analysis and repair.
+// @implement SPEC-INTERNAL_MODEL-037
+type LLMReport struct {
+	Schema   string       `json:"schema"`
+	Status   string       `json:"status"`
+	Summary  LLMSummary   `json:"summary"`
+	Findings []LLMFinding `json:"findings"`
+}
+
+// LLMSummary summarizes validation failures for the LLM report.
+// @implement SPEC-INTERNAL_MODEL-037
+type LLMSummary struct {
+	Errors     int               `json:"errors"`
+	Warnings   int               `json:"warnings"`
+	TopRules   []string          `json:"top_rules,omitempty"`
+	RuleGroups []LLMFindingGroup `json:"rule_groups,omitempty"`
+}
+
+// LLMFindingGroup summarizes repeated findings that share the same rule and severity.
+// @implement SPEC-INTERNAL_MODEL-037
+type LLMFindingGroup struct {
+	Severity       string   `json:"severity"`
+	Rule           string   `json:"rule"`
+	Title          string   `json:"title"`
+	Count          int      `json:"count"`
+	Files          []string `json:"files,omitempty"`
+	Identifiers    []string `json:"identifiers,omitempty"`
+	FindingIndexes []int    `json:"finding_indexes"`
+	SuggestedFix   string   `json:"suggested_fix"`
+}
+
+// LLMFinding is a self-contained validation issue for LLM consumption.
+// @implement SPEC-INTERNAL_MODEL-037
+type LLMFinding struct {
+	Severity           string                 `json:"severity"`
+	Rule               string                 `json:"rule"`
+	Title              string                 `json:"title"`
+	Location           LLMLocation            `json:"location,omitempty"`
+	Identifier         string                 `json:"identifier,omitempty"`
+	Problem            string                 `json:"problem"`
+	Expected           string                 `json:"expected,omitempty"`
+	Actual             string                 `json:"actual,omitempty"`
+	SuggestedFix       string                 `json:"suggested_fix"`
+	RelatedIdentifiers []LLMRelatedIdentifier `json:"related_identifiers,omitempty"`
+}
+
+// LLMLocation identifies the file and line associated with a finding.
+// @implement SPEC-INTERNAL_MODEL-037
+type LLMLocation struct {
+	File string `json:"file,omitempty"`
+	Line int    `json:"line,omitempty"`
+}
+
+// LLMRelatedIdentifier describes an identifier related to a finding.
+// @implement SPEC-INTERNAL_MODEL-037
+type LLMRelatedIdentifier struct {
+	ID       string `json:"id"`
+	Relation string `json:"relation"`
+}

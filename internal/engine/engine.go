@@ -148,7 +148,7 @@ func (e *Engine) validate() {
 			source := err.Source
 			if source == "" && err.Link != "" {
 				if node, ok := e.graph.GetNode(err.Link); ok {
-					source = nodeSource(node)
+					source = nodeSourceByOrigin(node, model.OriginDoc)
 				}
 			}
 			e.result.AddError(err.Rule, err.Message, source, err.Link, err.Code)

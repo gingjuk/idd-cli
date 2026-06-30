@@ -12,7 +12,7 @@ related_files:
 
 **Requirement:**
 
-The model package provides data structures for representing IDD identifiers, annotations, and the identifier set collection.
+The model package provides data structures for representing IDD identifiers, annotations, validation results, report snapshots, and LLM-oriented finding reports.
 
 **Key Contracts:**
 
@@ -20,6 +20,7 @@ The model package provides data structures for representing IDD identifiers, ann
 - Links must have valid target IDs
 - Annotations must convert to identifiers correctly
 - Validation results must accumulate errors and warnings
+- LLM report types must serialize finding-centered validation output
 
 **Implementation:** `internal/model/identifier.go`, `internal/model/link.go`
 
@@ -30,5 +31,6 @@ The model package provides data structures for representing IDD identifiers, ann
 - [x] Backlinks are computed from forward links
 - [x] IdentifierSet supports add, get, has, count, all, merge operations
 - [x] Annotations can be converted to identifiers
+- [x] LLM report structures can represent summary, findings, locations, and related identifiers
 
-**Related:** `SPEC-INTERNAL_MODEL-001` through `SPEC-INTERNAL_MODEL-018`
+**Related:** `SPEC-INTERNAL_MODEL-001` through `SPEC-INTERNAL_MODEL-018`, `SPEC-INTERNAL_MODEL-037`

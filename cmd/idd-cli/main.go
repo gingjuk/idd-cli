@@ -109,7 +109,7 @@ type SkillInfo struct {
 func init() {
 	rootCmd.PersistentFlags().StringVar(&cfgPath, "config", "", "Path to .idd.yaml config file (default: ./.idd.yaml)")
 	rootCmd.PersistentFlags().StringVarP(&outPath, "output", "o", "", "Output file path (default: stdout)")
-	rootCmd.PersistentFlags().StringVar(&format, "format", "json", "Output format (json, markdown)")
+	rootCmd.PersistentFlags().StringVar(&format, "format", "json", "Output format (json, markdown, llm-markdown)")
 	rootCmd.PersistentFlags().BoolVarP(&verbose, "verbose", "v", false, "Verbose output")
 	rootCmd.PersistentFlags().BoolVar(&noConfig, "no-config", false, "Disable config file loading")
 
@@ -172,12 +172,12 @@ func run(cmd *cobra.Command, args []string) error {
 	}
 
 	if verbose {
-		fmt.Printf("idd-cli v%s\n", version)
-		fmt.Printf("Validating: %s\n", targetPath)
+		fmt.Fprintf(os.Stderr, "idd-cli v%s\n", version)
+		fmt.Fprintf(os.Stderr, "Validating: %s\n", targetPath)
 		if !noConfig {
-			fmt.Printf("Config: %s\n", cfgPath)
+			fmt.Fprintf(os.Stderr, "Config: %s\n", cfgPath)
 		}
-		fmt.Println()
+		fmt.Fprintln(os.Stderr)
 	}
 
 	start := time.Now()
@@ -197,12 +197,12 @@ func run(cmd *cobra.Command, args []string) error {
 	docSet.Merge(codeSet)
 
 	if verbose {
-		fmt.Printf("Collected %d identifiers in %v\n", docSet.Count(), time.Since(start))
-		fmt.Printf("  SPECs: %d\n", len(docSet.Specs))
-		fmt.Printf("  TESTs: %d\n", len(docSet.Tests))
-		fmt.Printf("  CONTRACTS: %d\n", len(docSet.Contracts))
-		fmt.Printf("  DESIGNs: %d\n", len(docSet.Designs))
-		fmt.Println()
+		fmt.Fprintf(os.Stderr, "Collected %d identifiers in %v\n", docSet.Count(), time.Since(start))
+		fmt.Fprintf(os.Stderr, "  SPECs: %d\n", len(docSet.Specs))
+		fmt.Fprintf(os.Stderr, "  TESTs: %d\n", len(docSet.Tests))
+		fmt.Fprintf(os.Stderr, "  CONTRACTS: %d\n", len(docSet.Contracts))
+		fmt.Fprintf(os.Stderr, "  DESIGNs: %d\n", len(docSet.Designs))
+		fmt.Fprintln(os.Stderr)
 	}
 
 	eng := engine.New(cfg)
@@ -223,11 +223,11 @@ func run(cmd *cobra.Command, args []string) error {
 	}
 
 	if verbose {
-		fmt.Printf("Validation completed in %v\n", time.Since(start))
+		fmt.Fprintf(os.Stderr, "Validation completed in %v\n", time.Since(start))
 		if result.Valid {
-			fmt.Println("✓ Validation passed")
+			fmt.Fprintln(os.Stderr, "✓ Validation passed")
 		} else {
-			fmt.Printf("✗ Validation failed with %d errors\n", len(result.Errors))
+			fmt.Fprintf(os.Stderr, "✗ Validation failed with %d errors\n", len(result.Errors))
 		}
 	}
 
@@ -251,7 +251,7 @@ func listSkills(cmd *cobra.Command, args []string) error {
 
 	if len(skills) == 0 {
 		if verbose {
-			fmt.Println("No skills found")
+			fmt.Fprintln(os.Stderr, "No skills found")
 		}
 		return nil
 	}
@@ -417,7 +417,7 @@ func generateSkill(cmd *cobra.Command, args []string) error {
 			return fmt.Errorf("failed to write skill file: %w", err)
 		}
 		if verbose {
-			fmt.Printf("Skill written to %s\n", outPath)
+			fmt.Fprintf(os.Stderr, "Skill written to %s\n", outPath)
 		}
 	}
 

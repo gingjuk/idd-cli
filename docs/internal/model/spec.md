@@ -34,6 +34,8 @@ markers:
     name: Identifier Origin Methods
   - id: SPEC-INTERNAL_MODEL-018
     name: Identifier Model Core
+  - id: SPEC-INTERNAL_MODEL-037
+    name: LLM Report Types
 
 related_files:
   spec: docs/internal/model/spec.md
@@ -443,3 +445,36 @@ Core identifier type with all fields.
 - `Identifier` — IDD identifier with type, module, number, links
 
 **Tests:** ``
+
+---
+
+## SPEC-INTERNAL_MODEL-037: LLM Report Types
+
+**Design:** `ModelModule`
+
+**Contract:** `LLMReport`
+
+**Requirement:**
+
+The model package must provide serializable types for finding-centered LLM validation reports.
+
+**Tests:** `TEST-INTERNAL_MODEL-031`
+
+**Status:** Done
+
+**Implementation:** `internal/model/identifier.go`
+
+**Key Types:**
+
+- `LLMReport` — Top-level schema, status, summary, and findings
+- `LLMSummary` — Error, warning, and top-rule counts
+- `LLMFindingGroup` — Grouped summary for repeated findings with the same rule and severity
+- `LLMFinding` — Self-contained validation finding
+- `LLMLocation` — Structured file and line location
+- `LLMRelatedIdentifier` — Identifier related to a finding
+
+**Acceptance Criteria:**
+
+- [x] LLM report types serialize to JSON
+- [x] Findings can include severity, rule, location, identifier, problem, expected, actual, fix, and related identifiers
+- [x] Summaries can include grouped repeated findings
