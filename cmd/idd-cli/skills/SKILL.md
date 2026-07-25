@@ -1,6 +1,6 @@
 ---
 name: intent-driven-development
-description: Intent-Driven Development (IDD) workflow — from user intent to committed code through structured phases
+description: Intent-Driven Development workflow paired with idd-cli for authoring, validation, and repair
 license: MIT
 compatibility: opencode
 metadata:
@@ -27,37 +27,68 @@ IDD is a framework-agnostic development workflow that transforms user intent int
 
 4. **Nothing Guessed** — When anything is unclear, CLARIFY. Never guess, assume, or fill gaps with assumptions. Ambiguity resolved by the implementor (not the author) introduces interpretation risk. Ask, don't guess.
 
+## Skill and CLI Contract
+
+Use this skill and idd-cli as one workflow with separate responsibilities:
+
+- The skill turns approved intent into meaningful design, contract, SPEC, TEST,
+  code, and repair decisions.
+- `idd-cli generate skill` exports the exact workflow embedded in the current
+  binary. Regenerate the installed skill after upgrading idd-cli.
+- `idd-cli docs init` creates a new package's four-document skeleton.
+- `idd-cli docs fix` repairs identity and missing skeletons only. It never
+  authors requirements, contracts, designs, purposes, or coverage.
+- `idd-cli run .` checks the complete documentation/code graph and reports the
+  exact record or source location that the skill must repair.
+- `.idd.yaml` configures collection, validation, and output. It is never a
+  marker or semantic-record source.
+
+The skill is the semantic author; idd-cli is the executable guardrail. Neither
+replaces the other.
+
 ## Workflow
 
 ```text
-User Intent
+Install or upgrade idd-cli
     ↓
-Intent Capture (intent.md)
+idd-cli generate skill -o <agent-skill-path>/SKILL.md
     ↓
-Planning (plan.md)
+Intent Capture → intent.md → plan.md
     ↓
-[Architecture] → Consulting Agent → design.md/spec.md/contract.md
+idd-cli docs init <pkg_path>                 (new package only)
     ↓
-TDD Implementation → Implementation Agent + tdd-workflow
+Skill authors design.md + contract.md → spec.md → testing.md
     ↓
-Contract Validation (if applicable)
+Tests and code annotations → RED → GREEN → IMPROVE
     ↓
-Review → Review Agent / Consulting Agent
+idd-cli docs fix docs/<pkg_path>             (safe structure only)
+    ↓
+idd-cli run . --format llm-markdown
+    ↺ Skill repairs the owning Markdown record or source annotation
+    ↓
+Repository tests and review
+    ↓
+idd-cli run . --format json                  (final project gate)
     ↓
 Commit
 ```
 
 **Phase Details:**
 
-| Phase | Input | Output | When |
-|-------|-------|--------|------|
-| 1. Intent Capture | User request | `intent.md` | Always — before any code |
-| 2. Planning | `intent.md` | `plan.md` | Always |
-| 3. Architecture | `intent.md`, `plan.md` | `design.md`, `spec.md`, `contract.md`, `testing.md` | Complex features |
-| 4. Implementation | Specs, contracts | Code with annotations | Always |
-| 5. Contract Validation | `*_contract_test.go` | Validated interfaces | If `contract.md` exists |
-| 6. Review | Changes | Approved code | Always |
-| 7. Knowledge Capture | Implementation | Updated memory/docs | Always |
+| Phase | Skill responsibility | idd-cli checkpoint |
+| --- | --- | --- |
+| 0. Tool alignment | Load the workflow exported by the installed binary | `idd-cli generate skill -o <path>` |
+| 1. Intent and plan | Capture scope, success criteria, constraints, and work order | No document mutation |
+| 2. Package bootstrap | Decide whether this is new, self-describing, or legacy documentation | `idd-cli docs init <pkg_path>` for a new package only |
+| 3. Document authoring | Write role-owned, human-readable Markdown records | Optional `docs fix <file>` for identity only |
+| 4. TDD implementation | Write TEST records/tests first, then implementation and annotations | No partial-project validity claim |
+| 5. Repair loop | Interpret findings and edit the single owning record or source | `idd-cli run . --format llm-markdown` |
+| 6. Final review | Run repository gates and review the complete change | `idd-cli run . --format json` |
+| 7. Knowledge capture | Preserve approved intent, decisions, and durable documentation | Re-run the final gate after changes |
+
+Always run validation from the project root. A narrower documentation target
+does not narrow source annotation collection, so
+`idd-cli run docs/<single-package>` is not a package-only validity check.
 
 **TDD Workflow:**
 
@@ -69,169 +100,92 @@ Commit
 
 ## Document Dependency Chain
 
-Documents are created in dependency order. Each document type builds upon or validates the previous:
+Documents are created in dependency order. Every package document is
+self-describing and owns only the declarations for its role.
 
 ```text
 User Intent
      ↓
-contract.md          ← User Intent defines WHAT needs to be built (interfaces, capabilities)
+intent.md / plan.md
      ↓
-design.md            ← Contract refines HOW to structure it (architecture, components)
+design.md + contract.md       ← architecture and observable boundaries
      ↓
-spec.md              ← Design breaks down HOW in detail (function signatures, behaviors)
+spec.md                       ← SPEC declarations, rationale, and examples
      ↓
-Implementation       ← Spec guides implementation (code annotated with @implement SPEC-*)
+testing.md                    ← TEST declarations, coverage, and strategy
      ↓
-testing.md           ← Each SPEC requires TEST coverage (annotated with @test TEST-*)
-
-Contract Validation (separate from testing.md):
-spec.md ──implements──→ contract.md
-         └───implements──→ design.md
-
-testing.md contains TEST identifiers (via `@test`) that validate SPECs
-
-Contract test file (`*_contract_test.go`) uses `@test-contract SPEC` to validate SPEC satisfies contract
+code annotations             ← @implement / @test / @test-contract
 ```
+
+For a new package, run `idd-cli docs init <pkg_path>` before authoring these
+records. For an existing self-describing package, edit the owning file directly
+and do not rerun initialization.
 
 **Dependency Rules:**
 
-| Document | Depends On | Provides To |
-|---------|-----------|------------|
-| `intent.md` | User request | Starting point for all planning |
-| `contract.md` | `intent.md` | Interface signatures, capability definitions |
-| `design.md` | `contract.md` | Architecture decisions, package layout |
-| `spec.md` | `contract.md`, `design.md` | Detailed specifications, **implements** contract and design |
-| `testing.md` | `spec.md` | TEST identifiers (via `@test`) that validate SPECs |
-| Contract test (`*_contract_test.go`) | `spec.md`, `contract.md` | Uses `@test-contract` to validate SPEC satisfies contract |
-| Code | `spec.md`, `design.md` | Implementation annotated with `@implement SPEC-*` |
+| File | Owns | Must not duplicate |
+| --- | --- | --- |
+| `design.md` | `## Component:` records plus architecture decisions | SPEC or TEST records |
+| `contract.md` | `## Contract:` records plus interfaces, errors, and invariants | SPEC backlinks |
+| `spec.md` | `## SPEC-...:` records plus examples, edge cases, and rationale | TEST coverage |
+| `testing.md` | `## TEST-...:` records, coverage, strategy, and fixtures | SPEC backlinks |
+| Code | Executable behavior and IDD annotations | Copied specification prose |
 
-**Note:** `spec.md` has two roles:
+### Specification granularity
 
-1. **Implements contract** — Each SPEC declares which contract interface it implements
-2. **Implements design** — SPEC details (function signatures, behaviors) realize the architecture defined in design.md
+A SPEC is a cohesive, externally meaningful behavior or invariant. It is not a
+required one-to-one mirror of a function, method, type, or test case.
 
-**Spec implements Design and Contract:**
+- One SPEC may annotate multiple declarations.
+- A public declaration may reference the same behavioral SPEC as related
+  declarations.
+- Function signatures, parameter lists, return lists, and comments stay in
+  source code or generated API documentation.
+- Add a separate SPEC only when the requirement, contract, design ownership, or
+  acceptance behavior is independently meaningful.
 
-Each SPEC in `spec.md` must state which design and contract it implements. Required fields must appear first, in this exact order: `Design`, `Contract`, `Requirement`, `Tests`. Optional fields must come after all required fields.
+### Canonical relationship ownership
 
-```markdown
-## SPEC-AUTH-001: User Login
-
-**Design:** `design.md` — implements architecture `AuthModule`
-
-**Contract:** `contract.md` — implements interface `Authenticator`
-
-**Requirement:** Login with email/password returning JWT token.
-
-**Tests:** `TEST-AUTH-001`
-
-**Implementation:** `internal/auth/auth.go`
-```
-
-**Required fields:**
-
-| Field | Required | Description |
-|-------|----------|-------------|
-| Design | Yes | Which design component this SPEC implements |
-| Contract | Yes | Which contract interface this SPEC implements |
-| Requirement | Yes | What this SPEC describes |
-| Tests | Yes | TEST identifiers that validate this SPEC |
-| Implementation | No | Path to source code; must appear after required fields |
-
-**Test validates SPEC (not contract directly):**
-
-Each TEST in `testing.md` must state which SPEC it covers via **Spec Coverage:**
-
-```markdown
-## TEST-AUTH-001: User Login Test
-
-**Spec Coverage:** `SPEC-AUTH-001`
-
-**Purpose:** Verify login returns valid JWT for valid credentials.
-```
-
-**Note:** Contract validation is done via `@test-contract` in contract test files (`*_contract_test.go`), not in regular test files.
-
-**Code implements SPEC (and implicitly implements Contract):**
-
-```go
-// @implement SPEC-AUTH-001
-func Login(email, password string) (string, error) {
-    // Implementation
-}
-```
-
-**Contract Test File (`*_contract_test.go`):**
-
-Contract tests explicitly validate that the implementation satisfies contract interfaces. Each test function is annotated with `@test-contract SPEC-<MODULE>-NNN` to declare which SPEC's contract is being verified.
-
-```go
-// Package auth provides contract tests for authentication.
-//
-// Spec: docs/internal/auth/spec.md
-// Test: docs/internal/auth/testing.md
-// Contract: docs/internal/auth/contract.md
-package auth
-
-// @test-contract SPEC-AUTH-001
-func TestContractLogin(t *testing.T) {
-    // Validate Login() satisfies Authenticator interface
-}
-```
+- `testing.md` TEST records' `Covers` fields own TEST → SPEC coverage.
+- idd-cli derives the reverse SPEC → TEST edge; authors do not repeat a
+  `Tests` field.
+- `spec.md` SPEC records' `Contract` fields own SPEC → contract selection;
+  `contract.md` does not repeat `Implements` backlinks.
+- `spec.md` SPEC records' `Design` fields own SPEC → design component
+  selection.
+- `@implement` references a SPEC.
+- `@test` and `@test-contract` reference a TEST.
 
 ## Document Hierarchy
 
-All IDD documents stored in `docs/` directory, organized by package path:
+All IDD documents are stored under the package path:
 
 ```text
 docs/
-├── <pkg_path>/           # mirrors the package directory (e.g., internal/auth, pkg/pattern)
-│   ├── spec.md           # SPEC-<MODULE>-NNN
-│   ├── contract.md       # Interface signatures (references SPECs)
-│   ├── testing.md        # TEST-<MODULE>-NNN
-│   └── design.md         # Architecture decisions (references SPECs)
+└── <pkg_path>/           # mirrors internal/auth, pkg/pattern, cmd/idd-cli, ...
+    ├── design.md         # components and architecture
+    ├── contract.md       # contracts and observable boundaries
+    ├── spec.md           # SPEC records and specification detail
+    └── testing.md        # TEST records, coverage, and strategy
 ```
 
 **Rules:**
 
 - `<pkg_path>` mirrors the package directory relative to project root (e.g., `internal/auth` → `docs/internal/auth/`)
-- `<MODULE>` in identifiers is derived from `<pkg_path>` using the abbreviation table (see **Module prefix** below)
-- Document filenames are lowercase: `spec.md`, `contract.md`, `testing.md`, `design.md`
-- `contract.md` and `design.md` do not have their own identifiers — they reference SPECs
-- If spec.md exceeds **1500 lines**, split into `spec-<feat>.md`; main `spec.md` becomes an index
-
-**Agent Responsibilities:**
-
-Delegate to **specialized agents** for specific documents. Use the right agent for the right job:
-
-| Document | Responsible Agent | Notes |
-|----------|-------------------|-------|
-| `intent.md` | Human (user) or planning agent | Captures user intent |
-| `plan.md` | Planning agent | Creates and maintains plan |
-| `contract.md` | Architecture/consulting agent | Defines interfaces from intent |
-| `design.md` | Architecture/consulting agent | Designs system structure |
-| `spec.md` | Deep implementation agent | Detailed specifications |
-| `testing.md` | Deep implementation agent | Test cases |
-| Code | Deep implementation agent | Annotated with `@implement` |
-| Code review | Review agent | Quality, security check |
-
-**Frontmatter:** Each IDD markdown file MUST include YAML frontmatter:
-
-```yaml
----
-markers:
-  - id: SPEC-<MODULE>-NNN
-    name: <description>
-
-related_files:
-  spec: docs/<pkg_path>/spec.md
-  contract: docs/<pkg_path>/contract.md
-  design: docs/<pkg_path>/design.md
-  testing: docs/<pkg_path>/testing.md
----
-```
-
-`<pkg_path>` is the package directory path relative to the project root (e.g., `internal/auth`, `pkg/pattern`, `cmd/idd-cli`). All four entries are always required — use the full path even if the file does not exist yet.
+- `<MODULE>` is derived deterministically from `<pkg_path>`.
+- The four Markdown filenames are fixed, so `related_files` paths are not
+  repeated.
+- Every file has an `idd` block containing only `version`, `package`, and
+  `document`.
+- Self-describing Markdown must not also contain legacy `markers` or
+  `related_files` frontmatter.
+- Level-two role headings are the authoritative declarations. Required fields
+  stay compact; the rest of each section is ordinary Markdown.
+- Large Markdown tables are not declaration sources. A separate generated
+  report may summarize records, but the four owned documents keep level-two
+  record sections as their only canonical source.
+- If none of the four files has an `idd` block, the directory uses the legacy
+  template. If one has it, all four must. Do not mix metadata models.
 
 ## Document Templates
 
@@ -282,143 +236,149 @@ related_files:
 
 ### IDD Document Templates
 
-**`spec.md`** format:
+Create a new package skeleton with:
 
-````markdown
----
-markers:
-  - id: SPEC-<MODULE>-001
-    name: <description>
-
-related_files:
-  spec: docs/<pkg_path>/spec.md
-  contract: docs/<pkg_path>/contract.md
-  design: docs/<pkg_path>/design.md
-  testing: docs/<pkg_path>/testing.md
----
-
-# Specification (<module>)
-
-## SPEC-<MODULE>-001: <Title>
-
-**Design:** implements architecture `<ComponentName>`
-
-**Contract:** implements interface `<InterfaceName>`
-
-**Requirement:** [What this spec describes]
-
-**Tests:** `TEST-<MODULE>-001`
-
-**Input Sources:** [API endpoints, user inputs, external dependencies]
-
-**Implementation:** `<path to source code>`
-
-**Implements:**
-
-```go
-func FunctionName(param1 string, param2 int) (Result, error)
+```bash
+idd-cli docs init <pkg_path>
 ```
 
-**Parameters:**
+The command never overwrites existing IDD or legacy metadata and does not
+invent placeholder requirements or identifiers. It creates minimal identity
+frontmatter and role-appropriate narrative scaffolds:
 
-- `param1`, Description of param1
-- `param2`, Description of param2
+```yaml
+idd:
+  version: "1.0"
+  package: internal/auth
+  document: spec # design, contract, spec, or testing
+```
 
-**Returns:**
+The identity appears between `---` delimiters in each named Markdown file.
+Semantic YAML fields such as `components`, `contracts`, `specs`, or `tests` are
+invalid; migrate them into Markdown records.
 
-- `Result`, Description of return value
-- `error`, Error description
+**Canonical record shapes:**
 
-````
+| Document | Level-two record | Required content |
+| --- | --- | --- |
+| `design.md` | `## Component: <name>` | A human-readable component narrative |
+| `contract.md` | `## Contract: <name>` | Inputs, outputs, errors, and invariants |
+| `spec.md` | `## SPEC-...: <title>` | `Design`, `Contract`, and `Requirement` |
+| `testing.md` | `## TEST-...: <title>` | `Kind`, `Covers`, and `Purpose` |
 
-**Required sections:** Design, Contract, Requirement, Tests
-**Optional sections:** Input Sources, Implementation, Implements (with Parameters/Returns). Optional sections must come after all required sections.
+This table explains the format; it is not a declaration registry. Each actual
+record is a Markdown section. `Kind` is `test` for behavioral tests or
+`contract` for contract tests. Every SPEC must be named by at least one TEST
+`Covers` field.
 
-**Interface/Class method naming:** When documenting an interface method or class member method, use `<InterfaceName>.<Method>` as the title (e.g., `Reporter.Write`). The Implements section signature should show the full method signature.
-
-**`testing.md`** format:
+**`design.md`:**
 
 ```markdown
 ---
-markers:
-  - id: TEST-<MODULE>-001
-    name: <test description>
-
-related_files:
-  spec: docs/<pkg_path>/spec.md
-  contract: docs/<pkg_path>/contract.md
-  design: docs/<pkg_path>/design.md
-  testing: docs/<pkg_path>/testing.md
+idd:
+  version: "1.0"
+  package: internal/auth
+  document: design
 ---
 
-# Test Cases (<module>)
+# Design: internal/auth
 
-## TEST-<MODULE>-001: <Title>
+## Component: AuthModule
 
-**Purpose:** [What this test validates]
-
-**Spec Coverage:** `SPEC-<MODULE>-001`
-```
-
-**`design.md`** format:
-
-```markdown
----
-related_files:
-  spec: docs/<pkg_path>/spec.md
-  contract: docs/<pkg_path>/contract.md
-  design: docs/<pkg_path>/design.md
-  testing: docs/<pkg_path>/testing.md
----
-
-# Design (<module>)
+Explain the component's responsibility and boundaries in concrete terms.
 
 ## Architecture
-[High-level system design]
 
 ## Package Layout
-[Directory structure and package responsibilities]
 
 ## Function Composition
-**Call graph:** `A → B → C`
-**Initialization:** `InitA()` → `InitB()`
 
 ## Dependencies
-**External:** [postgres, redis, kafka]
-**Internal:** [pkg/auth, pkg/metrics]
 
 ## Testability Hooks
-[Test strategy and contract test approach]
 ```
 
-**Required sections:** Architecture, Package Layout, Function Composition, Dependencies, Testability Hooks
+Each section requires concrete package-specific content. Empty headings produced
+by `docs init` are an honest scaffold, not completed documentation.
 
-**`contract.md`** format:
+**`contract.md`:**
 
 ````markdown
 ---
-related_files:
-  spec: docs/<pkg_path>/spec.md
-  contract: docs/<pkg_path>/contract.md
-  design: docs/<pkg_path>/design.md
-  testing: docs/<pkg_path>/testing.md
+idd:
+  version: "1.0"
+  package: internal/auth
+  document: contract
 ---
 
-# Contracts (<module>)
+# Contracts: internal/auth
 
-## Interface: <Name>
+## Contract: Authenticator
+
+State the observable inputs, outputs, errors, and invariants.
 
 ```go
-type <Interface> interface {
-    Method() error
+type Authenticator interface {
+    Authenticate(ctx context.Context, credentials Credentials) (Identity, error)
 }
 ```
-
-**Implements:** `SPEC-<MODULE>-001`
 ````
 
-**Required sections:** Interface definition with Implements field
-**Note:** `contract.md` does not have its own identifiers — interfaces are referenced by SPECs via the **Contract:** field
+Do not add SPEC backlinks; the SPEC record's `Contract` field owns that
+reference.
+
+**`spec.md`:**
+
+```markdown
+---
+idd:
+  version: "1.0"
+  package: internal/auth
+  document: spec
+---
+
+# Specifications: internal/auth
+
+## SPEC-INTERNAL_AUTH-001: Credential rejection details
+
+- **Design:** `AuthModule`
+- **Contract:** `Authenticator`
+
+**Requirement:** Authenticate users with validated credentials.
+
+Record acceptance examples, edge cases, and rationale as normal Markdown.
+```
+
+The level-two ID heading and fixed fields are required. Do not copy source
+signatures, parameter lists, or return lists into this file.
+
+**`testing.md`:**
+
+```markdown
+---
+idd:
+  version: "1.0"
+  package: internal/auth
+  document: testing
+---
+
+# Testing: internal/auth
+
+## TEST-INTERNAL_AUTH-001: Authentication behavior
+
+- **Kind:** `test`
+- **Covers:** `SPEC-INTERNAL_AUTH-001`
+
+**Purpose:** Verify accepted and rejected credentials.
+
+## Strategy
+
+Explain test boundaries, fixtures, important scenarios, and why contract tests
+are separate from behavioral tests.
+```
+
+Do not repeat `Spec Coverage`; this TEST record's `Covers` field owns the
+relationship.
 
 ### Code Annotation Templates
 
@@ -456,7 +416,9 @@ func TestPublicFunction(t *testing.T) {
 
 **Contract test file** (`<pkg>_contract_test.go`):
 
-Contract tests validate that the implementation satisfies the contract interface. Each test function must be annotated with `@test-contract SPEC-<MODULE>-NNN` — referencing the SPEC whose contract is being verified.
+Contract tests validate that the implementation satisfies the contract
+interface. Each test function uses `@test-contract TEST-<MODULE>-NNN` and the
+corresponding `testing.md` record has `kind: contract`.
 
 ```go
 // Package mymodule provides contract tests for <description>.
@@ -466,7 +428,7 @@ Contract tests validate that the implementation satisfies the contract interface
 // Contract: docs/<pkg_path>/contract.md
 package mymodule
 
-// @test-contract SPEC-<MODULE>-001
+// @test-contract TEST-<MODULE>-002
 func TestContractPublicFunction(t *testing.T) {
     // Validate implementation matches contract
 }
@@ -507,53 +469,50 @@ func TestContractPublicFunction(t *testing.T) {
 
 ## Linkage Rules
 
-**Bidirectional Links:**
-
-IDD documents have bidirectional links that must remain consistent:
-
-| Link Pair | Forward Direction | Backward Direction |
-|-----------|------------------|-------------------|
-| Contract ↔ SPEC | SPEC: `**Contract:**` | contract.md: `**Implements:**` |
-| SPEC ↔ TEST | SPEC: `**Tests:**` | testing.md: `**Spec Coverage:**` |
-
-**Complete Tracking Chain:**
+The owning document records each relationship once and idd-cli builds the
+complete graph:
 
 ```text
-contract.md (Authenticator interface)
-    ↑ Implements
-    |
-SPEC-AUTH-001 (in spec.md)
-    ├── **Design:** design.md — implements architecture AuthModule
-    ├── **Contract:** contract.md — implements interface Authenticator
-    └── **Tests:** TEST-AUTH-001
-            ↑ Spec Coverage
-            |
-TEST-AUTH-001 (in testing.md)
+design.md Component             contract.md Contract
+       AuthModule                     Authenticator
+          ↑                                  ↑
+          └──── SPEC-AUTH-001 ───────────────┘
+                    spec.md
+                    ↑ derived reverse edge
+                    │
+          testing.md: TEST-AUTH-001 covers SPEC-AUTH-001
 
-CODE: @implement SPEC-AUTH-001    →  implements Authenticator interface
-TEST: @test TEST-AUTH-001         →  validates SPEC-AUTH-001
-CONTRACT TEST: @test-contract SPEC-AUTH-001  →  validates SPEC satisfies contract
+CODE:          @implement SPEC-AUTH-001
+TEST:          @test TEST-AUTH-001
+CONTRACT TEST: @test-contract TEST-AUTH-002
 ```
 
-**Linkage Verification Rules:**
+**Verification rules:**
 
-*Contract ↔ SPEC:*
+- Every SPEC `Design` value names a `design.md` Component record.
+- Every SPEC `Contract` value names a `contract.md` Contract record.
+- Every TEST `Covers` value names an existing SPEC.
+- Every SPEC has at least one derived TEST backlink.
+- Document identifiers exist in matching code annotations.
+- Record headings and fixed fields are reported at their Markdown source lines.
+- `Kind: contract` records are used by contract test annotations.
 
-- Every SPEC with `**Contract:**` must have a matching `**Implements:**` in contract.md
-- Every contract interface with `**Implements:**` must have a matching SPEC that declares it
-- The interface name in SPEC's `implements interface <Name>` must exist in contract.md
+### Legacy compatibility
 
-*SPEC ↔ TEST:*
+Directories where none of the four fixed files has an `idd` block continue to
+use frontmatter markers, SPEC `**Tests:**`, and TEST `**Spec Coverage:**`.
+Migrate one package at a time:
 
-- Every SPEC's `**Tests:**` field must have corresponding `**Spec Coverage:**` in testing.md
-- Every TEST's `**Spec Coverage:**` must reference an existing SPEC
-- The TEST identifier in SPEC's `**Tests:**` must match the TEST's own identifier
-
-**Frontmatter ↔ Body Sync:**
-
-1. Every frontmatter marker must have a corresponding heading
-2. Every body reference must be in frontmatter markers
-3. Bidirectional consistency between `markers[].id` and headings
+1. Add the minimal `idd` identity to all four fixed documents.
+2. Move component declarations to `design.md` `## Component:` sections.
+3. Move contract declarations to `contract.md` `## Contract:` sections.
+4. Move meaningful SPEC records and `Design`/`Contract` selections to
+   `spec.md`.
+5. Move TEST records and each relationship to `testing.md` `Covers` fields.
+6. Remove legacy `markers`, `related_files`, and repeated relationship fields
+   while keeping valuable narrative content.
+7. Run `idd-cli docs fix docs/<pkg_path>` and then
+   `idd-cli run . --format llm-markdown`.
 
 **Annotation Placement:**
 
@@ -584,25 +543,100 @@ Minimum coverage: 80%
 - **Delete .planning/** when done — Keep for continuity
 - **Annotate inside function bodies** — Annotations only on function/type declarations
 - **Triple-segment identifiers** — Use `SPEC-BE-007` not `SPEC-BE-007-007`
-- **Mismatched frontmatter-body** — Breaks doc-link-consistency
+- **One SPEC per symbol** — Produces API-mirror documents instead of behavioral specifications
+- **Copied source API** — Signatures, parameters, and returns belong in source or generated API docs
+- **Repeated backlinks** — Store coverage only in TEST `Covers`; let idd-cli derive the reverse edge
+- **YAML semantic catalogs** — YAML identifies the document; Markdown records describe the behavior
+- **Large declaration tables** — Tables are derived views, not editable record sources
+- **Central marker catalog** — Creates one package-wide write hotspot
+- **Mixed self-describing and legacy metadata** — Creates competing sources of truth
+- **Placeholder document content** — Never use `TBD`, `auto-generated`, or an identifier copied as its own title
+- **Stale installed skill** — Regenerate the agent skill after upgrading idd-cli
+- **Package-targeted final gate** — `run docs/<pkg_path>` does not scope source collection; validate the project root
 
-## IDD CLI Tool
+## IDD CLI Operational Loop
 
-idd-cli validates doc-link-consistency between IDD identifiers across documentation and source code.
+idd-cli is the executable companion to this skill. Use it at these checkpoints,
+not as a semantic document generator.
 
-**Installation:**
+### 1. Align the installed skill with the binary
 
 ```bash
-go build -o idd-cli ./cmd/idd-cli
+idd-cli --version
+idd-cli generate skill -o idd-skill.md
+idd-cli skills --format json
 ```
 
-**Usage:**
+`generate skill` reads the copy embedded in the binary. Regenerate it after an
+idd-cli upgrade so the agent does not author an older document format than the
+validator accepts. Install `idd-skill.md` as `SKILL.md` through the agent's
+normal skill mechanism.
+
+### 2. Bootstrap or adopt package documents
+
+For a new package with no IDD metadata:
 
 ```bash
-idd-cli run --config .idd.yaml
+idd-cli docs init internal/auth
 ```
+
+For an existing self-describing package, do not call `docs init`; edit the
+owning Markdown records. For a legacy package, follow the explicit migration
+steps first because initialization refuses mixed metadata.
+
+After independently generating or moving documents, normalize only safe
+structure:
+
+```bash
+idd-cli docs fix docs/internal/auth
+idd-cli docs fix docs/internal/auth/testing.md
+```
+
+The directory form may create missing skeletons and repairs all four identities.
+The file form has one write target. Both preserve the Markdown body
+byte-for-byte.
+
+### 3. Run the skill-guided repair loop
+
+After the four documents, tests, implementation, and annotations form one
+coherent checkpoint:
+
+```bash
+idd-cli run . --format llm-markdown
+```
+
+An invalid graph exits non-zero but still emits the complete report. Repair by
+finding ownership:
+
+- identity or missing-document findings → run `docs fix` on the reported file
+  or directory;
+- schema, Markdown, reference, migration, or TEST-kind findings → use this
+  skill to edit the reported owning record;
+- annotation or doc/code findings → edit the reported source or test
+  declaration;
+- never add a reverse backlink merely to silence a finding; repair the one
+  canonical owner and let idd-cli derive the graph.
+
+Repeat until the project report passes. Always use `.` for this validity gate:
+the documentation argument can narrow document collection, but source
+annotations are still collected from the current project working tree.
+
+### 4. Run the final gate
+
+Run repository tests first, then produce the stable CI-facing report:
+
+```bash
+idd-cli run . --format json
+```
+
+Use `llm-markdown` for agent repair, `markdown` for a human readout, and `json`
+for automation. A commit is ready only when repository tests and the final
+project-level IDD check pass.
 
 **Configuration (`.idd.yaml`):**
+
+This file configures the guardrail. It never owns Components, Contracts, SPECs,
+TESTs, or coverage.
 
 ```yaml
 version: "1.0"
@@ -620,19 +654,19 @@ code:
   patterns:
     - "**/*.go"
   annotations:
-    - "@implement"
-    - "@test"
-    - "@test-contract"
+    spec: "@implement"
+    test: "@test"
+    test_contract: "@test-contract"
   ignore_paths: []          # glob patterns for source files to skip
 
 validation:
-  # Link consistency between SPEC **Tests:** and TEST **Spec Coverage:**
+  # Self-described coverage or legacy bidirectional relationship consistency
   require_doc_link_consistency: true
   # Disallow identifiers with no connections in the graph
   allow_orphans: false
-  # Every SPEC must have at least one TEST in its **Tests:** field
+  # Every SPEC must have at least one TEST coverage relationship
   require_spec_test_coverage: true
-  # Every CONTRACT identifier must have a @test-contract annotation
+  # Legacy contract identifiers must have contract-test coverage
   require_contract_test_coverage: true
   # design.md files must contain all required sections
   require_design_sections: true
@@ -642,7 +676,7 @@ validation:
   require_public_func_annotation: true
   # Every .go file must have a package doc comment with Spec/Contract paths
   require_package_doc_comment: true
-  # Every doc file must have a related_files field in frontmatter
+  # Legacy docs need related_files; self-describing files use fixed roles
   require_related_files: true
   # Every test function must have an @test or @test-contract annotation
   require_test_annotation: true
@@ -663,14 +697,17 @@ output:
 
 **Validation Rules:**
 
-1. **Completeness** — Every SPEC must have at least one TEST in its **Tests:** field
-2. **Bidirectional (CRITICAL)** — SPEC→TEST link must match TEST→SPEC backlink
-3. **Orphan Detection** — No identifiers with zero connections
-4. **Identifier Format** — Must match `<TYPE>-<MODULE>-<NUMBER>` (3 segments)
-5. **Heading Format** — Section headings MUST be `## <Identifier>: <description>`
-6. **Frontmatter-Body Sync** — All identifiers in body must be in frontmatter, and vice versa
-7. **Annotation Placement** — `@implement`, `@test`, `@test-contract` must be on function/type declarations only
-8. **Package Doc Comment** — Every .go file must have a package doc comment after `package` declaration
-9. **Duplicate Heading Identifier (CRITICAL)** — H2 section headings MUST NOT have duplicate identifiers within the same file. If a file contains multiple sections (e.g., `## Test` and `## Contract Test`), each section must use its own sequential numbering range (e.g., `TEST-INTERNAL_ENGINE-001` to `TEST-INTERNAL_ENGINE-007` for Test, and `TEST-INTERNAL_ENGINE-013` to `TEST-INTERNAL_ENGINE-019` for Contract Test). idd-cli will detect and report this error. Never reuse identifiers across sections.
+1. **Document schema** — Every file contains concrete, role-owned Markdown records.
+2. **Document identity** — `package` and `document` match `docs/<pkg_path>/<role>.md`.
+3. **Document set** — All four fixed self-describing Markdown documents exist.
+4. **Migration safety** — A package-local central marker catalog is rejected.
+5. **Reference integrity** — Design, contract, and coverage references resolve.
+6. **Coverage completeness** — Every SPEC has at least one derived TEST backlink.
+7. **Identifier format** — Identifiers match `<TYPE>-<MODULE>-<NUMBER>`.
+8. **Doc/code correspondence** — Document identifiers and code annotations agree.
+9. **Annotation placement** — Annotations sit on function or type declarations.
+10. **Narrative structure** — Required record headings and design sections contain meaningful content.
+11. **Legacy compatibility** — Legacy rules apply only when no fixed file has an `idd` block.
 
-**Output:** JSON report with `valid`, `errors`, `warnings`, `stats`, and `graph` snapshot.
+**Output:** Finding-centered JSON, Markdown, or LLM-oriented Markdown with
+rule, exact location, identifier, problem, and suggested fix.

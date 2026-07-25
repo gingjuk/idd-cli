@@ -1,450 +1,279 @@
 ---
-markers:
-  - id: TEST-INTERNAL_COLLECTOR-001
-    name: Document Collector Tests
-  - id: TEST-INTERNAL_COLLECTOR-002
-    name: Code Collector Tests
-  - id: TEST-INTERNAL_COLLECTOR-003
-    name: Frontmatter Parsing Tests
-  - id: TEST-INTERNAL_COLLECTOR-004
-    name: Frontmatter Validation Tests
-  - id: TEST-INTERNAL_COLLECTOR-005
-    name: File Path Validation Tests
-  - id: TEST-INTERNAL_COLLECTOR-006
-    name: Title Extraction Tests
-  - id: TEST-INTERNAL_COLLECTOR-007
-    name: Module Prefix Tests
-  - id: TEST-INTERNAL_COLLECTOR-008
-    name: Document Structure Tests
-  - id: TEST-INTERNAL_COLLECTOR-009
-    name: Annotation Extraction Tests
-  - id: TEST-INTERNAL_COLLECTOR-010
-    name: Function Context Tests
-  - id: TEST-INTERNAL_COLLECTOR-011
-    name: Code Origin Tests
-  - id: TEST-INTERNAL_COLLECTOR-012
-    name: Multi-Annotation Tests
-  - id: TEST-INTERNAL_COLLECTOR-013
-    name: Path Ignore Tests
-  - id: TEST-INTERNAL_COLLECTOR-019
-    name: Document Type Matching Tests
-  - id: TEST-INTERNAL_COLLECTOR-014
-    name: Code File Discovery Tests
-  - id: TEST-INTERNAL_COLLECTOR-015
-    name: Language Support Tests
-  - id: TEST-INTERNAL_COLLECTOR-016
-    name: Collector Integration Tests
-  - id: TEST-INTERNAL_COLLECTOR-017
-    name: Edge Case Tests
-
-  - id: TEST-INTERNAL_COLLECTOR-021
-    name: IDD Reference Tests
-  - id: TEST-INTERNAL_COLLECTOR-022
-    name: Code Collector Basic Collection
-  - id: TEST-INTERNAL_COLLECTOR-023
-    name: Code Collector Go File
-  - id: TEST-INTERNAL_COLLECTOR-024
-    name: Code Collector Multiple Annotations
-  - id: TEST-INTERNAL_COLLECTOR-025
-    name: Code Collector Function Context
-  - id: TEST-INTERNAL_COLLECTOR-026
-    name: Code Collector Multi-File
-  - id: TEST-INTERNAL_COLLECTOR-027
-    name: Code Collector Integration
-  - id: TEST-INTERNAL_COLLECTOR-028
-    name: Doc Collector Section Title Extraction
-  - id: TEST-INTERNAL_COLLECTOR-029
-    name: Doc Collector Multi-Section Handling
-
-related_files:
-  spec: docs/internal/collector/spec.md
-  contract: docs/internal/collector/contract.md
-  design: docs/internal/collector/design.md
-  testing: docs/internal/collector/testing.md
+idd:
+  version: "1.0"
+  package: internal/collector
+  document: testing
 ---
 
-# Test Cases
+# Testing: internal/collector
 
-## Test
+## TEST-INTERNAL_COLLECTOR-001: Document collection
 
-## TEST-INTERNAL_COLLECTOR-001: Document Collector Tests
+- **Kind:** `test`
+- **Covers:** `SPEC-INTERNAL_COLLECTOR-001`, `SPEC-INTERNAL_COLLECTOR-017`
 
-**Status:** Done
+**Purpose:** Function `TestDocCollector_Collect` verifies basic documentation
+collection.
 
-**Purpose:**
+## TEST-INTERNAL_COLLECTOR-002: Frontmatter-backed collection
 
-Test the `DocCollector` for collecting identifiers from markdown documentation.
+- **Kind:** `test`
+- **Covers:** `SPEC-INTERNAL_COLLECTOR-006`, `SPEC-INTERNAL_COLLECTOR-007`,
+  `SPEC-INTERNAL_COLLECTOR-008`, `SPEC-INTERNAL_COLLECTOR-017`
 
-### Test Cases
+**Purpose:** Function `TestDocCollector_Collect_WithFrontmatter` verifies legacy
+frontmatter collection.
 
-| Test | Description |
-| --- | ----------- |
-| `TestDocCollector_Collect` | Tests collecting from directory |
-| `TestDocCollector_Collect_WithFrontmatter` | Tests frontmatter parsing and marker validation |
-| `TestDocCollector_Collect_FileNotFound` | Tests handling of missing file |
-| `TestDocCollector_Collect_NonMarkdownFile` | Tests that non-.md files are skipped |
-| `TestDocCollector_extractTitle` | Tests title extraction from heading |
-| `TestDocCollector_extractTitle_NotFound` | Tests title extraction when no heading found |
-| `TestDocCollector_Collect_DirectoryWithNoSpec` | Tests directory with no spec files |
-| `TestNewDocCollector` | Tests collector initialization |
+## TEST-INTERNAL_COLLECTOR-003: Missing documentation target
 
-#### Frontmatter Tests
+- **Kind:** `test`
+- **Covers:** `SPEC-INTERNAL_COLLECTOR-017`
 
-| Test | Description |
-| --- | ----------- |
-| `TestParseFrontmatter` | Tests frontmatter YAML parsing |
-| `TestParseFrontmatter/valid_frontmatter` | Valid frontmatter with markers |
-| `TestParseFrontmatter/no_frontmatter` | No frontmatter returns nil |
-| `TestParseFrontmatter/empty_content` | Empty content handled gracefully |
-| `TestParseFrontmatter/code_block_with_dashes` | Code blocks don't interfere |
-| `TestParseFrontmatter/frontmatter_with_describe` | Marker with describe field |
+**Purpose:** Function `TestDocCollector_Collect_FileNotFound` verifies a missing
+target returns an empty set.
 
-#### Validation Tests
+## TEST-INTERNAL_COLLECTOR-004: Non-Markdown target
 
-| Test | Description |
-| --- | ----------- |
-| `TestValidateFrontmatterMarkers` | Tests marker-to-heading matching |
-| `TestExtractDefinedMarkers` | Tests extraction of defined markers |
-| `TestExtractReferencedMarkers` | Tests extraction of referenced markers |
-| `TestExtractIDDRefs` | Tests IDD reference regex |
-| `TestGetExpectedFilename` | Tests filename from type mapping |
-| `TestValidateDocumentStructure` | Tests doc structure validation |
-| `TestIsRootDocFile` | Tests root doc detection |
-| `TestExtractModuleName` | Tests module name extraction |
-| `TestIsKnownAbbreviation` | Tests abbreviation validation |
-| `TestValidateModulePrefix` | Tests prefix matching |
+- **Kind:** `test`
+- **Covers:** `SPEC-INTERNAL_COLLECTOR-017`
 
-**Spec Coverage:** `SPEC-INTERNAL_COLLECTOR-001`, `SPEC-INTERNAL_COLLECTOR-002`
+**Purpose:** Function `TestDocCollector_Collect_NonMarkdownFile` verifies
+unsupported document files are ignored.
 
----
+## TEST-INTERNAL_COLLECTOR-005: Section title extraction
 
-## TEST-INTERNAL_COLLECTOR-002: Code Collector Tests
+- **Kind:** `test`
+- **Covers:** `SPEC-INTERNAL_COLLECTOR-001`
 
-**Status:** Done
+**Purpose:** Function `TestDocCollector_extractTitle` verifies titles are read
+from identifier headings.
 
-**Purpose:**
+## TEST-INTERNAL_COLLECTOR-006: Missing section title
 
-Test the `CodeCollector` for collecting annotations from source code.
+- **Kind:** `test`
+- **Covers:** `SPEC-INTERNAL_COLLECTOR-001`
 
-### Test Cases
+**Purpose:** Function `TestDocCollector_extractTitle_NotFound` verifies absent
+headings return no title.
 
-| Test | Description |
-| --- | ----------- |
-| `TestCodeCollector_Collect` | Tests collecting from directory |
-| `TestCodeCollector_CollectGoFile` | Tests Go file annotation extraction |
-| `TestCodeCollector_MultipleAnnotations` | Tests multiple annotations on same line |
-| `TestExtractFunctionComment` | Tests function comment extraction |
-| `TestExtractFunctionComment/comment_after_annotation` | Comment lines after annotation |
-| `TestExtractFunctionComment/function_comment_with_func` | Function comment with func keyword |
-| `TestExtractFunctionComment/no_comment` | No comment found |
-| `TestExtractFunctionComment/comment_with_func_name` | Comment containing func name |
-| `TestExtractFunctionComment_OutOfBounds` | Edge case for line bounds |
-| `TestExtractFunctionComment_PointerReceiver` | Tests pointer receiver methods |
+## TEST-INTERNAL_COLLECTOR-007: Empty documentation directory
 
-**Spec Coverage:** `SPEC-INTERNAL_COLLECTOR-002`
+- **Kind:** `test`
+- **Covers:** `SPEC-INTERNAL_COLLECTOR-017`
 
----
+**Purpose:** Function `TestDocCollector_Collect_DirectoryWithNoSpec` verifies an
+empty directory is handled safely.
 
-## TEST-INTERNAL_COLLECTOR-003: ParseFrontmatter Tests
+## TEST-INTERNAL_COLLECTOR-008: Marker description values
 
-**Status:** Done
+- **Kind:** `test`
+- **Covers:** `SPEC-INTERNAL_COLLECTOR-005`
 
-**Purpose:**
+**Purpose:** Function `TestMarker_Describe` verifies legacy marker descriptions
+are retained.
 
-Test frontmatter YAML parsing with various valid and invalid inputs.
+## TEST-INTERNAL_COLLECTOR-009: Frontmatter value fields
 
-**Spec Coverage:** `SPEC-INTERNAL_COLLECTOR-002`, `SPEC-INTERNAL_COLLECTOR-003`
+- **Kind:** `test`
+- **Covers:** `SPEC-INTERNAL_COLLECTOR-006`, `SPEC-INTERNAL_COLLECTOR-007`
 
----
+**Purpose:** Function `TestFrontmatter_Markers` verifies marker and related-file
+values.
 
-## TEST-INTERNAL_COLLECTOR-004: Frontmatter Edge Cases
+## TEST-INTERNAL_COLLECTOR-010: Frontmatter parsing
 
-**Status:** Done
+- **Kind:** `test`
+- **Covers:** `SPEC-INTERNAL_COLLECTOR-008`
 
-**Purpose:**
+**Purpose:** Function `TestParseFrontmatter` verifies valid, absent, empty, and
+fenced-code inputs.
 
-Test frontmatter parsing edge cases like code blocks and empty content.
+## TEST-INTERNAL_COLLECTOR-011: Marker and heading validation
 
-**Spec Coverage:** `SPEC-INTERNAL_COLLECTOR-002`, `SPEC-INTERNAL_COLLECTOR-003`
+- **Kind:** `test`
+- **Covers:** `SPEC-INTERNAL_COLLECTOR-009`, `SPEC-INTERNAL_COLLECTOR-010`,
+  `SPEC-INTERNAL_COLLECTOR-011`
 
----
+**Purpose:** Function `TestValidateFrontmatterMarkers` verifies declared
+markers and heading formatting.
 
-## TEST-INTERNAL_COLLECTOR-005: Marker Validation
+## TEST-INTERNAL_COLLECTOR-012: Defined marker extraction
 
-**Status:** Done
+- **Kind:** `test`
+- **Covers:** `SPEC-INTERNAL_COLLECTOR-009`
 
-**Purpose:**
+**Purpose:** Function `TestExtractDefinedMarkers` verifies identifier headings
+are recognized as definitions.
 
-Test validation that frontmatter markers match actual headings.
+## TEST-INTERNAL_COLLECTOR-013: Referenced marker extraction
 
-**Spec Coverage:** `SPEC-INTERNAL_COLLECTOR-002`, `SPEC-INTERNAL_COLLECTOR-004`
+- **Kind:** `test`
+- **Covers:** `SPEC-INTERNAL_COLLECTOR-009`
 
----
+**Purpose:** Function `TestExtractReferencedMarkers` verifies referenced
+identifiers are recognized.
 
-## TEST-INTERNAL_COLLECTOR-006: Validation Errors
+## TEST-INTERNAL_COLLECTOR-014: Multi-reference marker extraction
 
-**Status:** Done
+- **Kind:** `test`
+- **Covers:** `SPEC-INTERNAL_COLLECTOR-009`
 
-**Purpose:**
+**Purpose:** Function `TestExtractReferencedMarkers` verifies multiple
+references are retained.
 
-Test error reporting for malformed markers.
+## TEST-INTERNAL_COLLECTOR-015: Expected narrative filename
 
-**Spec Coverage:** `SPEC-INTERNAL_COLLECTOR-002`, `SPEC-INTERNAL_COLLECTOR-004`
+- **Kind:** `test`
+- **Covers:** `SPEC-INTERNAL_COLLECTOR-012`
 
----
+**Purpose:** Function `TestGetExpectedFilename` verifies identifier types map to
+fixed Markdown filenames.
 
-## TEST-INTERNAL_COLLECTOR-007: File Path Structure
+## TEST-INTERNAL_COLLECTOR-016: Root documentation placement
 
-**Status:** Done
+- **Kind:** `test`
+- **Covers:** `SPEC-INTERNAL_COLLECTOR-013`
 
-**Purpose:**
+**Purpose:** Function `TestIsRootDocFile` verifies root documentation is exempt
+from package placement.
 
-Test document structure validation by file path.
+## TEST-INTERNAL_COLLECTOR-017: Package document placement
 
-**Spec Coverage:** `SPEC-INTERNAL_COLLECTOR-002`, `SPEC-INTERNAL_COLLECTOR-005`
+- **Kind:** `test`
+- **Covers:** `SPEC-INTERNAL_COLLECTOR-013`
 
----
+**Purpose:** Function `TestValidateDocumentStructure` verifies identifier types
+use the correct narrative file.
 
-## TEST-INTERNAL_COLLECTOR-008: Expected Filename
+## TEST-INTERNAL_COLLECTOR-019: IDD reference extraction
 
-**Status:** Done
+- **Kind:** `test`
+- **Covers:** `SPEC-INTERNAL_COLLECTOR-009`
 
-**Purpose:**
+**Purpose:** Function `TestExtractIDDRefs` verifies supported identifiers are
+extracted from headings and references.
 
-Test expected filename generation by identifier type.
+## TEST-INTERNAL_COLLECTOR-021: Self-describing document workflows
 
-**Spec Coverage:** `SPEC-INTERNAL_COLLECTOR-002`, `SPEC-INTERNAL_COLLECTOR-005`
+- **Kind:** `test`
+- **Covers:** `SPEC-INTERNAL_COLLECTOR-001`, `SPEC-INTERNAL_COLLECTOR-002`,
+  `SPEC-INTERNAL_COLLECTOR-017`
 
----
+**Purpose:** Document tests verify minimal identity parsing, CommonMark
+records, exact diagnostics, derived links, safe initialization, single-file
+writes, and idempotent repair.
 
-## TEST-INTERNAL_COLLECTOR-009: Title From Heading
+## TEST-INTERNAL_COLLECTOR-022: Collector boundary cases
 
-**Status:** Done
+- **Kind:** `test`
+- **Covers:** `SPEC-INTERNAL_COLLECTOR-001`, `SPEC-INTERNAL_COLLECTOR-024`
 
-**Purpose:**
+**Purpose:** Collector tests verify section parsing and function-context
+bounds.
 
-Test extracting title from markdown heading.
+## TEST-INTERNAL_COLLECTOR-023: Coverage and receiver parsing
 
-**Spec Coverage:** `SPEC-INTERNAL_COLLECTOR-002`, `SPEC-INTERNAL_COLLECTOR-006`
+- **Kind:** `test`
+- **Covers:** `SPEC-INTERNAL_COLLECTOR-001`, `SPEC-INTERNAL_COLLECTOR-024`
 
----
+**Purpose:** Collector tests verify SPEC coverage parsing and pointer-receiver
+context.
 
-## TEST-INTERNAL_COLLECTOR-010: Title Not Found
+## TEST-INTERNAL_COLLECTOR-024: Source collection
 
-**Status:** Done
+- **Kind:** `test`
+- **Covers:** `SPEC-INTERNAL_COLLECTOR-001`, `SPEC-INTERNAL_COLLECTOR-003`,
+  `SPEC-INTERNAL_COLLECTOR-004`, `SPEC-INTERNAL_COLLECTOR-024`
 
-**Purpose:**
+**Purpose:** Function `TestCodeCollector_Collect` verifies construction,
+collection, and legacy TEST-field parsing.
 
-Test handling when no heading found.
+## TEST-INTERNAL_COLLECTOR-025: Go annotation collection
 
-**Spec Coverage:** `SPEC-INTERNAL_COLLECTOR-002`, `SPEC-INTERNAL_COLLECTOR-006`
+- **Kind:** `test`
+- **Covers:** `SPEC-INTERNAL_COLLECTOR-001`, `SPEC-INTERNAL_COLLECTOR-024`
 
----
+**Purpose:** Function `TestCodeCollector_CollectGoFile` verifies Go annotations
+and legacy contract fields.
 
-## TEST-INTERNAL_COLLECTOR-011: Module Prefix Validation
+## TEST-INTERNAL_COLLECTOR-026: Multiple source annotations
 
-**Status:** Done
+- **Kind:** `test`
+- **Covers:** `SPEC-INTERNAL_COLLECTOR-001`, `SPEC-INTERNAL_COLLECTOR-024`,
+  `SPEC-INTERNAL_COLLECTOR-025`
 
-**Purpose:**
+**Purpose:** Collector tests verify comma-separated references, annotation
+kinds, and legacy implements fields.
 
-Test module prefix matching against directory structure.
+## TEST-INTERNAL_COLLECTOR-027: Document links and source context
 
-**Spec Coverage:** `SPEC-INTERNAL_COLLECTOR-002`, `SPEC-INTERNAL_COLLECTOR-007`
+- **Kind:** `test`
+- **Covers:** `SPEC-INTERNAL_COLLECTOR-001`, `SPEC-INTERNAL_COLLECTOR-017`,
+  `SPEC-INTERNAL_COLLECTOR-024`
 
----
+**Purpose:** Collector tests verify derived legacy links and source function
+context.
 
-## TEST-INTERNAL_COLLECTOR-012: Known Abbreviations
+## TEST-INTERNAL_COLLECTOR-028: Legacy contract links
 
-**Status:** Done
+- **Kind:** `test`
+- **Covers:** `SPEC-INTERNAL_COLLECTOR-001`, `SPEC-INTERNAL_COLLECTOR-017`
 
-**Purpose:**
+**Purpose:** Function `TestDocCollector_Collect_WithContractLink` verifies
+legacy contract references.
 
-Test recognition of known module abbreviations.
+## TEST-INTERNAL_COLLECTOR-029: Documentation ignore paths
 
-**Spec Coverage:** `SPEC-INTERNAL_COLLECTOR-002`, `SPEC-INTERNAL_COLLECTOR-007`
+- **Kind:** `test`
+- **Covers:** `SPEC-INTERNAL_COLLECTOR-017`
 
----
+**Purpose:** Function `TestDocCollector_shouldIgnore` verifies configured
+documentation paths are ignored during discovery.
 
-## TEST-INTERNAL_COLLECTOR-019: Document Type Matching
+## Strategy
 
-**Status:** Done
+This document owns TEST titles, purposes, kinds, and coverage. Test source uses
+`@test` annotations for behavior records; the body keeps suite-level strategy
+and fixture boundaries.
 
-**Purpose:**
+## Self-describing document scenarios
 
-Test validation that document type matches filename.
+`TEST-INTERNAL_COLLECTOR-021` is table-driven around the new document model. It
+covers:
 
-**Spec Coverage:** `SPEC-INTERNAL_COLLECTOR-008`
+- minimal identity YAML and CommonMark record parsing;
+- semantic-YAML migration findings, unknown fields, malformed YAML,
+  module/path mismatches, placeholders, and unresolved references;
+- exact record/field source lines;
+- derived reverse coverage links;
+- narrative metadata and heading validation;
+- minimal-identity round-trip serialization with byte-preserved bodies;
+- large registry-table rejection and fenced-example isolation;
+- non-overwriting initialization, generic-frontmatter merging, legacy and
+  central-catalog refusal, and path traversal;
+- single-file write scope, body preservation, and idempotent identity repair.
 
----
+Temporary directory trees provide real package and `docs/<package>` layouts.
+No test mutates repository documentation.
 
-## TEST-INTERNAL_COLLECTOR-014: Root Document Detection
+## Legacy scenarios
 
-**Status:** Done
+`TEST-INTERNAL_COLLECTOR-001` through
+`TEST-INTERNAL_COLLECTOR-017`, plus `TEST-INTERNAL_COLLECTOR-019`, preserve
+frontmatter, heading, filename, and legacy relationship behavior. These tests
+prevent self-describing mode from changing packages that have not migrated.
 
-**Purpose:**
+## Source annotation scenarios
 
-Test detection of root-level vs module-level documents.
+`TEST-INTERNAL_COLLECTOR-022` through
+`TEST-INTERNAL_COLLECTOR-027` cover source discovery, declaration context,
+multiple references, and semantic test-kind preservation. Go source fixtures
+are wrapped in `idd:ignore` scopes where their sample annotations must not be
+collected from the test file itself.
 
-**Spec Coverage:** `SPEC-INTERNAL_COLLECTOR-002`, `SPEC-INTERNAL_COLLECTOR-008`
+## Integration boundary
 
----
-
-## TEST-INTERNAL_COLLECTOR-015: Extract Annotations
-
-**Status:** Done
-
-**Purpose:**
-
-Test extraction of @implement, @test, @test-contract annotations.
-
-**Spec Coverage:** `SPEC-INTERNAL_COLLECTOR-002`, `SPEC-INTERNAL_COLLECTOR-009`
-
----
-
-## TEST-INTERNAL_COLLECTOR-016: Function Context
-
-**Status:** Done
-
-**Purpose:**
-
-Test extraction of function name and preceding comments.
-
-**Spec Coverage:** `SPEC-INTERNAL_COLLECTOR-002`, `SPEC-INTERNAL_COLLECTOR-010`
-
----
-
-## TEST-INTERNAL_COLLECTOR-017: Origin Code Tracking
-
-**Status:** Done
-
-**Purpose:**
-
-Test setting origin to OriginCode for code annotations.
-
-**Spec Coverage:** `SPEC-INTERNAL_COLLECTOR-002`, `SPEC-INTERNAL_COLLECTOR-011`
-
----
-
-## TEST-INTERNAL_COLLECTOR-013: Path Ignore Tests
-
-**Status:** Done
-
-**Purpose:**
-
-Test respecting ignore_paths configuration.
-
-**Spec Coverage:** `SPEC-INTERNAL_COLLECTOR-002`, `SPEC-INTERNAL_COLLECTOR-013`
-
----
-
-## TEST-INTERNAL_COLLECTOR-021: Collector Integration
-
-**Status:** Done
-
-**Purpose:**
-
-Test end-to-end collection from both docs and code.
-
-**Spec Coverage:** `SPEC-INTERNAL_COLLECTOR-002`
-
----
-
-## TEST-INTERNAL_COLLECTOR-022: Code Collector Basic Collection
-
-**Status:** Done
-
-**Purpose:**
-
-Test basic code annotation collection.
-
-**Spec Coverage:** `SPEC-INTERNAL_COLLECTOR-002`
-
----
-
-## TEST-INTERNAL_COLLECTOR-023: Code Collector Go File
-
-**Status:** Done
-
-**Purpose:**
-
-Test Go file annotation extraction.
-
-**Spec Coverage:** `SPEC-INTERNAL_COLLECTOR-002`
-
----
-
-## TEST-INTERNAL_COLLECTOR-024: Code Collector Multiple Annotations
-
-**Status:** Done
-
-**Purpose:**
-
-Test handling multiple annotations.
-
-**Spec Coverage:** `SPEC-INTERNAL_COLLECTOR-002`, `SPEC-INTERNAL_COLLECTOR-009`, `SPEC-INTERNAL_COLLECTOR-012`
-
----
-
-## TEST-INTERNAL_COLLECTOR-025: Code Collector Function Context
-
-**Status:** Done
-
-**Purpose:**
-
-Test function context extraction.
-
-**Spec Coverage:** `SPEC-INTERNAL_COLLECTOR-002`, `SPEC-INTERNAL_COLLECTOR-010`
-
----
-
-## TEST-INTERNAL_COLLECTOR-026: Code Collector Multi-File
-
-**Status:** Done
-
-**Purpose:**
-
-Test multi-file annotation collection.
-
-**Spec Coverage:** `SPEC-INTERNAL_COLLECTOR-002`
-
----
-
-## TEST-INTERNAL_COLLECTOR-027: Code Collector Integration
-
-**Status:** Done
-
-**Purpose:**
-
-Integration test for code collector.
-
-**Spec Coverage:** `SPEC-INTERNAL_COLLECTOR-002`
-
----
-
-## TEST-INTERNAL_COLLECTOR-028: Doc Collector Section Title Extraction
-
-**Status:** Done
-
-**Purpose:**
-
-Test that DocCollector correctly extracts section titles from documentation.
-
-**Spec Coverage:** `SPEC-INTERNAL_COLLECTOR-002`, `SPEC-INTERNAL_COLLECTOR-003`
-
----
-
-## TEST-INTERNAL_COLLECTOR-029: Doc Collector Multi-Section Handling
-
-**Status:** Done
-
-**Purpose:**
-
-Test that DocCollector handles documents with multiple sections.
-
-**Spec Coverage:** `SPEC-INTERNAL_COLLECTOR-002`, `SPEC-INTERNAL_COLLECTOR-004`
-
----
-
-## Contract Test
-
-There are no contract tests for this module. The collector module focuses on identifier collection without contract definitions.
+`TEST-INTERNAL_COLLECTOR-028` and `TEST-INTERNAL_COLLECTOR-029` exercise legacy
+contract links and ignore-path behavior. `collector_contract_test.go` separately
+checks concrete public collector behavior and failure handling; there is no
+mock collector interface.

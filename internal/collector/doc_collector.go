@@ -9,6 +9,7 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"sort"
 	"strings"
 
 	"github.com/jingxu9x/idd-cli/internal/config"
@@ -31,8 +32,9 @@ func NewDocCollector(cfg *config.Config) *DocCollector {
 	return &DocCollector{cfg: cfg}
 }
 
-// Collect collects IDD identifiers from markdown files at the target path.
-// If targetPath is a directory, recursively walks to find all .md files.
+// Collect collects IDD identifiers from Markdown files at the target path.
+// Self-describing document sets are discovered before legacy Markdown so one
+// package always uses one deterministic parsing mode.
 //
 // @implement SPEC-INTERNAL_COLLECTOR-017
 func (c *DocCollector) Collect(ctx context.Context, targetPath string) (*model.IdentifierSet, []*model.ValidationError, error) {
@@ -42,6 +44,30 @@ func (c *DocCollector) Collect(ctx context.Context, targetPath string) (*model.I
 	info, err := os.Stat(targetPath)
 	if err != nil {
 		return set, errors, nil
+	}
+
+	var markdownPaths []string
+	var centralCatalogPaths []string
+	markdownSeen := make(map[string]bool)
+	centralCatalogSeen := make(map[string]bool)
+	addMarkdown := func(path string) {
+		path = filepath.Clean(path)
+		if markdownSeen[path] || c.shouldIgnore(path) {
+			return
+		}
+		markdownSeen[path] = true
+		markdownPaths = append(markdownPaths, path)
+	}
+	addCentralCatalog := func(path string) {
+		path = filepath.Clean(path)
+		if centralCatalogSeen[path] || c.shouldIgnore(path) {
+			return
+		}
+		if packageFromDocumentPath(filepath.Join(filepath.Dir(path), "spec.md")) == "" {
+			return
+		}
+		centralCatalogSeen[path] = true
+		centralCatalogPaths = append(centralCatalogPaths, path)
 	}
 
 	if info.IsDir() {
@@ -55,9 +81,10 @@ func (c *DocCollector) Collect(ctx context.Context, targetPath string) (*model.I
 			if c.shouldIgnore(path) {
 				return nil
 			}
-			if filepath.Ext(path) == ".md" {
-				fileErrors := c.collectFile(path, set)
-				errors = append(errors, fileErrors...)
+			if filepath.Base(path) == "idd.yaml" {
+				addCentralCatalog(path)
+			} else if filepath.Ext(path) == ".md" {
+				addMarkdown(path)
 			}
 			return nil
 		})
@@ -65,11 +92,75 @@ func (c *DocCollector) Collect(ctx context.Context, targetPath string) (*model.I
 			return set, errors, err
 		}
 	} else {
-		fileErrors := c.collectFile(targetPath, set)
-		errors = append(errors, fileErrors...)
+		targetPath = filepath.Clean(targetPath)
+		if filepath.Base(targetPath) == "idd.yaml" {
+			addCentralCatalog(targetPath)
+		} else if filepath.Ext(targetPath) == ".md" {
+			addMarkdown(targetPath)
+			if _, fixedDocument := iddDocumentRoles[filepath.Base(targetPath)]; fixedDocument {
+				centralCatalogPath := filepath.Join(filepath.Dir(targetPath), "idd.yaml")
+				if centralInfo, statErr := os.Stat(centralCatalogPath); statErr == nil && !centralInfo.IsDir() {
+					addCentralCatalog(centralCatalogPath)
+				}
+				for _, filename := range iddDocumentOrder {
+					siblingPath := filepath.Join(filepath.Dir(targetPath), filename)
+					if siblingInfo, statErr := os.Stat(siblingPath); statErr == nil && !siblingInfo.IsDir() {
+						addMarkdown(siblingPath)
+					}
+				}
+			}
+		}
+	}
+
+	sort.Strings(centralCatalogPaths)
+	sort.Strings(markdownPaths)
+	for _, path := range centralCatalogPaths {
+		errors = append(errors, iddDocumentValidationError(
+			"idd-document-migration",
+			"package-local idd.yaml is not a marker source; move each declaration into its owning Markdown document",
+			path,
+			1,
+			"",
+			"central-catalog",
+		))
+	}
+
+	iddDirectories := make(map[string]bool)
+	for _, path := range markdownPaths {
+		if _, fixedDocument := iddDocumentRoles[filepath.Base(path)]; !fixedDocument {
+			continue
+		}
+		data, readErr := os.ReadFile(path)
+		if readErr == nil && hasIDDDocumentFrontmatter(data) {
+			iddDirectories[filepath.Clean(filepath.Dir(path))] = true
+		}
+	}
+
+	for _, directory := range sortedIDDDocumentPaths(iddDirectories) {
+		errors = append(errors, c.collectIDDDocumentSet(directory, set)...)
+	}
+	for _, path := range markdownPaths {
+		if iddDirectories[filepath.Clean(filepath.Dir(path))] {
+			if _, fixedDocument := iddDocumentRoles[filepath.Base(path)]; !fixedDocument {
+				errors = append(errors, c.collectIDDPackageNarrative(path, set)...)
+			}
+			continue
+		}
+		errors = append(errors, c.collectFile(path, set)...)
 	}
 
 	return set, errors, nil
+}
+
+func hasLeadingFrontmatter(content string) bool {
+	for _, line := range strings.Split(content, "\n") {
+		trimmed := strings.TrimSpace(line)
+		if trimmed == "" {
+			continue
+		}
+		return trimmed == "---"
+	}
+	return false
 }
 
 // collectFile parses a markdown file and extracts IDD identifiers from it.

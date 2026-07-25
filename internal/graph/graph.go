@@ -238,7 +238,7 @@ func (g *LinkageGraph) ValidateCompleteness() []model.ValidationError {
 			if len(testLinks) == 0 {
 				errors = append(errors, model.ValidationError{
 					Rule:    "spec-missing-tests",
-					Message: fmt.Sprintf("SPEC %s has no **Tests:** field", node.ID),
+					Message: fmt.Sprintf("SPEC %s has no TEST coverage relationship", node.ID),
 					Link:    node.ID,
 				})
 			}
@@ -248,7 +248,7 @@ func (g *LinkageGraph) ValidateCompleteness() []model.ValidationError {
 			if len(specLinks) == 0 {
 				errors = append(errors, model.ValidationError{
 					Rule:    "test-missing-coverage",
-					Message: fmt.Sprintf("TEST %s has no **Spec Coverage:** field", node.ID),
+					Message: fmt.Sprintf("TEST %s has no SPEC coverage relationship", node.ID),
 					Link:    node.ID,
 				})
 			}

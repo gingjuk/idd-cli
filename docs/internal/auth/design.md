@@ -1,52 +1,42 @@
 ---
-related_files:
-  spec: docs/internal/auth/spec.md
-  contract: docs/internal/auth/contract.md
-  design: docs/internal/auth/design.md
-  testing: docs/internal/auth/testing.md
+idd:
+  version: "1.0"
+  package: internal/auth
+  document: design
 ---
 
-# Design (auth)
+# Design: internal/auth
 
-**Status:** Done
+## Component: AuthTypes
+
+`AuthTypes` defines the request and response values exchanged at the
+authentication boundary.
 
 ## Architecture
 
-The auth module provides type definitions for future authentication features:
-
-1. **LoginRequest/LoginResponse pattern** - Simple request-response types
-2. **Token-based authentication** - JWT or session tokens
-3. **Type-only implementation** - No actual auth logic yet (stub module)
-
-```text
-internal/auth/
-├── auth.go          # Type definitions with @implement, @test-contract annotations
-└── (future)
-    ├── service.go    # Auth service implementation
-    ├── middleware.go # Auth middleware
-    └── token.go      # Token generation/validation
-```
+`AuthTypes` is a value-only module. It establishes request and response shapes
+without choosing a credential store, token format implementation, service, or
+transport.
 
 ## Package Layout
 
 ```text
 internal/auth/
-└── auth.go          # Authentication types and interfaces
+├── auth.go                  # LoginRequest and LoginResponse
+└── auth_contract_test.go    # Documented value constraints
 ```
 
 ## Function Composition
 
-1. **Login()** - Future: Authenticate user and return token (stub)
-2. **ValidateToken()** - Future: Validate authentication token (stub)
-3. **Logout()** - Future: Invalidate session (stub)
-
-## Testability Hooks
-
-- Stub implementation allows easy mocking for future tests
-- Interface-based design enables dependency injection
-- Auth types are plain Go structs for easy test construction
+There is no call graph or initialization order because the package contains no
+functions. Consumers construct and exchange the two value types directly.
 
 ## Dependencies
 
-- `internal/model` - For identifier types (used in annotations)
-- No external dependencies (stub module)
+The production package has no external or internal runtime dependencies.
+
+## Testability Hooks
+
+Plain structs are directly constructible in table-driven tests. Future behavior
+should introduce its own interface and behavioral SPEC instead of adding
+unstated semantics to these values.

@@ -9,38 +9,44 @@ related_files:
 
 ## Architecture
 
-The backend module follows a graph-first architecture:
+The embedded IDD skill is the authoring control plane; idd-cli is the
+structural and traceability enforcement plane. The binary exports the same
+skill version that describes its accepted document model.
 
-1. **LinkageGraph** is the central data structure
-2. All collectors feed identifiers into the graph
-3. Validators operate on the graph
-4. Reporters consume validation results
+idd-cli follows a graph-first validation architecture with two inputs:
+
+1. `DocCollector` reads self-describing document sets or legacy Markdown metadata.
+2. `CodeCollector` reads source annotations.
+3. `Engine.buildGraph` creates the `LinkageGraph` and derives relationships.
+4. Validation methods in `internal/engine/engine.go` check the graph and files.
+5. `Reporter` converts results into finding-centered JSON or Markdown.
+
+There is no separate Linker or Validator interface in the current
+implementation.
 
 ```text
-┌─────────────────────────────────────┐
-│           CLI (main.go)              │
-└─────────────────────────────────────┘
-                  │
-                  ▼
-┌─────────────────────────────────────┐
-│        Validation Engine             │
-│  Orchestrates:                       │
-│  collection → linking → validation   │
-└─────────────────────────────────────┘
-        │           │           │
-        ▼           ▼           ▼
-┌────────────┐ ┌────────┐ ┌──────────┐
-│ Collector   │ │ Linker │ │ Validator │
-│             │ │        │ │           │
-│ DocCollector│ │BuildGr │ │Bidirect.   │
-│ CodeCollector│ │ph      │ │Orphan      │
-└────────────┘ └────────┘ └──────────┘
-                                     │
-                                     ▼
-                             ┌────────────┐
-                             │ Reporter   │
-                             └────────────┘
+Embedded IDD skill ── generate skill ──→ Agent authoring workflow
+                                             │
+docs init/fix ── safe structure ─────────────┤
+                                             ▼
+                         Markdown records + code annotations
+                                  │                  │
+                                  ▼                  ▼
+                            DocCollector       CodeCollector
+                                  └─────────┬────────┘
+                                            ▼
+                                        Engine.Run
+                                            │
+                                            ▼
+                                         Reporter
+                                  llm-markdown │ JSON
+                                               │
+                           Agent repair loop ←──┘──→ CI gate
 ```
+
+The final validity check runs as `idd-cli run .` from project root.
+Documentation targets can narrow `DocCollector`, but `CodeCollector` still
+scans the current project working tree.
 
 ## Package Layout
 
@@ -60,19 +66,20 @@ idd-cli/
 
 ## Function Composition
 
-1. **CLI Run** - Entry point via cobra command
-2. **Engine.Run()** - Orchestrates Collect → Build Graph → Validate
-3. **Collectors** - DocCollector and CodeCollector gather identifiers
-4. **Graph.Build()** - Constructs linkage graph from collected data
-5. **Validators** - Run rules against the graph
-6. **Reporter.Write()** - Formats and outputs results
+1. **generate skill** - Exports the workflow embedded in the binary.
+2. **docs init/fix** - Creates skeletons or normalizes safe identity.
+3. **DocCollector.Collect()** - Parses self-describing sets first, then legacy Markdown.
+4. **CodeCollector.Collect()** - Collects annotations from the project working tree.
+5. **Engine.Run()** - Builds the graph and invokes enabled validation methods.
+6. **Reporter.Write()** - Emits agent-, human-, or automation-oriented findings.
 
 ## Testability Hooks
 
-- Each component can be tested in isolation with interfaces
-- Mock collectors allow testing without real files
-- Graph can be pre-populated for validator unit tests
-- Reporter tests use bytes.Buffer to capture output
+- Collectors are tested with temporary package and documentation trees.
+- IDD document tests cover minimal YAML identity and CommonMark records.
+- Graph tests pre-populate identifiers and edges directly.
+- Engine tests use temporary files and focused configuration patterns.
+- Reporter tests write to temporary outputs and inspect structured findings.
 
 ## Dependencies
 
@@ -84,5 +91,6 @@ idd-cli/
 - `internal/similarity` - For consistency checking
 - `pkg/pattern` - For IDD patterns
 - `pkg/walk` - For file traversal
-- `gopkg.in/yaml.v3` - For config parsing
+- `gopkg.in/yaml.v3` - For config and document identity parsing
+- `github.com/yuin/goldmark` - For CommonMark AST parsing and source positions
 - `github.com/spf13/cobra` - For CLI

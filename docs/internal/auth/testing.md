@@ -1,30 +1,25 @@
 ---
-markers:
-  - id: TEST-INTERNAL_AUTH-001
-    name: Authentication Tests
-
-related_files:
-  spec: docs/internal/auth/spec.md
-  contract: docs/internal/auth/contract.md
-  design: docs/internal/auth/design.md
-  testing: docs/internal/auth/testing.md
+idd:
+  version: "1.0"
+  package: internal/auth
+  document: testing
 ---
 
-# Test Cases (auth)
+# Testing: internal/auth
 
-## TEST-INTERNAL_AUTH-001: Authentication Module Tests
+## TEST-INTERNAL_AUTH-001: Authentication value constraints
 
-**Status:** Done
+- **Kind:** `contract`
+- **Covers:** `SPEC-INTERNAL_AUTH-001`
 
-**Purpose:**
+**Purpose:** Function `TestLoginRequest_EmailFormat` verifies representative
+authentication value constraints.
 
-Test cases for the authentication module types and functionality.
+## Contract strategy
 
-### Test Functions
+The contract suite constructs `LoginRequest` and `LoginResponse` values and
+checks representative email, non-empty password, non-empty token, and
+three-segment token-format constraints.
 
-| Test | Description |
-|------|-------------|
-| Unit tests for LoginRequest | Validates LoginRequest struct creation |
-| Unit tests for LoginResponse | Validates LoginResponse struct creation |
-
-**Spec Coverage:** `SPEC-INTERNAL_AUTH-001`
+These tests document boundary expectations for future implementations. They do
+not imply that the current value structs perform validation themselves.

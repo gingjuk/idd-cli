@@ -14,7 +14,6 @@ type LoginRequest struct {
 
 // LoginResponse represents authentication result with token.
 //
-// @test TEST-INTERNAL_AUTH-001
 // @implement SPEC-INTERNAL_AUTH-001
 type LoginResponse struct {
 	Token string

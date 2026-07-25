@@ -30,15 +30,17 @@ var (
 
 var rootCmd = &cobra.Command{
 	Use:   "idd-cli",
-	Short: "idd-cli - validates IDD documentation consistency",
-	Long: `idd-cli scans documentation and source code to build a linkage graph,
-then validates link consistency (SPEC: **Tests:** ↔ TEST: **Spec Coverage:**).
+	Short: "IDD workflow guardrail for skills, documents, and code traceability",
+	Long: `idd-cli embeds the IDD authoring skill and enforces the document model
+that skill describes. The skill authors semantic content; idd-cli exports the
+paired workflow, maintains safe document structure, and validates the complete
+documentation/code graph.
 
 Example usage:
-  idd-cli run ./docs
-  idd-cli run ./docs --config .idd.yaml
-  idd-cli run ./docs --format json
-  idd-cli lint ./docs --format json -o report.json`,
+  idd-cli generate skill -o idd-skill.md
+  idd-cli docs init internal/auth
+  idd-cli run . --format llm-markdown
+  idd-cli run . --format json`,
 	Version:      version,
 	SilenceUsage: true,
 }
@@ -46,11 +48,16 @@ Example usage:
 var runCmd = &cobra.Command{
 	Use:   "run [path]",
 	Short: "Run IDD linkage validation",
-	Long: `Run IDD linkage validation on the specified path.
+	Long: `Run IDD linkage validation and emit the complete finding report.
+
+Documentation is collected from [path], while source annotations are collected
+from the current project working tree. Run from project root with "." for the
+authoritative project gate. An invalid graph writes its report, then exits
+non-zero.
 
 Example:
-  idd-cli run ./docs
-  idd-cli run ./docs --config .idd.yaml`,
+  idd-cli run . --format llm-markdown
+  idd-cli run . --config .idd.yaml --format json`,
 	Args: cobra.MaximumNArgs(1),
 	RunE: run,
 }
@@ -58,11 +65,12 @@ Example:
 var lintCmd = &cobra.Command{
 	Use:   "lint [path]",
 	Short: "Lint IDD linkage (alias for 'run')",
-	Long: `Lint IDD linkage validation. This is an alias for 'run'.
+	Long: `Lint IDD linkage validation. This is an alias for 'run' and uses the
+same project-root validation scope.
 
 Example:
-  idd-cli lint ./docs
-  idd-cli lint ./docs --format json -o report.json`,
+  idd-cli lint . --format llm-markdown
+  idd-cli lint . --format json -o report.json`,
 	Args: cobra.MaximumNArgs(1),
 	RunE: run,
 }
@@ -70,7 +78,8 @@ Example:
 var skillsCmd = &cobra.Command{
 	Use:   "skills",
 	Short: "List IDD skills defined in this project",
-	Long: `List IDD skills from the skills/ directory.
+	Long: `List IDD skills from the local skills/ directory, falling back to the
+workflow embedded in this binary when no local Markdown skill is present.
 
 Parses frontmatter from skill markdown files and outputs skill definitions.
 
@@ -82,18 +91,64 @@ Example:
 
 var generateCmd = &cobra.Command{
 	Use:   "generate [skill|skill --output file]",
-	Short: "Generate IDD skill file",
-	Long: `Generate the IDD skill file to the specified output path.
+	Short: "Export the IDD skill paired with this binary",
+	Long: `Export the IDD workflow embedded in this binary.
 
-The skill file defines the IDD (Intent-Driven Development) workflow.
+Install the result through the agent's skill mechanism. Regenerate it after
+upgrading idd-cli so authoring instructions and validator behavior stay
+aligned.
 
 Example:
   idd-cli generate skill --output idd-skill.md
-  idd-cli generate skill -o ~/.claude/skills/SKILL.md`,
+
+Then install idd-skill.md as SKILL.md through the agent's normal skill
+mechanism.`,
 	RunE: generateSkill,
 }
 
-// @implement SPEC-CMD_IDD_CLI-009, SPEC-CMD_IDD_CLI-010
+var docsCmd = &cobra.Command{
+	Use:   "docs",
+	Short: "Create and repair compact IDD package documents",
+	Long: `Create and repair package-local self-describing IDD documents.
+
+Each fixed Markdown file has minimal identity frontmatter and owns its
+human-readable role-specific Markdown records. A SPEC update changes spec.md;
+a TEST update or coverage change changes testing.md. The paired IDD skill
+authors semantic content; these commands maintain safe structure only.`,
+}
+
+var docsInitCmd = &cobra.Command{
+	Use:   "init <package>",
+	Short: "Create four self-describing IDD document skeletons",
+	Long: `Create design.md, contract.md, spec.md, and testing.md under
+docs/<package>/. Each file contains minimal identity frontmatter and
+human-readable Markdown guidance for its role. Existing plain narrative bodies
+are preserved. Existing IDD or legacy marker metadata is never overwritten.
+Use this once for a new package, then let the paired IDD skill author records.
+
+Example:
+  idd-cli docs init internal/auth`,
+	Args: cobra.ExactArgs(1),
+	RunE: initPackageDocs,
+}
+
+var docsFixCmd = &cobra.Command{
+	Use:   "fix <docs-package-or-document>",
+	Short: "Normalize safe document metadata without inventing semantics",
+	Long: `Normalize version, package, and document role in self-describing IDD
+frontmatter. A directory target repairs the four-file set and creates missing
+skeletons. A Markdown file target writes only that file. Markdown bodies are
+preserved byte-for-byte; semantic records are neither rewritten nor invented.
+Use the paired IDD skill to resolve semantic findings reported by run.
+
+Example:
+  idd-cli docs fix docs/internal/auth
+  idd-cli docs fix docs/internal/auth/testing.md`,
+	Args: cobra.ExactArgs(1),
+	RunE: repairPackageDocs,
+}
+
+// @implement SPEC-CMD_IDD_CLI-009
 type SkillInfo struct {
 	Name          string `json:"name"`
 	Description   string `json:"description"`
@@ -117,6 +172,9 @@ func init() {
 	rootCmd.AddCommand(lintCmd)
 	rootCmd.AddCommand(skillsCmd)
 	rootCmd.AddCommand(generateCmd)
+	docsCmd.AddCommand(docsInitCmd)
+	docsCmd.AddCommand(docsFixCmd)
+	rootCmd.AddCommand(docsCmd)
 
 	_ = viper.BindPFlag("config", rootCmd.PersistentFlags().Lookup("config"))
 	_ = viper.BindPFlag("output", rootCmd.PersistentFlags().Lookup("output"))
@@ -421,5 +479,49 @@ func generateSkill(cmd *cobra.Command, args []string) error {
 		}
 	}
 
+	return nil
+}
+
+func initPackageDocs(cmd *cobra.Command, args []string) error {
+	changed, err := collector.InitDocuments(".", args[0])
+	if err != nil {
+		return err
+	}
+	return writeDocChanges("initialized", changed)
+}
+
+func repairPackageDocs(cmd *cobra.Command, args []string) error {
+	changed, err := collector.RepairDocuments(args[0])
+	if err != nil {
+		return err
+	}
+	return writeDocChanges("repaired", changed)
+}
+
+func writeDocChanges(action string, changed []string) error {
+	result := struct {
+		Action  string   `json:"action"`
+		Changed []string `json:"changed"`
+	}{
+		Action:  action,
+		Changed: changed,
+	}
+
+	if format == "json" {
+		data, err := json.MarshalIndent(result, "", "  ")
+		if err != nil {
+			return fmt.Errorf("marshal document changes: %w", err)
+		}
+		fmt.Println(string(data))
+		return nil
+	}
+
+	if len(changed) == 0 {
+		fmt.Println("No document changes needed.")
+		return nil
+	}
+	for _, path := range changed {
+		fmt.Println(path)
+	}
 	return nil
 }

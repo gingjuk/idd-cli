@@ -37,7 +37,7 @@ type ruleInfo struct {
 var (
 	identifierPattern = regexp.MustCompile(`\b(?:SPEC|TEST|CONTRACT|DESIGN)-[A-Z0-9_]+-[0-9]+\b`)
 
-	ruleCatalog = map[string]ruleInfo{
+	ruleInfoByName = map[string]ruleInfo{
 		"doc-link-consistency": {
 			Severity:    "error",
 			Title:       "Document link field is inconsistent",
@@ -47,16 +47,16 @@ var (
 		"spec-missing-tests": {
 			Severity:    "error",
 			Title:       "SPEC is missing test coverage",
-			Explanation: "Every SPEC must list TEST identifiers in a **Tests:** field.",
-			FixHint:     "Add a **Tests:** field that references the TEST identifiers covering this SPEC.",
-			Expected:    "**Tests:** `TEST-...`",
+			Explanation: "Every SPEC must be covered by at least one TEST relationship.",
+			FixHint:     "In self-describing mode, add the SPEC to the TEST record's **Covers:** field in testing.md. In legacy mode, add matching **Tests:** and **Spec Coverage:** fields.",
+			Expected:    "**Covers:** `SPEC-...`, or **Tests:** `TEST-...`",
 		},
 		"test-missing-coverage": {
 			Severity:    "error",
 			Title:       "TEST is missing spec coverage",
-			Explanation: "Every TEST must list the SPEC identifiers it covers in a **Spec Coverage:** field.",
-			FixHint:     "Add a **Spec Coverage:** field that references the SPEC identifiers covered by this TEST.",
-			Expected:    "**Spec Coverage:** `SPEC-...`",
+			Explanation: "Every TEST must reference at least one SPEC it covers.",
+			FixHint:     "In self-describing mode, populate the testing.md TEST record's **Covers:** field. In legacy mode, add a **Spec Coverage:** field.",
+			Expected:    "**Covers:** `SPEC-...`, or **Spec Coverage:** `SPEC-...`",
 		},
 		"orphan-detection": {
 			Severity:    "error",
@@ -111,6 +111,54 @@ var (
 			Title:       "SPEC is missing a required field",
 			Explanation: "SPEC entries must include required traceability fields such as Contract, Design, Requirement, and Tests.",
 			FixHint:     "Add the missing required field to the SPEC entry.",
+		},
+		"idd-document-parse": {
+			Severity:    "error",
+			Title:       "IDD document frontmatter cannot be parsed",
+			Explanation: "The document's idd block must be valid YAML containing only version, package, and document identity.",
+			FixHint:     "Correct the YAML syntax or misspelled field at the reported Markdown line, then rerun validation.",
+		},
+		"idd-document-identity": {
+			Severity:    "error",
+			Title:       "IDD document identity is inconsistent",
+			Explanation: "The package and document role must agree with docs/<package>/<role>.md.",
+			FixHint:     "Run idd-cli docs fix on the reported document or package directory to repair structural identity values.",
+		},
+		"idd-document-set": {
+			Severity:    "error",
+			Title:       "Self-describing IDD document set is incomplete",
+			Explanation: "A self-describing package has design.md, contract.md, spec.md, and testing.md, each with its own idd block.",
+			FixHint:     "Run idd-cli docs fix on the package documentation directory to create missing structural skeletons.",
+		},
+		"idd-document-schema": {
+			Severity:    "error",
+			Title:       "IDD document record is incomplete",
+			Explanation: "Each document role owns a small set of level-two Markdown records and required fixed fields.",
+			FixHint:     "Fill the reported Markdown field with concrete package-specific content; do not use TBD or generated placeholder text.",
+		},
+		"idd-document-reference": {
+			Severity:    "error",
+			Title:       "IDD document reference is unresolved",
+			Explanation: "SPEC and TEST relationships must resolve across the four self-describing package documents.",
+			FixHint:     "Correct the reference or add the declaration to the owning document with meaningful content.",
+		},
+		"idd-document-markdown": {
+			Severity:    "error",
+			Title:       "Self-describing Markdown record is inconsistent",
+			Explanation: "Role-owned declarations use bounded level-two Markdown records; the idd block contains identity only.",
+			FixHint:     "Use the canonical record heading and fixed fields, and remove duplicate legacy markers, related_files metadata, or declaration tables.",
+		},
+		"idd-document-migration": {
+			Severity:    "error",
+			Title:       "IDD semantic catalog must be migrated",
+			Explanation: "Semantic records do not belong in a package-local idd.yaml or in document YAML frontmatter.",
+			FixHint:     "Move components to design.md Component sections, contracts to Contract sections, SPECs to spec.md records, and TESTs with Covers fields to testing.md.",
+		},
+		"idd-document-test-kind": {
+			Severity:    "error",
+			Title:       "Documented TEST kind and code annotation disagree",
+			Explanation: "A testing.md TEST with kind test uses @test, while kind contract uses @test-contract.",
+			FixHint:     "Correct the TEST kind or replace the mismatched source annotation so one identifier uses exactly one annotation kind.",
 		},
 	}
 )
@@ -309,7 +357,7 @@ func (r *Reporter) buildFinding(validationErr model.ValidationError, severity st
 }
 
 func lookupRuleInfo(rule, defaultSeverity string) ruleInfo {
-	if info, ok := ruleCatalog[rule]; ok {
+	if info, ok := ruleInfoByName[rule]; ok {
 		if info.Severity == "" {
 			info.Severity = defaultSeverity
 		}

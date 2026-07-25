@@ -1,155 +1,114 @@
 ---
-related_files:
-  spec: docs/internal/collector/spec.md
-  contract: docs/internal/collector/contract.md
-  design: docs/internal/collector/design.md
-  testing: docs/internal/collector/testing.md
+idd:
+  version: "1.0"
+  package: internal/collector
+  document: contract
 ---
 
-# Contracts (collector)
+# Contracts: internal/collector
 
-**Status:** Done
+## Contract: IDDDocumentSet
 
-**Overview:**
+`ParseIDDDocument` accepts an `idd` frontmatter block containing only
+`version`, `package`, and `document`. Unknown fields, semantic YAML catalogs,
+and malformed syntax are rejected. A document without an `idd` block is left
+to legacy parsing.
 
-Collectors gather IDD identifiers from documentation and source code. This contract defines the interfaces and shared behaviors for all collectors.
+The fixed filenames own disjoint declarations:
 
-## Shared Functionality
+- `design.md` owns `## Component: <name>` records;
+- `contract.md` owns `## Contract: <name>` records;
+- `spec.md` owns `## SPEC-...: <title>` records with `Design`, `Contract`, and
+  `Requirement` fields;
+- `testing.md` owns `## TEST-...: <title>` records with `Kind`, `Covers`, and
+  `Purpose` fields.
 
-### Frontmatter Parsing
+Records are bounded by level-two headings. Their required fields remain short,
+while the rest of each section is unrestricted human-authored Markdown.
 
-```go
-type Marker struct {
-    ID       string `yaml:"id"`
-    Name     string `yaml:"name"`
-    Describe string `yaml:"describe"`
-}
+Validation reports the exact Markdown record and field line for:
 
-type Frontmatter struct {
-    Markers []Marker `yaml:"markers"`
-}
+- package or document-role values that disagree with the Markdown path;
+- identifiers that do not use the package-derived module;
+- missing self-describing documents;
+- incomplete or placeholder SPEC and TEST fields;
+- unresolved design, contract, and coverage references;
+- duplicate identifiers or fixed fields;
+- invalid TEST kinds.
 
-func ParseFrontmatter(content string) (*Frontmatter, error)
-func ValidateFrontmatterMarkers(fm *Frontmatter, content string, filePath string) []string
-```
+`MarshalIDDDocument` emits canonical minimal identity frontmatter and preserves
+its Markdown body. `RepairDocuments` normalizes only structural identity. A
+file target writes only that file; a directory target may create missing
+structural documents. Repair never reflows prose or synthesizes semantic
+records.
 
-### Document Validation
+## Document initialization
 
-```go
-func ValidateDocumentStructure(filePath string, idType string) error
-func ValidateModulePrefix(id string, filePath string) error
-func GetExpectedFilename(idType string) string
-```
+`InitDocuments` requires an existing project-relative package directory. It
+creates the four self-describing Markdown documents or prepends structural
+metadata to existing plain narratives. Existing non-IDD frontmatter keys are
+merged into the same frontmatter block and preserved.
 
-### DocCollector Interface
+Initialization performs a complete preflight before writing. If existing
+Markdown contains legacy markers or `related_files`, it returns an error so a
+new document set cannot silently change that package's parsing mode. A
+package-local central `idd.yaml` is also rejected for explicit migration.
 
-```go
-type DocCollector struct {
-    cfg *config.Config
-}
+## Contract: DocCollector
 
-func NewDocCollector(cfg *config.Config) *DocCollector
-func (c *DocCollector) Collect(ctx context.Context, targetPath string) (*model.IdentifierSet, []*model.ValidationError, error)
-```
+`NewDocCollector` returns a concrete `DocCollector`; there is no shared
+collector interface. `DocCollector.Collect` accepts a file or directory and
+returns:
 
-**Collection Process:**
+1. all documentation-origin identifiers;
+2. structural validation findings that do not stop collection;
+3. a traversal error only when collection itself cannot continue.
 
-1. **Target Resolution** — Accept file or directory path
-2. **File Discovery** — Recursively find `.md` files
-3. **Frontmatter Parse** — Extract markers from YAML frontmatter
-4. **Content Scan** — Find IDD references in markdown body
-5. **Validation** — Check marker consistency and module prefix
-6. **Assembly** — Build IdentifierSet with links
+Self-describing sets are discovered before legacy Markdown. Their bodies may
+use declared identifiers as detail headings but may not repeat legacy metadata.
+If none of the four fixed files has an `idd` block, the existing frontmatter
+parser remains authoritative.
 
-### CodeCollector Interface
+TEST `Covers` fields generate both TEST-to-SPEC and reverse SPEC-to-TEST graph
+links. Authors declare the relationship only once.
 
-```go
-type CodeCollector struct {
-    cfg *config.Config
-}
+## Contract: CodeCollector
 
-func NewCodeCollector(cfg *config.Config) *CodeCollector
-func (c *CodeCollector) Collect(ctx context.Context, targetPath string) (*model.IdentifierSet, error)
-```
+`NewCodeCollector` returns a concrete `CodeCollector`.
+`CodeCollector.Collect` scans supported Go, TypeScript, and JavaScript files,
+honors ignore scopes, and emits code-origin identifiers from `@implement`,
+`@test`, and `@test-contract`.
 
-**Collection Process:**
+TEST annotations preserve the semantic kind:
 
-1. **Target Resolution** — Accept file or directory path
-2. **File Discovery** — Find source files by extension
-3. **Line Scan** — Search for annotation patterns
-4. **Context Extraction** — Capture function name and comments
-5. **Identifier Creation** — Convert annotations to identifiers
-6. **Origin Set** — Mark as `OriginCode`
+- `@test` becomes kind `test`;
+- `@test-contract` becomes kind `contract`.
 
-### Error Handling Rules
+The engine compares this kind with the `testing.md` record after documentation
+and code identifiers are merged.
 
-| Error Type | Behavior |
-| ---------- | -------- |
-| File not found | Return empty set, no error |
-| Permission denied | Skip file, continue |
-| Parse error | Log warning, skip file |
-| Invalid frontmatter | Add ValidationError, continue |
-| Module prefix mismatch | Add ValidationError, continue |
-| Bare marker (no backticks) | Add ValidationError, continue |
+## Contract: LegacyFrontmatter
 
-### Interface: ExtractTitle
+Legacy mode parses `markers` and `related_files`, validates marker headings and
+backtick formatting, and maps SPEC, TEST, CONTRACT, and DESIGN identifiers to
+their fixed narrative filenames. Fenced code does not define frontmatter or
+document markers.
 
-```go
-func (c *DocCollector) ExtractTitle(content string, id string) string
-```
+## Failure behavior
 
-Extracts document titles from markdown headings containing identifiers.
+| Condition | Result |
+| --- | --- |
+| Missing target | Empty identifier set |
+| Ignored path during directory discovery | No collected identifiers or findings |
+| Invalid IDD frontmatter | Structured finding with Markdown line; other inputs continue |
+| Invalid legacy frontmatter | Legacy structural finding; other files continue |
+| Missing role document | IDD document-set finding |
+| Package-local central catalog | Migration finding; it is never treated as a marker source |
+| Unsafe initialization target | Error before any file is written |
+| Malformed document repair input | Error without replacing the document |
 
-### Interface: ExtractAnnotations
-
-```go
-// Annotation patterns matched from code
-var AnnotationPatterns = []*regexp.Regexp{...}
-```
-
-Extracts IDD annotations (@implement, @test, @test-contract) from code.
-
-### Interface: ExtractFunctionContext
-
-```go
-func ExtractFunctionComment(lines []string, annotationLine int) string
-```
-
-Extracts function name and preceding comments as context for code annotations.
-
-### Interface: SetOrigin
-
-```go
-func (id *Identifier) SetOrigin(origin model.OriginType)
-```
-
-Sets origin to OriginCode for code-based identifiers.
-
-### Interface: SplitAnnotationRefs
-
-```go
-func SplitAnnotationRefs(s string) []string
-```
-
-Splits comma-separated IDD references from an annotation.
-
-### Interface: ShouldIgnore
-
-```go
-func (c *DocCollector) ShouldIgnore(path string) bool
-func (c *CodeCollector) ShouldIgnore(path string) bool
-```
-
-Checks if a path should be ignored based on configured ignore patterns.
-
-### Interface: DiscoverFiles
-
-File discovery is handled within the Collect method - it recursively finds source files with supported extensions (.go, .ts, .tsx, .js).
-
-### Interface: GetLanguagePatterns
-
-Language patterns are defined in the annotation patterns configuration.
-
----
-
-**Related Specs:** `SPEC-INTERNAL_COLLECTOR-001`, `SPEC-INTERNAL_COLLECTOR-002`, `SPEC-INTERNAL_COLLECTOR-006`, `SPEC-INTERNAL_COLLECTOR-009`, `SPEC-INTERNAL_COLLECTOR-010`, `SPEC-INTERNAL_COLLECTOR-011`, `SPEC-INTERNAL_COLLECTOR-012`, `SPEC-INTERNAL_COLLECTOR-013`
+**Related Specs:** `SPEC-INTERNAL_COLLECTOR-001`,
+`SPEC-INTERNAL_COLLECTOR-002`, `SPEC-INTERNAL_COLLECTOR-006`,
+`SPEC-INTERNAL_COLLECTOR-009`, `SPEC-INTERNAL_COLLECTOR-010`,
+`SPEC-INTERNAL_COLLECTOR-011`, `SPEC-INTERNAL_COLLECTOR-012`,
+`SPEC-INTERNAL_COLLECTOR-013`

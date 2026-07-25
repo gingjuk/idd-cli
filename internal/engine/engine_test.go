@@ -8,6 +8,7 @@ package engine
 
 import (
 	"context"
+	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
@@ -162,6 +163,50 @@ func TestEngine_ConsistencyCheck_MissingDescribe(t *testing.T) {
 	for _, w := range result.Warnings {
 		if w.Rule == "consistency-check" {
 			t.Error("Expected no consistency warning when doc describe is empty")
+		}
+	}
+}
+
+// @test TEST-INTERNAL_ENGINE-007
+func TestEngine_ConsistencyCheck_FunctionLocatorOnly(t *testing.T) {
+	cfg := &config.Config{
+		Version: "1.0",
+		Validation: config.ValidationConfig{
+			ConsistencyCheck: config.ConsistencyCheck{
+				Enabled:   true,
+				Threshold: 0.3,
+			},
+		},
+	}
+
+	ids := model.NewIdentifierSet()
+	docID := model.NewIdentifierWithDescribe(
+		"SPEC-INTERNAL_SAMPLE-001",
+		model.TypeSpec,
+		"Sample behavior",
+		"validate self-describing package document relationships",
+		"docs/internal/sample/spec.md",
+		1,
+	)
+	ids.Add(docID)
+	codeID := model.NewIdentifierWithDescribe(
+		"SPEC-INTERNAL_SAMPLE-001",
+		model.TypeSpec,
+		"",
+		"[function: UnrelatedName]",
+		"internal/sample/sample.go",
+		10,
+	)
+	codeID.SetOrigin(model.OriginCode)
+	ids.Add(codeID)
+
+	result, err := New(cfg).Run(context.Background(), ids)
+	if err != nil {
+		t.Fatalf("Run() error = %v", err)
+	}
+	for _, warning := range result.Warnings {
+		if warning.Rule == "consistency-check" {
+			t.Fatalf("Run() warning = %v, want function locator ignored", warning)
 		}
 	}
 }
@@ -1026,6 +1071,131 @@ markers:
 	}
 }
 
+// @test TEST-INTERNAL_ENGINE-003
+func TestEngine_validateDesignSections_SelfDescribingContent(t *testing.T) {
+	complete := `# Design
+
+## Architecture
+Concrete architecture.
+
+## Package Layout
+Concrete package layout.
+
+## Function Composition
+Concrete call flow.
+
+## Dependencies
+No runtime dependencies.
+
+## Testability Hooks
+Temporary filesystem fixtures.
+`
+	tests := []struct {
+		name      string
+		content   string
+		wantError bool
+	}{
+		{
+			name:    "all self-describing design sections have content",
+			content: complete,
+		},
+		{
+			name:      "empty self-describing design section is incomplete",
+			content:   strings.Replace(complete, "## Architecture\nConcrete architecture.", "## Architecture", 1),
+			wantError: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			docsDir := filepath.Join(t.TempDir(), "docs", "internal", "example")
+			if err := os.MkdirAll(docsDir, 0o755); err != nil {
+				t.Fatalf("MkdirAll() error = %v", err)
+			}
+			content := `---
+idd:
+  version: "1.0"
+  package: internal/example
+  document: design
+  components: []
+---
+
+` + tt.content
+			if err := os.WriteFile(filepath.Join(docsDir, "design.md"), []byte(content), 0o644); err != nil {
+				t.Fatalf("WriteFile(design.md) error = %v", err)
+			}
+
+			cfg := config.Default()
+			cfg.Docs.Patterns = []string{filepath.Join(docsDir, "**/*.md")}
+			eng := New(cfg)
+			eng.validateDesignSections()
+
+			hasError := false
+			for _, validationErr := range eng.result.Errors {
+				if validationErr.Rule == "design-sections" {
+					hasError = true
+				}
+			}
+			if hasError != tt.wantError {
+				t.Errorf("design-sections error = %v, want %v: %v", hasError, tt.wantError, eng.result.Errors)
+			}
+		})
+	}
+}
+
+// @test TEST-INTERNAL_ENGINE-003
+func TestEngine_validateDocumentTestKinds(t *testing.T) {
+	tests := []struct {
+		name      string
+		docKind   string
+		codeKinds []string
+		wantError bool
+	}{
+		{name: "behavior kind uses test annotation", docKind: "test", codeKinds: []string{"test"}},
+		{name: "contract kind uses contract annotation", docKind: "contract", codeKinds: []string{"contract"}},
+		{name: "behavior kind rejects contract annotation", docKind: "test", codeKinds: []string{"contract"}, wantError: true},
+		{name: "contract kind rejects test annotation", docKind: "contract", codeKinds: []string{"test"}, wantError: true},
+		{name: "document kind is exclusive", docKind: "test", codeKinds: []string{"test", "contract"}, wantError: true},
+		{name: "legacy test has no kind contract", codeKinds: []string{"contract"}},
+		{name: "missing code remains doc code concern", docKind: "test"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ids := model.NewIdentifierSet()
+			documented := model.NewIdentifier("TEST-INTERNAL_SAMPLE-001", model.TypeTest, "Sample test", "docs/internal/sample/testing.md", 8)
+			documented.Kind = tt.docKind
+			ids.Add(documented)
+			for index, kind := range tt.codeKinds {
+				code := model.NewIdentifier(
+					"TEST-INTERNAL_SAMPLE-001",
+					model.TypeTest,
+					"",
+					fmt.Sprintf("internal/sample/sample_%d_test.go", index),
+					10,
+				)
+				code.SetOrigin(model.OriginCode)
+				code.Kind = kind
+				ids.Add(code)
+			}
+
+			eng := New(config.Default())
+			eng.buildGraph(ids)
+			eng.validateDocumentTestKinds()
+
+			hasError := false
+			for _, validationErr := range eng.result.Errors {
+				if validationErr.Rule == "idd-document-test-kind" {
+					hasError = true
+				}
+			}
+			if hasError != tt.wantError {
+				t.Errorf("idd-document-test-kind error = %v, want %v: %v", hasError, tt.wantError, eng.result.Errors)
+			}
+		})
+	}
+}
+
 // @test TEST-INTERNAL_ENGINE-022
 func TestEngine_validateContractDesignMarkers_WithMarkers(t *testing.T) {
 	cfg := config.Default()
@@ -1239,40 +1409,113 @@ Content
 
 // @test TEST-INTERNAL_ENGINE-029
 func TestEngine_validateRelatedFiles_Valid(t *testing.T) {
-	cfg := config.Default()
-	cfg.Validation.AllowOrphans = true
-	eng := New(cfg)
-
-	// Create temp dir with docs
-	tmpDir := t.TempDir()
-	docsDir := filepath.Join(tmpDir, "docs", "test")
-	err := os.MkdirAll(docsDir, 0755)
-	if err != nil {
-		t.Fatalf("Failed to create temp dir: %v", err)
-	}
-
-	// Write spec.md with related_files
-	spec := `---
+	tests := []struct {
+		name                  string
+		spec                  string
+		rootDoc               bool
+		selfDescribingSibling bool
+	}{
+		{
+			name: "legacy frontmatter declares related files",
+			spec: `---
 related_files:
   spec: spec.md
   contract: contract.md
 ---
 # Spec
 Content
-`
-	err = os.WriteFile(filepath.Join(docsDir, "spec.md"), []byte(spec), 0644)
-	if err != nil {
-		t.Fatalf("Failed to write temp file: %v", err)
+`,
+		},
+		{
+			name: "self-describing document does not repeat related files",
+			spec: `---
+idd:
+  version: "1.0"
+  package: test
+  document: spec
+  specs: []
+---
+# Specifications
+`,
+		},
+		{
+			name:                  "one self-describing sibling selects mode for the package",
+			spec:                  "# Specifications\n",
+			selfDescribingSibling: true,
+		},
+		{
+			name:    "root documentation is not a package document",
+			spec:    "# IDD introduction\n",
+			rootDoc: true,
+		},
 	}
 
-	cfg.Docs.Patterns = []string{filepath.Join(docsDir, "**/*.md")}
-	eng = New(cfg)
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			docsDir := filepath.Join(t.TempDir(), "docs", "test")
+			filename := "spec.md"
+			if tt.rootDoc {
+				docsDir = filepath.Dir(docsDir)
+				filename = "idd-intro.md"
+			}
+			if err := os.MkdirAll(docsDir, 0o755); err != nil {
+				t.Fatalf("MkdirAll() error = %v", err)
+			}
+			if err := os.WriteFile(filepath.Join(docsDir, filename), []byte(tt.spec), 0o644); err != nil {
+				t.Fatalf("WriteFile(%s) error = %v", filename, err)
+			}
+			if tt.selfDescribingSibling {
+				contract := "---\nidd: {version: \"1.0\", package: test, document: contract, contracts: []}\n---\n# Contracts\n"
+				if err := os.WriteFile(filepath.Join(docsDir, "contract.md"), []byte(contract), 0o644); err != nil {
+					t.Fatalf("WriteFile(contract.md) error = %v", err)
+				}
+			}
+			cfg := config.Default()
+			cfg.Validation.AllowOrphans = true
+			cfg.Docs.Patterns = []string{filepath.Join(docsDir, "**/*.md")}
+			eng := New(cfg)
+			eng.validateRelatedFiles()
 
-	eng.validateRelatedFiles()
+			if len(eng.result.Errors) != 0 {
+				t.Errorf("validateRelatedFiles() errors = %v, want none", eng.result.Errors)
+			}
+		})
+	}
+}
 
-	// Should have no errors
-	if len(eng.result.Errors) != 0 {
-		t.Errorf("Expected 0 errors, got %d", len(eng.result.Errors))
+// @test TEST-INTERNAL_ENGINE-029
+func TestHasIDDDocumentMetadata(t *testing.T) {
+	tests := []struct {
+		name  string
+		lines []string
+		want  bool
+	}{
+		{
+			name:  "top-level idd block",
+			lines: []string{"---", "idd:", `  version: "1.0"`, "---"},
+			want:  true,
+		},
+		{
+			name:  "flow-style top-level idd block",
+			lines: []string{"---", `idd: {version: "1.0"}`, "---"},
+			want:  true,
+		},
+		{
+			name:  "nested idd key is generic metadata",
+			lines: []string{"---", "site:", "  idd:", "    enabled: true", "---"},
+		},
+		{
+			name:  "idd text outside frontmatter",
+			lines: []string{"# Notes", "idd:"},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := hasIDDDocumentMetadata(tt.lines); got != tt.want {
+				t.Errorf("hasIDDDocumentMetadata() = %v, want %v", got, tt.want)
+			}
+		})
 	}
 }
 

@@ -1,105 +1,116 @@
 ---
-related_files:
-  spec: docs/cmd/idd-cli/spec.md
-  contract: docs/cmd/idd-cli/contract.md
-  design: docs/cmd/idd-cli/design.md
-  testing: docs/cmd/idd-cli/testing.md
+idd:
+  version: "1.0"
+  package: cmd/idd-cli
+  document: contract
 ---
 
-# Contracts (backend)
+# Contracts: cmd/idd-cli
 
-## Collector Interface Contracts
+## Contract: CLI
 
-**Status:** Done
+`run [path]` and `lint [path]` use the same concrete workflow:
 
-**Overview:**
+1. Load configuration from the explicit flag, `./.idd.yaml`, or
+   `./config/.idd.yaml`.
+2. Collect documentation identifiers from the target path.
+3. Collect code annotations from the project working directory.
+4. Merge identifiers and execute `Engine.Run`.
+5. Write a finding-centered report.
+6. Exit non-zero when the validation result is invalid.
 
-Collectors gather IDD identifiers from documentation and source code. This contract defines the interfaces and behaviors for all collectors.
+Verbose diagnostics go to stderr so JSON stdout remains parseable.
+The complete project gate is `run .`: a narrower documentation target does not
+narrow source collection from the current working directory.
 
-### Interfaces
+`llm-markdown` is the agent repair format, Markdown is the human readout, and
+JSON is the automation-facing result. An invalid graph still writes its full
+report before exiting non-zero.
 
-```go
-// Collector is the main interface all collectors implement
-type Collector interface {
-    Collect(ctx context.Context, cfg *config.Config) (*model.IdentifierSet, error)
-}
+## Document initialization
 
-// DocCollector collects identifiers from documentation
-type DocCollector interface {
-    CollectDocs(ctx context.Context, patterns []string) ([]*model.Identifier, error)
-}
+`docs init <package>`:
 
-// CodeCollector collects annotations from source code
-type CodeCollector interface {
-    CollectCode(ctx context.Context, patterns []string) ([]*model.Annotation, error)
-}
-```
+- requires an existing project-relative package directory;
+- creates or adopts four self-describing Markdown files under
+  `docs/<package>/`;
+- never overwrites existing IDD or legacy metadata;
+- refuses legacy marker or `related_files` metadata before writing anything;
+- creates structural headings without fake requirements or generated IDs.
 
-### Collection Process
+## Document repair
 
-1. **Initialization** — Collector receives configuration on creation
-2. **Target Resolution** — Accepts path (file or directory) as target
-3. **File Discovery** — Recursively finds files matching configured patterns
-4. **Identifier Extraction** — Parses files to extract IDD identifiers
-5. **Link Detection** — Identifies references between identifiers within same file
-6. **Result Assembly** — Returns IdentifierSet containing all found identifiers
+`docs fix <docs-package-or-document>`:
 
-### Identifier Extraction Rules
+- repairs the minimal version, package, and document identity;
+- creates missing skeletons for a directory target;
+- writes only the selected file for a file target;
+- preserves the Markdown body byte-for-byte;
+- never reformats prose or invents semantic records;
+- refuses malformed frontmatter rather than discarding unknown data.
 
-| Source | Pattern |
-| ------ | ------- |
-| Documentation | `SPEC-[A-Z]+-[0-9]+`, `TEST-[A-Z]+-[0-9]+`, etc. |
-| Code | `@implement SPEC-XXX`, `@test TEST-XXX`, `@test-contract TEST-XXX`, etc. |
+## Concrete implementation boundary
 
-### Error Handling
+Collectors are the concrete `DocCollector` and `CodeCollector` structs.
+Link construction and validation rules are methods in `internal/engine`.
+There is no production `Collector`, `Linker`, or `Rule` extension interface.
 
-- **File not found** — Return error, do not continue
-- **Permission denied** — Return error, do not continue
-- **Parse error** — Log warning, skip file, continue processing
-- **Empty file** — No identifiers found, return empty result
+The command surface is the `CLI` boundary. Its concrete collaborators are
+`LinkageGraph`, `Config`, `Engine`, `Identifier`, `Reporter`, and `TFIDF`.
+Embedded skill access is provided by `SkillsFS`, `ListEmbeddedSkills`, and
+`ReadEmbeddedSkill`; the `SkillInfo` type is the serialized skill metadata
+boundary.
 
-**Related Specs:** `SPEC-CMD_IDD_CLI-001`
+`generate skill` writes the exact workflow embedded in the binary. Users
+regenerate their installed skill after upgrading idd-cli so semantic authoring
+instructions stay aligned with validator behavior.
 
----
+## Contract: Config
 
-## Engine Validation Contracts
+`Config` defines validation patterns, paths, output, and consistency thresholds.
+The CLI loads it from the explicit path or documented project defaults before
+applying invocation-only flag overrides.
 
-**Status:** Done
+`.idd.yaml` is configuration only. Package Components, Contracts, SPECs, TESTs,
+and coverage remain in their owning Markdown records.
 
-**Overview:**
+## Contract: Engine
 
-The validation engine orchestrates the collection, linking, and validation process. This contract defines the engine's responsibilities and expected behaviors.
+`Engine` consumes collected identifiers and returns one validation result from
+its concrete graph-building and validation methods.
 
-### Engine Interface
+## Contract: Identifier
 
-```go
-// Engine is the main validation orchestrator
-type Engine struct {
-    cfg        *config.Config
-    collector  *collector.Collector
-    graph      *graph.LinkageGraph
-    rules      []Rule
-}
+`Identifier` preserves type, origin, source location, narrative description,
+traceability links, and TEST kind across collection and reporting.
 
-// Rule defines a validation rule
-type Rule interface {
-    Name() string
-    Validate(g *graph.LinkageGraph) []model.ValidationError
-}
-```
+## Contract: LinkageGraph
 
-### Validation Process
+`LinkageGraph` stores identifiers and directed traceability relationships with
+deterministic lookup, verification, statistics, and snapshots.
 
-1. **Collect** — Gather identifiers from docs and code
-2. **Link** — Build graph with edges from forward links
-3. **Verify** — Check bidirectional links are reciprocated
-4. **Report** — Aggregate errors and generate output
+## Contract: Reporter
 
-### Validation Rules
+`Reporter` renders the same validation result as JSON, Markdown, or
+LLM-oriented Markdown without mixing diagnostics into structured stdout.
+LLM-oriented Markdown supports the Skill repair loop; JSON supports CI and the
+final project gate.
 
-| Rule | Description |
-| ---- | ----------- |
-| BidirectionalLinkRule | Verifies links are bidirectional |
-| OrphanRule | Detects unreferenced identifiers |
+## Contract: SkillInfo
 
-**Related Specs:** `SPEC-CMD_IDD_CLI-004`, `SPEC-CMD_IDD_CLI-002`
+`SkillInfo` is the stable serialized description returned when embedded
+workflow skills are listed.
+
+## Contract: SkillsFS
+
+`SkillsFS` exposes the embedded IDD workflow files used by skill listing,
+reading, and generation commands. The embedded workflow is the canonical
+companion to that binary.
+
+## Contract: TFIDF
+
+`TFIDF` compares meaningful descriptions while excluding declaration-only
+function locators from semantic consistency scoring.
+
+**Related Specs:** `SPEC-CMD_IDD_CLI-001`,
+`SPEC-CMD_IDD_CLI-004`, `SPEC-CMD_IDD_CLI-009`

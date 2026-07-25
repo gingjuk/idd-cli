@@ -223,3 +223,40 @@ func Multiple() error {
 		t.Error("Should have SPEC-CMD_IDD_CLI-002")
 	}
 }
+
+// @test TEST-INTERNAL_COLLECTOR-026
+func TestCodeCollector_TestAnnotationKind(t *testing.T) {
+	tests := []struct {
+		name       string
+		annotation string
+		wantKind   string
+	}{
+		{name: "behavior test", annotation: "@test", wantKind: "test"},
+		{name: "contract test", annotation: "@test-contract", wantKind: "contract"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			tmpDir := t.TempDir()
+
+			// idd:ignore start
+			code := "package sample\n\n// " + tt.annotation + " TEST-SAMPLE-001\nfunc TestBehavior() {}\n"
+			// idd:ignore end
+			if err := os.WriteFile(filepath.Join(tmpDir, "sample_test.go"), []byte(code), 0o644); err != nil {
+				t.Fatalf("WriteFile() error = %v", err)
+			}
+
+			set, err := NewCodeCollector(config.Default()).Collect(nil, tmpDir)
+			if err != nil {
+				t.Fatalf("Collect() error = %v", err)
+			}
+			identifier, ok := set.Get("TEST-SAMPLE-001")
+			if !ok {
+				t.Fatal("TEST-SAMPLE-001 not collected")
+			}
+			if identifier.Kind != tt.wantKind {
+				t.Errorf("Kind = %q, want %q", identifier.Kind, tt.wantKind)
+			}
+		})
+	}
+}

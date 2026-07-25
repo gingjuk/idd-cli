@@ -89,6 +89,13 @@ func (e *Engine) buildGraph(ids *model.IdentifierSet) {
 				node.Metadata["describe_"+string(id.Origin)] = id.Describe
 			}
 		}
+		if id.Kind != "" {
+			if id.Origin == model.OriginDoc {
+				node.Metadata["kind_doc"] = id.Kind
+			} else {
+				node.Metadata["kind_code_"+id.Kind] = true
+			}
+		}
 		srcKey := "source_" + string(id.Origin)
 		if _, exists := node.Metadata[srcKey]; !exists && id.Source != "" {
 			node.Metadata[srcKey] = id.Source
@@ -166,6 +173,7 @@ func (e *Engine) validate() {
 	if e.cfg.Validation.RequireSpecFields {
 		e.validateSpecRequiredFields()
 	}
+	e.validateDocumentTestKinds()
 	e.validateContractDesignMarkers()
 	e.validateDocPathExists()
 
@@ -299,21 +307,47 @@ func (e *Engine) validateDesignSections() {
 			return
 		}
 
-		foundSections := make(map[string]bool)
-		for _, line := range lines {
+		foundSections := make(map[string]int)
+		for lineIndex, line := range lines {
 			if matches := designRegex.FindStringSubmatch(strings.TrimSpace(line)); len(matches) > 1 {
-				foundSections[strings.ToLower(matches[1])] = true
+				foundSections[strings.ToLower(matches[1])] = lineIndex
 			}
 		}
 
 		for _, section := range requiredSections {
-			if !foundSections[section] {
+			lineIndex, found := foundSections[section]
+			if !found {
 				e.result.AddError(
 					"design-sections",
 					fmt.Sprintf("design.md missing required section: %s", section),
 					path,
 					"",
+					section,
+				)
+				continue
+			}
+
+			if !hasIDDDocumentMetadata(lines) && !directoryHasIDDDocumentMetadata(filepath.Dir(path)) {
+				continue
+			}
+			hasContent := false
+			for nextIndex := lineIndex + 1; nextIndex < len(lines); nextIndex++ {
+				nextLine := strings.TrimSpace(lines[nextIndex])
+				if strings.HasPrefix(nextLine, "## ") {
+					break
+				}
+				if nextLine != "" {
+					hasContent = true
+					break
+				}
+			}
+			if !hasContent {
+				e.result.AddError(
+					"design-sections",
+					fmt.Sprintf("design.md required section is empty: %s", section),
+					fmt.Sprintf("%s:%d", path, lineIndex+1),
 					"",
+					section,
 				)
 			}
 		}
@@ -400,6 +434,9 @@ func (e *Engine) validateContractInterfaceConsistency() {
 
 	e.walkDocFiles(func(path string, lines []string) {
 		if !strings.HasSuffix(path, "spec.md") {
+			return
+		}
+		if hasIDDDocumentMetadata(lines) || directoryHasIDDDocumentMetadata(filepath.Dir(path)) {
 			return
 		}
 
@@ -503,6 +540,9 @@ func (e *Engine) validateSpecRequiredFields() {
 		if !strings.HasSuffix(path, "spec.md") {
 			return
 		}
+		if hasIDDDocumentMetadata(lines) || directoryHasIDDDocumentMetadata(filepath.Dir(path)) {
+			return
+		}
 
 		markerIDs := specFrontmatterMarkerIDs(lines)
 		for i := 0; i < len(lines); i++ {
@@ -591,6 +631,46 @@ func specRequiredFieldsInOrder(foundOrder []string) bool {
 		}
 	}
 	return true
+}
+
+// validateDocumentTestKinds checks that a self-described TEST's kind agrees
+// with every source annotation for that identifier. Legacy TESTs have no kind
+// metadata and remain on the existing validation path.
+func (e *Engine) validateDocumentTestKinds() {
+	for _, node := range e.graph.Nodes() {
+		if node.Type != model.TypeTest {
+			continue
+		}
+		documentedKind, ok := node.Metadata["kind_doc"].(string)
+		if !ok || documentedKind == "" || node.Metadata[string(model.OriginCode)] != true {
+			continue
+		}
+
+		hasTestAnnotation := node.Metadata["kind_code_test"] == true
+		hasContractAnnotation := node.Metadata["kind_code_contract"] == true
+		matches := documentedKind == "test" && hasTestAnnotation && !hasContractAnnotation ||
+			documentedKind == "contract" && hasContractAnnotation && !hasTestAnnotation
+		if matches {
+			continue
+		}
+
+		expectedAnnotation := "@test"
+		if documentedKind == "contract" {
+			expectedAnnotation = "@test-contract"
+		}
+		e.result.AddError(
+			"idd-document-test-kind",
+			fmt.Sprintf(
+				"self-described TEST %s has kind %q but its code annotations do not exclusively use %s",
+				node.ID,
+				documentedKind,
+				expectedAnnotation,
+			),
+			nodeSourceByOrigin(node, model.OriginCode),
+			node.ID,
+			expectedAnnotation,
+		)
+	}
 }
 
 func specRequiredFieldOrder() string {
@@ -852,7 +932,7 @@ func (e *Engine) validateConsistency() {
 		}
 		docDescribe, _ := node.Metadata["describe_"+string(model.OriginDoc)].(string)
 		codeDescribe, _ := node.Metadata["describe_"+string(model.OriginCode)].(string)
-		if docDescribe == "" || codeDescribe == "" {
+		if docDescribe == "" || codeDescribe == "" || isFunctionLocator(codeDescribe) {
 			continue
 		}
 		score := similarity.Score(docDescribe, codeDescribe)
@@ -866,6 +946,11 @@ func (e *Engine) validateConsistency() {
 			)
 		}
 	}
+}
+
+func isFunctionLocator(description string) bool {
+	description = strings.TrimSpace(description)
+	return strings.HasPrefix(description, "[function: ") && strings.HasSuffix(description, "]")
 }
 
 // nodeSource returns the source file path for a graph node from metadata,
@@ -1369,6 +1454,13 @@ func (e *Engine) validateRelatedFiles() {
 	frontmatterRegex := regexp.MustCompile(`^related_files:`)
 
 	e.walkDocFiles(func(path string, lines []string) {
+		if filepath.Base(filepath.Dir(filepath.Clean(path))) == "docs" {
+			return
+		}
+		if hasIDDDocumentMetadata(lines) || directoryHasIDDDocumentMetadata(filepath.Dir(path)) {
+			return
+		}
+
 		startIdx, endIdx := -1, -1
 		inFrontmatter := false
 		for i, line := range lines {
@@ -1409,6 +1501,43 @@ func (e *Engine) validateRelatedFiles() {
 			)
 		}
 	})
+}
+
+func hasIDDDocumentMetadata(lines []string) bool {
+	inFrontmatter := false
+	for _, line := range lines {
+		trimmed := strings.TrimSpace(line)
+		if trimmed == "" && !inFrontmatter {
+			continue
+		}
+		if trimmed == "---" {
+			if !inFrontmatter {
+				inFrontmatter = true
+				continue
+			}
+			return false
+		}
+		if !inFrontmatter {
+			return false
+		}
+		if strings.TrimLeft(line, " \t") == line && strings.HasPrefix(trimmed, "idd:") {
+			return true
+		}
+	}
+	return false
+}
+
+func directoryHasIDDDocumentMetadata(directory string) bool {
+	for _, filename := range []string{"design.md", "contract.md", "spec.md", "testing.md"} {
+		data, err := os.ReadFile(filepath.Join(directory, filename))
+		if err != nil {
+			continue
+		}
+		if hasIDDDocumentMetadata(strings.Split(string(data), "\n")) {
+			return true
+		}
+	}
+	return false
 }
 
 // validatePkgDocFiles checks that every pkg docs directory contains all four

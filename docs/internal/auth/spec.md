@@ -1,41 +1,25 @@
 ---
-markers:
-  - id: SPEC-INTERNAL_AUTH-001
-    name: Authentication Module
-
-related_files:
-  spec: docs/internal/auth/spec.md
-  contract: docs/internal/auth/contract.md
-  design: docs/internal/auth/design.md
-  testing: docs/internal/auth/testing.md
-
+idd:
+  version: "1.0"
+  package: internal/auth
+  document: spec
 ---
 
-# Specification (auth)
+# Specifications: internal/auth
 
-## SPEC-INTERNAL_AUTH-001: Authentication Module
+## SPEC-INTERNAL_AUTH-001: Authentication value boundaries
 
-**Design:** `AuthModule`
+- **Design:** `AuthTypes`
+- **Contract:** `AuthenticationValues`
 
-**Contract:** `LoginRequest`
+**Requirement:** Define login credential and token response value types without
+implementing authentication behavior.
 
-**Requirement:**
+`LoginRequest` carries an email address and password. `LoginResponse` carries a
+token returned by a future authentication service. The package currently
+defines these values only; it does not authenticate credentials, issue tokens,
+or expose login/logout functions.
 
-Authentication module provides user login and token generation functionality for idd-cli. It defines the core types for authentication requests and responses.
-
-**Tests:** `TEST-INTERNAL_AUTH-001`
-**Status:** Done
-
-**Implementation:** `internal/auth/auth.go`
-
-**Key Types:**
-
-- `LoginRequest` — User login credentials (email, password)
-- `LoginResponse` — Authentication result with token
-
-**Acceptance Criteria:**
-
-- [x] LoginRequest struct contains email and password fields
-- [x] LoginResponse struct contains token field
-- [x] Authentication types are annotated with @implement; tests use @test-contract for CONTRACT coverage
-- [x] Test annotations link to `TEST-INTERNAL_AUTH-001`
+The source declarations implementing this behavior are
+`internal/auth/auth.go:LoginRequest` and
+`internal/auth/auth.go:LoginResponse`.

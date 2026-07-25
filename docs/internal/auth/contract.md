@@ -1,22 +1,15 @@
 ---
-related_files:
-  spec: docs/internal/auth/spec.md
-  contract: docs/internal/auth/contract.md
-  design: docs/internal/auth/design.md
-  testing: docs/internal/auth/testing.md
+idd:
+  version: "1.0"
+  package: internal/auth
+  document: contract
 ---
 
-# Contracts (auth)
+# Contracts: internal/auth
 
-## Authentication Interface Contracts
+## Contract: AuthenticationValues
 
-**Status:** Done
-
-**Overview:**
-
-Contracts for authentication functionality in idd-cli.
-
-### LoginRequest Contract
+### LoginRequest
 
 ```go
 type LoginRequest struct {
@@ -25,12 +18,11 @@ type LoginRequest struct {
 }
 ```
 
-**Invariant:**
+- `Email` is expected to contain a syntactically valid email address.
+- `Password` is expected to be non-empty.
+- The value type stores inputs but does not enforce either constraint.
 
-- `Email` must be a valid email format
-- `Password` must be non-empty
-
-### LoginResponse Contract
+### LoginResponse
 
 ```go
 type LoginResponse struct {
@@ -38,15 +30,6 @@ type LoginResponse struct {
 }
 ```
 
-**Invariant:**
-
-- `Token` must be non-empty after successful authentication
-- Token format must be parseable
-
-### Error Handling
-
-- Invalid credentials → return error with `ErrInvalidCredentials`
-- Account locked → return error with `ErrAccountLocked`
-- Network failure → return error with `ErrNetworkFailure`
-
-**Related Specs:** `SPEC-INTERNAL_AUTH-001`
+- `Token` is expected to be non-empty after successful authentication.
+- Token consumers currently expect a three-segment, dot-separated value.
+- The value type stores the token but does not generate or validate it.

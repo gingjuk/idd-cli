@@ -60,6 +60,8 @@ type Identifier struct {
 	RawRef   string
 	Links    []string
 	Origin   Origin
+	// Kind distinguishes behavior and contract TEST definitions/annotations.
+	Kind string
 }
 
 // NewIdentifier creates a new identifier with given fields.

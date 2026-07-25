@@ -416,10 +416,8 @@ func (r *testRule) Validate(g *graph.LinkageGraph) []model.ValidationError {
 var _ Rule = (*testRule)(nil)
 
 // Rule interface as defined in CONTRACT-BE-002
-// idd:ignore start
 // @implement SPEC-CMD_IDD_CLI-010
 type Rule interface {
-	// idd:ignore end
 	Name() string
 	Validate(g *graph.LinkageGraph) []model.ValidationError
 }

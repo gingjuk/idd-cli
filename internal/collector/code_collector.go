@@ -126,6 +126,10 @@ func (c *CodeCollector) collectFile(path string, set *model.IdentifierSet) error
 						ann := model.NewAnnotationWithComment(idType, ref, path, strings.TrimSpace(line), ctx, funcComment, i+1)
 						id := ann.ToIdentifier()
 						id.SetOrigin(model.OriginCode)
+						id.Kind = strings.TrimPrefix(pat.Prefix, "@")
+						if id.Kind == "test-contract" {
+							id.Kind = "contract"
+						}
 						set.Add(id)
 					}
 				}

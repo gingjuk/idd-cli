@@ -535,6 +535,35 @@ func TestReporter_buildLLMReport_GroupsRepeatedFindings(t *testing.T) {
 	}
 }
 
+// @test TEST-INTERNAL_REPORTER-013
+func TestLookupRuleInfo_IDDDocumentFindings(t *testing.T) {
+	tests := []struct {
+		rule        string
+		wantFixText string
+	}{
+		{rule: "idd-document-parse", wantFixText: "YAML"},
+		{rule: "idd-document-identity", wantFixText: "docs fix"},
+		{rule: "idd-document-set", wantFixText: "docs fix"},
+		{rule: "idd-document-schema", wantFixText: "field"},
+		{rule: "idd-document-reference", wantFixText: "declaration"},
+		{rule: "idd-document-markdown", wantFixText: "legacy"},
+		{rule: "idd-document-migration", wantFixText: "testing.md"},
+		{rule: "idd-document-test-kind", wantFixText: "annotation"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.rule, func(t *testing.T) {
+			info := lookupRuleInfo(tt.rule, "error")
+			if info.Title == "" || info.Explanation == "" {
+				t.Fatalf("lookupRuleInfo(%q) returned incomplete metadata: %#v", tt.rule, info)
+			}
+			if !strings.Contains(info.FixHint, tt.wantFixText) {
+				t.Errorf("lookupRuleInfo(%q).FixHint = %q, want text %q", tt.rule, info.FixHint, tt.wantFixText)
+			}
+		})
+	}
+}
+
 func sampleLLMSourceReport() *model.Report {
 	return &model.Report{
 		Tool:      "idd-cli",
