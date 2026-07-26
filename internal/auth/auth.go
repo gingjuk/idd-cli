@@ -1,7 +1,4 @@
 // Package auth provides authentication utilities.
-
-// Spec: docs/internal/auth/spec.md
-// Contract: docs/internal/auth/contract.md
 package auth
 
 // LoginRequest represents user login credentials (email, password).

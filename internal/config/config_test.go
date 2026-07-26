@@ -1,7 +1,4 @@
 // Package config provides testing utilities for the config module.
-
-// Spec: docs/internal/config/spec.md
-// Test: docs/internal/config/testing.md
 package config
 
 import (

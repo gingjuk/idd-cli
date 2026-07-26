@@ -1,7 +1,4 @@
 // Package collector defines the shared schema for generated IDD documents.
-
-// Spec: docs/internal/collector/spec.md
-// Contract: docs/internal/collector/contract.md
 package collector
 
 import (

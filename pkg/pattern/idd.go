@@ -1,7 +1,4 @@
 // Package pattern provides IDD identifier and annotation pattern matching.
-
-// Spec: docs/pkg/pattern/spec.md
-// Contract: docs/pkg/pattern/contract.md
 package pattern
 
 import (

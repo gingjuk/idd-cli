@@ -1,8 +1,4 @@
 // Package engine provides the core validation engine.
-
-// Spec: docs/internal/engine/spec.md
-// Contract: docs/internal/engine/contract.md
-
 package engine
 
 import (
@@ -218,11 +214,6 @@ func (e *Engine) validate() {
 
 	if e.cfg.Validation.RequirePublicFuncAnnotation {
 		e.validateSourcePublicAnnotations()
-	}
-
-	if e.cfg.Validation.RequirePackageDocComment {
-		e.validatePackageDocComment()
-		e.validateDocPathMatchesPackagePath()
 	}
 
 	if e.cfg.Validation.RequireRelatedFiles {
@@ -980,7 +971,7 @@ func (e *Engine) validateDocCodeCorrespondence() {
 		if hasDoc && !hasCode {
 			e.result.AddError(
 				"doc-code-correspondence",
-				fmt.Sprintf("%s is documented but missing @implement annotation in code", node.ID),
+				fmt.Sprintf("%s is documented but has no matching source annotation", node.ID),
 				nodeSourceByOrigin(node, model.OriginDoc),
 				"",
 				"",
@@ -990,7 +981,7 @@ func (e *Engine) validateDocCodeCorrespondence() {
 		if hasCode && !hasDoc {
 			e.result.AddError(
 				"doc-code-correspondence",
-				fmt.Sprintf("%s has @implement annotation in code but no documentation", node.ID),
+				fmt.Sprintf("%s has a source annotation but no matching documentation record", node.ID),
 				nodeSourceByOrigin(node, model.OriginCode),
 				"",
 				"",
@@ -1066,194 +1057,6 @@ func truncate(s string, maxLen int) string {
 		return s
 	}
 	return s[:maxLen] + "..."
-}
-
-// validatePackageDocComment checks that each Go package file has a proper
-// package doc comment with Package description, Spec path, and Contract path.
-// It also verifies there's a blank line between Package describe and Spec.
-func (e *Engine) validatePackageDocComment() {
-	specPathRegex := regexp.MustCompile(`(?i)^//\s*Spec:\s*docs/`)
-	contractPathRegex := regexp.MustCompile(`(?i)^//\s*Contract:\s*docs/`)
-	testPathRegex := regexp.MustCompile(`(?i)^//\s*Test:\s*docs/`)
-	packageDocRegex := regexp.MustCompile(`^//\s*Package\s+\w+`)
-
-	e.walkCodeFiles(func(path string, lines []string) {
-		if filepath.Ext(path) != ".go" {
-			return
-		}
-
-		dir := filepath.Dir(path)
-		isTestFile := strings.HasSuffix(path, "_test.go")
-		isContractTestFile := strings.HasSuffix(path, "_contract_test.go")
-
-		var packageName string
-		var packageLine int
-		for i, line := range lines {
-			if strings.HasPrefix(line, "package ") {
-				packageName = strings.TrimPrefix(strings.TrimSpace(line), "package ")
-				packageLine = i
-				break
-			}
-		}
-
-		if packageName == "" || packageName == "main" {
-			return
-		}
-
-		commentStart := packageLine - 10
-		if commentStart < 0 {
-			commentStart = 0
-		}
-
-		var packageDocLine, specLine, testOrContractLine, contractLine = -1, -1, -1, -1
-		for i := commentStart; i < packageLine; i++ {
-			line := strings.TrimSpace(lines[i])
-			if line == "" {
-				continue
-			}
-			if packageDocRegex.MatchString(line) && packageDocLine == -1 {
-				packageDocLine = i
-			}
-			if specPathRegex.MatchString(line) && specLine == -1 {
-				specLine = i
-			}
-			if !isTestFile || isContractTestFile {
-				if contractPathRegex.MatchString(line) && contractLine == -1 {
-					contractLine = i
-				}
-			}
-			if testPathRegex.MatchString(line) && testOrContractLine == -1 {
-				testOrContractLine = i
-			}
-		}
-
-		if packageDocLine == -1 {
-			e.result.AddError(
-				"package-doc-comment",
-				fmt.Sprintf(`package %s missing package doc comment; add "// Package %s ..." before package declaration`, packageName, packageName),
-				path, "", "",
-			)
-			return
-		}
-		if specLine == -1 {
-			e.result.AddError(
-				"package-doc-comment",
-				fmt.Sprintf(`package %s missing Spec path; add "// Spec: docs/%s/spec.md" after package doc comment`, packageName, dir),
-				path, "", "",
-			)
-			return
-		}
-
-		if isTestFile {
-			if testOrContractLine == -1 {
-				e.result.AddError(
-					"package-doc-comment",
-					fmt.Sprintf(`package %s missing Test path; add "// Test: docs/%s/testing.md" after package doc comment`, packageName, dir),
-					path, "", "",
-				)
-				return
-			}
-			if isContractTestFile && contractLine == -1 {
-				e.result.AddError(
-					"package-doc-comment",
-					fmt.Sprintf(`package %s missing Contract path; add "// Contract: docs/%s/contract.md" after package doc comment`, packageName, dir),
-					path, "", "",
-				)
-				return
-			}
-		} else {
-			if contractLine == -1 {
-				e.result.AddError(
-					"package-doc-comment",
-					fmt.Sprintf(`package %s missing Contract path; add "// Contract: docs/%s/contract.md" after package doc comment`, packageName, dir),
-					path, "", "",
-				)
-				return
-			}
-		}
-
-		blankLineBetweenPackageAndSpec := false
-		for i := packageDocLine + 1; i < specLine; i++ {
-			if strings.TrimSpace(lines[i]) == "" {
-				blankLineBetweenPackageAndSpec = true
-				break
-			}
-		}
-		if !blankLineBetweenPackageAndSpec {
-			e.result.AddError(
-				"package-doc-comment",
-				fmt.Sprintf("package %s missing blank line between package doc comment and Spec path", packageName),
-				path, "", "",
-			)
-		}
-	})
-}
-
-// validateDocPathMatchesPackagePath checks that docs paths in package comments
-// follow the format docs/<package_path>/xxx.md where <package_path> matches
-// the actual package directory structure (e.g., docs/internal/auth/spec.md
-// for package at internal/auth).
-func (e *Engine) validateDocPathMatchesPackagePath() {
-	// Match docs paths like "docs/auth/spec.md" or "docs/internal/engine/spec.md"
-	docPathRegex := regexp.MustCompile(`(?i)^//\s*(Spec|Contract|Test):\s*(docs/.*\.md)`)
-
-	e.walkCodeFiles(func(path string, lines []string) {
-		if filepath.Ext(path) != ".go" {
-			return
-		}
-
-		// Skip test files for this validation - they use Test: not path matching
-		if strings.HasSuffix(path, "_test.go") {
-			return
-		}
-
-		// Get the package directory from the file path
-		// e.g., "internal/auth/auth.go" -> "internal/auth"
-		dir := filepath.Dir(path)
-
-		var packageLine int
-		for i, line := range lines {
-			if strings.HasPrefix(line, "package ") {
-				packageLine = i
-				break
-			}
-		}
-
-		if packageLine == 0 {
-			return
-		}
-
-		commentStart := packageLine - 10
-		if commentStart < 0 {
-			commentStart = 0
-		}
-
-		// Check each docs path reference
-		for i := commentStart; i < packageLine; i++ {
-			line := strings.TrimSpace(lines[i])
-			if m := docPathRegex.FindStringSubmatch(line); len(m) > 2 {
-				docsPath := m[2] // e.g., "docs/auth/spec.md"
-
-				// Extract the path after "docs/"
-				// e.g., "docs/auth/spec.md" -> "auth"
-				// e.g., "docs/internal/auth/spec.md" -> "internal/auth"
-				rest := strings.TrimPrefix(docsPath, "docs/")
-				rest = strings.TrimSuffix(rest, filepath.Base(docsPath))
-				rest = strings.TrimSuffix(rest, "/")
-
-				// Check if the docs path matches the package directory
-				if rest != dir {
-					e.result.AddError(
-						"package-doc-path",
-						fmt.Sprintf("docs path %s does not match package path %s (file: %s, line: %d)", docsPath, dir, path, i+1),
-						fmt.Sprintf("%s:%d", path, i+1),
-						"",
-						"",
-					)
-				}
-			}
-		}
-	})
 }
 
 // validateRelatedFiles checks that documentation files have the required

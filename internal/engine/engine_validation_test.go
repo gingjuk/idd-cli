@@ -1,7 +1,4 @@
 // Package engine tests document, package, and annotation validation rules.
-
-// Spec: docs/internal/engine/spec.md
-// Test: docs/internal/engine/testing.md
 package engine
 
 import (
@@ -12,9 +9,110 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/jingxu9x/idd-cli/internal/collector"
 	"github.com/jingxu9x/idd-cli/internal/config"
 	"github.com/jingxu9x/idd-cli/internal/model"
 )
+
+// @test TEST-INTERNAL_ENGINE-001
+func TestEngine_CodeDocAssociationUsesDeclarationIdentifiers(t *testing.T) {
+	tests := []struct {
+		name         string
+		filename     string
+		source       string
+		idType       model.IdentifierType
+		documentID   string
+		documentKind string
+	}{
+		{
+			name:       "production declaration",
+			filename:   "sample.go",
+			source:     "package sample\n\n// @implement SPEC-INTERNAL_SAMPLE-001\nfunc Exported() {}\n",
+			idType:     model.TypeSpec,
+			documentID: "SPEC-INTERNAL_SAMPLE-001",
+		},
+		{
+			name:         "behavior test declaration",
+			filename:     "sample_test.go",
+			source:       "package sample\n\n// @test TEST-INTERNAL_SAMPLE-001\nfunc TestSample() {}\n",
+			idType:       model.TypeTest,
+			documentID:   "TEST-INTERNAL_SAMPLE-001",
+			documentKind: "test",
+		},
+		{
+			name:         "contract test declaration",
+			filename:     "sample_contract_test.go",
+			source:       "package sample\n\n// @test-contract TEST-INTERNAL_SAMPLE-002\nfunc TestSampleContract() {}\n",
+			idType:       model.TypeTest,
+			documentID:   "TEST-INTERNAL_SAMPLE-002",
+			documentKind: "contract",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			sourceDir := t.TempDir()
+			sourcePath := filepath.Join(sourceDir, tt.filename)
+			if err := os.WriteFile(sourcePath, []byte(tt.source), 0o644); err != nil {
+				t.Fatalf("WriteFile() error = %v", err)
+			}
+
+			cfg := &config.Config{
+				Version: "1.0",
+				Code: config.CodeConfig{
+					Patterns: []string{"**/*.go"},
+					Annotations: map[string]string{
+						"spec":          "@implement",
+						"test":          "@test",
+						"test_contract": "@test-contract",
+					},
+				},
+				Validation: config.ValidationConfig{
+					AllowOrphans:                 true,
+					RequireDocCodeCorrespondence: true,
+					RequirePublicFuncAnnotation:  true,
+					RequireTestAnnotation:        true,
+				},
+			}
+
+			codeCollector := collector.NewCodeCollector(cfg)
+			codeIDs, sourceErrors, err := codeCollector.CollectWithErrors(
+				context.Background(),
+				sourceDir,
+			)
+			if err != nil {
+				t.Fatalf("CollectWithErrors() error = %v", err)
+			}
+			if len(sourceErrors) != 0 {
+				t.Fatalf("source errors = %v", sourceErrors)
+			}
+
+			document := model.NewIdentifier(
+				tt.documentID,
+				tt.idType,
+				"Matching document record",
+				"docs/internal/sample/spec.md",
+				10,
+			)
+			if tt.idType == model.TypeTest {
+				document.Source = "docs/internal/sample/testing.md"
+				document.Kind = tt.documentKind
+			}
+			document.SetOrigin(model.OriginDoc)
+			codeIDs.Add(document)
+
+			eng := New(cfg)
+			eng.SetSourceAnalyses(codeCollector.Analyses())
+			result, err := eng.Run(context.Background(), codeIDs)
+			if err != nil {
+				t.Fatalf("Run() error = %v", err)
+			}
+			if !result.Valid {
+				t.Fatalf("result.Valid = false without file-level document paths: %v", result.Errors)
+			}
+		})
+	}
+}
 
 // @test TEST-INTERNAL_ENGINE-003
 func TestEngine_validateDesignSections_SelfDescribingContent(t *testing.T) {
@@ -465,8 +563,7 @@ func TestHasIDDDocumentMetadata(t *testing.T) {
 }
 
 // @test TEST-INTERNAL_ENGINE-030
-func TestEngine_PackageDocComment_MainPackageSkipped(t *testing.T) {
-	// main package should be skipped
+func TestEngine_MainPackageHasNoIDDPathHeaderRequirement(t *testing.T) {
 	tmpDir := t.TempDir()
 	code := `package main
 
@@ -481,9 +578,6 @@ func main() {}
 		Code: config.CodeConfig{
 			Patterns: []string{filepath.Join(tmpDir, "*.go")},
 		},
-		Validation: config.ValidationConfig{
-			RequirePackageDocComment: true,
-		},
 	}
 
 	eng := New(cfg)
@@ -493,10 +587,8 @@ func main() {}
 		t.Fatalf("Run failed: %v", err)
 	}
 
-	for _, e := range result.Errors {
-		if e.Rule == "package-doc-comment" {
-			t.Error("main package should be skipped")
-		}
+	if !result.Valid {
+		t.Fatalf("main package result.Valid = false, errors: %v", result.Errors)
 	}
 }
 

@@ -1,8 +1,4 @@
 // Package collector provides testing utilities for the collector module.
-
-// Spec: docs/internal/collector/spec.md
-// Test: docs/internal/collector/testing.md
-// Contract: docs/internal/collector/contract.md
 package collector
 
 import (

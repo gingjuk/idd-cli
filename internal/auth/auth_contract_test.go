@@ -1,8 +1,4 @@
 // Package auth provides testing utilities for the auth module.
-
-// Spec: docs/internal/auth/spec.md
-// Test: docs/internal/auth/testing.md
-// Contract: docs/internal/auth/contract.md
 package auth
 
 import (

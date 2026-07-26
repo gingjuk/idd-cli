@@ -1,8 +1,4 @@
 // Package engine provides IDD validation engine.
-
-// Spec: docs/internal/engine/spec.md
-// Contract: docs/internal/engine/contract.md
-
 package engine
 
 import (

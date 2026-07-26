@@ -1,7 +1,4 @@
 // Package model provides testing utilities for the model module.
-
-// Spec: docs/internal/model/spec.md
-// Test: docs/internal/model/testing.md
 package model
 
 import (

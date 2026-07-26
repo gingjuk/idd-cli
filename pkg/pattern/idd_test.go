@@ -1,7 +1,4 @@
 // Package pattern provides testing utilities for the pattern module.
-
-// Spec: docs/pkg/pattern/spec.md
-// Test: docs/pkg/pattern/testing.md
 package pattern
 
 import (

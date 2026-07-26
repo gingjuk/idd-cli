@@ -40,6 +40,17 @@ plus captured telemetry checked for secret leakage.
 Transport response mapping, rate limiting, token issuance, and production
 adapter conformance are proved in their owning packages or contracts.
 
+### Source evidence
+
+The behavior test declaration carries the TEST identifier that owns its oracle:
+
+```go
+// @test TEST-INTERNAL_AUTH-001
+func TestAuthenticateBehavior(t *testing.T) {
+    // Table-driven scenarios and assertions omitted from this example.
+}
+```
+
 ## TEST-INTERNAL_AUTH-002: Authenticator contract
 
 - **Kind:** `contract`
@@ -70,6 +81,22 @@ about internal call order or storage representation.
 
 Implementation-specific performance, migration, and persistence tests remain
 with their adapters.
+
+### Source evidence
+
+The contract-test declaration points to this TEST record, not directly to a
+SPEC identifier or Markdown path:
+
+```go
+// @test-contract TEST-INTERNAL_AUTH-002
+func TestAuthenticatorContract(t *testing.T) {
+    // Run the shared contract suite for every registered implementation.
+}
+```
+
+idd-cli resolves `TEST-INTERNAL_AUTH-002` to this record, then follows
+`Covers` to the SPEC and `Contracts` to `Authenticator`. That keeps source
+association machine-checkable without making code own the document graph.
 
 ## Strategy
 

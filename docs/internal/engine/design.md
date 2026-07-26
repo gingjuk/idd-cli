@@ -22,8 +22,8 @@ Collection is deliberately outside the component. The CLI invokes
 collector structural findings through `AddStructuralErrors`, supplies
 Tree-sitter-backed `SourceAnalysis` values through `SetSourceAnalyses`, and only
 then calls `Run`. The engine can rescan configured files for rules that depend
-on raw Markdown layout or Go package comments, but source annotation placement
-and declaration policy consume the normalized AST model.
+on raw Markdown layout, but source annotation placement and declaration policy
+consume the normalized AST model.
 
 ### Responsibilities
 
@@ -40,7 +40,9 @@ and declaration policy consume the normalized AST model.
 - execute hard-coded validation rules according to configuration;
 - validate language-specific public and test declarations from normalized
   syntax-tree analyses;
-- read configured files only for remaining Markdown and Go package-layout
+- join source and document observations by SPEC or TEST identifier, without
+  file-level document paths;
+- read configured files only for remaining Markdown and package-document-set
   rules;
 - set validity from accumulated errors, sort findings, and attach statistics;
   and
@@ -141,8 +143,7 @@ CodeCollector ---/                 +--> SourceAnalysis[]
 
 The graph is the relationship query layer. Normalized source analyses support
 annotation and declaration rules. Raw file walkers remain for legacy field
-order, headings, Go package comments, document paths, and complete four-file
-sets.
+order, headings, and complete four-file document sets.
 
 ## Package Layout
 
@@ -194,8 +195,8 @@ can be injected without reproducing collector parsing.
 The suite exercises typed and legacy graph interpretation, correspondence,
 required fields, design content, TEST kind, seven-language declaration
 binding, public/test policy, detached/body/string annotations, parse failures,
-package comments, paths, complete doc sets, ignore scopes, duplicates,
-consistency warnings, and report construction.
+headerless production/test/contract-test sources, complete doc sets, ignore
+scopes, duplicates, consistency warnings, and report construction.
 Important exclusions include actual context cancellation, engine reuse,
 concurrent access, broad I/O failure propagation, every interaction among rule
 flags, and complete semantic quality of documentation prose.

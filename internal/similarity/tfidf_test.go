@@ -1,7 +1,4 @@
 // Package similarity provides testing utilities for the similarity module.
-
-// Spec: docs/internal/similarity/spec.md
-// Test: docs/internal/similarity/testing.md
 package similarity
 
 import (

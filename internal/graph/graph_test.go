@@ -1,7 +1,4 @@
 // Package graph provides testing utilities for the graph module.
-
-// Spec: docs/internal/graph/spec.md
-// Test: docs/internal/graph/testing.md
 package graph
 
 import (

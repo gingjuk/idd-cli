@@ -1,7 +1,4 @@
 // Package engine provides syntax-tree-backed source validation.
-
-// Spec: docs/internal/engine/spec.md
-// Contract: docs/internal/engine/contract.md
 package engine
 
 import (

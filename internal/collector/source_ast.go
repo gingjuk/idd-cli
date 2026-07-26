@@ -1,7 +1,4 @@
 // Package collector provides syntax-tree-backed source declaration collection.
-
-// Spec: docs/internal/collector/spec.md
-// Contract: docs/internal/collector/contract.md
 package collector
 
 import (

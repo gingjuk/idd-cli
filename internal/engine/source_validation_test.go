@@ -1,7 +1,4 @@
 // Package engine tests syntax-tree-backed source validation.
-
-// Spec: docs/internal/engine/spec.md
-// Test: docs/internal/engine/testing.md
 package engine
 
 import (

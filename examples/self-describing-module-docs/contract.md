@@ -9,7 +9,9 @@ idd:
 
 ## Contract: Authenticator
 
-**Guarantees:** `Authenticator` converts a complete credential attempt into either an
+**Guarantees:**
+
+`Authenticator` converts a complete credential attempt into either an
 authenticated identity or a caller-visible failure. The contract describes
 observable behavior shared by every implementation; storage layout, hash
 selection, and internal diagnostic detail remain private.
@@ -61,3 +63,9 @@ New implementations may change storage or verification algorithms but must
 preserve the public error categories, secret-ownership rules, and success
 semantics. Adding multi-factor challenges or token issuance requires a new
 contract rather than silently widening this one.
+
+Contract evidence is declared by `TEST-INTERNAL_AUTH-002` in `testing.md`. Its
+source declaration uses `@test-contract TEST-INTERNAL_AUTH-002`; the annotation
+points to the TEST record, while that record names `Authenticator` through its
+`Contracts` field. No source file needs to know the path of this contract
+document.

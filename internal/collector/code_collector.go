@@ -1,7 +1,4 @@
 // Package collector provides code identifier collection functionality.
-
-// Spec: docs/internal/collector/spec.md
-// Contract: docs/internal/collector/contract.md
 package collector
 
 import (

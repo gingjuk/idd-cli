@@ -24,6 +24,10 @@ reporting.
 
 - Every document and code observation contributes to graph metadata without
   erasing the other origin.
+- Code and document observations with the same SPEC or TEST identifier form the
+  complete association; source files do not repeat document paths.
+- A document record without source evidence and a source annotation without a
+  document record produce `doc-code-correspondence`.
 - Forward references become typed, source-located edges.
 - Self-describing coverage, named Contract evidence, Component dependencies,
   and lifecycle replacements retain their explicit relationship types; only
@@ -56,8 +60,9 @@ review.
 legacy graph interpretation, derived Contract coverage, Component dependency
 cycles, seven-language public and test declarations, annotation attachment and
 syntax failures, structural-error injection, duplicate diagnostics, exact
-ignore scopes, warning thresholds, result sorting, statistics, optional
-snapshots, and report construction.
+ignore scopes, identifier-derived code/document correspondence, headerless
+production/test/contract-test files, warning thresholds, result sorting,
+statistics, optional snapshots, and report construction.
 
 ## SPEC-INTERNAL_ENGINE-002: Initialized single-run engine
 

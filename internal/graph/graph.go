@@ -1,7 +1,4 @@
 // Package graph provides graph data structures for IDD link validation.
-
-// Spec: docs/internal/graph/spec.md
-// Contract: docs/internal/graph/contract.md
 package graph
 
 import (

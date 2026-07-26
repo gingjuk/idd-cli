@@ -1,7 +1,4 @@
 // Package collector tests syntax-tree-backed source binding.
-
-// Spec: docs/internal/collector/spec.md
-// Test: docs/internal/collector/testing.md
 package collector
 
 import (

@@ -102,6 +102,12 @@ pinned grammar or a syntax error in a supported file produces a
 `source-parse` finding and disables binding for that file; there is no regex
 fallback.
 
+The annotation identifier is also the code-to-document join key. idd-cli
+matches it to the owning SPEC or TEST record and reports either missing side.
+Do not repeat `Spec:`, `Contract:`, or `Test:` document paths in source-file
+headers; those paths are redundant with the self-describing document set and
+are not consumed by validation.
+
 Use ignore ranges only when a real source comment intentionally demonstrates
 annotation syntax and must not count as evidence.
 
@@ -201,7 +207,9 @@ code.
 See
 [`examples/self-describing-module-docs/`](../examples/self-describing-module-docs/)
 for a complete record set with design rationale, observable contracts,
-implementation boundaries, failure cases, and verification strategy.
+implementation boundaries, failure cases, verification strategy, and
+identifier-derived source annotations. The
+[`examples/README.md`](../examples/README.md) records its validation commands.
 
 The TEST `Covers` field is the only authored SPEC/TEST relationship. idd-cli
 derives the reverse SPEC-to-TEST edge. `design.md` owns `## Component:`
@@ -260,6 +268,11 @@ func TestDoSomethingContract() {
 }
 ```
 
+Ordinary language package/module comments remain useful human documentation,
+but they do not carry IDD linkage. `docs init` and `docs fix` never edit source;
+the explicit declaration annotation and matching document record are the
+complete association.
+
 ## Validation Rules
 
 1. **Document Schema** — Each role owns correctly shaped Markdown records.
@@ -314,6 +327,8 @@ validation:
   require_spec_fields: true
   allow_orphans: false
   require_spec_test_coverage: true
+  # This joins document records to declaration annotations by identifier.
+  require_doc_code_correspondence: true
 
 output:
   file: "idd-report.json"

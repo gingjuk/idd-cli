@@ -1,7 +1,4 @@
 // Package similarity provides TF-IDF text similarity scoring.
-
-// Spec: docs/internal/similarity/spec.md
-// Contract: docs/internal/similarity/contract.md
 package similarity
 
 import (

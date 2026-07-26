@@ -9,7 +9,9 @@ idd:
 
 ## Component: AuthModule
 
-**Purpose:** `AuthModule` owns the decision that a supplied credential set represents a
+**Purpose:**
+
+`AuthModule` owns the decision that a supplied credential set represents a
 known identity. It gives callers one authentication boundary without exposing
 password-storage details or coupling authentication policy to HTTP, CLI, or
 background-job transports.
@@ -35,6 +37,12 @@ through the public `Authenticator` contract.
 Persistence adapters may retain password hashes, but plaintext credentials
 exist only for the duration of a call and must not be logged or stored by
 `AuthModule`.
+
+The four package documents own their respective declarations. Source files do
+not repeat document paths: idd-cli discovers implementation and test
+declarations through `@implement`, `@test`, and `@test-contract`, then joins
+those annotations to SPEC and TEST records by identifier. Design and Contract
+relationships are resolved from the names declared in these Markdown records.
 
 ### Decisions and trade-offs
 
@@ -86,6 +94,10 @@ Construction supplies a credential store and password verifier. At runtime,
 `Authenticate` validates the credential value, performs lookup, verifies the
 secret, and constructs the returned identity. No global initialization or
 mutable singleton participates in the call path.
+
+The implementation annotation is attached to the concrete declaration whose
+behavior realizes `SPEC-INTERNAL_AUTH-001`. It is traceability metadata for
+idd-cli, not a replacement for the boundary and rationale recorded here.
 
 ## Dependencies
 

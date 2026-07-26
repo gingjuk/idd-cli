@@ -55,6 +55,25 @@ The implementation may use any credential store and password verifier that
 satisfy the documented contract. It must not expose their concrete types
 through the `Authenticator` boundary.
 
+### Code association
+
+The implementation declaration carries the SPEC identifier directly:
+
+```go
+// @implement SPEC-INTERNAL_AUTH-001
+func (service *Service) Authenticate(
+    ctx context.Context,
+    credentials Credentials,
+) (Identity, error) {
+    // Implementation omitted from the documentation example.
+}
+```
+
+idd-cli parses the declaration and joins this annotation to the SPEC record.
+The source file does not repeat paths to `spec.md`, `design.md`, or
+`contract.md`; document names and relationships remain owned by this
+self-describing set.
+
 ### Rationale
 
 Collapsing expected rejection reasons prevents callers from using response
@@ -64,7 +83,7 @@ misclassifying outages as user mistakes.
 
 ### Acceptance evidence
 
-The acceptance paragraph is proved by observable cases for valid credentials, unknown
-identifiers, incorrect secrets, malformed input, cancellation, and dependency
-failure. Tests must prove both the returned identity/error and the absence of
-secret leakage or partial success.
+The acceptance paragraph is proved by observable cases for valid credentials,
+unknown identifiers, incorrect secrets, malformed input, cancellation, and
+dependency failure. Tests must prove both the returned identity/error and the
+absence of secret leakage or partial success.

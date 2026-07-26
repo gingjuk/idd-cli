@@ -121,6 +121,13 @@ One annotation may reference several same-kind IDs separated by commas.
 Annotations are evidence, not substitutes for declaration comments or document
 prose.
 
+Do not repeat package document paths in source-file headers. Lines such as
+`Spec: docs/<package>/spec.md`, `Contract: ...`, and `Test: ...` are neither
+required nor consumed. idd-cli owns the association by joining each
+syntax-tree-bound identifier to its self-describing SPEC or TEST record.
+Ordinary language package/module comments remain human-owned and may be kept
+when they are useful.
+
 ### 6. Validate after each coherent slice
 
 ```bash
@@ -338,6 +345,11 @@ from the public-API rule, while real test declarations require `@test` or
 test file may still use `@test-contract` when the documented TEST kind is
 contract.
 
+Code-to-document association is identifier-derived for every supported
+language. A documented identifier without a source annotation and a source
+annotation without a document record both produce `doc-code-correspondence`.
+Do not add a second file-level path mechanism.
+
 Ignore directives must be standalone comment directives:
 
 ```text
@@ -380,7 +392,12 @@ Upgrade package by package on a dedicated branch:
 
 1. Build the intended idd-cli version and export its paired Skill.
 2. Inventory legacy markers, central catalogs, duplicate relationships,
-   package comments, source annotations, and current validation findings.
+   repeated source-file document paths, source annotations, and current
+   validation findings. Remove `Spec:`, `Contract:`, and `Test:` header paths
+   after confirming the declaration annotations resolve; preserve useful
+   language package/module descriptions. Remove the obsolete
+   `require_package_doc_comment` configuration key; code/document pairing is
+   controlled by `require_doc_code_correspondence`.
 3. Preserve rich prose. Add minimal identity and move declarations into the
    owning H2 records; do not replace prose with YAML or a large table.
 4. Add concrete `Purpose`, `Guarantees`, `Acceptance`, and `Oracle` labels to

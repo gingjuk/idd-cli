@@ -90,10 +90,11 @@ coverage, Component dependency target and cycle checks, required design
 sections, legacy SPEC fields, self-describing TEST annotation kind, legacy
 contract/design marker presence, documented implementation paths, legacy
 relationship consistency, duplicate headings, orphan identifiers, doc/code
-correspondence, syntax-tree public declaration and test rules, package comments
-and doc paths, legacy `related_files`, complete package doc sets, annotation
+correspondence joined by identifier, syntax-tree public declaration and test
+rules, legacy `related_files`, complete package doc sets, annotation
 identifier/placement/duplication checks, source parse failures, duplicate IDs,
-and optional advisory description consistency.
+and optional advisory description consistency. File-level `Spec`, `Contract`,
+and `Test` paths are not an input to this contract.
 
 Rules report all detected issues instead of stopping after the first. Errors and
 warnings include the most precise source available. Legacy-only rules skip

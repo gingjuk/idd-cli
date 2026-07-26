@@ -1,15 +1,15 @@
 // Package collector provides tests for generated document completion tracking.
-
-// Spec: docs/internal/collector/spec.md
-// Test: docs/internal/collector/testing.md
 package collector
 
 import (
+	"context"
 	"os"
 	"path/filepath"
 	"sort"
 	"strings"
 	"testing"
+
+	"github.com/jingxu9x/idd-cli/internal/config"
 )
 
 // @test-contract TEST-INTERNAL_COLLECTOR-021
@@ -442,5 +442,78 @@ func TestRepairDocuments_PreservesScaffoldMarkers(t *testing.T) {
 	}
 	if !strings.Contains(after, `<!-- idd:scaffold slot="design.architecture" -->`) {
 		t.Error("RepairDocuments() removed scaffold marker")
+	}
+}
+
+// @test-contract TEST-INTERNAL_COLLECTOR-021
+func TestReferenceExampleDocuments(t *testing.T) {
+	exampleDir := filepath.Join(
+		"..",
+		"..",
+		"examples",
+		"self-describing-module-docs",
+	)
+	status, err := InspectDocumentCompletion(exampleDir)
+	if err != nil {
+		t.Fatalf("InspectDocumentCompletion(%s) error = %v", exampleDir, err)
+	}
+	if status.Status != "complete" || len(status.IncompleteSlots) != 0 {
+		t.Fatalf("example completion status = %#v, want complete", status)
+	}
+
+	projectRoot := t.TempDir()
+	docsRoot := filepath.Join(projectRoot, "docs")
+	targetDir := filepath.Join(docsRoot, "internal", "auth")
+	if err := os.MkdirAll(targetDir, 0o755); err != nil {
+		t.Fatalf("MkdirAll(%s) error = %v", targetDir, err)
+	}
+
+	var combined strings.Builder
+	for _, filename := range iddDocumentOrder {
+		sourcePath := filepath.Join(exampleDir, filename)
+		data, readErr := os.ReadFile(sourcePath)
+		if readErr != nil {
+			t.Fatalf("ReadFile(%s) error = %v", sourcePath, readErr)
+		}
+		combined.Write(data)
+		if writeErr := os.WriteFile(filepath.Join(targetDir, filename), data, 0o644); writeErr != nil {
+			t.Fatalf("WriteFile(%s) error = %v", filename, writeErr)
+		}
+	}
+
+	identifiers, validationErrors, err := NewDocCollector(config.Default()).Collect(
+		context.Background(),
+		docsRoot,
+	)
+	if err != nil {
+		t.Fatalf("Collect(%s) error = %v", docsRoot, err)
+	}
+	if len(validationErrors) != 0 {
+		t.Fatalf("example document validation errors = %#v", validationErrors)
+	}
+	for _, identifier := range []string{
+		"SPEC-INTERNAL_AUTH-001",
+		"TEST-INTERNAL_AUTH-001",
+		"TEST-INTERNAL_AUTH-002",
+	} {
+		if !identifiers.Has(identifier) {
+			t.Errorf("example documents do not declare %s", identifier)
+		}
+	}
+
+	content := combined.String()
+	for _, annotation := range []string{
+		"@implement SPEC-INTERNAL_AUTH-001",
+		"@test TEST-INTERNAL_AUTH-001",
+		"@test-contract TEST-INTERNAL_AUTH-002",
+	} {
+		if !strings.Contains(content, annotation) {
+			t.Errorf("example documents do not demonstrate %q", annotation)
+		}
+	}
+	for _, obsoleteHeader := range []string{"// Spec:", "// Contract:", "// Test:"} {
+		if strings.Contains(content, obsoleteHeader) {
+			t.Errorf("example documents contain obsolete source header %q", obsoleteHeader)
+		}
 	}
 }

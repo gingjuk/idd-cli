@@ -7,22 +7,25 @@ idd:
 
 # Testing: internal/engine
 
-## TEST-INTERNAL_ENGINE-001: Valid package documentation and engine state
+## TEST-INTERNAL_ENGINE-001: Headerless source and engine state
 
 - **Kind:** `test`
 - **Covers:** `SPEC-INTERNAL_ENGINE-001`, `SPEC-INTERNAL_ENGINE-004`
 
 **Purpose:**
 
-Prove that a correctly documented temporary Go package passes the package
-comment/path checks and that the engine returns structured state rather than an
-operational error.
+Prove that production, behavior-test, and contract-test declarations join their
+matching document records through syntax-tree-bound identifiers without
+repeated IDD document-path headers, and that the engine returns structured
+state rather than an operational error.
 
-**Oracle:** The test passes only when its assertions confirm a
-correctly documented temporary Go package passes the package comment/path checks and
-that the engine returns structured state rather than an operational error.
+**Oracle:** Table-driven source collection returns the expected SPEC or TEST
+evidence for `@implement`, `@test`, and `@test-contract`; adding the matching
+document observation makes every engine result valid without `Spec`,
+`Contract`, or `Test` header paths. The smaller production-source fixture also
+passes with only its useful language package description.
 
-## TEST-INTERNAL_ENGINE-002: Link inference and missing package documentation
+## TEST-INTERNAL_ENGINE-002: Link inference and path-header independence
 
 - **Kind:** `test`
 - **Covers:** `SPEC-INTERNAL_ENGINE-001`, `SPEC-INTERNAL_ENGINE-004`
@@ -30,15 +33,14 @@ that the engine returns structured state rather than an operational error.
 **Purpose:**
 
 Prove the source/target identifier-type mapping used during graph construction
-and prove that a Go source file without the required package documentation
-produces the specific package-comment finding.
+and prove that a source file without a package comment or IDD path header does
+not acquire a second code-to-document association mechanism.
 
 **Oracle:** The test passes only when its assertions confirm the
-source/target identifier-type mapping used during graph construction and prove that a Go
-source file without the required package documentation produces the specific
-package-comment finding.
+source/target identifier-type mapping and confirm the headerless fixture
+remains valid because correspondence is joined by identifier evidence.
 
-## TEST-INTERNAL_ENGINE-003: Relationship, correspondence, design, kind, and package-name rules
+## TEST-INTERNAL_ENGINE-003: Relationship, correspondence, design, and annotation-kind rules
 
 - **Kind:** `test`
 - **Covers:** `SPEC-INTERNAL_ENGINE-001`, `SPEC-INTERNAL_ENGINE-004`
@@ -46,20 +48,19 @@ package-comment finding.
 **Purpose:**
 
 Exercise several focused rule tests sharing one historical TEST identifier:
-legacy relationship consistency, doc/code correspondence, missing package name,
-non-empty self-describing design sections, and agreement between documented
-TEST kind and source annotation kind. Each function isolates one fixture and
-asserts its exact rule rather than treating the combined identifier as one
-scenario.
+legacy relationship consistency, identifier-derived doc/code correspondence,
+ordinary leading comments without IDD semantics, non-empty self-describing
+design sections, and agreement between documented TEST kind and source
+annotation kind. Each function isolates one fixture and asserts its exact rule
+rather than treating the combined identifier as one scenario.
 
 **Oracle:** The test passes only when its assertions exercise several
 focused rule tests sharing one historical TEST identifier: legacy relationship
-consistency, doc/code correspondence, missing package name, non-empty self-describing
-design sections, and agreement between documented TEST kind and source annotation kind.
-Each function isolates one fixture and asserts its exact rule rather than treating the
-combined identifier as one scenario.
+consistency, paired and unpaired identifier evidence, ordinary leading
+comments, non-empty self-describing design sections, and documented/source
+TEST-kind agreement. Each fixture asserts its exact rule independently.
 
-## TEST-INTERNAL_ENGINE-004: Structural errors, source locations, and package-comment placement
+## TEST-INTERNAL_ENGINE-004: Structural errors, source locations, and language comments
 
 - **Kind:** `test`
 - **Covers:** `SPEC-INTERNAL_ENGINE-001`, `SPEC-INTERNAL_ENGINE-004`
@@ -67,42 +68,42 @@ combined identifier as one scenario.
 **Purpose:**
 
 Prove collector structural findings survive injection, graph completeness uses
-document evidence for missing fields, and package documentation remains valid
-when ordinary comments precede the package declaration.
+document evidence for missing fields, and an ordinary language package comment
+remains outside IDD association policy.
 
 **Oracle:** The test passes only when its assertions confirm collector
-structural findings survive injection, graph completeness uses document evidence for
-missing fields, and package documentation remains valid when ordinary comments precede
-the package declaration.
+structural findings survive injection, graph completeness uses document
+evidence for missing fields, and the package-comment fixture passes without
+repeated document paths.
 
-## TEST-INTERNAL_ENGINE-005: Report construction and disabled package-comment policy
+## TEST-INTERNAL_ENGINE-005: Report construction and removed path-header policy
 
 - **Kind:** `test`
 - **Covers:** `SPEC-INTERNAL_ENGINE-001`, `SPEC-INTERNAL_ENGINE-004`
 
 **Purpose:**
 
-Prove the engine report envelope contains accumulated state and prove disabling
-package-comment validation suppresses that rule without disabling unrelated
-engine behavior.
+Prove the engine report envelope contains accumulated state and that source
+files without legacy path headers remain valid without a package-comment policy
+switch.
 
 **Oracle:** The test passes only when its assertions confirm the engine
-report envelope contains accumulated state and prove disabling package-comment
-validation suppresses that rule without disabling unrelated engine behavior.
+report envelope contains accumulated state and the headerless fixture produces
+no obsolete path-header finding.
 
-## TEST-INTERNAL_ENGINE-006: Test-file package documentation
+## TEST-INTERNAL_ENGINE-006: Headerless test source
 
 - **Kind:** `test`
 - **Covers:** `SPEC-INTERNAL_ENGINE-001`, `SPEC-INTERNAL_ENGINE-004`
 
 **Purpose:**
 
-Prove that test files require package documentation pointing to both the
-package SPEC and TEST documents and accept the complete form.
+Prove that test files do not repeat SPEC and TEST document paths and rely on
+their declaration-level TEST annotations for association.
 
-**Oracle:** The test passes only when its assertions confirm test
-files require package documentation pointing to both the package SPEC and TEST documents
-and accept the complete form.
+**Oracle:** The test passes only when its assertions confirm the headerless test
+source remains valid while test annotations continue to carry the non-derivable
+TEST relationship.
 
 ## TEST-INTERNAL_ENGINE-007: Consistency warnings and missing TEST document links
 
@@ -114,14 +115,15 @@ and accept the complete form.
 
 Prove description-similarity warning behavior across low/high similarity,
 disabled checks, missing descriptions, function-locator descriptions,
-code-only observations, and threshold changes. A separate fixture using this
-identifier proves that a test package comment missing its TEST path is reported.
+code-only observations, and threshold changes. A separate contract-test fixture
+using this identifier proves that contract tests need no repeated SPEC, TEST,
+or Contract header paths.
 
 **Oracle:** The test passes only when its assertions prove
 description-similarity warning behavior across low/high similarity, disabled checks,
-missing descriptions, function-locator descriptions, code-only observations, and
-threshold changes. A separate fixture using this identifier proves that a test package
-comment missing its TEST path is reported.
+missing descriptions, function-locator descriptions, code-only observations,
+and threshold changes. The separate contract-test fixture remains valid
+without file-level document paths.
 
 ## TEST-INTERNAL_ENGINE-013: Engine storage contract
 
@@ -336,19 +338,18 @@ metadata cases cover valid placement and misleading body text.
 legacy-only rules can skip the package. Table-driven metadata cases cover valid
 placement and misleading body text.
 
-## TEST-INTERNAL_ENGINE-030: Main packages skip package-doc path policy
+## TEST-INTERNAL_ENGINE-030: Main package path-header independence
 
 - **Kind:** `test`
 - **Covers:** `SPEC-INTERNAL_ENGINE-001`
 
 **Purpose:**
 
-Prove command `main` packages are excluded from package document-path
-requirements intended for library packages.
+Prove command `main` source also has no IDD document-path header requirement.
 
-**Oracle:** The test passes only when its assertions confirm command
-`main` packages are excluded from package document-path requirements intended for
-library packages.
+**Oracle:** The test passes only when its assertions confirm the headerless
+`main` fixture returns a valid result without special-case path-comment
+handling.
 
 ## TEST-INTERNAL_ENGINE-031: Incomplete package document set
 

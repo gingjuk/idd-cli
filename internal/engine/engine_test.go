@@ -1,8 +1,4 @@
 // Package engine provides testing utilities for the engine module.
-
-// Spec: docs/internal/engine/spec.md
-// Test: docs/internal/engine/testing.md
-
 package engine
 
 import (
@@ -443,26 +439,66 @@ func TestEngine_validateBidirectional(t *testing.T) {
 
 // @test TEST-INTERNAL_ENGINE-003
 func TestEngine_validateDocCodeCorrespondence(t *testing.T) {
-	cfg := config.Default()
-	eng := New(cfg)
-
-	ids := model.NewIdentifierSet()
-
-	codeOnlyID := model.NewIdentifier("SPEC-001", model.TypeSpec, "", "main.go", 1)
-	codeOnlyID.SetOrigin(model.OriginCode)
-	ids.Add(codeOnlyID)
-
-	eng.Run(context.Background(), ids)
-
-	found := false
-	for _, e := range eng.result.Errors {
-		if e.Rule == "doc-code-correspondence" {
-			found = true
-			break
-		}
+	tests := []struct {
+		name      string
+		addDoc    bool
+		addCode   bool
+		wantError bool
+	}{
+		{name: "matching identifier joins code to document", addDoc: true, addCode: true},
+		{name: "source annotation without document", addCode: true, wantError: true},
+		{name: "document without source annotation", addDoc: true, wantError: true},
 	}
-	if !found {
-		t.Error("Expected error for code without doc")
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			cfg := &config.Config{
+				Version: "1.0",
+				Validation: config.ValidationConfig{
+					RequireDocCodeCorrespondence: true,
+					AllowOrphans:                 true,
+				},
+			}
+			ids := model.NewIdentifierSet()
+			if tt.addDoc {
+				docID := model.NewIdentifier(
+					"SPEC-INTERNAL_SAMPLE-001",
+					model.TypeSpec,
+					"Sample requirement",
+					"docs/internal/sample/spec.md",
+					10,
+				)
+				docID.SetOrigin(model.OriginDoc)
+				ids.Add(docID)
+			}
+			if tt.addCode {
+				codeID := model.NewIdentifier(
+					"SPEC-INTERNAL_SAMPLE-001",
+					model.TypeSpec,
+					"",
+					"internal/sample/sample.go",
+					12,
+				)
+				codeID.SetOrigin(model.OriginCode)
+				ids.Add(codeID)
+			}
+
+			eng := New(cfg)
+			result, err := eng.Run(context.Background(), ids)
+			if err != nil {
+				t.Fatalf("Run() error = %v", err)
+			}
+
+			hasError := false
+			for _, validationErr := range result.Errors {
+				if validationErr.Rule == "doc-code-correspondence" {
+					hasError = true
+				}
+			}
+			if hasError != tt.wantError {
+				t.Errorf("doc-code-correspondence error = %v, want %v: %v", hasError, tt.wantError, result.Errors)
+			}
+		})
 	}
 }
 
@@ -484,13 +520,9 @@ func TestEngine_BuildReport(t *testing.T) {
 }
 
 // @test TEST-INTERNAL_ENGINE-001
-func TestEngine_PackageDocComment_Valid(t *testing.T) {
-	// Valid format: package doc comment before package declaration
+func TestEngine_SourceFileDoesNotRequireIDDPathHeader(t *testing.T) {
 	tmpDir := t.TempDir()
 	code := `// Package foo provides core functionality for the foo module.
-
-// Spec: docs/foo/spec.md
-// Contract: docs/foo/contract.md
 package foo
 `
 
@@ -504,9 +536,6 @@ package foo
 		Code: config.CodeConfig{
 			Patterns: []string{filepath.Join(tmpDir, "*.go")},
 		},
-		Validation: config.ValidationConfig{
-			RequirePackageDocComment: true,
-		},
 	}
 
 	eng := New(cfg)
@@ -516,22 +545,15 @@ package foo
 		t.Fatalf("Run failed: %v", err)
 	}
 
-	// Should have no package-doc-comment errors
-	for _, e := range result.Errors {
-		if e.Rule == "package-doc-comment" {
-			t.Errorf("Expected no package-doc-comment errors for valid format, got: %s", e.Message)
-		}
+	if !result.Valid {
+		t.Fatalf("headerless source result.Valid = false, errors: %v", result.Errors)
 	}
 }
 
 // @test TEST-INTERNAL_ENGINE-002
-func TestEngine_PackageDocComment_MissingPackageDoc(t *testing.T) {
-	// Missing package doc comment line (has Spec and Contract but no "Package foo provides")
+func TestEngine_SourceFileWithoutPackageCommentHasNoIDDPathRequirement(t *testing.T) {
 	tmpDir := t.TempDir()
-	code := `// Spec: docs/foo/spec.md
-// Contract: docs/foo/contract.md
-package foo
-`
+	code := "package foo\n"
 
 	err := os.WriteFile(filepath.Join(tmpDir, "foo.go"), []byte(code), 0644)
 	if err != nil {
@@ -543,9 +565,6 @@ package foo
 		Code: config.CodeConfig{
 			Patterns: []string{filepath.Join(tmpDir, "*.go")},
 		},
-		Validation: config.ValidationConfig{
-			RequirePackageDocComment: true,
-		},
 	}
 
 	eng := New(cfg)
@@ -555,26 +574,15 @@ package foo
 		t.Fatalf("Run failed: %v", err)
 	}
 
-	found := false
-	for _, e := range result.Errors {
-		if e.Rule == "package-doc-comment" && strings.Contains(e.Message, "missing package doc comment") {
-			found = true
-			break
-		}
-	}
-	if !found {
-		t.Error("Expected error for missing package doc comment")
+	if !result.Valid {
+		t.Fatalf("source without package comment result.Valid = false, errors: %v", result.Errors)
 	}
 }
 
 // @test TEST-INTERNAL_ENGINE-003
-func TestEngine_PackageDocComment_MissingPackageName(t *testing.T) {
-	// Has comment but not a package doc comment (no "Package xxx" pattern)
+func TestEngine_OrdinaryLeadingCommentHasNoIDDPathSemantics(t *testing.T) {
 	tmpDir := t.TempDir()
-	code := `// This is a regular comment, not a package doc comment.
-//
-// Spec: docs/foo/spec.md
-// Contract: docs/foo/contract.md
+	code := `// This is an ordinary source comment.
 package foo
 `
 
@@ -588,9 +596,6 @@ package foo
 		Code: config.CodeConfig{
 			Patterns: []string{filepath.Join(tmpDir, "*.go")},
 		},
-		Validation: config.ValidationConfig{
-			RequirePackageDocComment: true,
-		},
 	}
 
 	eng := New(cfg)
@@ -600,26 +605,15 @@ package foo
 		t.Fatalf("Run failed: %v", err)
 	}
 
-	found := false
-	for _, e := range result.Errors {
-		if e.Rule == "package-doc-comment" && strings.Contains(e.Message, "missing package doc comment") {
-			found = true
-			break
-		}
-	}
-	if !found {
-		t.Error("Expected error for missing package doc comment")
+	if !result.Valid {
+		t.Fatalf("ordinary comment result.Valid = false, errors: %v", result.Errors)
 	}
 }
 
 // @test TEST-INTERNAL_ENGINE-004
-func TestEngine_PackageDocComment_PackageAfterComments(t *testing.T) {
-	// Package declaration AFTER comments (correct order)
+func TestEngine_PackageCommentRemainsLanguageOwned(t *testing.T) {
 	tmpDir := t.TempDir()
 	code := `// Package bar provides core bar functionality.
-
-// Spec: docs/bar/spec.md
-// Contract: docs/bar/contract.md
 package bar
 `
 
@@ -633,9 +627,6 @@ package bar
 		Code: config.CodeConfig{
 			Patterns: []string{filepath.Join(tmpDir, "*.go")},
 		},
-		Validation: config.ValidationConfig{
-			RequirePackageDocComment: true,
-		},
 	}
 
 	eng := New(cfg)
@@ -645,16 +636,13 @@ package bar
 		t.Fatalf("Run failed: %v", err)
 	}
 
-	for _, e := range result.Errors {
-		if e.Rule == "package-doc-comment" {
-			t.Errorf("Expected no package-doc-comment errors for package after comments, got: %s", e.Message)
-		}
+	if !result.Valid {
+		t.Fatalf("ordinary package comment result.Valid = false, errors: %v", result.Errors)
 	}
 }
 
 // @test TEST-INTERNAL_ENGINE-005
-func TestEngine_PackageDocComment_Disabled(t *testing.T) {
-	// When RequirePackageDocComment is false, no errors should be generated
+func TestEngine_LegacyPackagePathRuleIsAbsent(t *testing.T) {
 	tmpDir := t.TempDir()
 	code := `package baz
 `
@@ -669,9 +657,6 @@ func TestEngine_PackageDocComment_Disabled(t *testing.T) {
 		Code: config.CodeConfig{
 			Patterns: []string{filepath.Join(tmpDir, "*.go")},
 		},
-		Validation: config.ValidationConfig{
-			RequirePackageDocComment: false,
-		},
 	}
 
 	eng := New(cfg)
@@ -681,20 +666,15 @@ func TestEngine_PackageDocComment_Disabled(t *testing.T) {
 		t.Fatalf("Run failed: %v", err)
 	}
 
-	for _, e := range result.Errors {
-		if e.Rule == "package-doc-comment" {
-			t.Error("Should not generate package-doc-comment errors when disabled")
-		}
+	if !result.Valid {
+		t.Fatalf("source without legacy path header result.Valid = false, errors: %v", result.Errors)
 	}
 }
 
 // @test TEST-INTERNAL_ENGINE-006
-func TestEngine_PackageDocComment_TestFile_RequiresSpecAndTest(t *testing.T) {
+func TestEngine_TestFileDoesNotRequireIDDPathHeader(t *testing.T) {
 	tmpDir := t.TempDir()
 	code := `// Package foo provides testing utilities for foo module.
-
-// Spec: docs/foo/spec.md
-// Test: docs/foo/testing.md
 package foo
 `
 
@@ -708,9 +688,6 @@ package foo
 		Code: config.CodeConfig{
 			Patterns: []string{filepath.Join(tmpDir, "*.go")},
 		},
-		Validation: config.ValidationConfig{
-			RequirePackageDocComment: true,
-		},
 	}
 
 	eng := New(cfg)
@@ -720,24 +697,19 @@ package foo
 		t.Fatalf("Run failed: %v", err)
 	}
 
-	for _, e := range result.Errors {
-		if e.Rule == "package-doc-comment" {
-			t.Errorf("Expected no errors for test file with Spec and Test, got: %s", e.Message)
-		}
+	if !result.Valid {
+		t.Fatalf("headerless test source result.Valid = false, errors: %v", result.Errors)
 	}
 }
 
 // @test-contract TEST-INTERNAL_ENGINE-007
-func TestEngine_PackageDocComment_TestFile_MissingTest(t *testing.T) {
+func TestEngine_ContractTestFileDoesNotRequireIDDPathHeader(t *testing.T) {
 	tmpDir := t.TempDir()
-	code := `// Package foo provides testing utilities for foo module.
-//
-// Spec: docs/foo/spec.md
-// Contract: docs/foo/contract.md
+	code := `// Package foo provides contract tests for the foo module.
 package foo
 `
 
-	err := os.WriteFile(filepath.Join(tmpDir, "foo_test.go"), []byte(code), 0644)
+	err := os.WriteFile(filepath.Join(tmpDir, "foo_contract_test.go"), []byte(code), 0644)
 	if err != nil {
 		t.Fatalf("Failed to write temp file: %v", err)
 	}
@@ -746,9 +718,6 @@ package foo
 		Version: "1.0",
 		Code: config.CodeConfig{
 			Patterns: []string{filepath.Join(tmpDir, "*.go")},
-		},
-		Validation: config.ValidationConfig{
-			RequirePackageDocComment: true,
 		},
 	}
 
@@ -759,15 +728,8 @@ package foo
 		t.Fatalf("Run failed: %v", err)
 	}
 
-	found := false
-	for _, e := range result.Errors {
-		if e.Rule == "package-doc-comment" && strings.Contains(e.Message, "missing Test path") {
-			found = true
-			break
-		}
-	}
-	if !found {
-		t.Error("Expected error for test file missing Test path")
+	if !result.Valid {
+		t.Fatalf("headerless contract test result.Valid = false, errors: %v", result.Errors)
 	}
 }
 

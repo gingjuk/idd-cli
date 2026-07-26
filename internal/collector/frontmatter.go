@@ -1,7 +1,4 @@
 // Package collector provides frontmatter parsing and validation functionality.
-
-// Spec: docs/internal/collector/spec.md
-// Contract: docs/internal/collector/contract.md
 package collector
 
 import (

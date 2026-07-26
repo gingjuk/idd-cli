@@ -1,7 +1,4 @@
 // Package collector validates self-describing IDD document records and graph relationships.
-
-// Spec: docs/internal/collector/spec.md
-// Contract: docs/internal/collector/contract.md
 package collector
 
 import (

@@ -1,7 +1,4 @@
 // Package engine tests derived document relationships in the linkage graph.
-
-// Spec: docs/internal/engine/spec.md
-// Test: docs/internal/engine/testing.md
 package engine
 
 import (

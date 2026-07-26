@@ -44,7 +44,6 @@ validation:
   require_contract_test_coverage: true
   require_doc_code_correspondence: true
   require_public_func_annotation: true
-  require_package_doc_comment: true
   require_related_files: true
   require_annotation_identifier: true
   require_annotation_on_same_line: true

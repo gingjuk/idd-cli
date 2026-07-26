@@ -1,7 +1,4 @@
 // Package reporter provides testing utilities for the reporter module.
-
-// Spec: docs/internal/reporter/spec.md
-// Test: docs/internal/reporter/testing.md
 package reporter
 
 import (
@@ -551,6 +548,7 @@ func TestLookupRuleInfo_IDDDocumentFindings(t *testing.T) {
 		{rule: "idd-document-migration", wantFixText: "testing.md"},
 		{rule: "idd-document-test-kind", wantFixText: "annotation"},
 		{rule: "source-parse", wantFixText: "supported source extension"},
+		{rule: "doc-code-correspondence", wantFixText: "@implement"},
 	}
 
 	for _, tt := range tests {

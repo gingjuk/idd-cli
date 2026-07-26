@@ -1,9 +1,4 @@
 // Package engine provides testing utilities for the engine module.
-
-// Spec: docs/internal/engine/spec.md
-// Test: docs/internal/engine/testing.md
-// Contract: docs/internal/engine/contract.md
-
 package engine
 
 import (

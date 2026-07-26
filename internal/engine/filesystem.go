@@ -1,7 +1,4 @@
 // Package engine provides configured source and document file traversal.
-
-// Spec: docs/internal/engine/spec.md
-// Contract: docs/internal/engine/contract.md
 package engine
 
 import (

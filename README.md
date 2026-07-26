@@ -15,8 +15,9 @@ idd-cli validates that a project adheres to the IDD documentation system:
 
 - **Consistent identifiers**: All IDD markers use path-based module naming (e.g., `SPEC-INTERNAL_AUTH-001` for `internal/auth/`)
 - **Derived traceability**: `testing.md` records coverage once and idd-cli derives reverse links
-- **Package documentation**: Every Go package has proper doc comments with Spec/Contract paths
-- **Code-doc traceability**: Code annotations (`@implement`, `@test`, `@test-contract`) link to formal docs
+- **CLI-owned code-doc association**: idd-cli joins declaration annotations
+  (`@implement`, `@test`, `@test-contract`) directly to formal document records;
+  source files do not repeat document paths
 - **Test coverage**: Every SPEC is covered through a TEST record's `Covers`
   field; contract tests use `@test-contract`
 - **Version-aligned workflow**: The binary exports the IDD skill that describes
@@ -125,7 +126,9 @@ prove that their structure and traceability are complete.
 
 ## Configuration
 
-See `examples/idd-config-example.yaml` for full configuration options.
+See the
+[`examples/idd-config-example.yaml`](examples/idd-config-example.yaml)
+reference for every current configuration key and its default value.
 
 ## Identifier Format
 
@@ -298,15 +301,14 @@ requirements to make findings disappear.
 
 See
 [`examples/self-describing-module-docs/`](examples/self-describing-module-docs/)
-for a complete four-file example with detailed human-readable narratives.
+for a complete four-file example with detailed human-readable narratives and
+identifier-derived source annotation examples. The
+[`examples/README.md`](examples/README.md) explains how the example is checked.
 
 ## Code Annotations
 
 ```go
 // Package auth provides authentication utilities.
-
-// Spec: docs/internal/auth/spec.md
-// Contract: docs/internal/auth/contract.md
 package auth
 
 // @implement SPEC-INTERNAL_AUTH-001
@@ -319,7 +321,18 @@ func TestLogin(t *testing.T) { ... }
 func TestLoginContract(t *testing.T) { ... }
 ```
 
-The `@test-contract` annotation links contract test functions to their corresponding test identifiers, not to SPEC identifiers.
+The identifier is the code-to-document join key. idd-cli resolves it against
+the four self-describing package documents and reports either side when its
+matching source annotation or document record is missing. Do not add repeated
+`Spec:`, `Contract:`, or `Test:` document paths to source-file headers.
+
+The `@test-contract` annotation links contract test functions to their
+corresponding test identifiers, not to SPEC identifiers.
+
+Existing projects should delete the obsolete
+`validation.require_package_doc_comment` key when removing file-level paths.
+`validation.require_doc_code_correspondence` is the gate that requires both
+the document record and its declaration annotation.
 
 Equivalent declaration-attached comments are recognized in all supported
 languages (`//` or `/* */`, and `#` in Python). The parser ignores annotation
@@ -344,11 +357,10 @@ idd-cli enforces these rules:
 | `idd-document-test-kind` | TEST kind agrees with `@test` or `@test-contract` |
 | `component-dependency-cycle` | The derived Component dependency graph remains acyclic |
 | `source-parse` | A configured source lacks a pinned grammar or has an invalid syntax tree |
-| `package-doc-comment` | Every package has doc comment with Spec/Contract paths |
 | `spec-required-fields` | Legacy SPEC sections contain their required fields |
 | `doc-link-consistency` | Self-described or legacy coverage relationships are consistent |
 | `orphan-detection` | No undefined or unreferenced identifiers |
-| `doc-code-correspondence` | Doc references match actual code |
+| `doc-code-correspondence` | Declaration annotations and document records match by identifier |
 | `public-func-annotation` | Public source declarations use `@implement` |
 | `test-annotation` | Recognized test declarations use the correct test annotation |
 | `contract-test-coverage` | Legacy markers and self-describing named Contracts have contract-test evidence |

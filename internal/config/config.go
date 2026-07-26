@@ -1,8 +1,4 @@
 // Package config provides configuration loading and validation.
-
-// Spec: docs/internal/config/spec.md
-// Contract: docs/internal/config/contract.md
-
 package config
 
 import (
@@ -78,7 +74,6 @@ type ValidationConfig struct {
 	RequireDesignSections        bool             `yaml:"require_design_sections"`
 	RequireDocCodeCorrespondence bool             `yaml:"require_doc_code_correspondence"`
 	RequirePublicFuncAnnotation  bool             `yaml:"require_public_func_annotation"`
-	RequirePackageDocComment     bool             `yaml:"require_package_doc_comment"`
 	RequireRelatedFiles          bool             `yaml:"require_related_files"`
 	RequireTestAnnotation        bool             `yaml:"require_test_annotation"`
 	RequireAnnotationIdentifier  bool             `yaml:"require_annotation_identifier"`
@@ -160,7 +155,6 @@ func Default() *Config {
 			RequireDesignSections:        true,
 			RequireDocCodeCorrespondence: true,
 			RequirePublicFuncAnnotation:  true,
-			RequirePackageDocComment:     true,
 			RequireRelatedFiles:          true,
 			RequireTestAnnotation:        true,
 			RequireAnnotationIdentifier:  true,

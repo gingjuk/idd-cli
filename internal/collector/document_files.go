@@ -1,7 +1,4 @@
 // Package collector provides self-describing IDD document file operations.
-
-// Spec: docs/internal/collector/spec.md
-// Contract: docs/internal/collector/contract.md
 package collector
 
 import (

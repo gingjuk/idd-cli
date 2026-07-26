@@ -1,7 +1,4 @@
 // Package reporter provides output formatting for validation results.
-
-// Spec: docs/internal/reporter/spec.md
-// Contract: docs/internal/reporter/contract.md
 package reporter
 
 import (
@@ -100,17 +97,17 @@ var (
 			Explanation: "IDD source relationships require a pinned syntax-tree grammar and a valid parse; otherwise declaration binding is untrustworthy.",
 			FixHint:     "Use a supported source extension or remove the unsupported code pattern, or fix the reported syntax error. idd-cli intentionally does not fall back to line matching.",
 		},
+		"doc-code-correspondence": {
+			Severity:    "error",
+			Title:       "Source annotation and documentation record are not paired",
+			Explanation: "idd-cli derives code-to-document relationships by joining declaration annotations to self-describing SPEC and TEST records; repeated document paths in source headers are neither required nor used.",
+			FixHint:     "Add the missing documentation record or the matching @implement, @test, or @test-contract declaration annotation.",
+		},
 		"public-func-annotation": {
 			Severity:    "error",
 			Title:       "Public declaration is missing an implementation annotation",
 			Explanation: "Public API declarations must be traceable to SPEC identifiers.",
 			FixHint:     "Add the configured implementation annotation referencing the SPEC implemented by this declaration.",
-		},
-		"package-doc-comment": {
-			Severity:    "error",
-			Title:       "Package documentation comment is incomplete",
-			Explanation: "Package comments must include the package summary and related IDD document paths.",
-			FixHint:     "Update the package comment with the required Spec, Contract, Design, or Test paths.",
 		},
 		"design-sections": {
 			Severity:    "error",

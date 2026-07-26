@@ -1,7 +1,4 @@
 // Package walk provides testing utilities for the walk module.
-
-// Spec: docs/pkg/walk/spec.md
-// Test: docs/pkg/walk/testing.md
 package walk
 
 import (

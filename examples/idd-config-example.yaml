@@ -4,6 +4,11 @@
 #   1. --config flag value
 #   2. ./.idd.yaml
 #   3. ./config/.idd.yaml
+#
+# This file mirrors config.Default() exactly. Configuration owns scan scope and
+# validation policy only. Self-describing Markdown owns Components, Contracts,
+# SPECs, TESTs, and their relationships. Declaration annotation identifiers are
+# the code-to-document join keys; source-file document paths are not configured.
 
 version: "1.0"
 
@@ -13,13 +18,15 @@ docs:
   patterns:
     - "docs/**/*.md"
 
-  # Regex patterns to extract identifiers from docs
+  # Regex patterns for SPEC and TEST identifiers.
+  # Contract tests also own TEST IDs.
   identifier_patterns:
     spec: "SPEC-[A-Z]+-[0-9]+"
     test: "TEST-[A-Z]+-[0-9]+"
     test_contract: "TEST-[A-Z]+-[0-9]+"
 
-  # Paths to ignore during scanning (glob patterns)
+  # Paths to ignore during scanning (glob patterns).
+  # Repository examples are copyable references, not project-owned documents.
   ignore_paths:
     - "examples/**"
     - "cmd/idd-cli/skills/**"
@@ -59,38 +66,40 @@ validation:
   # Allow orphan identifiers (not linked from anywhere)
   allow_orphans: false
 
-  # Require doc link consistency between specs and tests
+  # Require declared document relationships to resolve consistently
   require_doc_link_consistency: true
 
   # Require legacy SPEC sections to carry their historical fixed fields.
-  # Self-describing records always require Design, Contract, Requirement, and Acceptance.
+  # Self-describing records always require Design, Contract, Requirement,
+  # and Acceptance.
   require_spec_fields: true
 
-  # Require all specs to have at least one test link
+  # Require every SPEC to be covered by at least one TEST
   require_spec_test_coverage: true
 
-  # Require legacy CONTRACT markers and self-describing named Contracts to have contract TEST evidence
+  # Require legacy CONTRACT markers and self-describing named Contracts to
+  # have contract TEST evidence
   require_contract_test_coverage: true
 
-  # Require design.md files to contain required sections
+  # Require authored content in every required design section
   require_design_sections: true
 
-  # Check doc describe field matches code function comment (default: true)
+  # Join document records to declaration annotations by identifier and
+  # require both sides.
+  # Source-file Spec/Contract/Test path headers are not used.
   require_doc_code_correspondence: true
 
   # Require public declarations in supported source languages to have @implement
   require_public_func_annotation: true
 
-  # Require package doc comment with Spec/Contract paths
-  require_package_doc_comment: true
-
-  # Require doc frontmatter has related_files section
+  # Require related_files in legacy marker documents.
+  # Self-describing documents deliberately omit repeated related_files metadata.
   require_related_files: true
 
   # Require @implement/@test/@test-contract annotations have identifiers
   require_annotation_identifier: true
 
-  # Require each pkg docs directory to contain spec.md, contract.md, testing.md, design.md
+  # Require each package docs directory to contain all four role documents
   require_pkg_doc_files: true
 
   # Require annotation types not split across consecutive lines

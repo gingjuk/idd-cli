@@ -60,6 +60,11 @@ Pattern in `.idd.yaml`: `SPEC-[A-Z]+-[0-9]+`
 
 Code annotations: `@implement`, `@test`, `@test-contract`
 
+Code-to-document association is identifier-derived. Do not add repeated
+`Spec:`, `Contract:`, or `Test:` document paths to source-file headers;
+`idd-cli run` joins declaration annotations to the owning self-describing
+document records.
+
 ## Config Loading
 
 Config search order:
@@ -92,7 +97,9 @@ Trust code over README for implementation details.
 This tool validates the IDD (Intent-Driven Development) documentation system defined in `skills/SKILL.md`. Key conventions:
 
 - `docs/` contains SPEC, CONTRACT, TEST, DESIGN markdown files
-- `examples/` contains reference doc examples
+- `examples/self-describing-module-docs/` is the one normative four-file
+  document example
+- `examples/idd-config-example.yaml` mirrors `config.Default()`
 - The tool itself uses IDD annotations in `internal/auth/auth.go` as an example
 
 ## Pre-Commit Rules
@@ -105,11 +112,17 @@ If `internal/config/config.go` `Default()` function is modified, `examples/idd-c
 
 **Check command**: Diff `Default()` values in `config.go` with `examples/idd-config-example.yaml`
 
-### 2. Doc Sync Check
+### 2. Example Document Check
 
-If `examples/examples-module-docs/*.md` files are modified, the same content must be reflected in `docs/backend/*.md` (or corresponding module directory).
+If `examples/self-describing-module-docs/*.md` files are modified, validate
+both completion and the collector-owned schema/reference graph.
 
-**Check command**: Diff `examples/examples-module-docs/` and `docs/backend/` for identical identifier declarations
+**Check commands**:
+
+```bash
+./bin/idd-cli docs status examples/self-describing-module-docs --format json
+CGO_ENABLED=1 go test ./internal/collector -run TestReferenceExampleDocuments
+```
 
 ### 3. IDD Validation Check
 
@@ -121,6 +134,7 @@ Before any commit, run idd-cli to ensure all docs are compliant:
 
 If validation fails, fix errors before committing. Common issues:
 
-- Doc markers not wrapped in backticks (e.g., use `` `SPEC-BE-001` `` not `SPEC-BE-001`)
-- Frontmatter markers must match actual heading content
-- All identifiers must have doc-link-consistency
+- Generated scaffold markers or required fields remain incomplete
+- Document package/role identity does not match its intended `docs/` location
+- SPEC, TEST, Component, or Contract references do not resolve
+- Source annotations have no matching document record

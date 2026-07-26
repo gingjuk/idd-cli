@@ -110,13 +110,16 @@ lexical roles would be empty or ambiguous.
 
 Every independently configurable repository gate must have an explicit boolean
 field, including graph consistency, coverage, document structure, doc/code
-correspondence, annotation rules, package comments, package document sets, and
-advisory description consistency.
+correspondence, annotation rules, package document sets, and advisory
+description consistency. Code-to-document association is not a separate
+file-header policy: it is the enabled correspondence rule joining matching
+identifier evidence.
 
 **Acceptance:** Every independently
 configurable repository gate must have an explicit boolean field, including graph
 consistency, coverage, document structure, doc/code correspondence, annotation rules,
-package comments, package document sets, and advisory description consistency.
+package document sets, and advisory description consistency. Defaults and the
+example configuration contain no package-path-comment switch.
 
 ### Loaded-file boundary
 

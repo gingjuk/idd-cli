@@ -1,7 +1,4 @@
 // Package model provides link types for IDD identifier relationships.
-
-// Spec: docs/internal/model/spec.md
-// Contract: docs/internal/model/contract.md
 package model
 
 // LinkType represents the type of relationship between identifiers.

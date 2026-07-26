@@ -164,12 +164,14 @@ One `run` invocation has the following lifecycle:
    `@test`, and `@test-contract` only from real comments adjacent to normalized
    declarations. Syntax errors become findings and never trigger regex
    fallback.
-5. Merge identifiers by ID and origin, construct the explicitly typed or
-   legacy directed links supplied by collection, and verify reciprocal types
-   where both directions are present.
-6. Add collector findings, run graph and repository validation rules, sort the
+5. Merge identifiers by ID and origin. Matching document and source
+   observations establish code-to-document correspondence directly; source
+   files do not repeat `Spec`, `Contract`, or `Test` paths.
+6. Construct the explicitly typed or legacy directed links supplied by
+   collection, and verify reciprocal types where both directions are present.
+7. Add collector findings, run graph and repository validation rules, sort the
    result deterministically, and build optional graph statistics.
-7. Write the complete selected report. Validation failure produces a non-zero
+8. Write the complete selected report. Validation failure produces a non-zero
    exit only after the report is available; traversal or I/O failure returns an
    operational error.
 
@@ -188,7 +190,9 @@ rename for atomic file updates.
 A file-targeted repair has one possible write target. A directory-targeted
 repair owns the four-file structural set and may create missing skeletons.
 Neither path silently migrates legacy relationships, because doing so would
-require semantic choices about canonical ownership.
+require semantic choices about canonical ownership. These document commands
+never rewrite source files; code association is derived during validation from
+declaration identifiers rather than inserted document-path headers.
 
 Report formats share one validation result. Verbose diagnostics use stderr so
 JSON stdout stays machine-readable. LLM Markdown may recommend an owner and

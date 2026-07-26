@@ -1,7 +1,4 @@
 // Package model defines the core data structures for IDD link validation.
-
-// Spec: docs/internal/model/spec.md
-// Contract: docs/internal/model/contract.md
 package model
 
 import (
