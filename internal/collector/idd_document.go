@@ -6,7 +6,6 @@ package collector
 
 import (
 	"bytes"
-	stderrors "errors"
 	"fmt"
 	"io"
 	"os"
@@ -15,7 +14,6 @@ import (
 	"strings"
 
 	"github.com/jingxu9x/idd-cli/internal/model"
-	"github.com/jingxu9x/idd-cli/pkg/pattern"
 	"github.com/yuin/goldmark"
 	goldmarkast "github.com/yuin/goldmark/ast"
 	goldmarktext "github.com/yuin/goldmark/text"
@@ -40,13 +38,42 @@ var (
 //
 // @implement SPEC-INTERNAL_COLLECTOR-001
 type IDDDocument struct {
-	Version    string            `yaml:"version"`
-	Package    string            `yaml:"package"`
-	Document   string            `yaml:"document"`
-	Components []string          `yaml:"-"`
-	Contracts  []string          `yaml:"-"`
-	Specs      []IDDDocumentSpec `yaml:"-"`
-	Tests      []IDDDocumentTest `yaml:"-"`
+	Version          string                 `yaml:"version"`
+	Package          string                 `yaml:"package"`
+	Document         string                 `yaml:"document"`
+	Components       []string               `yaml:"-"`
+	Contracts        []string               `yaml:"-"`
+	ComponentRecords []IDDDocumentComponent `yaml:"-"`
+	ContractRecords  []IDDDocumentContract  `yaml:"-"`
+	Specs            []IDDDocumentSpec      `yaml:"-"`
+	Tests            []IDDDocumentTest      `yaml:"-"`
+}
+
+// IDDRecordLifecycle contains optional, mechanically checkable lifecycle and
+// concern metadata shared by human-readable records.
+// @implement SPEC-INTERNAL_COLLECTOR-001
+type IDDRecordLifecycle struct {
+	Status       string
+	Supersedes   []string
+	DeprecatedBy string
+	Concerns     []string
+}
+
+// IDDDocumentComponent is the parsed form of one design Component record.
+// @implement SPEC-INTERNAL_COLLECTOR-001
+type IDDDocumentComponent struct {
+	Name      string
+	Purpose   string
+	DependsOn []string
+	IDDRecordLifecycle
+}
+
+// IDDDocumentContract is the parsed form of one named Contract record.
+// @implement SPEC-INTERNAL_COLLECTOR-001
+type IDDDocumentContract struct {
+	Name       string
+	Guarantees string
+	IDDRecordLifecycle
 }
 
 // IDDDocumentSpec is the single structured owner for a SPEC declaration.
@@ -56,8 +83,10 @@ type IDDDocumentSpec struct {
 	ID          string `yaml:"id"`
 	Title       string `yaml:"title"`
 	Requirement string `yaml:"requirement"`
+	Acceptance  string `yaml:"acceptance"`
 	Design      string `yaml:"design"`
 	Contract    string `yaml:"contract"`
+	IDDRecordLifecycle
 }
 
 // IDDDocumentTest is the single structured owner for a TEST declaration and
@@ -65,11 +94,14 @@ type IDDDocumentSpec struct {
 //
 // @implement SPEC-INTERNAL_COLLECTOR-001
 type IDDDocumentTest struct {
-	ID      string   `yaml:"id"`
-	Title   string   `yaml:"title"`
-	Purpose string   `yaml:"purpose"`
-	Kind    string   `yaml:"kind"`
-	Covers  []string `yaml:"covers"`
+	ID        string   `yaml:"id"`
+	Title     string   `yaml:"title"`
+	Purpose   string   `yaml:"purpose"`
+	Oracle    string   `yaml:"oracle"`
+	Kind      string   `yaml:"kind"`
+	Covers    []string `yaml:"covers"`
+	Contracts []string `yaml:"contracts"`
+	IDDRecordLifecycle
 }
 
 type parsedIDDDocument struct {
@@ -343,9 +375,9 @@ func parseIDDMarkdownRecords(document *parsedIDDDocument, role string) {
 
 	switch role {
 	case "design":
-		parseIDDNameRecords(document, records, "Component:", "components", "component")
+		parseIDDComponentRecords(document, records)
 	case "contract":
-		parseIDDNameRecords(document, records, "Contract:", "contracts", "contract")
+		parseIDDContractRecords(document, records)
 	case "spec":
 		parseIDDSpecRecords(document, records)
 		document.Issues = append(document.Issues, findIDDRecordTables(document, "SPEC-")...)
@@ -380,40 +412,83 @@ func splitIDDMarkdownRecords(document *parsedIDDDocument, root goldmarkast.Node)
 	return records
 }
 
-func parseIDDNameRecords(
-	document *parsedIDDDocument,
-	records []iddMarkdownRecord,
-	headingPrefix string,
-	section string,
-	code string,
-) {
+func parseIDDComponentRecords(document *parsedIDDDocument, records []iddMarkdownRecord) {
 	for _, record := range records {
-		if !strings.HasPrefix(record.heading, headingPrefix) {
+		if !strings.HasPrefix(record.heading, "Component:") {
 			continue
 		}
-		name := strings.TrimSpace(strings.TrimPrefix(record.heading, headingPrefix))
+		name := strings.TrimSpace(strings.TrimPrefix(record.heading, "Component:"))
 		name = trimMarkdownScalar(name)
-		switch section {
-		case "components":
-			document.Metadata.Components = append(document.Metadata.Components, name)
-		case "contracts":
-			document.Metadata.Contracts = append(document.Metadata.Contracts, name)
+		fields, fieldLines, fieldIssues := parseIDDRecordFields(document, record, map[string]string{
+			"status":        "Status",
+			"depends-on":    "Depends on",
+			"supersedes":    "Supersedes",
+			"deprecated-by": "Deprecated by",
+			"concerns":      "Concerns",
+		})
+		document.Issues = append(document.Issues, fieldIssues...)
+		purpose, purposeLine, purposeIssues := parseIDDLabeledParagraph(document, record, "Purpose")
+		document.Issues = append(document.Issues, purposeIssues...)
+
+		component := IDDDocumentComponent{
+			Name:               name,
+			Purpose:            purpose,
+			DependsOn:          parseIDDReferenceList(fields["depends-on"]),
+			IDDRecordLifecycle: lifecycleFromFields(fields),
 		}
-		document.Index.addRecord(section, record.line, map[string]int{"name": record.line})
+		document.Metadata.Components = append(document.Metadata.Components, name)
+		document.Metadata.ComponentRecords = append(document.Metadata.ComponentRecords, component)
+		fieldLines["name"] = record.line
+		if purposeLine > 0 {
+			fieldLines["purpose"] = purposeLine
+		}
+		document.Index.addRecord("components", record.line, fieldLines)
 		if name == "" {
 			document.Issues = append(document.Issues, iddMarkdownIssue{
 				Rule:    "idd-document-schema",
-				Message: strings.TrimSuffix(headingPrefix, ":") + " heading requires a concrete name",
+				Message: "Component heading requires a concrete name",
 				Line:    record.line,
-				Code:    code,
+				Code:    "component",
 			})
 		}
-		if !iddRecordHasNarrative(record, document.Body) {
+	}
+}
+
+func parseIDDContractRecords(document *parsedIDDDocument, records []iddMarkdownRecord) {
+	for _, record := range records {
+		if !strings.HasPrefix(record.heading, "Contract:") {
+			continue
+		}
+		name := strings.TrimSpace(strings.TrimPrefix(record.heading, "Contract:"))
+		name = trimMarkdownScalar(name)
+		fields, fieldLines, fieldIssues := parseIDDRecordFields(document, record, map[string]string{
+			"status":        "Status",
+			"supersedes":    "Supersedes",
+			"deprecated-by": "Deprecated by",
+			"concerns":      "Concerns",
+		})
+		document.Issues = append(document.Issues, fieldIssues...)
+		guarantees, guaranteesLine, guaranteesIssues := parseIDDLabeledParagraph(document, record, "Guarantees")
+		document.Issues = append(document.Issues, guaranteesIssues...)
+
+		contract := IDDDocumentContract{
+			Name:               name,
+			Guarantees:         guarantees,
+			IDDRecordLifecycle: lifecycleFromFields(fields),
+		}
+		document.Metadata.Contracts = append(document.Metadata.Contracts, name)
+		document.Metadata.ContractRecords = append(document.Metadata.ContractRecords, contract)
+		fieldLines["name"] = record.line
+		if guaranteesLine > 0 {
+			fieldLines["guarantees"] = guaranteesLine
+		}
+		document.Index.addRecord("contracts", record.line, fieldLines)
+		if name == "" {
 			document.Issues = append(document.Issues, iddMarkdownIssue{
 				Rule:    "idd-document-schema",
-				Message: fmt.Sprintf("%s %q requires a human-readable narrative", strings.TrimSuffix(headingPrefix, ":"), name),
+				Message: "Contract heading requires a concrete name",
 				Line:    record.line,
-				Code:    code,
+				Code:    "contract",
 			})
 		}
 	}
@@ -428,23 +503,37 @@ func parseIDDSpecRecords(document *parsedIDDDocument, records []iddMarkdownRecor
 		fields, fieldLines, fieldIssues := parseIDDRecordFields(
 			document,
 			record,
-			map[string]string{"design": "Design", "contract": "Contract"},
+			map[string]string{
+				"design":        "Design",
+				"contract":      "Contract",
+				"status":        "Status",
+				"supersedes":    "Supersedes",
+				"deprecated-by": "Deprecated by",
+				"concerns":      "Concerns",
+			},
 		)
 		document.Issues = append(document.Issues, fieldIssues...)
 		requirement, requirementLine, requirementIssues := parseIDDLabeledParagraph(document, record, "Requirement")
 		document.Issues = append(document.Issues, requirementIssues...)
+		acceptance, acceptanceLine, acceptanceIssues := parseIDDLabeledParagraph(document, record, "Acceptance")
+		document.Issues = append(document.Issues, acceptanceIssues...)
 
 		document.Metadata.Specs = append(document.Metadata.Specs, IDDDocumentSpec{
-			ID:          id,
-			Title:       title,
-			Requirement: requirement,
-			Design:      fields["design"],
-			Contract:    fields["contract"],
+			ID:                 id,
+			Title:              title,
+			Requirement:        requirement,
+			Acceptance:         acceptance,
+			Design:             fields["design"],
+			Contract:           fields["contract"],
+			IDDRecordLifecycle: lifecycleFromFields(fields),
 		})
 		fieldLines["id"] = record.line
 		fieldLines["title"] = record.line
 		if requirementLine > 0 {
 			fieldLines["requirement"] = requirementLine
+		}
+		if acceptanceLine > 0 {
+			fieldLines["acceptance"] = acceptanceLine
 		}
 		document.Index.addRecord("specs", record.line, fieldLines)
 	}
@@ -459,23 +548,39 @@ func parseIDDTestRecords(document *parsedIDDDocument, records []iddMarkdownRecor
 		fields, fieldLines, fieldIssues := parseIDDRecordFields(
 			document,
 			record,
-			map[string]string{"kind": "Kind", "covers": "Covers"},
+			map[string]string{
+				"kind":          "Kind",
+				"covers":        "Covers",
+				"contracts":     "Contracts",
+				"status":        "Status",
+				"supersedes":    "Supersedes",
+				"deprecated-by": "Deprecated by",
+				"concerns":      "Concerns",
+			},
 		)
 		document.Issues = append(document.Issues, fieldIssues...)
 		purpose, purposeLine, purposeIssues := parseIDDLabeledParagraph(document, record, "Purpose")
 		document.Issues = append(document.Issues, purposeIssues...)
+		oracle, oracleLine, oracleIssues := parseIDDLabeledParagraph(document, record, "Oracle")
+		document.Issues = append(document.Issues, oracleIssues...)
 
 		document.Metadata.Tests = append(document.Metadata.Tests, IDDDocumentTest{
-			ID:      id,
-			Title:   title,
-			Purpose: purpose,
-			Kind:    strings.ToLower(fields["kind"]),
-			Covers:  extractIDDRefs(fields["covers"]),
+			ID:                 id,
+			Title:              title,
+			Purpose:            purpose,
+			Oracle:             oracle,
+			Kind:               strings.ToLower(fields["kind"]),
+			Covers:             parseIDDReferenceList(fields["covers"]),
+			Contracts:          parseIDDReferenceList(fields["contracts"]),
+			IDDRecordLifecycle: lifecycleFromFields(fields),
 		})
 		fieldLines["id"] = record.line
 		fieldLines["title"] = record.line
 		if purposeLine > 0 {
 			fieldLines["purpose"] = purposeLine
+		}
+		if oracleLine > 0 {
+			fieldLines["oracle"] = oracleLine
 		}
 		document.Index.addRecord("tests", record.line, fieldLines)
 	}
@@ -522,7 +627,7 @@ func parseIDDRecordFields(
 			})
 			continue
 		}
-		key := strings.ToLower(strings.TrimSpace(label))
+		key := normalizeIDDRecordFieldKey(label)
 		canonical, supported := expected[key]
 		if !supported {
 			issues = append(issues, iddMarkdownIssue{
@@ -550,6 +655,43 @@ func parseIDDRecordFields(
 	return values, lines, issues
 }
 
+func normalizeIDDRecordFieldKey(label string) string {
+	key := strings.ToLower(strings.TrimSpace(label))
+	key = strings.Join(strings.Fields(key), "-")
+	return key
+}
+
+func lifecycleFromFields(fields map[string]string) IDDRecordLifecycle {
+	return IDDRecordLifecycle{
+		Status:       strings.ToLower(trimMarkdownScalar(fields["status"])),
+		Supersedes:   parseIDDReferenceList(fields["supersedes"]),
+		DeprecatedBy: trimMarkdownScalar(fields["deprecated-by"]),
+		Concerns:     lowercaseStrings(parseIDDReferenceList(fields["concerns"])),
+	}
+}
+
+func parseIDDReferenceList(value string) []string {
+	if strings.TrimSpace(value) == "" {
+		return nil
+	}
+	parts := strings.Split(value, ",")
+	result := make([]string, 0, len(parts))
+	for _, part := range parts {
+		part = trimMarkdownScalar(part)
+		if part != "" {
+			result = append(result, part)
+		}
+	}
+	return result
+}
+
+func lowercaseStrings(values []string) []string {
+	for index := range values {
+		values[index] = strings.ToLower(values[index])
+	}
+	return values
+}
+
 func parseIDDLabeledParagraph(
 	document *parsedIDDDocument,
 	record iddMarkdownRecord,
@@ -558,11 +700,9 @@ func parseIDDLabeledParagraph(
 	var value string
 	var line int
 	var issues []iddMarkdownIssue
+	found := false
 	prefix := label + ":"
-	for _, block := range record.blocks {
-		if heading, ok := block.(*goldmarkast.Heading); ok && heading.Level >= 3 {
-			break
-		}
+	for blockIndex, block := range record.blocks {
 		paragraph, ok := block.(*goldmarkast.Paragraph)
 		if !ok {
 			continue
@@ -571,7 +711,7 @@ func parseIDDLabeledParagraph(
 		if !strings.HasPrefix(text, prefix) {
 			continue
 		}
-		if value != "" {
+		if found {
 			issues = append(issues, iddMarkdownIssue{
 				Rule:    "idd-document-schema",
 				Message: fmt.Sprintf("record repeats %s", label),
@@ -581,38 +721,51 @@ func parseIDDLabeledParagraph(
 			})
 			continue
 		}
+		found = true
 		value = strings.TrimSpace(strings.TrimPrefix(text, prefix))
 		line = markdownNodeLine(document, paragraph)
+		if value != "" {
+			continue
+		}
+
+		// Rich Markdown often keeps the bold label as a short structural marker
+		// inside a subordinate narrative section. Treat its immediate following
+		// paragraph as the fixed-field summary, without borrowing content from a
+		// later subsection when the intended value is missing.
+		for _, nextBlock := range record.blocks[blockIndex+1:] {
+			if _, heading := nextBlock.(*goldmarkast.Heading); heading {
+				break
+			}
+			nextParagraph, ok := nextBlock.(*goldmarkast.Paragraph)
+			if !ok {
+				continue
+			}
+			nextText := markdownNodeText(nextParagraph, document.Body)
+			if strings.HasPrefix(nextText, prefix) {
+				break
+			}
+			if nextText != "" {
+				value = nextText
+				break
+			}
+		}
 	}
 	return value, line, issues
 }
 
-func iddRecordHasNarrative(record iddMarkdownRecord, source []byte) bool {
-	for _, block := range record.blocks {
-		if _, heading := block.(*goldmarkast.Heading); heading {
-			continue
-		}
-		if markdownNodeText(block, source) != "" {
-			return true
-		}
-		lines := block.Lines()
-		if lines != nil && lines.Len() > 0 && strings.TrimSpace(string(lines.Value(source))) != "" {
-			return true
-		}
-	}
-	return false
-}
-
 func findIDDRecordTables(document *parsedIDDDocument, prefix string) []iddMarkdownIssue {
 	var issues []iddMarkdownIssue
-	inFence := false
+	codeFence := ""
 	for index, line := range strings.Split(string(document.Body), "\n") {
 		trimmed := strings.TrimSpace(line)
-		if strings.HasPrefix(trimmed, "```") || strings.HasPrefix(trimmed, "~~~") {
-			inFence = !inFence
+		var transition bool
+		codeFence, transition = markdownFenceTransition(codeFence, trimmed)
+		if transition {
 			continue
 		}
-		if inFence || !strings.HasPrefix(trimmed, "|") || !strings.Contains(trimmed, prefix) {
+		if codeFence != "" ||
+			!strings.HasPrefix(trimmed, "|") ||
+			!strings.Contains(trimmed, prefix) {
 			continue
 		}
 		refs := extractIDDRefs(trimmed)
@@ -678,502 +831,6 @@ func trimMarkdownScalar(value string) string {
 	return value
 }
 
-func (c *DocCollector) collectIDDDocumentSet(directory string, set *model.IdentifierSet) []*model.ValidationError {
-	documents := make(map[string]*parsedIDDDocument, len(iddDocumentOrder))
-	var errors []*model.ValidationError
-
-	for _, filename := range iddDocumentOrder {
-		role := iddDocumentRoles[filename]
-		path := filepath.Join(directory, filename)
-		data, err := os.ReadFile(path)
-		if err != nil {
-			if os.IsNotExist(err) {
-				errors = append(errors, iddDocumentValidationError(
-					"idd-document-set",
-					fmt.Sprintf("self-describing document set is missing %s", filename),
-					path,
-					1,
-					"",
-					role,
-				))
-				continue
-			}
-			errors = append(errors, iddDocumentValidationError(
-				"idd-document-parse",
-				fmt.Sprintf("read %s: %v", filename, err),
-				path,
-				1,
-				"",
-				role,
-			))
-			continue
-		}
-
-		parsed, detected, parseErr := parseIDDDocument(path, data)
-		if parseErr != nil {
-			var semanticError *iddSemanticFrontmatterError
-			if stderrors.As(parseErr, &semanticError) {
-				errors = append(errors, iddDocumentValidationError(
-					"idd-document-migration",
-					semanticError.Error(),
-					path,
-					semanticError.Line,
-					"",
-					"yaml-semantics",
-				))
-				continue
-			}
-			errors = append(errors, iddDocumentValidationError(
-				"idd-document-parse",
-				parseErr.Error(),
-				path,
-				yamlErrorLine(parseErr),
-				"",
-				role,
-			))
-			continue
-		}
-		if !detected {
-			errors = append(errors, iddDocumentValidationError(
-				"idd-document-set",
-				fmt.Sprintf("%s must contain an idd frontmatter block because another package document is self-describing", filename),
-				path,
-				1,
-				"",
-				role,
-			))
-			continue
-		}
-		documents[role] = parsed
-		errors = append(errors, validateIDDDocument(parsed, role)...)
-	}
-
-	errors = append(errors, validateIDDDocumentReferences(documents)...)
-	addIDDDocumentIdentifiers(documents, set)
-	declared := declaredIDDIdentifiers(documents)
-	for _, document := range documents {
-		errors = append(errors, validateIDDDocumentMarkdown(document, declared)...)
-	}
-	return errors
-}
-
-func validateIDDDocument(document *parsedIDDDocument, expectedRole string) []*model.ValidationError {
-	metadata := document.Metadata
-	index := document.Index
-	var errors []*model.ValidationError
-	addError := func(rule, message, link, code string, line int) {
-		errors = append(errors, iddDocumentValidationError(rule, message, document.Path, line, link, code))
-	}
-
-	if metadata.Version != iddDocumentVersion {
-		addError("idd-document-identity", `version must be "1.0"`, "", "version", index.topFieldLine("version"))
-	}
-	expectedPackage := packageFromDocumentPath(document.Path)
-	if expectedPackage == "" {
-		addError(
-			"idd-document-identity",
-			"self-describing documents must be located at docs/<package>/<role>.md",
-			"",
-			"package",
-			index.topFieldLine("package"),
-		)
-	} else if metadata.Package == "" {
-		addError("idd-document-identity", "package is required", "", "package", index.topFieldLine("package"))
-	} else if metadata.Package != expectedPackage {
-		addError(
-			"idd-document-identity",
-			fmt.Sprintf("package %q does not match document path; expected %q", metadata.Package, expectedPackage),
-			"",
-			"package",
-			index.topFieldLine("package"),
-		)
-	}
-	if metadata.Document != expectedRole {
-		addError(
-			"idd-document-identity",
-			fmt.Sprintf("document must be %q in %s", expectedRole, filepath.Base(document.Path)),
-			"",
-			"document",
-			index.topFieldLine("document"),
-		)
-	}
-
-	switch expectedRole {
-	case "design":
-		errors = append(errors, validateIDDNames(document, "components", metadata.Components)...)
-	case "contract":
-		errors = append(errors, validateIDDNames(document, "contracts", metadata.Contracts)...)
-	case "spec":
-		errors = append(errors, validateIDDSpecs(document, expectedPackage)...)
-	case "testing":
-		errors = append(errors, validateIDDTests(document, expectedPackage)...)
-	}
-
-	if mappingValue(document.Root, "markers") != nil || mappingValue(document.Root, "related_files") != nil {
-		addError(
-			"idd-document-markdown",
-			"self-describing documents must not repeat legacy markers or related_files metadata",
-			"",
-			"duplicate-metadata",
-			1,
-		)
-	}
-	for _, issue := range document.Issues {
-		errors = append(errors, iddDocumentValidationError(
-			issue.Rule,
-			issue.Message,
-			document.Path,
-			issue.Line,
-			issue.Link,
-			issue.Code,
-		))
-	}
-	return errors
-}
-
-func validateIDDNames(document *parsedIDDDocument, field string, values []string) []*model.ValidationError {
-	var errors []*model.ValidationError
-	seen := make(map[string]bool, len(values))
-	for valueIndex, value := range values {
-		line := document.Index.recordLine(field, valueIndex)
-		if strings.TrimSpace(value) == "" || isIDDPlaceholder(value, "", field) {
-			errors = append(errors, iddDocumentValidationError(
-				"idd-document-schema",
-				fmt.Sprintf("%s entries must contain concrete, meaningful names", field),
-				document.Path,
-				line,
-				"",
-				field,
-			))
-			continue
-		}
-		if seen[value] {
-			errors = append(errors, iddDocumentValidationError(
-				"idd-document-schema",
-				fmt.Sprintf("%s repeats %q", field, value),
-				document.Path,
-				line,
-				"",
-				field,
-			))
-			continue
-		}
-		seen[value] = true
-		if !strings.Contains(string(document.Body), value) {
-			errors = append(errors, iddDocumentValidationError(
-				"idd-document-reference",
-				fmt.Sprintf("%s entry %q has no narrative definition in %s", field, value, filepath.Base(document.Path)),
-				document.Path,
-				line,
-				"",
-				field,
-			))
-		}
-	}
-	return errors
-}
-
-func validateIDDSpecs(document *parsedIDDDocument, packagePath string) []*model.ValidationError {
-	var errors []*model.ValidationError
-	module := moduleFromPackage(packagePath)
-	seen := make(map[string]bool, len(document.Metadata.Specs))
-	for recordIndex, spec := range document.Metadata.Specs {
-		line := document.Index.recordLine("specs", recordIndex)
-		validateIDDRecordField(&errors, document, "SPEC", spec.ID, "id", spec.ID, line)
-		validateIDDRecordField(&errors, document, "SPEC", spec.ID, "title", spec.Title, document.Index.recordFieldLine("specs", recordIndex, "title"))
-		validateIDDRecordField(&errors, document, "SPEC", spec.ID, "requirement", spec.Requirement, document.Index.recordFieldLine("specs", recordIndex, "requirement"))
-		validateIDDRecordField(&errors, document, "SPEC", spec.ID, "design", spec.Design, document.Index.recordFieldLine("specs", recordIndex, "design"))
-		validateIDDRecordField(&errors, document, "SPEC", spec.ID, "contract", spec.Contract, document.Index.recordFieldLine("specs", recordIndex, "contract"))
-
-		if spec.ID == "" {
-			continue
-		}
-		if err := pattern.ValidateIdentifierFormat(spec.ID); err != nil || !strings.HasPrefix(spec.ID, "SPEC-") {
-			errors = append(errors, iddDocumentValidationError(
-				"idd-document-schema",
-				fmt.Sprintf("SPEC record has invalid id %q; expected SPEC-<MODULE>-<NUMBER>", spec.ID),
-				document.Path,
-				document.Index.recordFieldLine("specs", recordIndex, "id"),
-				spec.ID,
-				"id",
-			))
-		} else if module != "" && !strings.HasPrefix(spec.ID, "SPEC-"+module+"-") {
-			errors = append(errors, iddDocumentValidationError(
-				"idd-document-schema",
-				fmt.Sprintf("SPEC id %s does not use package-derived module %s", spec.ID, module),
-				document.Path,
-				document.Index.recordFieldLine("specs", recordIndex, "id"),
-				spec.ID,
-				"id",
-			))
-		}
-		if seen[spec.ID] {
-			errors = append(errors, iddDocumentValidationError(
-				"idd-document-schema",
-				fmt.Sprintf("duplicate SPEC id %s", spec.ID),
-				document.Path,
-				line,
-				spec.ID,
-				"id",
-			))
-		}
-		seen[spec.ID] = true
-	}
-	return errors
-}
-
-func validateIDDTests(document *parsedIDDDocument, packagePath string) []*model.ValidationError {
-	var errors []*model.ValidationError
-	module := moduleFromPackage(packagePath)
-	seen := make(map[string]bool, len(document.Metadata.Tests))
-	for recordIndex, test := range document.Metadata.Tests {
-		line := document.Index.recordLine("tests", recordIndex)
-		validateIDDRecordField(&errors, document, "TEST", test.ID, "id", test.ID, line)
-		validateIDDRecordField(&errors, document, "TEST", test.ID, "title", test.Title, document.Index.recordFieldLine("tests", recordIndex, "title"))
-		validateIDDRecordField(&errors, document, "TEST", test.ID, "purpose", test.Purpose, document.Index.recordFieldLine("tests", recordIndex, "purpose"))
-		validateIDDRecordField(&errors, document, "TEST", test.ID, "kind", test.Kind, document.Index.recordFieldLine("tests", recordIndex, "kind"))
-
-		if test.ID != "" {
-			if err := pattern.ValidateIdentifierFormat(test.ID); err != nil || !strings.HasPrefix(test.ID, "TEST-") {
-				errors = append(errors, iddDocumentValidationError(
-					"idd-document-schema",
-					fmt.Sprintf("TEST record has invalid id %q; expected TEST-<MODULE>-<NUMBER>", test.ID),
-					document.Path,
-					document.Index.recordFieldLine("tests", recordIndex, "id"),
-					test.ID,
-					"id",
-				))
-			} else if module != "" && !strings.HasPrefix(test.ID, "TEST-"+module+"-") {
-				errors = append(errors, iddDocumentValidationError(
-					"idd-document-schema",
-					fmt.Sprintf("TEST id %s does not use package-derived module %s", test.ID, module),
-					document.Path,
-					document.Index.recordFieldLine("tests", recordIndex, "id"),
-					test.ID,
-					"id",
-				))
-			}
-			if seen[test.ID] {
-				errors = append(errors, iddDocumentValidationError(
-					"idd-document-schema",
-					fmt.Sprintf("duplicate TEST id %s", test.ID),
-					document.Path,
-					line,
-					test.ID,
-					"id",
-				))
-			}
-			seen[test.ID] = true
-		}
-
-		if test.Kind != "" && test.Kind != "test" && test.Kind != "contract" {
-			errors = append(errors, iddDocumentValidationError(
-				"idd-document-schema",
-				fmt.Sprintf("TEST %s kind must be test or contract", test.ID),
-				document.Path,
-				document.Index.recordFieldLine("tests", recordIndex, "kind"),
-				test.ID,
-				"kind",
-			))
-		}
-		if len(test.Covers) == 0 {
-			errors = append(errors, iddDocumentValidationError(
-				"idd-document-schema",
-				fmt.Sprintf("TEST %s covers must contain at least one SPEC id", test.ID),
-				document.Path,
-				document.Index.recordFieldLine("tests", recordIndex, "covers"),
-				test.ID,
-				"covers",
-			))
-		}
-		covered := make(map[string]bool, len(test.Covers))
-		for _, specID := range test.Covers {
-			if covered[specID] {
-				errors = append(errors, iddDocumentValidationError(
-					"idd-document-schema",
-					fmt.Sprintf("TEST %s repeats covered SPEC %s", test.ID, specID),
-					document.Path,
-					document.Index.recordFieldLine("tests", recordIndex, "covers"),
-					test.ID,
-					"covers",
-				))
-			}
-			covered[specID] = true
-		}
-	}
-	return errors
-}
-
-func validateIDDRecordField(
-	errors *[]*model.ValidationError,
-	document *parsedIDDDocument,
-	recordType string,
-	recordID string,
-	field string,
-	value string,
-	line int,
-) {
-	value = strings.TrimSpace(value)
-	if value == "" {
-		label := recordID
-		if label == "" {
-			label = recordType + " record"
-		}
-		*errors = append(*errors, iddDocumentValidationError(
-			"idd-document-schema",
-			fmt.Sprintf("%s field %s is required", label, field),
-			document.Path,
-			line,
-			recordID,
-			field,
-		))
-		return
-	}
-	if !isIDDPlaceholder(value, recordID, field) {
-		return
-	}
-	*errors = append(*errors, iddDocumentValidationError(
-		"idd-document-schema",
-		fmt.Sprintf("%s field %s must contain concrete, meaningful content instead of %q", recordID, field, value),
-		document.Path,
-		line,
-		recordID,
-		field,
-	))
-}
-
-func isIDDPlaceholder(value, recordID, field string) bool {
-	normalized := strings.ToLower(strings.TrimSpace(value))
-	return (field != "id" && recordID != "" && value == recordID) ||
-		normalized == "tbd" ||
-		normalized == "todo" ||
-		normalized == "auto-generated" ||
-		normalized == "autogenerated"
-}
-
-func validateIDDDocumentReferences(documents map[string]*parsedIDDDocument) []*model.ValidationError {
-	var errors []*model.ValidationError
-	designs := make(map[string]bool)
-	contracts := make(map[string]bool)
-	specs := make(map[string]bool)
-	if document := documents["design"]; document != nil {
-		designs = stringSet(document.Metadata.Components)
-	}
-	if document := documents["contract"]; document != nil {
-		contracts = stringSet(document.Metadata.Contracts)
-	}
-	if document := documents["spec"]; document != nil {
-		for _, spec := range document.Metadata.Specs {
-			if spec.ID != "" {
-				specs[spec.ID] = true
-			}
-		}
-		for recordIndex, spec := range document.Metadata.Specs {
-			if spec.Design != "" && !designs[spec.Design] {
-				errors = append(errors, iddDocumentValidationError(
-					"idd-document-reference",
-					fmt.Sprintf("SPEC %s references undeclared design %q", spec.ID, spec.Design),
-					document.Path,
-					document.Index.recordFieldLine("specs", recordIndex, "design"),
-					spec.ID,
-					"design",
-				))
-			}
-			if spec.Contract != "" && !contracts[spec.Contract] {
-				errors = append(errors, iddDocumentValidationError(
-					"idd-document-reference",
-					fmt.Sprintf("SPEC %s references undeclared contract %q", spec.ID, spec.Contract),
-					document.Path,
-					document.Index.recordFieldLine("specs", recordIndex, "contract"),
-					spec.ID,
-					"contract",
-				))
-			}
-		}
-	}
-	if document := documents["testing"]; document != nil {
-		for recordIndex, test := range document.Metadata.Tests {
-			for _, specID := range test.Covers {
-				if specs[specID] {
-					continue
-				}
-				errors = append(errors, iddDocumentValidationError(
-					"idd-document-reference",
-					fmt.Sprintf("TEST %s covers undefined SPEC %s", test.ID, specID),
-					document.Path,
-					document.Index.recordFieldLine("tests", recordIndex, "covers"),
-					test.ID,
-					"covers",
-				))
-			}
-		}
-	}
-	return errors
-}
-
-func addIDDDocumentIdentifiers(documents map[string]*parsedIDDDocument, set *model.IdentifierSet) {
-	specIdentifiers := make(map[string]*model.Identifier)
-	if document := documents["spec"]; document != nil {
-		for recordIndex, spec := range document.Metadata.Specs {
-			if spec.ID == "" || !strings.HasPrefix(spec.ID, "SPEC-") {
-				continue
-			}
-			identifier := model.NewIdentifierWithDescribe(
-				spec.ID,
-				model.TypeSpec,
-				spec.Title,
-				spec.Requirement,
-				document.Path,
-				document.Index.recordLine("specs", recordIndex),
-			)
-			identifier.RawRef = spec.ID
-			set.Add(identifier)
-			specIdentifiers[spec.ID] = identifier
-		}
-	}
-	if document := documents["testing"]; document != nil {
-		for recordIndex, test := range document.Metadata.Tests {
-			if test.ID == "" || !strings.HasPrefix(test.ID, "TEST-") {
-				continue
-			}
-			identifier := model.NewIdentifierWithDescribe(
-				test.ID,
-				model.TypeTest,
-				test.Title,
-				test.Purpose,
-				document.Path,
-				document.Index.recordLine("tests", recordIndex),
-			)
-			identifier.RawRef = test.ID
-			identifier.Kind = test.Kind
-			for _, specID := range test.Covers {
-				identifier.AddLink(specID)
-				if spec := specIdentifiers[specID]; spec != nil {
-					spec.AddLink(test.ID)
-				}
-			}
-			set.Add(identifier)
-		}
-	}
-}
-
-func declaredIDDIdentifiers(documents map[string]*parsedIDDDocument) map[string]bool {
-	declared := make(map[string]bool)
-	for _, document := range documents {
-		for _, spec := range document.Metadata.Specs {
-			if spec.ID != "" {
-				declared[spec.ID] = true
-			}
-		}
-		for _, test := range document.Metadata.Tests {
-			if test.ID != "" {
-				declared[test.ID] = true
-			}
-		}
-	}
-	return declared
-}
-
 func validateIDDDocumentMarkdown(document *parsedIDDDocument, declared map[string]bool) []*model.ValidationError {
 	var errors []*model.ValidationError
 	content := string(document.Raw)
@@ -1188,14 +845,15 @@ func validateIDDDocumentMarkdown(document *parsedIDDDocument, declared map[strin
 		))
 	}
 
-	inCodeBlock := false
+	codeFence := ""
 	for lineIndex, line := range strings.Split(string(document.Body), "\n") {
 		trimmed := strings.TrimSpace(line)
-		if strings.HasPrefix(trimmed, "```") {
-			inCodeBlock = !inCodeBlock
+		var transition bool
+		codeFence, transition = markdownFenceTransition(codeFence, trimmed)
+		if transition {
 			continue
 		}
-		if inCodeBlock || !strings.HasPrefix(trimmed, "#") {
+		if codeFence != "" || !strings.HasPrefix(trimmed, "#") {
 			continue
 		}
 		for _, ref := range extractIDDRefs(trimmed) {
@@ -1242,14 +900,15 @@ func (c *DocCollector) collectIDDPackageNarrative(path string, set *model.Identi
 			"marker-format",
 		))
 	}
-	inCodeBlock := false
+	codeFence := ""
 	for lineIndex, line := range strings.Split(string(content), "\n") {
 		trimmed := strings.TrimSpace(line)
-		if strings.HasPrefix(trimmed, "```") {
-			inCodeBlock = !inCodeBlock
+		var transition bool
+		codeFence, transition = markdownFenceTransition(codeFence, trimmed)
+		if transition {
 			continue
 		}
-		if inCodeBlock || !strings.HasPrefix(trimmed, "#") {
+		if codeFence != "" || !strings.HasPrefix(trimmed, "#") {
 			continue
 		}
 		for _, ref := range extractIDDRefs(trimmed) {

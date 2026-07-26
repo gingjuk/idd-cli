@@ -1,121 +1,143 @@
 ---
-markers:
-  - id: TEST-PKG_PATTERN-001
-    name: Pattern Test 1
-  - id: TEST-PKG_PATTERN-002
-    name: Pattern Test 2
-  - id: TEST-PKG_PATTERN-003
-    name: Pattern Test 3
-  - id: TEST-PKG_PATTERN-004
-    name: Pattern Test 4
-  - id: TEST-PKG_PATTERN-005
-    name: Pattern Test 5
-  - id: TEST-PKG_PATTERN-006
-    name: Pattern Test 6
-  - id: TEST-PKG_PATTERN-007
-    name: Pattern Test 7
-  - id: TEST-PKG_PATTERN-008
-    name: Pattern Test 8
-
-related_files:
-  spec: docs/pkg/pattern/spec.md
-  contract: docs/pkg/pattern/contract.md
-  design: docs/pkg/pattern/design.md
-  testing: docs/pkg/pattern/testing.md
+idd:
+  version: "1.0"
+  package: pkg/pattern
+  document: testing
 ---
 
-# Test Cases (pattern)
+# Testing: pkg/pattern
 
-## TEST-PKG_PATTERN-001: IDD Pattern Regex
+## TEST-PKG_PATTERN-001: Strict identifier grammar cases
 
-**Status:** Done
+- **Kind:** `contract`
+- **Covers:** `SPEC-PKG_PATTERN-001`, `SPEC-PKG_PATTERN-009`
+- **Contracts:** `IdentifierSyntax`
 
 **Purpose:**
 
-Test IDD identifier regex patterns.
+Prove accepted TYPE-MODULE-NUMBER forms and rejected segment, type, module, and
+number forms with a table whose expected validity is the oracle. Internal
+PATTERN/WALK section markers are explicitly rejected.
 
-**Spec Coverage:** `SPEC-PKG_PATTERN-001`
+**Oracle:** The test passes only when its assertions confirm accepted
+TYPE-MODULE-NUMBER forms and rejected segment, type, module, and number forms with a
+table whose expected validity is the oracle. Internal PATTERN/WALK section markers are
+explicitly rejected.
 
----
+## TEST-PKG_PATTERN-002: Broad pattern recognition cases
 
-## TEST-PKG_PATTERN-002: Code Annotation Pattern
-
-**Status:** Done
-
-**Purpose:**
-
-Test code annotation regex patterns.
-
-**Spec Coverage:** `SPEC-PKG_PATTERN-002`
-
----
-
-## TEST-PKG_PATTERN-003: Annotation Type Mapping
-
-**Status:** Done
+- **Kind:** `test`
+- **Covers:** `SPEC-PKG_PATTERN-001`, `SPEC-PKG_PATTERN-007`
 
 **Purpose:**
 
-Test annotation prefix to type mapping.
+Prove that built-in IDD patterns are recognized, including CONTRACT and DESIGN,
+while an unknown type returns an error. The test intentionally exercises broad
+recognition rather than strict whole-string acceptance.
 
-**Spec Coverage:** `SPEC-PKG_PATTERN-003`
+**Oracle:** The test passes only when its assertions confirm
+built-in IDD patterns are recognized, including CONTRACT and DESIGN, while an unknown
+type returns an error. The test intentionally exercises broad recognition rather than
+strict whole-string acceptance.
 
----
+## TEST-PKG_PATTERN-003: Identifier type detection
 
-## TEST-PKG_PATTERN-004: Reference Extraction
-
-**Status:** Done
-
-**Purpose:**
-
-Test extracting references from content.
-
-**Spec Coverage:** `SPEC-PKG_PATTERN-004`
-
----
-
-## TEST-PKG_PATTERN-005: Reference Splitting
-
-**Status:** Done
+- **Kind:** `contract`
+- **Covers:** `SPEC-PKG_PATTERN-006`
+- **Contracts:** `DocumentReferenceSyntax`
 
 **Purpose:**
 
-Test splitting comma-separated references.
+Prove type detection for every registered identifier family, case-insensitive
+recognition, unknown text, and empty input.
 
-**Spec Coverage:** `SPEC-PKG_PATTERN-005`
+**Oracle:** The test passes only when its assertions confirm type
+detection for every registered identifier family, case-insensitive recognition, unknown
+text, and empty input.
 
----
+## TEST-PKG_PATTERN-004: Annotation prefix mapping
 
-## TEST-PKG_PATTERN-006: Identifier Type Detection
-
-**Status:** Done
-
-**Purpose:**
-
-Test identifying identifier type.
-
-**Spec Coverage:** `SPEC-PKG_PATTERN-006`
-
----
-
-## TEST-PKG_PATTERN-007: Pattern Validation
-
-**Status:** Done
+- **Kind:** `test`
+- **Covers:** `SPEC-PKG_PATTERN-002`, `SPEC-PKG_PATTERN-003`
 
 **Purpose:**
 
-Test validating identifier patterns.
+Prove exact mapping of the three supported prefixes and rejection of differently
+cased, unknown, and empty prefixes.
 
-**Spec Coverage:** `SPEC-PKG_PATTERN-007`, `SPEC-PKG_PATTERN-009`
+**Oracle:** The test passes only when its assertions confirm exact
+mapping of the three supported prefixes and rejection of differently cased, unknown, and
+empty prefixes.
 
----
+## TEST-PKG_PATTERN-005: Quoted reference extraction
 
-## TEST-PKG_PATTERN-008: IDD Reference Filter
-
-**Status:** Done
+- **Kind:** `test`
+- **Covers:** `SPEC-PKG_PATTERN-004`
 
 **Purpose:**
 
-Test filtering quoted references.
+Prove that plain identifier-shaped prose is ignored while backtick- and
+quote-adjacent identifiers are returned. Cases also distinguish three-part IDs
+from internal two-part section markers and verify empty input.
 
-**Spec Coverage:** `SPEC-PKG_PATTERN-008`
+**Oracle:** The test passes only when its assertions confirm plain
+identifier-shaped prose is ignored while backtick- and quote-adjacent identifiers are
+returned. Cases also distinguish three-part IDs from internal two-part section markers
+and verify empty input.
+
+## TEST-PKG_PATTERN-006: Annotation list splitting
+
+- **Kind:** `test`
+- **Covers:** `SPEC-PKG_PATTERN-005`
+
+**Purpose:**
+
+Prove comma splitting, whitespace trimming, trailing-comma handling, and empty
+input behavior using exact returned slices as the oracle.
+
+**Oracle:** The test passes only when its assertions confirm comma
+splitting, whitespace trimming, trailing-comma handling, and empty input behavior using
+exact returned slices as the oracle.
+
+## TEST-PKG_PATTERN-007: Mixed annotation extraction
+
+- **Kind:** `test`
+- **Covers:** `SPEC-PKG_PATTERN-002`, `SPEC-PKG_PATTERN-008`
+
+**Purpose:**
+
+Prove extraction from one annotation, multiple annotation kinds, and a
+comma-separated target list, while unrelated content returns no identifiers.
+
+**Oracle:** The test passes only when its assertions confirm extraction
+from one annotation, multiple annotation kinds, and a comma-separated target list, while
+unrelated content returns no identifiers.
+
+## TEST-PKG_PATTERN-008: Quote adjacency helper
+
+- **Kind:** `contract`
+- **Covers:** `SPEC-PKG_PATTERN-004`
+- **Contracts:** `AnnotationSyntax`
+
+**Purpose:**
+
+Prove the current lexical quote rule for backticks, double quotes, unquoted
+text, and partial identifier matches. This test documents adjacency behavior;
+it does not claim full Markdown delimiter parsing.
+
+**Oracle:** The test passes only when its assertions confirm the current
+lexical quote rule for backticks, double quotes, unquoted text, and partial identifier
+matches. This test documents adjacency behavior; it does not claim full Markdown
+delimiter parsing.
+
+## Strategy
+
+All cases are pure and table-driven, so fixtures consist only of input strings
+and expected values or error presence. No regular expression internals are
+asserted; tests observe public lexical behavior.
+
+Important exclusions are deterministic ordering across the map-backed pattern
+registry, duplicate removal, quoted lowercase extraction, empty module/number
+segments, and balanced Markdown quoting. Those gaps are recorded so a future
+grammar tightening starts with explicit failing cases rather than silently
+changing collector behavior.

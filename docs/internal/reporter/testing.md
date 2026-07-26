@@ -1,191 +1,205 @@
 ---
-markers:
-  - id: TEST-INTERNAL_REPORTER-001
-    name: Reporter Test 1
-  - id: TEST-INTERNAL_REPORTER-002
-    name: Reporter Test 2
-  - id: TEST-INTERNAL_REPORTER-003
-    name: Reporter Test 3
-  - id: TEST-INTERNAL_REPORTER-004
-    name: Reporter Test 4
-  - id: TEST-INTERNAL_REPORTER-005
-    name: Reporter Test 5
-  - id: TEST-INTERNAL_REPORTER-006
-    name: Reporter Test 6
-  - id: TEST-INTERNAL_REPORTER-007
-    name: Reporter Test 7
-  - id: TEST-INTERNAL_REPORTER-008
-    name: Reporter Test 8
-  - id: TEST-INTERNAL_REPORTER-009
-    name: Reporter Test 9
-  - id: TEST-INTERNAL_REPORTER-010
-    name: Reporter Test 10
-  - id: TEST-INTERNAL_REPORTER-011
-    name: JSON LLM Output
-  - id: TEST-INTERNAL_REPORTER-012
-    name: LLM Markdown Output
-  - id: TEST-INTERNAL_REPORTER-013
-    name: LLM Finding Enrichment
-
-related_files:
-  spec: docs/internal/reporter/spec.md
-  contract: docs/internal/reporter/contract.md
-  design: docs/internal/reporter/design.md
-  testing: docs/internal/reporter/testing.md
+idd:
+  version: "1.0"
+  package: internal/reporter
+  document: testing
 ---
 
-# Test Cases (reporter)
+# Testing: internal/reporter
 
-## TEST-INTERNAL_REPORTER-001: Reporter New
+## TEST-INTERNAL_REPORTER-001: Complete report generation
 
-**Status:** Done
+- **Kind:** `contract`
+- **Covers:** `SPEC-INTERNAL_REPORTER-001`, `SPEC-INTERNAL_REPORTER-004`
+- **Contracts:** `ReporterLifecycle`, `cmd/idd-cli#Reporter`
 
 **Purpose:**
 
-Test reporter creation.
+Prove tool name, hard-coded version, and non-empty timestamp in a generated
+report from a valid result and default configuration.
 
-**Spec Coverage:** `SPEC-INTERNAL_REPORTER-003`
+**Oracle:** The test passes only when its assertions confirm tool name,
+hard-coded version, and non-empty timestamp in a generated report from a valid result
+and default configuration.
 
----
+## TEST-INTERNAL_REPORTER-002: JSON file output
 
-## TEST-INTERNAL_REPORTER-002: Reporter Generate
-
-**Status:** Done
-
-**Purpose:**
-
-Test report generation.
-
-**Spec Coverage:** `SPEC-INTERNAL_REPORTER-003`
-
----
-
-## TEST-INTERNAL_REPORTER-003: JSON Output
-
-**Status:** Done
+- **Kind:** `test`
+- **Covers:** `SPEC-INTERNAL_REPORTER-005`, `SPEC-INTERNAL_REPORTER-011`
 
 **Purpose:**
 
-Test JSON output format.
+Prove that writing JSON creates a decodable finding report with the expected
+schema and pass status in an isolated temporary directory.
 
-**Spec Coverage:** `SPEC-INTERNAL_REPORTER-005`
+**Oracle:** The test passes only when its assertions confirm writing
+JSON creates a decodable finding report with the expected schema and pass status in an
+isolated temporary directory.
 
----
+## TEST-INTERNAL_REPORTER-003: Stdout destination
 
-## TEST-INTERNAL_REPORTER-004: Markdown Output
-
-**Status:** Done
-
-**Purpose:**
-
-Test Markdown output format.
-
-**Spec Coverage:** `SPEC-INTERNAL_REPORTER-005`
-
----
-
-## TEST-INTERNAL_REPORTER-005: Write Stdout
-
-**Status:** Done
+- **Kind:** `test`
+- **Covers:** `SPEC-INTERNAL_REPORTER-005`
 
 **Purpose:**
 
-Test writing to stdout.
+Prove that `-` selects stdout and returns no error for a valid JSON report. The
+test checks the call result rather than capturing process output.
 
-**Spec Coverage:** `SPEC-INTERNAL_REPORTER-005`
+**Oracle:** The test passes only when its assertions confirm `-`
+selects stdout and returns no error for a valid JSON report. The test checks the call
+result rather than capturing process output.
 
----
+## TEST-INTERNAL_REPORTER-004: Human Markdown file
 
-## TEST-INTERNAL_REPORTER-006: Write File
-
-**Status:** Done
-
-**Purpose:**
-
-Test writing to file.
-
-**Spec Coverage:** `SPEC-INTERNAL_REPORTER-005`
-
----
-
-## TEST-INTERNAL_REPORTER-007: Empty Result
-
-**Status:** Done
+- **Kind:** `test`
+- **Covers:** `SPEC-INTERNAL_REPORTER-005`
 
 **Purpose:**
 
-Test with empty result.
+Prove that human Markdown contains the linkage-report heading and a supplied
+warning after a file round trip.
 
-**Spec Coverage:** `SPEC-INTERNAL_REPORTER-004`
+**Oracle:** The test passes only when its assertions confirm human
+Markdown contains the linkage-report heading and a supplied warning after a file round
+trip.
 
----
+## TEST-INTERNAL_REPORTER-005: Unsupported format rejection
 
-## TEST-INTERNAL_REPORTER-008: Error Result
-
-**Status:** Done
-
-**Purpose:**
-
-Test with error result.
-
-**Spec Coverage:** `SPEC-INTERNAL_REPORTER-004`
-
----
-
-## TEST-INTERNAL_REPORTER-009: Warning Result
-
-**Status:** Done
+- **Kind:** `contract`
+- **Covers:** `SPEC-INTERNAL_REPORTER-005`
+- **Contracts:** `ReportDestination`, `HumanMarkdownReport`
 
 **Purpose:**
 
-Test with warning result.
+Prove that an unsupported format returns an error. The `/dev/null` fixture
+isolates format dispatch from ordinary file-content assertions.
 
-**Spec Coverage:** `SPEC-INTERNAL_REPORTER-004`
+**Oracle:** The test passes only when its assertions confirm an
+unsupported format returns an error. The `/dev/null` fixture isolates format dispatch
+from ordinary file-content assertions.
 
----
+## TEST-INTERNAL_REPORTER-006: Human Markdown error details
 
-## TEST-INTERNAL_REPORTER-010: Complete Report
-
-**Status:** Done
-
-**Purpose:**
-
-Test complete report with all fields.
-
-**Spec Coverage:** `SPEC-INTERNAL_REPORTER-001`, `SPEC-INTERNAL_REPORTER-003`, `SPEC-INTERNAL_REPORTER-004`, `SPEC-INTERNAL_REPORTER-005`
-
----
-
-## TEST-INTERNAL_REPORTER-011: JSON LLM Output
-
-**Status:** Done
+- **Kind:** `test`
+- **Covers:** `SPEC-INTERNAL_REPORTER-005`
 
 **Purpose:**
 
-Test that default JSON output is valid JSON using schema `idd.llm_report.v1` and includes summary, finding group, and finding fields.
+Prove that an error's rule and message appear in human Markdown rendered to an
+in-memory writer.
 
-**Spec Coverage:** `SPEC-INTERNAL_REPORTER-011`
+**Oracle:** The test passes only when its assertions confirm an
+error's rule and message appear in human Markdown rendered to an in-memory writer.
 
----
+## TEST-INTERNAL_REPORTER-007: Human Markdown statistics
 
-## TEST-INTERNAL_REPORTER-012: LLM Markdown Output
-
-**Status:** Done
-
-**Purpose:**
-
-Test that `llm-markdown` output is action-oriented and includes status, problem, fix, location, and related identifier context.
-
-**Spec Coverage:** `SPEC-INTERNAL_REPORTER-011`
-
----
-
-## TEST-INTERNAL_REPORTER-013: LLM Finding Enrichment
-
-**Status:** Done
+- **Kind:** `test`
+- **Covers:** `SPEC-INTERNAL_REPORTER-005`
 
 **Purpose:**
 
-Test that validation errors are converted into self-contained findings with severity, rule metadata, structured locations, related identifiers, and grouped summaries for repeated rule failures.
+Prove that populated validation statistics produce the expected metrics
+section.
 
-**Spec Coverage:** `SPEC-INTERNAL_REPORTER-012`
+**Oracle:** The test passes only when its assertions confirm
+populated validation statistics produce the expected metrics section.
+
+## TEST-INTERNAL_REPORTER-008: Human Markdown graph evidence
+
+- **Kind:** `test`
+- **Covers:** `SPEC-INTERNAL_REPORTER-005`
+
+**Purpose:**
+
+Prove that a supplied graph snapshot renders identifier nodes and relationship
+details.
+
+**Oracle:** The test passes only when its assertions confirm a
+supplied graph snapshot renders identifier nodes and relationship details.
+
+## TEST-INTERNAL_REPORTER-009: Reporter construction and default format
+
+- **Kind:** `test`
+- **Covers:** `SPEC-INTERNAL_REPORTER-003`
+
+**Purpose:**
+
+Prove explicit formats are retained, empty format becomes JSON, and original
+format casing is preserved until dispatch.
+
+**Oracle:** The test passes only when its assertions confirm explicit
+formats are retained, empty format becomes JSON, and original format casing is preserved
+until dispatch.
+
+## TEST-INTERNAL_REPORTER-010: Human status symbols
+
+- **Kind:** `test`
+- **Covers:** `SPEC-INTERNAL_REPORTER-005`
+
+**Purpose:**
+
+Prove exact PASS and FAIL status strings for valid and invalid results.
+
+**Oracle:** The test passes only when its assertions confirm exact PASS
+and FAIL status strings for valid and invalid results.
+
+## TEST-INTERNAL_REPORTER-011: Default and explicit JSON finding schema
+
+- **Kind:** `contract`
+- **Covers:** `SPEC-INTERNAL_REPORTER-003`, `SPEC-INTERNAL_REPORTER-011`
+- **Contracts:** `FindingReport`
+
+**Purpose:**
+
+Prove empty-format and explicit JSON outputs both use
+`idd.llm_report.v1`, and that a failing sample preserves status, error count,
+structured location, primary identifier, and repair guidance.
+
+**Oracle:** The test passes only when its assertions confirm empty-format
+and explicit JSON outputs both use `idd.llm_report.v1`, and that a failing sample
+preserves status, error count, structured location, primary identifier, and repair
+guidance.
+
+## TEST-INTERNAL_REPORTER-012: Agent-readable Markdown
+
+- **Kind:** `test`
+- **Covers:** `SPEC-INTERNAL_REPORTER-011`
+
+**Purpose:**
+
+Prove that LLM Markdown includes failure status, grouping, exact file/line,
+rule, problem, fix, and related identifier context.
+
+**Oracle:** The test passes only when its assertions confirm LLM
+Markdown includes failure status, grouping, exact file/line, rule, problem, fix, and
+related identifier context.
+
+## TEST-INTERNAL_REPORTER-013: Finding metadata, severity, and grouping
+
+- **Kind:** `test`
+- **Covers:** `SPEC-INTERNAL_REPORTER-012`
+
+**Purpose:**
+
+Prove top-rule selection, one-based group indexes, expected/actual enrichment,
+graph-related identifiers, warning-severity preservation, repeated-finding
+aggregation, sorted file/identifier summaries, and curated guidance for every
+self-describing document rule.
+
+**Oracle:** The test passes only when its assertions confirm top-rule
+selection, one-based group indexes, expected/actual enrichment, graph-related
+identifiers, warning-severity preservation, repeated-finding aggregation, sorted
+file/identifier summaries, and curated guidance for every self-describing document rule.
+
+## Strategy
+
+Tests use immutable model fixtures, `strings.Builder`, and temporary output
+files. Exact schema fields and selected human text are the oracles; no snapshots
+of entire reports make harmless prose changes artificially expensive.
+
+The suite excludes file permission failures, parent-directory creation,
+unsupported-format truncation, close/write failures, nil inputs, unknown-rule
+fallbacks, Windows source paths, top-rule truncation beyond five, and group tie
+ordering. It also does not validate whether a suggested fix is semantically
+correct for a real project.

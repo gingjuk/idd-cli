@@ -283,50 +283,7 @@ func hasLegacyDocumentMetadata(data []byte) bool {
 }
 
 func documentNarrativeTemplate(packagePath, role string) string {
-	switch role {
-	case "design":
-		return fmt.Sprintf(`
-# Design: %s
-
-> Add one `+"`## Component: <name>`"+` section for each named component. Explain
-> its responsibility and boundaries before the broader architecture notes.
-
-## Architecture
-
-## Package Layout
-
-## Function Composition
-
-## Dependencies
-
-## Testability Hooks
-`, packagePath)
-	case "contract":
-		return fmt.Sprintf(`
-# Contracts: %s
-
-> Add one `+"`## Contract: <name>`"+` section for each observable boundary.
-> Describe its inputs, outputs, errors, and invariants in ordinary Markdown.
-`, packagePath)
-	case "spec":
-		return fmt.Sprintf(`
-# Specifications: %s
-
-> Add each cohesive behavior as
-> `+"`## SPEC-<MODULE>-<NUMBER>: <title>`"+`, followed by the fixed
-> `+"`Design`"+`/`+"`Contract`"+` list and a `+"`Requirement`"+` paragraph.
-`, packagePath)
-	case "testing":
-		return fmt.Sprintf(`
-# Testing: %s
-
-> Add each evidence record as
-> `+"`## TEST-<MODULE>-<NUMBER>: <title>`"+`, followed by the fixed
-> `+"`Kind`"+`/`+"`Covers`"+` list and a `+"`Purpose`"+` paragraph.
-`, packagePath)
-	default:
-		return "\n"
-	}
+	return renderIDDDocumentTemplate(packagePath, role)
 }
 
 func writeExclusiveFile(path string, data []byte) error {

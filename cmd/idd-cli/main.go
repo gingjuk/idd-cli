@@ -53,7 +53,9 @@ var runCmd = &cobra.Command{
 Documentation is collected from [path], while source annotations are collected
 from the current project working tree. Run from project root with "." for the
 authoritative project gate. An invalid graph writes its report, then exits
-non-zero.
+non-zero. Passing proves enabled structural and traceability rules; the paired
+IDD skill and human review still judge whether the authored explanation is
+complete and correct.
 
 Example:
   idd-cli run . --format llm-markdown
@@ -108,13 +110,14 @@ mechanism.`,
 
 var docsCmd = &cobra.Command{
 	Use:   "docs",
-	Short: "Create and repair compact IDD package documents",
+	Short: "Create and repair self-describing IDD package documents",
 	Long: `Create and repair package-local self-describing IDD documents.
 
 Each fixed Markdown file has minimal identity frontmatter and owns its
 human-readable role-specific Markdown records. A SPEC update changes spec.md;
 a TEST update or coverage change changes testing.md. The paired IDD skill
-authors semantic content; these commands maintain safe structure only.`,
+authors complete semantic content; these commands maintain safe structure only.
+They do not shorten, summarize, or judge the adequacy of human-authored prose.`,
 }
 
 var docsInitCmd = &cobra.Command{
@@ -124,7 +127,9 @@ var docsInitCmd = &cobra.Command{
 docs/<package>/. Each file contains minimal identity frontmatter and
 human-readable Markdown guidance for its role. Existing plain narrative bodies
 are preserved. Existing IDD or legacy marker metadata is never overwritten.
-Use this once for a new package, then let the paired IDD skill author records.
+Use this once for a new package, then let the paired IDD skill author complete
+records with behavior, rationale, boundaries, failures, and evidence. The
+generated guidance is a scaffold, not finished documentation.
 
 Example:
   idd-cli docs init internal/auth`,
@@ -146,6 +151,25 @@ Example:
   idd-cli docs fix docs/internal/auth/testing.md`,
 	Args: cobra.ExactArgs(1),
 	RunE: repairPackageDocs,
+}
+
+var docsStatusCmd = &cobra.Command{
+	Use:   "status <docs-package-or-document>",
+	Short: "List IDD document slots that still require authored content",
+	Long: `Inspect one self-describing IDD document, one package document
+directory, or a docs tree. The command uses the same role schema and completion
+rules as docs init and run. Generated scaffold markers are incomplete, and
+removing a marker does not pass unless the bounded section or record contains
+effective authored content. Once a record exists, every missing or placeholder
+required record field remains an incomplete slot.
+
+JSON output contains a deterministic incomplete_slots work list with file,
+line, role, slot, and reason.
+
+Example:
+  idd-cli docs status docs/internal/auth --format json`,
+	Args: cobra.ExactArgs(1),
+	RunE: statusPackageDocs,
 }
 
 // @implement SPEC-CMD_IDD_CLI-009
@@ -174,6 +198,7 @@ func init() {
 	rootCmd.AddCommand(generateCmd)
 	docsCmd.AddCommand(docsInitCmd)
 	docsCmd.AddCommand(docsFixCmd)
+	docsCmd.AddCommand(docsStatusCmd)
 	rootCmd.AddCommand(docsCmd)
 
 	_ = viper.BindPFlag("config", rootCmd.PersistentFlags().Lookup("config"))
@@ -247,7 +272,7 @@ func run(cmd *cobra.Command, args []string) error {
 	}
 
 	codeColl := collector.NewCodeCollector(cfg)
-	codeSet, err := codeColl.Collect(ctx, ".")
+	codeSet, codeErrors, err := codeColl.CollectWithErrors(ctx, ".")
 	if err != nil {
 		return fmt.Errorf("failed to collect code identifiers: %w", err)
 	}
@@ -264,7 +289,8 @@ func run(cmd *cobra.Command, args []string) error {
 	}
 
 	eng := engine.New(cfg)
-	eng.AddStructuralErrors(docErrors)
+	eng.SetSourceAnalyses(codeColl.Analyses())
+	eng.AddStructuralErrors(append(docErrors, codeErrors...))
 	result, err := eng.Run(ctx, docSet)
 	if err != nil {
 		return fmt.Errorf("failed to run validation: %w", err)
@@ -487,7 +513,11 @@ func initPackageDocs(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return err
 	}
-	return writeDocChanges("initialized", changed)
+	status, err := collector.InspectDocumentCompletion(filepath.Join("docs", filepath.FromSlash(args[0])))
+	if err != nil {
+		return err
+	}
+	return writeDocChanges("initialized", changed, status)
 }
 
 func repairPackageDocs(cmd *cobra.Command, args []string) error {
@@ -495,16 +525,32 @@ func repairPackageDocs(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return err
 	}
-	return writeDocChanges("repaired", changed)
+	return writeDocChanges("repaired", changed, nil)
 }
 
-func writeDocChanges(action string, changed []string) error {
+func statusPackageDocs(cmd *cobra.Command, args []string) error {
+	status, err := collector.InspectDocumentCompletion(args[0])
+	if err != nil {
+		return err
+	}
+	return writeDocumentStatus(status)
+}
+
+func writeDocChanges(action string, changed []string, status *collector.DocumentCompletionStatus) error {
 	result := struct {
-		Action  string   `json:"action"`
-		Changed []string `json:"changed"`
+		Action          string                     `json:"action"`
+		Changed         []string                   `json:"changed"`
+		Schema          string                     `json:"schema,omitempty"`
+		Status          string                     `json:"status,omitempty"`
+		IncompleteSlots []collector.IncompleteSlot `json:"incomplete_slots,omitempty"`
 	}{
 		Action:  action,
 		Changed: changed,
+	}
+	if status != nil {
+		result.Schema = status.Schema
+		result.Status = status.Status
+		result.IncompleteSlots = status.IncompleteSlots
 	}
 
 	if format == "json" {
@@ -522,6 +568,29 @@ func writeDocChanges(action string, changed []string) error {
 	}
 	for _, path := range changed {
 		fmt.Println(path)
+	}
+	if status != nil && len(status.IncompleteSlots) > 0 {
+		fmt.Printf("%d document slot(s) still require authored content.\n", len(status.IncompleteSlots))
+	}
+	return nil
+}
+
+func writeDocumentStatus(status *collector.DocumentCompletionStatus) error {
+	if format == "json" {
+		data, err := json.MarshalIndent(status, "", "  ")
+		if err != nil {
+			return fmt.Errorf("marshal document status: %w", err)
+		}
+		fmt.Println(string(data))
+		return nil
+	}
+
+	if status.Status == "complete" {
+		fmt.Println("All required document slots are complete.")
+		return nil
+	}
+	for _, slot := range status.IncompleteSlots {
+		fmt.Printf("%s:%d [%s] %s\n", slot.File, slot.Line, slot.Slot, slot.Reason)
 	}
 	return nil
 }

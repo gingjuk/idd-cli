@@ -180,8 +180,8 @@ func GetIdentifierType(ref string) string {
 }
 
 // GetAnnotationType maps annotation prefixes to identifier types.
-// It returns the mapped type for known prefixes. @implement maps to SPEC,
-// @test maps to TEST. Returns empty string for unknown prefixes.
+// It returns the mapped type for known prefixes. The implement annotation maps
+// to SPEC and the test annotations map to TEST. Unknown prefixes return empty.
 //
 // @implement SPEC-PKG_PATTERN-003
 func GetAnnotationType(prefix string) string {

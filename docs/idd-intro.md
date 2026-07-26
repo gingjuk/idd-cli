@@ -33,9 +33,11 @@ idd-cli generate skill
         ↓
 Agent loads the paired IDD workflow
         ↓
-intent.md / plan.md
+approved request + .planning
         ↓
 docs init <package> when new
+        ↓
+docs status reports generated work slots
         ↓
 human-readable design, contract, SPEC, and TEST records
         ↓
@@ -52,13 +54,20 @@ repository tests + run . --format json
 The skill owns semantic decisions. idd-cli owns these executable boundaries:
 
 - `generate skill` exports the workflow embedded in the installed binary;
-- `docs init` creates a new four-document skeleton without fake records;
+- `docs init` creates a new four-document skeleton with explicit unfilled
+  markers rather than fake records;
+- `docs status` returns the exact file, line, role, slot, and reason for every
+  generated location that still needs authored content;
 - `docs fix` repairs identity and missing skeletons without rewriting prose;
 - `run .` validates the complete project graph and emits exact findings.
 
 Regenerate the installed skill after upgrading idd-cli. `.idd.yaml` is only
 validator configuration and must not contain package markers or semantic
 records.
+
+The approved request is the source of truth. An `intent.md` may be kept as
+project history, but it is not required, SPEC has no Intent-source field, and
+idd-cli creates no Intent-to-SPEC graph.
 
 Run the final validation from the project root. Supplying
 `docs/<single-package>` narrows documentation collection but not source
@@ -84,52 +93,30 @@ identifier_patterns:
   test_contract: "TEST-[A-Z]+-[0-9]+"
 ```
 
-## Ignoring Annotations
+## Syntax-tree source binding
 
-In some cases, you may want idd-cli to ignore certain annotations. For example, test data strings containing IDD identifiers should not be treated as real annotations.
+idd-cli binds comments to real declarations with pinned Tree-sitter grammars
+for Go, TypeScript, TSX, JavaScript/JSX, C++, Java, and Python. Annotation text
+inside strings is ignored automatically. A configured extension without a
+pinned grammar or a syntax error in a supported file produces a
+`source-parse` finding and disables binding for that file; there is no regex
+fallback.
+
+Use ignore ranges only when a real source comment intentionally demonstrates
+annotation syntax and must not count as evidence.
 
 ### Nolint Directives
 
 ```go
-// idd:ignore                    // Ignore this line only
-
-// idd:ignore-start              // Start ignoring (alternative syntax)
-// idd:ignore-end                // Stop ignoring (alternative syntax)
-```
-
-### Examples
-
-**Single line ignore:**
-
-```go
-code := `// idd:ignore
-// @implement SPEC-XX-001          // This annotation will NOT be collected
-`
-func TestRealAnnotation() {
-    // @test TEST-XX-001              // This annotation WILL be collected
-}
-```
-
-**Scope ignore:**
-
-```go
 // idd:ignore start
-code := `
-// @implement SPEC-XX-001      // Ignored
-// @test TEST-XX-001         // Ignored
-`
+// @implement SPEC-XX-001
+func ExampleOnly() {}
 // idd:ignore end
-
-func TestCode() {
-    // @test TEST-XX-001              // Collected normally
-}
 ```
 
-### When to Use
-
-- **Test data**: Annotations inside backtick strings in test files should be wrapped with `// idd:ignore` or `// idd:ignore start/end`
-- **Example code**: Code examples in comments that show annotations but aren't meant to be collected
-- **Temporary annotations**: Annotations you're not ready to link yet
+`idd:ignore-start` and `idd:ignore-end` are accepted compatibility spellings.
+The directive must be the complete normalized comment line; merely mentioning
+`idd:ignore` in prose does not open a range.
 
 ## Document Structure
 
@@ -157,7 +144,21 @@ idd:
 
 The semantic declarations live in human-readable Markdown records:
 
+This excerpt shows the parseable record boundary, not the expected depth of a
+finished design or specification.
+
 ```markdown
+<!-- design.md -->
+## Component: AuthModule
+
+**Purpose:** Own credential verification without importing transport policy.
+
+<!-- contract.md -->
+## Contract: Authenticator
+
+**Guarantees:** Return a complete identity on success and one stable public
+error for expected credential rejection.
+
 <!-- spec.md -->
 ## SPEC-INTERNAL_AUTH-001: User authentication
 
@@ -166,6 +167,9 @@ The semantic declarations live in human-readable Markdown records:
 
 **Requirement:** Authenticate users with validated credentials.
 
+**Acceptance:** Valid credentials return the expected identity; rejected
+credentials expose no field-specific detail and return no partial identity.
+
 <!-- testing.md -->
 ## TEST-INTERNAL_AUTH-001: Authentication behavior
 
@@ -173,7 +177,31 @@ The semantic declarations live in human-readable Markdown records:
 - **Covers:** `SPEC-INTERNAL_AUTH-001`
 
 **Purpose:** Verify accepted and rejected credentials.
+
+**Oracle:** The identity and public error category exactly match the scenario.
+
+### Evidence and scenarios
+
+Explain the relevant cases and the observable property each case proves.
 ```
+
+The small fixed-field block is a parsing boundary, not a prose limit. Each
+record should preserve enough context for a human reader to understand the
+reason for the behavior, its guarantees, design and implementation boundaries,
+failure cases, trade-offs, and verification evidence. Rich paragraphs,
+examples, diagrams, and subordinate headings are expected when the subject
+needs them.
+
+Structural validation cannot judge whether an architectural explanation is
+complete or a decision is sound. Passing idd-cli confirms identity,
+traceability, and record shape; the paired Skill and human review must still
+reject thin summaries that force readers to reconstruct intent from source
+code.
+
+See
+[`examples/self-describing-module-docs/`](../examples/self-describing-module-docs/)
+for a complete record set with design rationale, observable contracts,
+implementation boundaries, failure cases, and verification strategy.
 
 The TEST `Covers` field is the only authored SPEC/TEST relationship. idd-cli
 derives the reverse SPEC-to-TEST edge. `design.md` owns `## Component:`
@@ -181,17 +209,37 @@ records and `contract.md` owns `## Contract:` records. Self-describing
 documents must not repeat legacy marker, `related_files`, `Tests`, or
 `Spec Coverage` metadata.
 
+Component `Purpose`, Contract `Guarantees`, SPEC `Requirement` and
+`Acceptance`, and TEST `Purpose` and `Oracle` are the required prose anchors.
+A `Kind: contract` TEST must name the Contract records it proves in
+`Contracts`; a behavior TEST must not. Component `Depends on` references and
+record lifecycle relationships are normalized into typed graph edges and
+checked for missing targets, ambiguity, self-links, and cycles.
+
+Generated documents contain `idd:scaffold` markers. A slot is complete only
+when the marker is gone and the bounded section contains non-placeholder
+authored content. After a record heading is added, `docs status` continues to
+report each missing required fixed field from the shared role schema. Thus a
+SPEC without `Acceptance`, or a TEST without `Oracle`, remains incomplete even
+after its collection marker is removed. `docs fix` never removes a marker or
+fabricates that content.
+
 Level-two headings delimit records. The prose inside each record is ordinary
 Markdown, and large registry tables are rejected as an authored declaration
-format.
+format. This removes duplicated registries without removing useful narrative.
 
 A SPEC represents cohesive behavior, not one function. Keep function signatures,
-parameters, and returns in source code or generated API documentation.
+parameters, and returns in source code or generated API documentation, while
+keeping behavior, rationale, edge cases, non-goals, and acceptance evidence in
+the SPEC.
 
 Packages where none of the four files has an `idd` block continue to use the
 legacy frontmatter format, so migration can happen one package at a time.
 `docs init` refuses legacy marker metadata and central catalogs before writing;
 migrate those relationships explicitly before enabling self-describing mode.
+The migration must preserve useful rationale, boundary discussion, failure
+behavior, examples, and test strategy; a smaller file is not automatically a
+better document.
 
 ## Code Annotation Format
 
@@ -244,6 +292,18 @@ docs:
 code:
   patterns:
     - "**/*.go"
+    - "**/*.ts"
+    - "**/*.tsx"
+    - "**/*.js"
+    - "**/*.jsx"
+    - "**/*.cpp"
+    - "**/*.cc"
+    - "**/*.cxx"
+    - "**/*.hpp"
+    - "**/*.hh"
+    - "**/*.hxx"
+    - "**/*.java"
+    - "**/*.py"
   annotations:
     spec: "@implement"
     test: "@test"
@@ -265,13 +325,16 @@ output:
 
 ```bash
 # Build
-go build -o idd-cli ./cmd/idd-cli
+CGO_ENABLED=1 go build -o idd-cli ./cmd/idd-cli
 
 # Export and install this binary's paired skill
 ./idd-cli generate skill -o idd-skill.md
 
 # Create documents for a new package only
 ./idd-cli docs init internal/auth
+
+# Inspect the exact generated authoring work
+./idd-cli docs status docs/internal/auth --format json
 
 # Normalize safe structural identity
 ./idd-cli docs fix docs/internal/auth

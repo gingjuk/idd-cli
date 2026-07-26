@@ -7,10 +7,11 @@ package config
 import (
 	"os"
 	"path/filepath"
+	"reflect"
 	"testing"
 )
 
-// @test TEST-INTERNAL_CONFIG-002
+// @test-contract TEST-INTERNAL_CONFIG-002
 func TestDefault(t *testing.T) {
 	cfg := Default()
 
@@ -18,8 +19,8 @@ func TestDefault(t *testing.T) {
 		t.Errorf("Version = %q, want 1.0", cfg.Version)
 	}
 
-	if !cfg.Validation.ConsistencyCheck.Enabled {
-		t.Error("ConsistencyCheck should be enabled by default")
+	if cfg.Validation.ConsistencyCheck.Enabled {
+		t.Error("ConsistencyCheck should be opt-in by default")
 	}
 
 	if !cfg.Validation.RequireSpecFields {
@@ -29,9 +30,25 @@ func TestDefault(t *testing.T) {
 	if cfg.Validation.ConsistencyCheck.Threshold != 0.3 {
 		t.Errorf("ConsistencyCheck.Threshold = %f, want 0.3", cfg.Validation.ConsistencyCheck.Threshold)
 	}
+
+	if !reflect.DeepEqual(cfg.Code.Patterns, defaultCodePatterns) {
+		t.Errorf("Code.Patterns = %#v, want %#v", cfg.Code.Patterns, defaultCodePatterns)
+	}
 }
 
-// @test TEST-INTERNAL_CONFIG-001
+// @test-contract TEST-INTERNAL_CONFIG-002
+func TestDefaultMatchesExampleConfiguration(t *testing.T) {
+	examplePath := filepath.Join("..", "..", "examples", "idd-config-example.yaml")
+	example, err := Load(examplePath)
+	if err != nil {
+		t.Fatalf("Load(%s) error = %v", examplePath, err)
+	}
+	if !reflect.DeepEqual(example, Default()) {
+		t.Errorf("example configuration does not match Default():\nexample = %#v\ndefault = %#v", example, Default())
+	}
+}
+
+// @test-contract TEST-INTERNAL_CONFIG-001
 func TestConfig_Validate(t *testing.T) {
 	tests := []struct {
 		name      string
@@ -96,7 +113,7 @@ func TestConfig_Validate(t *testing.T) {
 	}
 }
 
-// @test TEST-INTERNAL_CONFIG-003
+// @test-contract TEST-INTERNAL_CONFIG-003
 func TestLoad(t *testing.T) {
 	tmpDir := t.TempDir()
 
@@ -129,7 +146,7 @@ validation:
 	}
 }
 
-// @test TEST-INTERNAL_CONFIG-002
+// @test-contract TEST-INTERNAL_CONFIG-003
 func TestLoad_FileNotFound(t *testing.T) {
 	_, err := Load("/nonexistent/path/idd.yaml")
 	if err == nil {
@@ -137,7 +154,7 @@ func TestLoad_FileNotFound(t *testing.T) {
 	}
 }
 
-// @test TEST-INTERNAL_CONFIG-002
+// @test-contract TEST-INTERNAL_CONFIG-001
 func TestValidateAnnotationKeys(t *testing.T) {
 	tests := []struct {
 		name    string
@@ -206,6 +223,45 @@ func TestValidateAnnotationKeys(t *testing.T) {
 			},
 			wantErr: true,
 		},
+		{
+			name: "empty value",
+			cfg: &Config{
+				Code: CodeConfig{
+					Annotations: map[string]string{
+						"spec":          "",
+						"test":          "@test",
+						"test_contract": "@test-contract",
+					},
+				},
+			},
+			wantErr: true,
+		},
+		{
+			name: "value without annotation prefix",
+			cfg: &Config{
+				Code: CodeConfig{
+					Annotations: map[string]string{
+						"spec":          "implement",
+						"test":          "@test",
+						"test_contract": "@test-contract",
+					},
+				},
+			},
+			wantErr: true,
+		},
+		{
+			name: "duplicate values",
+			cfg: &Config{
+				Code: CodeConfig{
+					Annotations: map[string]string{
+						"spec":          "@trace",
+						"test":          "@TRACE",
+						"test_contract": "@test-contract",
+					},
+				},
+			},
+			wantErr: true,
+		},
 	}
 
 	for _, tt := range tests {
@@ -218,7 +274,7 @@ func TestValidateAnnotationKeys(t *testing.T) {
 	}
 }
 
-// @test TEST-INTERNAL_CONFIG-003
+// @test-contract TEST-INTERNAL_CONFIG-003
 func TestLoad_InvalidYAML(t *testing.T) {
 	tmpDir := t.TempDir()
 

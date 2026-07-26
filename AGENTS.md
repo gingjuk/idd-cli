@@ -3,11 +3,11 @@
 ## Build & Run Commands
 
 ```bash
-# Build (outputs to bin/idd-cli)
-go build -o bin/idd-cli ./cmd/idd-cli
+# Build (Tree-sitter grammars require CGO; outputs to bin/idd-cli)
+CGO_ENABLED=1 go build -o bin/idd-cli ./cmd/idd-cli
 
 # Or use go install
-go install github.com/jingxu9x/idd-cli/cmd/idd-cli@latest
+CGO_ENABLED=1 go install github.com/jingxu9x/idd-cli/cmd/idd-cli@latest
 
 # Or use Make (binary name in Makefile is "idd-cli")
 make build
@@ -21,7 +21,7 @@ make build
 CGO_ENABLED=1 go test -v -race ./...
 
 # Lint
-golangci-lint run ./...
+CGO_ENABLED=1 golangci-lint run ./...
 
 # Format
 gofmt -w .
@@ -37,8 +37,13 @@ The binary is built as `idd-cli` (see Makefile's `BINARY_NAME`).
 ```text
 cmd/idd-cli/main.go        # CLI entry, uses cobra
 internal/
-  engine/engine.go           # Core validation logic (NOT in separate validator/ package)
+  engine/engine.go           # Core validation orchestration
+  engine/source_validation.go # AST-backed source rules
+  engine/filesystem.go       # Configured source/doc traversal
   collector/                 # Doc and code collectors
+  collector/source_ast.go    # Seven-language Tree-sitter binding
+  collector/document_schema.go # Shared scaffold/completion schema
+  collector/idd_document_validation.go # Self-describing document rules
   graph/graph.go             # LinkageGraph structure
   model/identifier.go        # Identifier, IdentifierSet types
   config/config.go           # .idd.yaml loading
@@ -67,7 +72,9 @@ Config search order:
 
 The **README.md architecture diagrams show interfaces that don't exist in code**. The actual implementation:
 
-- No `validator.ValidationRule` interface — rules are hardcoded in `engine.go`
+- No `validator.ValidationRule` interface — rules are explicit `Engine`
+  methods split across `engine.go`, `source_validation.go`,
+  `annotation_validation.go`, and `filesystem.go`
 - No `collector.Collector` interface — just `DocCollector` and `CodeCollector` structs
 - No `linker.Linker` interface — graph building is in `engine.buildGraph()`
 

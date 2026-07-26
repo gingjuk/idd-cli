@@ -3,7 +3,7 @@
 # Config search order:
 #   1. --config flag value
 #   2. ./.idd.yaml
-#   3. ./.config/idd.yaml
+#   3. ./config/.idd.yaml
 
 version: "1.0"
 
@@ -22,6 +22,10 @@ docs:
   # Paths to ignore during scanning (glob patterns)
   ignore_paths:
     - "examples/**"
+    - "cmd/idd-cli/skills/**"
+    - "cmd/**"
+    - "docs/architecture/**"
+    - ".planning/**"
 
 # Source code scan settings
 code:
@@ -31,6 +35,15 @@ code:
     - "**/*.ts"
     - "**/*.tsx"
     - "**/*.js"
+    - "**/*.jsx"
+    - "**/*.cpp"
+    - "**/*.cc"
+    - "**/*.cxx"
+    - "**/*.hpp"
+    - "**/*.hh"
+    - "**/*.hxx"
+    - "**/*.java"
+    - "**/*.py"
 
   # Annotation markers to look for in code (keyed by identifier type)
   annotations:
@@ -49,13 +62,14 @@ validation:
   # Require doc link consistency between specs and tests
   require_doc_link_consistency: true
 
-  # Require each frontmatter-declared SPEC section to include Design, Contract, Requirement, and Tests fields in that order before optional fields
+  # Require legacy SPEC sections to carry their historical fixed fields.
+  # Self-describing records always require Design, Contract, Requirement, and Acceptance.
   require_spec_fields: true
 
   # Require all specs to have at least one test link
   require_spec_test_coverage: true
 
-  # Require all contracts to have at least one @test-contract annotation
+  # Require legacy CONTRACT markers and self-describing named Contracts to have contract TEST evidence
   require_contract_test_coverage: true
 
   # Require design.md files to contain required sections
@@ -64,7 +78,7 @@ validation:
   # Check doc describe field matches code function comment (default: true)
   require_doc_code_correspondence: true
 
-  # Require public functions have @implement annotation
+  # Require public declarations in supported source languages to have @implement
   require_public_func_annotation: true
 
   # Require package doc comment with Spec/Contract paths
@@ -84,12 +98,12 @@ validation:
   # e.g., NOT ALLOWED: // @test TEST-AUTH-001 \n // @test TEST-AUTH-002
   require_annotation_on_same_line: true
 
-  # Require test functions have @test or @test-contract annotation
+  # Require recognized test declarations to have @test or @test-contract
   require_test_annotation: true
 
-  # Semantic consistency check between doc describe and code comments
+  # Optional lexical drift hint; this is not semantic proof
   consistency_check:
-    enabled: true
+    enabled: false
     threshold: 0.3
 
 # Output settings

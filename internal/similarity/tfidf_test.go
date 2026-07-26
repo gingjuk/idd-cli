@@ -8,7 +8,7 @@ import (
 	"testing"
 )
 
-// @test TEST-INTERNAL_SIMILARITY-001
+// @test-contract TEST-INTERNAL_SIMILARITY-001
 func TestTFIDF_Tokenize(t *testing.T) {
 	tfidf := NewTFIDF()
 
@@ -35,7 +35,7 @@ func TestTFIDF_Tokenize(t *testing.T) {
 	}
 }
 
-// @test TEST-INTERNAL_SIMILARITY-002
+// @test-contract TEST-INTERNAL_SIMILARITY-002
 func TestTFIDF_ComputeTF(t *testing.T) {
 	tfidf := NewTFIDF()
 
@@ -75,7 +75,7 @@ func TestTFIDF_ComputeIDF(t *testing.T) {
 	}
 }
 
-// @test TEST-INTERNAL_SIMILARITY-004
+// @test-contract TEST-INTERNAL_SIMILARITY-004
 func TestTFIDF_ComputeTFIDF(t *testing.T) {
 	tfidf := NewTFIDF()
 	tfidf.idf = map[string]float64{
@@ -169,7 +169,7 @@ func TestCosineSimilarity_ZeroNorm(t *testing.T) {
 	}
 }
 
-// @test TEST-INTERNAL_SIMILARITY-002
+// @test-contract TEST-INTERNAL_SIMILARITY-002
 func TestScore(t *testing.T) {
 	highSimilarity := "validates user credentials and issues JWT tokens"
 	codeText := "validates user credentials and issues JWT tokens for session management"

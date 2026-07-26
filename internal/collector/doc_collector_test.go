@@ -12,7 +12,7 @@ import (
 	"github.com/jingxu9x/idd-cli/internal/config"
 )
 
-// @test TEST-INTERNAL_COLLECTOR-010
+// @test-contract TEST-INTERNAL_COLLECTOR-010
 func TestParseFrontmatter(t *testing.T) {
 	tests := []struct {
 		name    string
@@ -81,6 +81,28 @@ markers:
 				t.Errorf("ParseFrontmatter() = nil, want non-nil")
 			}
 		})
+	}
+}
+
+// @test-contract TEST-INTERNAL_COLLECTOR-010
+func TestExtractHeadingLines_IgnoresTildeFencesAndNestedBackticks(t *testing.T) {
+	content := `~~~~markdown
+` + "```text" + `
+## SPEC-BE-999: Example only
+` + "```" + `
+~~~
+## SPEC-BE-998: Still inside the four-character fence
+~~~
+~~~~
+
+## SPEC-BE-001: Authored record
+`
+	headings := extractHeadingLines(content)
+	if headings["SPEC-BE-999"] != "" || headings["SPEC-BE-998"] != "" {
+		t.Errorf("fenced example became a heading: %#v", headings)
+	}
+	if headings["SPEC-BE-001"] != "## SPEC-BE-001: Authored record" {
+		t.Errorf("authored heading missing: %#v", headings)
 	}
 }
 
@@ -423,7 +445,7 @@ func TestDocCollector_Collect_DirectoryWithNoSpec(t *testing.T) {
 	}
 }
 
-// @test TEST-INTERNAL_COLLECTOR-021
+// @test-contract TEST-INTERNAL_COLLECTOR-021
 func TestNewDocCollector(t *testing.T) {
 	cfg := config.Default()
 	coll := NewDocCollector(cfg)
@@ -470,8 +492,8 @@ func TestExtractSectionContent(t *testing.T) {
 		wantLen   int
 	}{
 		{
-			name: "simple section",
-			content: "## SPEC-BE-001: Test\n\n**Tests:** `TEST-BE-001`\n\n---\n\n## SPEC-BE-002: Other",
+			name:      "simple section",
+			content:   "## SPEC-BE-001: Test\n\n**Tests:** `TEST-BE-001`\n\n---\n\n## SPEC-BE-002: Other",
 			markerID:  "SPEC-BE-001",
 			wantEmpty: false,
 			wantLen:   40,
@@ -484,15 +506,15 @@ func TestExtractSectionContent(t *testing.T) {
 			wantLen:   0,
 		},
 		{
-			name: "section with multiple paragraphs",
-			content: "## SPEC-BE-001: Test\n\nSome content here.\n\nMore content.\n\n**Tests:** `TEST-BE-001`\n\n---\n\n## SPEC-BE-002: Other",
+			name:      "section with multiple paragraphs",
+			content:   "## SPEC-BE-001: Test\n\nSome content here.\n\nMore content.\n\n**Tests:** `TEST-BE-001`\n\n---\n\n## SPEC-BE-002: Other",
 			markerID:  "SPEC-BE-001",
 			wantEmpty: false,
 			wantLen:   80,
 		},
 		{
-			name: "H3 heading section",
-			content: "### SPEC-BE-001\n\nContent here.\n\n---\n\n## SPEC-BE-002",
+			name:      "H3 heading section",
+			content:   "### SPEC-BE-001\n\nContent here.\n\n---\n\n## SPEC-BE-002",
 			markerID:  "SPEC-BE-001",
 			wantEmpty: false,
 			wantLen:   20,
@@ -518,9 +540,9 @@ func TestExtractSectionContent(t *testing.T) {
 // @test TEST-INTERNAL_COLLECTOR-023
 func TestExtractSpecCoverage(t *testing.T) {
 	tests := []struct {
-		name   string
+		name    string
 		section string
-		want   []string
+		want    []string
 	}{
 		{
 			name:    "single spec",
@@ -560,7 +582,7 @@ func TestExtractSpecCoverage(t *testing.T) {
 	}
 }
 
-// @test TEST-INTERNAL_COLLECTOR-024
+// @test-contract TEST-INTERNAL_COLLECTOR-024
 func TestExtractTestsField(t *testing.T) {
 	tests := []struct {
 		name    string

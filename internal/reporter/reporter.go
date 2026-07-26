@@ -76,11 +76,17 @@ var (
 			Explanation: "Code annotations must include a supported annotation keyword and at least one valid IDD identifier.",
 			FixHint:     "Rewrite the annotation with the expected keyword and identifier list.",
 		},
-		"annotation-identifier": {
+		"annotation-missing-identifier": {
 			Severity:    "error",
-			Title:       "Annotation identifier is missing or invalid",
-			Explanation: "Annotations must reference concrete IDD identifiers.",
-			FixHint:     "Add the missing identifier or replace the invalid value with an existing SPEC or TEST identifier.",
+			Title:       "Annotation identifier is missing",
+			Explanation: "Every syntax-tree-bound IDD annotation must reference at least one concrete identifier.",
+			FixHint:     "Add a SPEC or TEST identifier after the configured annotation prefix.",
+		},
+		"annotation-invalid-identifier": {
+			Severity:    "error",
+			Title:       "Annotation identifier is invalid",
+			Explanation: "Annotation identifiers must match the expected SPEC or TEST type and configured IDD identifier shape.",
+			FixHint:     "Correct the identifier type or format, then ensure the referenced document record exists.",
 		},
 		"annotation-placement": {
 			Severity:    "error",
@@ -88,11 +94,17 @@ var (
 			Explanation: "IDD annotations should be placed on the declaration comment, not inside function bodies.",
 			FixHint:     "Move the annotation to the comment immediately preceding the declaration it documents.",
 		},
+		"source-parse": {
+			Severity:    "error",
+			Title:       "Source file cannot be bound safely",
+			Explanation: "IDD source relationships require a pinned syntax-tree grammar and a valid parse; otherwise declaration binding is untrustworthy.",
+			FixHint:     "Use a supported source extension or remove the unsupported code pattern, or fix the reported syntax error. idd-cli intentionally does not fall back to line matching.",
+		},
 		"public-func-annotation": {
 			Severity:    "error",
 			Title:       "Public declaration is missing an implementation annotation",
 			Explanation: "Public API declarations must be traceable to SPEC identifiers.",
-			FixHint:     "Add an @implement annotation referencing the SPEC implemented by this declaration.",
+			FixHint:     "Add the configured implementation annotation referencing the SPEC implemented by this declaration.",
 		},
 		"package-doc-comment": {
 			Severity:    "error",
@@ -136,6 +148,12 @@ var (
 			Explanation: "Each document role owns a small set of level-two Markdown records and required fixed fields.",
 			FixHint:     "Fill the reported Markdown field with concrete package-specific content; do not use TBD or generated placeholder text.",
 		},
+		"idd-document-incomplete": {
+			Severity:    "error",
+			Title:       "Generated document slot is incomplete",
+			Explanation: "A generated scaffold marker remains, or its required bounded Markdown section or record has no effective authored content.",
+			FixHint:     "Use idd-cli docs status on the package, replace the reported scaffold with concrete package-specific Markdown, remove its temporary marker, and rerun validation.",
+		},
 		"idd-document-reference": {
 			Severity:    "error",
 			Title:       "IDD document reference is unresolved",
@@ -159,6 +177,18 @@ var (
 			Title:       "Documented TEST kind and code annotation disagree",
 			Explanation: "A testing.md TEST with kind test uses @test, while kind contract uses @test-contract.",
 			FixHint:     "Correct the TEST kind or replace the mismatched source annotation so one identifier uses exactly one annotation kind.",
+		},
+		"contract-test-coverage": {
+			Severity:    "error",
+			Title:       "Contract has no contract TEST",
+			Explanation: "Every declared Contract must be named by at least one kind contract TEST through its Contracts field.",
+			FixHint:     "Add the Contract name to a kind contract TEST's **Contracts:** field and bind that TEST with @test-contract in source.",
+		},
+		"component-dependency-cycle": {
+			Severity:    "error",
+			Title:       "Component dependency cycle exists",
+			Explanation: "Component Depends on relationships must form an acyclic architecture graph.",
+			FixHint:     "Remove or invert one dependency, or introduce an explicit lower-level boundary that breaks the cycle.",
 		},
 	}
 )

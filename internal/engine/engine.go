@@ -12,8 +12,8 @@ import (
 	"path/filepath"
 	"regexp"
 	"strings"
-	"time"
 
+	"github.com/jingxu9x/idd-cli/internal/collector"
 	"github.com/jingxu9x/idd-cli/internal/config"
 	"github.com/jingxu9x/idd-cli/internal/graph"
 	"github.com/jingxu9x/idd-cli/internal/model"
@@ -28,9 +28,11 @@ import (
 // between identifiers, and accumulates validation results.
 // @implement SPEC-CMD_IDD_CLI-001, SPEC-CMD_IDD_CLI-002, SPEC-CMD_IDD_CLI-003, SPEC-CMD_IDD_CLI-004, SPEC-CMD_IDD_CLI-005, SPEC-CMD_IDD_CLI-006, SPEC-CMD_IDD_CLI-007, SPEC-INTERNAL_ENGINE-001
 type Engine struct {
-	cfg    *config.Config
-	graph  *graph.LinkageGraph
-	result *model.ValidationResult
+	cfg               *config.Config
+	graph             *graph.LinkageGraph
+	result            *model.ValidationResult
+	sourceAnalyses    []*collector.SourceAnalysis
+	sourceAnalysesSet bool
 }
 
 // New creates a new Engine instance with the given configuration.
@@ -63,6 +65,7 @@ func (e *Engine) Run(ctx context.Context, ids *model.IdentifierSet) (*model.Vali
 // AddStructuralErrors appends pre-built validation errors to the result.
 // This allows callers to inject structural errors detected outside the
 // normal validation pipeline.
+// @implement SPEC-INTERNAL_ENGINE-001
 func (e *Engine) AddStructuralErrors(errors []*model.ValidationError) {
 	for _, err := range errors {
 		if err == nil {
@@ -70,6 +73,15 @@ func (e *Engine) AddStructuralErrors(errors []*model.ValidationError) {
 		}
 		e.result.AddError(err.Rule, err.Message, err.Source, err.Link, err.Code)
 	}
+}
+
+// SetSourceAnalyses provides the normalized syntax-tree results collected for
+// the current run. Engine tests and library callers that omit this call are
+// handled by a lazy syntax-tree collection from configured code patterns.
+// @implement SPEC-INTERNAL_ENGINE-001
+func (e *Engine) SetSourceAnalyses(analyses []*collector.SourceAnalysis) {
+	e.sourceAnalyses = append([]*collector.SourceAnalysis(nil), analyses...)
+	e.sourceAnalysesSet = true
 }
 
 // buildGraph constructs the linkage graph from the identifier set.
@@ -96,6 +108,10 @@ func (e *Engine) buildGraph(ids *model.IdentifierSet) {
 				node.Metadata["kind_code_"+id.Kind] = true
 			}
 		}
+		if id.Derived {
+			node.Metadata["derived"] = true
+			node.Metadata["display_name"] = id.Title
+		}
 		srcKey := "source_" + string(id.Origin)
 		if _, exists := node.Metadata[srcKey]; !exists && id.Source != "" {
 			node.Metadata[srcKey] = id.Source
@@ -110,6 +126,9 @@ func (e *Engine) buildGraph(ids *model.IdentifierSet) {
 			linkType := e.inferLinkType(id.Type, linkRef)
 			e.graph.AddEdge(id.ID, linkRef, linkType, id.Source, id.Line)
 		}
+		for _, typedLink := range id.TypedLinks {
+			e.graph.AddEdge(id.ID, typedLink.Ref, typedLink.Type, id.Source, id.Line)
+		}
 	}
 
 	e.graph.VerifyBidirectionalLinks()
@@ -120,7 +139,9 @@ func (e *Engine) buildGraph(ids *model.IdentifierSet) {
 // SPEC->CONTRACT as LinkContract, TEST->SPEC as LinkImplements, etc.
 func (e *Engine) inferLinkType(fromType model.IdentifierType, toRef string) model.LinkType {
 	toType := model.TypeSpec
-	if refType := pattern.GetIdentifierType(toRef); refType != "" {
+	if node, ok := e.graph.GetNode(toRef); ok {
+		toType = node.Type
+	} else if refType := pattern.GetIdentifierType(toRef); refType != "" {
 		if t, err := model.ParseIdentifierType(refType); err == nil {
 			toType = t
 		}
@@ -136,6 +157,9 @@ func (e *Engine) inferLinkType(fromType model.IdentifierType, toRef string) mode
 		}
 		return model.LinkReferences
 	case model.TypeTest:
+		if toType == model.TypeContract {
+			return model.LinkContractTests
+		}
 		return model.LinkImplements
 	case model.TypeContract:
 		return model.LinkContractImplements
@@ -174,6 +198,8 @@ func (e *Engine) validate() {
 		e.validateSpecRequiredFields()
 	}
 	e.validateDocumentTestKinds()
+	e.validateGraphTargets()
+	e.validateComponentDependencyCycles()
 	e.validateContractDesignMarkers()
 	e.validateDocPathExists()
 
@@ -191,7 +217,7 @@ func (e *Engine) validate() {
 	}
 
 	if e.cfg.Validation.RequirePublicFuncAnnotation {
-		e.validatePublicFuncAnnotations()
+		e.validateSourcePublicAnnotations()
 	}
 
 	if e.cfg.Validation.RequirePackageDocComment {
@@ -208,15 +234,15 @@ func (e *Engine) validate() {
 	}
 
 	if e.cfg.Validation.RequireTestAnnotation {
-		e.validateTestAnnotations()
+		e.validateSourceTestAnnotations()
 	}
 
 	if e.cfg.Validation.RequireAnnotationIdentifier {
-		e.validateAnnotationIdentifiers()
+		e.validateSourceAnnotationIdentifiers()
 	}
 
 	if e.cfg.Validation.RequireAnnotationOnSameLine {
-		e.validateConsecutiveAnnotations()
+		e.validateSourceConsecutiveAnnotations()
 	}
 
 	if e.cfg.Validation.ConsistencyCheck.Enabled {
@@ -234,8 +260,7 @@ func (e *Engine) validate() {
 func (e *Engine) validateNoOrphans() {
 	for _, node := range e.graph.Nodes() {
 		if len(node.InEdges()) == 0 && len(node.OutEdges()) == 0 {
-			idType := pattern.GetIdentifierType(node.ID)
-			if idType == "CONTRACT" || idType == "DESIGN" {
+			if node.Type == model.TypeContract || node.Type == model.TypeDesign {
 				e.result.AddWarning(
 					"orphan-detection",
 					fmt.Sprintf("%s is not referenced by any identifier", node.ID),
@@ -259,31 +284,86 @@ func (e *Engine) validateNoOrphans() {
 // validateContractTestCoverage checks that every CONTRACT identifier has at least
 // one TEST identifier with @test-contract annotation referencing it.
 func (e *Engine) validateContractTestCoverage() {
-	contractTestMap := make(map[string]bool)
+	for _, node := range e.graph.Nodes() {
+		if node.Type != model.TypeContract {
+			continue
+		}
+		if len(e.graph.GetInboundByType(node.ID, model.LinkContractTests)) == 0 {
+			name := node.ID
+			if displayName, ok := node.Metadata["display_name"].(string); ok && displayName != "" {
+				name = displayName
+			}
+			e.result.AddError(
+				"contract-test-coverage",
+				fmt.Sprintf("Contract %s has no kind contract TEST relationship", name),
+				nodeSource(node),
+				node.ID,
+				"contracts",
+			)
+		}
+	}
+}
 
-	testContractRegex := regexp.MustCompile(`@test-contract\s+(TEST-[A-Z0-9_]+-[0-9]+)`)
+func (e *Engine) validateGraphTargets() {
+	for _, edge := range e.graph.Edges() {
+		if !strings.HasPrefix(edge.To, "component:") &&
+			!strings.HasPrefix(edge.To, "contract:") {
+			continue
+		}
+		if _, exists := e.graph.GetNode(edge.To); exists {
+			continue
+		}
+		e.result.AddError(
+			"idd-document-reference",
+			fmt.Sprintf("%s references missing graph target %s", edge.From, edge.To),
+			fmt.Sprintf("%s:%d", edge.Source, edge.Line),
+			edge.From,
+			"reference",
+		)
+	}
+}
 
-	e.walkCodeFiles(func(path string, lines []string) {
-		for _, line := range lines {
-			if matches := testContractRegex.FindStringSubmatch(line); len(matches) > 1 {
-				contractID := matches[1]
-				contractTestMap[contractID] = true
+func (e *Engine) validateComponentDependencyCycles() {
+	state := make(map[string]uint8)
+	var stack []string
+	reported := make(map[string]bool)
+	var visit func(string)
+	visit = func(nodeID string) {
+		state[nodeID] = 1
+		stack = append(stack, nodeID)
+		node, _ := e.graph.GetNode(nodeID)
+		if node != nil {
+			for _, edge := range node.OutEdges() {
+				if edge.Type != model.LinkDependsOn {
+					continue
+				}
+				target, ok := e.graph.GetNode(edge.To)
+				if !ok || target.Type != model.TypeDesign {
+					continue
+				}
+				switch state[target.ID] {
+				case 0:
+					visit(target.ID)
+				case 1:
+					if !reported[target.ID] {
+						reported[target.ID] = true
+						e.result.AddError(
+							"component-dependency-cycle",
+							fmt.Sprintf("Component dependency cycle detected: %s -> %s", strings.Join(stack, " -> "), target.ID),
+							nodeSource(node),
+							nodeID,
+							"depends-on",
+						)
+					}
+				}
 			}
 		}
-	})
-
-	for _, node := range e.graph.Nodes() {
-		idType := pattern.GetIdentifierType(node.ID)
-		if idType == "CONTRACT" {
-			if !contractTestMap[node.ID] {
-				e.result.AddError(
-					"contract-test-coverage",
-					fmt.Sprintf("%s has no @test-contract TEST annotation", node.ID),
-					nodeSource(node),
-					"",
-					"",
-				)
-			}
+		stack = stack[:len(stack)-1]
+		state[nodeID] = 2
+	}
+	for nodeID, node := range e.graph.Nodes() {
+		if node.Type == model.TypeDesign && state[nodeID] == 0 {
+			visit(nodeID)
 		}
 	}
 }
@@ -888,6 +968,9 @@ func (e *Engine) isIgnoredDocPath(docPath string) bool {
 // but has no code annotation, or vice versa.
 func (e *Engine) validateDocCodeCorrespondence() {
 	for _, node := range e.graph.Nodes() {
+		if node.Metadata["derived"] == true {
+			continue
+		}
 		hasDoc, hasCode := false, false
 		if node.Metadata != nil {
 			hasDoc, _ = node.Metadata[string(model.OriginDoc)].(bool)
@@ -983,186 +1066,6 @@ func truncate(s string, maxLen int) string {
 		return s
 	}
 	return s[:maxLen] + "..."
-}
-
-// validatePublicFuncAnnotations enforces the relaxed @implement placement rules:
-//  1. Public functions/types MUST carry an @implement annotation.
-//  2. Private functions/types MAY carry an @implement annotation; when they do,
-//     it must still be placed directly above the declaration.
-//
-// Doc/code correspondence for any annotated identifier is enforced separately
-// in validateDocCodeCorrespondence — every @implement (public or private) must
-// have a matching doc entry.
-func (e *Engine) validatePublicFuncAnnotations() {
-	publicFuncRegex := regexp.MustCompile(`^func\s+([A-Z][a-zA-Z0-9]*)\s*\(`)
-	publicTypeRegex := regexp.MustCompile(`^type\s+([A-Z][a-zA-Z0-9]*)\s*`)
-	// "any" regexes match both exported and unexported declarations. Used for
-	// placement validation, which accepts @implement above private targets too.
-	anyFuncRegex := regexp.MustCompile(`^func\s+([a-zA-Z][a-zA-Z0-9]*)\s*\(`)
-	anyMethodRegex := regexp.MustCompile(`^func\s+\([^)]+\)\s*([a-zA-Z][a-zA-Z0-9]*)\s*\(`)
-	anyTypeRegex := regexp.MustCompile(`^type\s+([a-zA-Z][a-zA-Z0-9]*)\s*`)
-	// Only match lines where @implement appears at start of comment (after // and optional space)
-	implementAtStartRegex := regexp.MustCompile(`^\s*//\s*@implement\b`)
-
-	e.walkCodeFiles(func(path string, lines []string) {
-		annotated := make(map[string]bool)
-		annotatedLine := make(map[string]int)
-
-		// First pass: find all @implement annotations and their target
-		// functions/types — both public and private. Private targets won't be
-		// required to carry @implement, but recognising them here keeps the
-		// placement check from flagging valid private placements as errors.
-		type anno struct {
-			line     int
-			funcName string
-			isMethod bool
-		}
-		var annotations []anno
-
-		ignoreScope := false
-		for i, line := range lines {
-			// Check for idd:ignore scope markers
-			if strings.Contains(line, "// idd:ignore start") || strings.Contains(line, "//idd:ignore-start") {
-				ignoreScope = true
-				continue
-			}
-			if strings.Contains(line, "// idd:ignore end") || strings.Contains(line, "//idd:ignore-end") {
-				ignoreScope = false
-				continue
-			}
-			if ignoreScope {
-				continue
-			}
-
-			if !implementAtStartRegex.MatchString(line) {
-				continue
-			}
-			// Find the next function/type after this @implement line (public or private).
-			for j := i + 1; j < len(lines); j++ {
-				nextLine := strings.TrimSpace(lines[j])
-				if strings.HasPrefix(nextLine, "//") || nextLine == "" {
-					continue // skip comment lines and blank lines
-				}
-				if match := anyFuncRegex.FindStringSubmatch(nextLine); len(match) > 1 {
-					annotations = append(annotations, anno{i, match[1], false})
-					break
-				}
-				if match := anyMethodRegex.FindStringSubmatch(nextLine); len(match) > 1 {
-					annotations = append(annotations, anno{i, match[1], true})
-					break
-				}
-				if match := anyTypeRegex.FindStringSubmatch(nextLine); len(match) > 1 {
-					annotations = append(annotations, anno{i, match[1], false})
-					break
-				}
-				// Not a function/type line — stop searching
-				break
-			}
-		}
-
-		// Check for duplicate annotations on the same function/type (public or
-		// private). Use "method:" prefix for methods to distinguish from
-		// standalone functions with the same name.
-		for _, a := range annotations {
-			key := a.funcName
-			if a.isMethod {
-				key = "method:" + key
-			}
-			if annotated[key] {
-				e.result.AddError(
-					"duplicate-annotation",
-					fmt.Sprintf("function/type %s has multiple @implement annotations; use comma-separated identifiers on a single line", a.funcName),
-					fmt.Sprintf("%s:%d", path, a.line+1),
-					"",
-					"",
-				)
-			}
-			annotated[key] = true
-			annotatedLine[a.funcName] = a.line + 1
-		}
-
-		// Second pass: any @implement that isn't placed directly above a
-		// function/type (public or private) is a placement error.
-		ignoreScope = false
-		for i, line := range lines {
-			// Honor // idd:ignore start/end scope markers here too — otherwise
-			// fixtures in test source files would still trip placement checks
-			// even when the annotation lookup is suppressed above.
-			if strings.Contains(line, "// idd:ignore start") || strings.Contains(line, "//idd:ignore-start") {
-				ignoreScope = true
-				continue
-			}
-			if strings.Contains(line, "// idd:ignore end") || strings.Contains(line, "//idd:ignore-end") {
-				ignoreScope = false
-				continue
-			}
-			if ignoreScope {
-				continue
-			}
-			if !implementAtStartRegex.MatchString(line) {
-				continue
-			}
-			if i+1 < len(lines) {
-				nextLine := strings.TrimSpace(lines[i+1])
-				if anyFuncRegex.MatchString(nextLine) || anyMethodRegex.MatchString(nextLine) || anyTypeRegex.MatchString(nextLine) {
-					continue // valid placement, handled in first pass
-				}
-			}
-			// Only report placement error if this @implement didn't find a valid target
-			found := false
-			for _, a := range annotations {
-				if a.line == i {
-					found = true
-					break
-				}
-			}
-			if !found {
-				e.result.AddError(
-					"annotation-placement",
-					"@implement not directly above function/type",
-					fmt.Sprintf("%s:%d", path, i+1),
-					"",
-					"",
-				)
-			}
-		}
-
-		ignoreScope = false
-		for i, line := range lines {
-			// Check for idd:ignore scope markers
-			if strings.Contains(line, "// idd:ignore start") || strings.Contains(line, "//idd:ignore-start") {
-				ignoreScope = true
-				continue
-			}
-			if strings.Contains(line, "// idd:ignore end") || strings.Contains(line, "//idd:ignore-end") {
-				ignoreScope = false
-				continue
-			}
-			if ignoreScope {
-				continue
-			}
-
-			funcName := ""
-			if match := publicFuncRegex.FindStringSubmatch(line); len(match) > 1 {
-				funcName = match[1]
-			} else if match := publicTypeRegex.FindStringSubmatch(line); len(match) > 1 {
-				funcName = match[1]
-			}
-
-			if funcName != "" && funcName != "main" && funcName != "init" && !strings.HasPrefix(funcName, "Test") && !strings.HasSuffix(funcName, "Test") {
-				// Check both funcName and "method:"+funcName since annotated map uses method prefix
-				if !annotated[funcName] && !annotated["method:"+funcName] {
-					e.result.AddError(
-						"public-func-annotation",
-						fmt.Sprintf("public function/type %s missing @implement", funcName),
-						fmt.Sprintf("%s:%d", path, i+1),
-						"",
-						"",
-					)
-				}
-			}
-		}
-	})
 }
 
 // validatePackageDocComment checks that each Go package file has a proper
@@ -1353,101 +1256,6 @@ func (e *Engine) validateDocPathMatchesPackagePath() {
 	})
 }
 
-// validateTestAnnotations checks that test functions have proper annotations
-// (like @test or @test-contract), and that referenced identifiers exist in the graph.
-func (e *Engine) validateTestAnnotations() {
-	testFuncRegex := regexp.MustCompile(`^func\s+(Test[A-Z][a-zA-Z0-9]*|[A-Z][a-zA-Z0-9]*Test[A-Z][a-zA-Z0-9]*)\s*\(`)
-	testAnnotationRegex := regexp.MustCompile(`@test\s+(TEST-[A-Z0-9_]+-[0-9]+)`)
-	testContractAnnotationRegex := regexp.MustCompile(`@test-contract\s+(TEST-[A-Z0-9_]+-[0-9]+)`)
-
-	e.walkCodeFiles(func(path string, lines []string) {
-		if !strings.HasSuffix(path, "_test.go") {
-			return
-		}
-
-		isContractTestFile := strings.HasSuffix(path, "_contract_test.go")
-
-		ignoreScope := false
-		for i, line := range lines {
-			// Check for idd:ignore scope markers
-			if strings.Contains(line, "// idd:ignore start") || strings.Contains(line, "//idd:ignore-start") {
-				ignoreScope = true
-				continue
-			}
-			if strings.Contains(line, "// idd:ignore end") || strings.Contains(line, "//idd:ignore-end") {
-				ignoreScope = false
-				continue
-			}
-
-			// Skip if inside ignore scope
-			if ignoreScope {
-				continue
-			}
-
-			if match := testFuncRegex.FindStringSubmatch(line); len(match) > 1 {
-				funcName := match[1]
-				found := false
-				var testID string
-				for j := i - 1; j >= 0 && j >= i-5; j-- {
-					if strings.TrimSpace(lines[j]) == "" {
-						continue
-					}
-					if strings.HasPrefix(lines[j], "func ") {
-						break
-					}
-					if strings.HasPrefix(lines[j], "//") {
-						if isContractTestFile {
-							if m := testContractAnnotationRegex.FindStringSubmatch(lines[j]); len(m) > 1 {
-								found = true
-								testID = m[1]
-								break
-							}
-						} else {
-							if m := testAnnotationRegex.FindStringSubmatch(lines[j]); len(m) > 1 {
-								found = true
-								testID = m[1]
-								break
-							}
-						}
-					}
-					if strings.HasPrefix(lines[j], "/*") {
-						break
-					}
-				}
-				if !found {
-					if isContractTestFile {
-						e.result.AddError(
-							"test-annotation",
-							fmt.Sprintf("test function %s missing @test-contract annotation", funcName),
-							fmt.Sprintf("%s:%d", path, i+1),
-							"",
-							"",
-						)
-					} else {
-						e.result.AddError(
-							"test-annotation",
-							fmt.Sprintf("test function %s missing @test annotation", funcName),
-							fmt.Sprintf("%s:%d", path, i+1),
-							"",
-							"",
-						)
-					}
-				} else if testID != "" {
-					if node, ok := e.graph.GetNode(testID); !ok || node == nil {
-						e.result.AddError(
-							"test-annotation",
-							fmt.Sprintf("test function %s references undefined %s", funcName, testID),
-							fmt.Sprintf("%s:%d", path, i+1),
-							"",
-							"",
-						)
-					}
-				}
-			}
-		}
-	})
-}
-
 // validateRelatedFiles checks that documentation files have the required
 // related_files field in their frontmatter.
 func (e *Engine) validateRelatedFiles() {
@@ -1579,133 +1387,5 @@ func (e *Engine) validatePkgDocFiles() {
 				)
 			}
 		}
-	}
-}
-
-// walkCodeFiles iterates over all code files matching the configured patterns
-// and invokes the visitor function for each file with its path and line content.
-func (e *Engine) walkCodeFiles(visitor func(path string, lines []string)) {
-	for _, globPattern := range e.cfg.Code.Patterns {
-		e.walkGlob(globPattern, visitor)
-	}
-}
-
-// walkDocFiles iterates over all documentation files matching the configured
-// patterns and invokes the visitor function for each file with its path and lines.
-func (e *Engine) walkDocFiles(visitor func(path string, lines []string)) {
-	for _, globPattern := range e.cfg.Docs.Patterns {
-		e.walkGlob(globPattern, visitor)
-	}
-}
-
-// walkGlob walks the directory tree matching the given pattern and invokes
-// the visitor function for each matching file. Handles non-recursive patterns.
-func (e *Engine) walkGlob(pattern string, visitor func(path string, lines []string)) {
-	hasRecursive := strings.Contains(pattern, "**")
-	if hasRecursive {
-		e.walkGlobRecursive(pattern, visitor)
-		return
-	}
-	dir, file := filepath.Split(pattern)
-	if dir == "" {
-		dir = "."
-	}
-	if file == "" {
-		return
-	}
-	_ = filepath.WalkDir(dir, func(path string, d os.DirEntry, err error) error {
-		if err != nil {
-			return nil
-		}
-		if d.IsDir() {
-			return nil
-		}
-		matched, err := filepath.Match(file, d.Name())
-		if err != nil || !matched {
-			return nil
-		}
-		fullPath := filepath.Join(dir, d.Name())
-		if e.shouldIgnorePath(fullPath) {
-			return nil
-		}
-		content, err := os.ReadFile(fullPath)
-		if err != nil {
-			return nil
-		}
-		lines := strings.Split(string(content), "\n")
-		visitor(fullPath, lines)
-		return nil
-	})
-}
-
-// walkGlobRecursive walks the directory tree matching the given recursive
-// pattern (containing **/) and invokes the visitor function for each matching file.
-func (e *Engine) walkGlobRecursive(pattern string, visitor func(path string, lines []string)) {
-	dir, file := filepath.Split(pattern)
-	if dir == "" {
-		dir = "."
-	}
-	if file == "" {
-		return
-	}
-	dir = strings.TrimSuffix(dir, "**/")
-	if dir == "" {
-		dir = "."
-	}
-	file = strings.TrimPrefix(file, "**/")
-
-	_ = filepath.WalkDir(dir, func(path string, d os.DirEntry, err error) error {
-		if err != nil {
-			return nil
-		}
-		if d.IsDir() {
-			return nil
-		}
-		matched, err := filepath.Match(file, d.Name())
-		if err != nil || !matched {
-			return nil
-		}
-		fullPath := path
-		if e.shouldIgnorePath(fullPath) {
-			return nil
-		}
-		content, err := os.ReadFile(fullPath)
-		if err != nil {
-			return nil
-		}
-		lines := strings.Split(string(content), "\n")
-		visitor(fullPath, lines)
-		return nil
-	})
-}
-
-// shouldIgnorePath checks whether a file path matches any of the configured
-// ignore patterns for code files.
-func (e *Engine) shouldIgnorePath(path string) bool {
-	for _, ignore := range e.cfg.Code.IgnorePaths {
-		if matched, _ := filepath.Match(ignore, filepath.Base(path)); matched {
-			return true
-		}
-		if strings.Contains(path, ignore) {
-			return true
-		}
-	}
-	return false
-}
-
-// BuildReport generates a complete validation report with tool information,
-// configuration summary, and the accumulated validation result.
-// @implement SPEC-CMD_IDD_CLI-004
-func (e *Engine) BuildReport() *model.Report {
-	return &model.Report{
-		Tool:      "idd-cli",
-		Version:   "1.0.0",
-		Timestamp: time.Now().UTC().Format(time.RFC3339),
-		Config: model.ConfigSummary{
-			DocPatterns:  e.cfg.Docs.Patterns,
-			CodePatterns: e.cfg.Code.Patterns,
-			Annotations:  e.cfg.Code.Annotations,
-		},
-		Result: *e.result,
 	}
 }

@@ -52,7 +52,7 @@ type Index struct {
 }
 
 // NewLinkageGraph creates a new empty linkage graph with initialized maps.
-// @implement SPEC-INTERNAL_GRAPH-005, SPEC-INTERNAL_GRAPH-006, SPEC-INTERNAL_GRAPH-009
+// @implement SPEC-INTERNAL_GRAPH-005
 func NewLinkageGraph() *LinkageGraph {
 	return &LinkageGraph{
 		nodes: make(map[string]*Node),
@@ -108,27 +108,33 @@ func (g *LinkageGraph) AddEdge(from, to string, edgeType model.LinkType, source 
 	g.idx.backlinks[to] = append(g.idx.backlinks[to], from)
 }
 
+// @implement SPEC-INTERNAL_GRAPH-003
 func (g *LinkageGraph) Nodes() map[string]*Node {
 	return g.nodes
 }
 
+// @implement SPEC-INTERNAL_GRAPH-003
 func (g *LinkageGraph) Edges() []*Edge {
 	return g.edges
 }
 
+// @implement SPEC-INTERNAL_GRAPH-003
 func (g *LinkageGraph) GetNode(id string) (*Node, bool) {
 	n, ok := g.nodes[id]
 	return n, ok
 }
 
+// @implement SPEC-INTERNAL_GRAPH-003
 func (n *Node) InEdges() []*Edge {
 	return n.inEdges
 }
 
+// @implement SPEC-INTERNAL_GRAPH-003
 func (n *Node) OutEdges() []*Edge {
 	return n.outEdges
 }
 
+// @implement SPEC-INTERNAL_GRAPH-003
 func (g *LinkageGraph) GetOutboundByType(nodeID string, linkType model.LinkType) []*Edge {
 	node, ok := g.nodes[nodeID]
 	if !ok {
@@ -143,6 +149,7 @@ func (g *LinkageGraph) GetOutboundByType(nodeID string, linkType model.LinkType)
 	return result
 }
 
+// @implement SPEC-INTERNAL_GRAPH-003
 func (g *LinkageGraph) GetInboundByType(nodeID string, linkType model.LinkType) []*Edge {
 	node, ok := g.nodes[nodeID]
 	if !ok {
@@ -157,6 +164,7 @@ func (g *LinkageGraph) GetInboundByType(nodeID string, linkType model.LinkType) 
 	return result
 }
 
+// @implement SPEC-INTERNAL_GRAPH-003
 func (g *LinkageGraph) GetBacklinks(nodeID string) []string {
 	if links, ok := g.idx.backlinks[nodeID]; ok {
 		return links
@@ -164,14 +172,17 @@ func (g *LinkageGraph) GetBacklinks(nodeID string) []string {
 	return []string{}
 }
 
+// @implement SPEC-INTERNAL_GRAPH-003
 func (g *LinkageGraph) NodeCount() int {
 	return len(g.nodes)
 }
 
+// @implement SPEC-INTERNAL_GRAPH-003
 func (g *LinkageGraph) EdgeCount() int {
 	return len(g.edges)
 }
 
+// @implement SPEC-INTERNAL_GRAPH-003
 func (g *LinkageGraph) VerifyBidirectionalLinks() {
 	for _, edge := range g.edges {
 		reverseType := model.ReverseLinkType(edge.Type)
@@ -186,6 +197,7 @@ func (g *LinkageGraph) VerifyBidirectionalLinks() {
 	}
 }
 
+// @implement SPEC-INTERNAL_GRAPH-003
 func (g *LinkageGraph) ToSnapshot() *model.GraphSnapshot {
 	nodes := make([]model.NodeSummary, 0, len(g.nodes))
 	for _, n := range g.nodes {
@@ -210,6 +222,7 @@ func (g *LinkageGraph) ToSnapshot() *model.GraphSnapshot {
 	return &model.GraphSnapshot{Nodes: nodes, Edges: edges}
 }
 
+// @implement SPEC-INTERNAL_GRAPH-003
 func (g *LinkageGraph) Stats() model.ValidationStats {
 	stats := model.ValidationStats{
 		TotalIdentifiers: g.NodeCount(),
@@ -230,6 +243,7 @@ func (g *LinkageGraph) Stats() model.ValidationStats {
 	return stats
 }
 
+// @implement SPEC-INTERNAL_GRAPH-003
 func (g *LinkageGraph) ValidateCompleteness() []model.ValidationError {
 	var errors []model.ValidationError
 	for _, node := range g.nodes {

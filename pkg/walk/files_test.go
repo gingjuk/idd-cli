@@ -35,7 +35,7 @@ func TestWalk(t *testing.T) {
 	}
 }
 
-// @test TEST-PKG_WALK-001
+// @test-contract TEST-PKG_WALK-001
 func TestWalk_NoMatches(t *testing.T) {
 	tmpDir := t.TempDir()
 
@@ -49,7 +49,7 @@ func TestWalk_NoMatches(t *testing.T) {
 	}
 }
 
-// @test TEST-PKG_WALK-002
+// @test-contract TEST-PKG_WALK-002
 func TestWalk_StopOnError(t *testing.T) {
 	tmpDir := t.TempDir()
 

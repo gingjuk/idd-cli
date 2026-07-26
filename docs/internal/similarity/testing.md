@@ -1,93 +1,114 @@
 ---
-markers:
-  - id: TEST-INTERNAL_SIMILARITY-001
-    name: Similarity Test 1
-  - id: TEST-INTERNAL_SIMILARITY-002
-    name: Similarity Test 2
-  - id: TEST-INTERNAL_SIMILARITY-003
-    name: Similarity Test 3
-  - id: TEST-INTERNAL_SIMILARITY-004
-    name: Similarity Test 4
-  - id: TEST-INTERNAL_SIMILARITY-005
-    name: Similarity Test 5
-  - id: TEST-INTERNAL_SIMILARITY-006
-    name: Similarity Test 6
-
-related_files:
-  spec: docs/internal/similarity/spec.md
-  contract: docs/internal/similarity/contract.md
-  design: docs/internal/similarity/design.md
-  testing: docs/internal/similarity/testing.md
+idd:
+  version: "1.0"
+  package: internal/similarity
+  document: testing
 ---
 
-# Test Cases (similarity)
+# Testing: internal/similarity
 
-## TEST-INTERNAL_SIMILARITY-001: TFIDF Tokenize
+## TEST-INTERNAL_SIMILARITY-001: Tokenization boundaries
 
-**Status:** Done
+- **Kind:** `contract`
+- **Covers:** `SPEC-INTERNAL_SIMILARITY-001`
+- **Contracts:** `TextScoring`, `cmd/idd-cli#TFIDF`
 
 **Purpose:**
 
-Test text tokenization.
+Prove lowercase ASCII token extraction, punctuation splitting, stop-word and
+single-character filtering, and empty input. Table-driven expected token counts
+make the transformation observable without asserting regular-expression
+internals.
 
-**Spec Coverage:** `SPEC-INTERNAL_SIMILARITY-001`, `SPEC-INTERNAL_SIMILARITY-002`, `SPEC-INTERNAL_SIMILARITY-005`
+**Oracle:** The test passes only when its assertions confirm lowercase
+ASCII token extraction, punctuation splitting, stop-word and single-character filtering,
+and empty input. Table-driven expected token counts make the transformation observable
+without asserting regular-expression internals.
 
----
+## TEST-INTERNAL_SIMILARITY-002: Term frequency and representative scoring
 
-## TEST-INTERNAL_SIMILARITY-002: TF Computation
-
-**Status:** Done
-
-**Purpose:**
-
-Test term frequency computation.
-
-**Spec Coverage:** `SPEC-INTERNAL_SIMILARITY-001`, `SPEC-INTERNAL_SIMILARITY-003`, `SPEC-INTERNAL_SIMILARITY-005`
-
----
-
-## TEST-INTERNAL_SIMILARITY-003: IDF Computation
-
-**Status:** Done
+- **Kind:** `contract`
+- **Covers:** `SPEC-INTERNAL_SIMILARITY-002`, `SPEC-INTERNAL_SIMILARITY-004`
+- **Contracts:** `WeightingPrimitives`
 
 **Purpose:**
 
-Test inverse document frequency computation.
+Prove normalized term counts, empty-token behavior, and the practical separation
+between related authentication prose and unrelated database prose. Exact TF
+values and broad score bounds are the respective oracles.
 
-**Spec Coverage:** `SPEC-INTERNAL_SIMILARITY-001`, `SPEC-INTERNAL_SIMILARITY-004`, `SPEC-INTERNAL_SIMILARITY-005`
+**Oracle:** The test passes only when its assertions confirm normalized
+term counts, empty-token behavior, and the practical separation between related
+authentication prose and unrelated database prose. Exact TF values and broad score
+bounds are the respective oracles.
 
----
+## TEST-INTERNAL_SIMILARITY-003: IDF behavior and standalone normalization
 
-## TEST-INTERNAL_SIMILARITY-004: TF-IDF Vectorize
-
-**Status:** Done
-
-**Purpose:**
-
-Test TF-IDF vectorization.
-
-**Spec Coverage:** `SPEC-INTERNAL_SIMILARITY-001`, `SPEC-INTERNAL_SIMILARITY-005`
-
----
-
-## TEST-INTERNAL_SIMILARITY-005: Cosine Similarity
-
-**Status:** Done
+- **Kind:** `test`
+- **Covers:** `SPEC-INTERNAL_SIMILARITY-001`, `SPEC-INTERNAL_SIMILARITY-002`
 
 **Purpose:**
 
-Test cosine similarity computation.
+Prove rare versus ubiquitous IDF sign behavior and verify lowercase,
+punctuation-replacing, whitespace-collapsing normalization. The shared TEST ID
+represents text-weight preparation evidence across two focused test functions.
 
-**Spec Coverage:** `SPEC-INTERNAL_SIMILARITY-001`, `SPEC-INTERNAL_SIMILARITY-005`, `SPEC-INTERNAL_SIMILARITY-010`
+**Oracle:** The test passes only when its assertions confirm rare versus
+ubiquitous IDF sign behavior and verify lowercase, punctuation-replacing,
+whitespace-collapsing normalization. The shared TEST ID represents text-weight
+preparation evidence across two focused test functions.
 
----
+## TEST-INTERNAL_SIMILARITY-004: TF-IDF multiplication
 
-## TEST-INTERNAL_SIMILARITY-006: Score Computation
-
-**Status:** Done
+- **Kind:** `contract`
+- **Covers:** `SPEC-INTERNAL_SIMILARITY-002`
+- **Contracts:** `TextNormalization`
 
 **Purpose:**
 
-Test computing similarity score between documents.
+Prove that known term frequencies are multiplied by receiver IDF values into a
+fresh vector using simple exact inputs.
 
-**Spec Coverage:** `SPEC-INTERNAL_SIMILARITY-001`, `SPEC-INTERNAL_SIMILARITY-005`
+**Oracle:** The test passes only when its assertions confirm known
+term frequencies are multiplied by receiver IDF values into a fresh vector using simple
+exact inputs.
+
+## TEST-INTERNAL_SIMILARITY-005: Cosine vector geometry
+
+- **Kind:** `test`
+- **Covers:** `SPEC-INTERNAL_SIMILARITY-003`
+
+**Purpose:**
+
+Prove identical, orthogonal, opposite, empty, partial-overlap, and one-sided
+zero-norm outcomes. Approximate comparisons isolate expected floating-point
+rounding while exact zero cases detect invalid division.
+
+**Oracle:** The test passes only when its assertions confirm identical,
+orthogonal, opposite, empty, partial-overlap, and one-sided zero-norm outcomes.
+Approximate comparisons isolate expected floating-point rounding while exact zero cases
+detect invalid division.
+
+## TEST-INTERNAL_SIMILARITY-006: Empty pair scoring
+
+- **Kind:** `test`
+- **Covers:** `SPEC-INTERNAL_SIMILARITY-004`
+
+**Purpose:**
+
+Prove that two empty strings produce a zero score rather than NaN, infinity, or
+an error.
+
+**Oracle:** The test passes only when its assertions confirm two
+empty strings produce a zero score rather than NaN, infinity, or an error.
+
+## Strategy
+
+The suite tests each mathematical stage independently and then exercises the
+composed score. Fixtures are immutable slices, maps, and strings; there is no
+filesystem, time, randomness, or network dependency.
+
+The tests intentionally use representative bounds rather than claiming the
+heuristic is semantically calibrated. They do not cover multilingual text,
+concurrent receiver use, stale IDF entries across reused corpora, threshold
+quality, or large-corpus numerical stability.

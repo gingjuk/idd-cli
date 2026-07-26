@@ -8,9 +8,30 @@ package config
 import (
 	"fmt"
 	"os"
+	"strings"
 
 	"gopkg.in/yaml.v3"
 )
+
+var defaultCodePatterns = []string{
+	"**/*.go",
+	"**/*.ts",
+	"**/*.tsx",
+	"**/*.js",
+	"**/*.jsx",
+	"**/*.cpp",
+	"**/*.cc",
+	"**/*.cxx",
+	"**/*.hpp",
+	"**/*.hh",
+	"**/*.hxx",
+	"**/*.java",
+	"**/*.py",
+}
+
+func copyDefaultCodePatterns() []string {
+	return append([]string(nil), defaultCodePatterns...)
+}
 
 // Config is the root configuration structure that holds all settings for the IDD CLI validation tool.
 // @implement SPEC-INTERNAL_CONFIG-001
@@ -74,7 +95,7 @@ type ConsistencyCheck struct {
 }
 
 // OutputConfig holds output-related configuration settings.
-// @implement SPEC-INTERNAL_CONFIG-007
+// @implement SPEC-INTERNAL_CONFIG-001
 type OutputConfig struct {
 	File         string `yaml:"file"`
 	IncludeGraph bool   `yaml:"include_graph"`
@@ -122,7 +143,8 @@ func Default() *Config {
 			},
 		},
 		Code: CodeConfig{
-			Patterns: []string{"**/*.go"},
+			Patterns:    copyDefaultCodePatterns(),
+			IgnorePaths: []string{},
 			Annotations: map[string]string{
 				"spec":          "@implement",
 				"test":          "@test",
@@ -145,7 +167,7 @@ func Default() *Config {
 			RequireAnnotationOnSameLine:  true,
 			RequirePkgDocFiles:           true,
 			ConsistencyCheck: ConsistencyCheck{
-				Enabled:   true,
+				Enabled:   false,
 				Threshold: 0.3,
 			},
 		},
@@ -172,7 +194,7 @@ func (c *Config) Validate() error {
 		c.Docs.Patterns = []string{"docs/**/*.md"}
 	}
 	if len(c.Code.Patterns) == 0 {
-		c.Code.Patterns = []string{"**/*.go"}
+		c.Code.Patterns = copyDefaultCodePatterns()
 	}
 	if len(c.Code.Annotations) == 0 {
 		c.Code.Annotations = map[string]string{
@@ -182,6 +204,9 @@ func (c *Config) Validate() error {
 		}
 	}
 	if err := c.validateAnnotationKeys(); err != nil {
+		return err
+	}
+	if err := c.validateAnnotationValues(); err != nil {
 		return err
 	}
 	if c.Validation.ConsistencyCheck.Threshold <= 0 {
@@ -206,6 +231,31 @@ func (c *Config) validateAnnotationKeys() error {
 		if _, ok := c.Code.Annotations[key]; !ok {
 			return fmt.Errorf("code.annotations is missing key %q (required by docs.identifier_patterns)", key)
 		}
+	}
+	return nil
+}
+
+func (c *Config) validateAnnotationValues() error {
+	seen := make(map[string]string, len(c.Code.Annotations))
+	for _, key := range []string{"spec", "test", "test_contract"} {
+		value := c.Code.Annotations[key]
+		if value == "" || strings.TrimSpace(value) != value ||
+			!strings.HasPrefix(value, "@") || strings.ContainsAny(value, " \t\r\n") {
+			return fmt.Errorf(
+				"code.annotations.%s must be a non-empty @-prefixed token without whitespace",
+				key,
+			)
+		}
+		normalized := strings.ToLower(value)
+		if previous, exists := seen[normalized]; exists {
+			return fmt.Errorf(
+				"code.annotations.%s duplicates code.annotations.%s value %q",
+				key,
+				previous,
+				value,
+			)
+		}
+		seen[normalized] = key
 	}
 	return nil
 }

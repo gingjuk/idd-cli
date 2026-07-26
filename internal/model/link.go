@@ -16,6 +16,10 @@ const (
 	LinkAnnotates          LinkType = "annotates"
 	LinkContract           LinkType = "contract"            // SPEC → contract (forward direction)
 	LinkContractImplements LinkType = "contract_implements" // contract → SPEC (backward direction)
+	LinkDependsOn          LinkType = "depends_on"
+	LinkDependedBy         LinkType = "depended_by"
+	LinkSupersedes         LinkType = "supersedes"
+	LinkDeprecatedBy       LinkType = "deprecated_by"
 )
 
 // ReverseLinkType returns the reverse link type.
@@ -36,9 +40,26 @@ func ReverseLinkType(lt LinkType) LinkType {
 		return LinkContractImplements
 	case LinkContractImplements:
 		return LinkContract
+	case LinkDependsOn:
+		return LinkDependedBy
+	case LinkDependedBy:
+		return LinkDependsOn
+	case LinkSupersedes:
+		return LinkDeprecatedBy
+	case LinkDeprecatedBy:
+		return LinkSupersedes
 	default:
 		return lt
 	}
+}
+
+// IdentifierLink is an explicitly typed outgoing relationship owned by an
+// Identifier. It is used when source and target identifier types cannot
+// disambiguate relationship semantics.
+// @implement SPEC-INTERNAL_MODEL-012
+type IdentifierLink struct {
+	Ref  string
+	Type LinkType
 }
 
 // Link represents a directed relationship between two identifiers.

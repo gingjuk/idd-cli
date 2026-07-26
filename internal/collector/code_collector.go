@@ -6,9 +6,9 @@ package collector
 
 import (
 	"context"
+	"fmt"
 	"os"
 	"path/filepath"
-	"regexp"
 	"strings"
 
 	"github.com/jingxu9x/idd-cli/internal/config"
@@ -16,12 +16,13 @@ import (
 	"github.com/jingxu9x/idd-cli/pkg/pattern"
 )
 
-// CodeCollector collects IDD annotations from source code files (Go, TypeScript,
-// JavaScript), extracting @implement, @test, and @test-contract annotations.
+// CodeCollector collects IDD annotations from supported source files, extracting
+// @implement, @test, and @test-contract annotations bound to declarations.
 //
 // @implement SPEC-INTERNAL_COLLECTOR-003
 type CodeCollector struct {
-	cfg *config.Config
+	cfg      *config.Config
+	analyses []*SourceAnalysis
 }
 
 // NewCodeCollector creates a new CodeCollector with the given configuration.
@@ -32,16 +33,29 @@ func NewCodeCollector(cfg *config.Config) *CodeCollector {
 }
 
 // Collect collects IDD identifiers from code annotations in source files at the
-// target path. If targetPath is a directory, recursively walks to find all
-// .go, .ts, .tsx, .js files.
+// target path. If targetPath is a directory, it recursively walks configured
+// source files.
 //
 // @implement SPEC-INTERNAL_COLLECTOR-024
 func (c *CodeCollector) Collect(ctx context.Context, targetPath string) (*model.IdentifierSet, error) {
+	set, _, err := c.CollectWithErrors(ctx, targetPath)
+	return set, err
+}
+
+// CollectWithErrors collects attached annotations and returns source-parse
+// findings separately so callers can add them to the normal validation report.
+// @implement SPEC-INTERNAL_COLLECTOR-024
+func (c *CodeCollector) CollectWithErrors(
+	ctx context.Context,
+	targetPath string,
+) (*model.IdentifierSet, []*model.ValidationError, error) {
 	set := model.NewIdentifierSet()
+	c.analyses = nil
+	var validationErrors []*model.ValidationError
 
 	info, err := os.Stat(targetPath)
 	if err != nil {
-		return set, nil
+		return set, validationErrors, nil
 	}
 
 	if info.IsDir() {
@@ -55,89 +69,159 @@ func (c *CodeCollector) Collect(ctx context.Context, targetPath string) (*model.
 			if c.shouldIgnore(path) {
 				return nil
 			}
-			ext := filepath.Ext(path)
-			if ext == ".go" || ext == ".ts" || ext == ".tsx" || ext == ".js" {
-				_ = c.collectFile(path, set)
+			if !c.matchesConfiguredSource(path) {
+				return nil
 			}
+			if !SupportedSourcePath(path) {
+				validationErrors = append(validationErrors, unsupportedSourceFinding(path))
+				return nil
+			}
+			fileErrors, collectErr := c.collectFile(path, set)
+			if collectErr != nil {
+				return collectErr
+			}
+			validationErrors = append(validationErrors, fileErrors...)
 			return nil
 		})
 		if err != nil {
-			return set, err
+			return set, validationErrors, err
 		}
+	} else if !SupportedSourcePath(targetPath) {
+		validationErrors = append(validationErrors, unsupportedSourceFinding(targetPath))
 	} else {
-		_ = c.collectFile(targetPath, set)
+		fileErrors, collectErr := c.collectFile(targetPath, set)
+		if collectErr != nil {
+			return set, validationErrors, collectErr
+		}
+		validationErrors = append(validationErrors, fileErrors...)
 	}
 
-	return set, nil
+	return set, validationErrors, nil
 }
 
-// collectFile scans a source file for IDD annotations and extracts identifiers.
-func (c *CodeCollector) collectFile(path string, set *model.IdentifierSet) error {
+func unsupportedSourceFinding(path string) *model.ValidationError {
+	extension := filepath.Ext(path)
+	if extension == "" {
+		extension = "<none>"
+	}
+	return &model.ValidationError{
+		Rule: "source-parse",
+		Message: fmt.Sprintf(
+			"source extension %q has no configured AST grammar; remove it from code.patterns or use a supported language",
+			extension,
+		),
+		Source: path,
+		Code:   "unsupported-extension",
+	}
+}
+
+// Analyses returns the syntax-tree source models from the most recent
+// collection.
+// @implement SPEC-INTERNAL_COLLECTOR-024
+func (c *CodeCollector) Analyses() []*SourceAnalysis {
+	return append([]*SourceAnalysis(nil), c.analyses...)
+}
+
+// collectFile parses one source file and extracts annotations attached to
+// declarations.
+func (c *CodeCollector) collectFile(
+	path string,
+	set *model.IdentifierSet,
+) ([]*model.ValidationError, error) {
 	content, err := os.ReadFile(path)
 	if err != nil {
-		return err
+		return nil, err
+	}
+	analysis, err := AnalyzeSourceWithAnnotations(path, content, c.cfg.Code.Annotations)
+	if err != nil {
+		return nil, err
+	}
+	c.analyses = append(c.analyses, analysis)
+	var validationErrors []*model.ValidationError
+	for _, parseError := range analysis.ParseErrors {
+		validationErrors = append(validationErrors, &model.ValidationError{
+			Rule:    "source-parse",
+			Message: fmt.Sprintf("%s source cannot be bound safely: %s", analysis.Language, parseError.Message),
+			Source:  fmt.Sprintf("%s:%d", path, parseError.Line),
+			Code:    analysis.Language,
+		})
+	}
+	if len(analysis.ParseErrors) > 0 {
+		return validationErrors, nil
 	}
 
+	declarations := make(map[string]SourceDeclaration)
+	for _, declaration := range analysis.Declarations {
+		declarations[sourceDeclarationKey(declaration.Name, declaration.Line)] = declaration
+	}
 	lines := strings.Split(string(content), "\n")
-
-	ignoreScope := false
-	for i, line := range lines {
-		// Check for idd:ignore scope markers
-		if strings.Contains(line, "// idd:ignore start") || strings.Contains(line, "//idd:ignore-start") {
-			ignoreScope = true
+	for _, annotation := range analysis.Annotations {
+		if annotation.Ignored || !annotation.Attached {
 			continue
 		}
-		if strings.Contains(line, "// idd:ignore end") || strings.Contains(line, "//idd:ignore-end") {
-			ignoreScope = false
-			continue
+		idType := model.TypeSpec
+		if annotation.Kind == "test" || annotation.Kind == "test-contract" {
+			idType = model.TypeTest
 		}
-
-		// Check for single-line idd:ignore
-		if strings.Contains(line, "// idd:ignore") || strings.Contains(line, "//idd:ignore") {
-			continue
+		declaration := declarations[sourceDeclarationKey(annotation.Declaration, annotation.DeclarationLine)]
+		contextStart := annotation.Line - 3
+		if contextStart < 0 {
+			contextStart = 0
 		}
-
-		// Skip if inside ignore scope
-		if ignoreScope {
-			continue
+		contextEnd := declaration.EndLine + 1
+		if contextEnd > len(lines) {
+			contextEnd = len(lines)
 		}
-
-		for _, pat := range pattern.AnnotationPatterns {
-			matches := pat.Regex.FindAllStringSubmatch(line, -1)
-			for _, m := range matches {
-				if len(m) > 1 {
-					refs := SplitAnnotationRefs(m[1])
-					idType, _ := model.ParseIdentifierType(pat.Type)
-
-					ctx := ""
-					start := i - 2
-					if start < 0 {
-						start = 0
-					}
-					end := i + 3
-					if end > len(lines) {
-						end = len(lines)
-					}
-					ctx = strings.Join(lines[start:end], "\n")
-
-					funcComment := extractFunctionComment(lines, i)
-
-					for _, ref := range refs {
-						ann := model.NewAnnotationWithComment(idType, ref, path, strings.TrimSpace(line), ctx, funcComment, i+1)
-						id := ann.ToIdentifier()
-						id.SetOrigin(model.OriginCode)
-						id.Kind = strings.TrimPrefix(pat.Prefix, "@")
-						if id.Kind == "test-contract" {
-							id.Kind = "contract"
-						}
-						set.Add(id)
-					}
-				}
+		contextText := strings.Join(lines[contextStart:contextEnd], "\n")
+		declarationDescription := fmt.Sprintf("[%s: %s]", declaration.Kind, declaration.Name)
+		for _, ref := range annotation.Refs {
+			if pattern.ValidateIdentifierFormat(ref) != nil {
+				continue
 			}
+			if (idType == model.TypeSpec && !strings.HasPrefix(ref, "SPEC-")) ||
+				(idType == model.TypeTest && !strings.HasPrefix(ref, "TEST-")) {
+				continue
+			}
+			ann := model.NewAnnotationWithComment(
+				idType,
+				ref,
+				path,
+				annotation.Raw,
+				contextText,
+				declarationDescription,
+				annotation.Line,
+			)
+			id := ann.ToIdentifier()
+			id.SetOrigin(model.OriginCode)
+			id.Kind = annotation.Kind
+			if id.Kind == "test-contract" {
+				id.Kind = "contract"
+			}
+			set.Add(id)
 		}
 	}
+	return validationErrors, nil
+}
 
-	return nil
+func sourceDeclarationKey(name string, line int) string {
+	return fmt.Sprintf("%s:%d", name, line)
+}
+
+func (c *CodeCollector) matchesConfiguredSource(path string) bool {
+	if len(c.cfg.Code.Patterns) == 0 {
+		return true
+	}
+	slashPath := filepath.ToSlash(path)
+	for _, configuredPattern := range c.cfg.Code.Patterns {
+		if matchGlob(configuredPattern, slashPath) {
+			return true
+		}
+		if strings.HasPrefix(configuredPattern, "**/*") &&
+			strings.HasSuffix(slashPath, strings.TrimPrefix(configuredPattern, "**/*")) {
+			return true
+		}
+	}
+	return false
 }
 
 // matchGlob matches a glob pattern against a full file path.
@@ -168,58 +252,6 @@ func (c *CodeCollector) shouldIgnore(path string) bool {
 		}
 	}
 	return false
-}
-
-// funcDeclRegex matches function declarations in Go code.
-var funcDeclRegex = regexp.MustCompile(`^func\s+(?:\([^)]+\)\s+)?(\w+)\s*\(`)
-
-// extractFunctionComment extracts function name and preceding comments as context
-// for code annotations.
-//
-// extractFunctionComment extracts function name and preceding comments as context.
-func extractFunctionComment(lines []string, annotationLine int) string {
-	if annotationLine >= len(lines) {
-		return ""
-	}
-	searchStart := annotationLine + 1
-	if searchStart >= len(lines) {
-		return ""
-	}
-	endSearch := annotationLine + 10
-	if endSearch > len(lines) {
-		endSearch = len(lines)
-	}
-	var commentLines []string
-	for i := searchStart; i < endSearch; i++ {
-		line := strings.TrimSpace(lines[i])
-		if strings.HasPrefix(line, "//") {
-			commentText := strings.TrimPrefix(line, "//")
-			commentText = strings.TrimSpace(commentText)
-			if commentText != "" {
-				commentLines = append(commentLines, commentText)
-			}
-		} else if strings.HasPrefix(line, "/*") {
-			continue
-		} else if line == "" {
-			continue
-		} else {
-			break
-		}
-	}
-	for i := searchStart; i < endSearch; i++ {
-		line := strings.TrimSpace(lines[i])
-		if match := funcDeclRegex.FindStringSubmatch(line); len(match) > 1 {
-			funcName := match[1]
-			if len(commentLines) > 0 {
-				return strings.Join(commentLines, " ") + " [function: " + funcName + "]"
-			}
-			return "[function: " + funcName + "]"
-		}
-	}
-	if len(commentLines) > 0 {
-		return strings.Join(commentLines, " ")
-	}
-	return ""
 }
 
 // SplitAnnotationRefs splits comma-separated IDD references from an annotation

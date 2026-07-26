@@ -38,15 +38,16 @@ type Frontmatter struct {
 func ParseFrontmatter(content string) (*Frontmatter, error) {
 	lines := strings.Split(content, "\n")
 	startIdx, endIdx := -1, -1
-	inCodeBlock := false
+	codeFence := ""
 
 	for i, line := range lines {
 		trimmed := strings.TrimSpace(line)
-		if strings.HasPrefix(trimmed, "```") {
-			inCodeBlock = !inCodeBlock
+		var transition bool
+		codeFence, transition = markdownFenceTransition(codeFence, trimmed)
+		if transition {
 			continue
 		}
-		if inCodeBlock {
+		if codeFence != "" {
 			continue
 		}
 		if trimmed == "---" {
@@ -120,16 +121,17 @@ func ValidateFrontmatterMarkers(fm *Frontmatter, content string, filePath string
 func ValidateMarkerFormatting(content string, filePath string) []string {
 	var errors []string
 	lines := strings.Split(content, "\n")
-	inCodeBlock := false
+	codeFence := ""
 	inFrontmatter := false
 
 	for lineNum, line := range lines {
 		trimmed := strings.TrimSpace(line)
-		if strings.HasPrefix(trimmed, "```") {
-			inCodeBlock = !inCodeBlock
+		var transition bool
+		codeFence, transition = markdownFenceTransition(codeFence, trimmed)
+		if transition {
 			continue
 		}
-		if inCodeBlock {
+		if codeFence != "" {
 			continue
 		}
 		if trimmed == "---" {
@@ -207,14 +209,15 @@ func extractReferencedMarkers(content string) map[string]bool {
 func extractHeadingLines(content string) map[string]string {
 	result := make(map[string]string)
 	lines := strings.Split(content, "\n")
-	inCodeBlock := false
+	codeFence := ""
 	for _, line := range lines {
 		trimmed := strings.TrimSpace(line)
-		if strings.HasPrefix(trimmed, "```") {
-			inCodeBlock = !inCodeBlock
+		var transition bool
+		codeFence, transition = markdownFenceTransition(codeFence, trimmed)
+		if transition {
 			continue
 		}
-		if inCodeBlock {
+		if codeFence != "" {
 			continue
 		}
 		if strings.HasPrefix(trimmed, "#") {
@@ -224,6 +227,30 @@ func extractHeadingLines(content string) map[string]string {
 		}
 	}
 	return result
+}
+
+func markdownFenceTransition(current, line string) (string, bool) {
+	if current != "" {
+		run := markdownFenceRun(line, current[0])
+		if run >= len(current) && strings.TrimSpace(line[run:]) == "" {
+			return "", true
+		}
+		return current, false
+	}
+	for _, marker := range []byte{'`', '~'} {
+		if run := markdownFenceRun(line, marker); run >= 3 {
+			return line[:run], true
+		}
+	}
+	return "", false
+}
+
+func markdownFenceRun(line string, marker byte) int {
+	run := 0
+	for run < len(line) && line[run] == marker {
+		run++
+	}
+	return run
 }
 
 // @implement SPEC-INTERNAL_COLLECTOR-011
@@ -358,4 +385,3 @@ func isRootDocFile(filePath string) bool {
 	_ = filename
 	return false
 }
-

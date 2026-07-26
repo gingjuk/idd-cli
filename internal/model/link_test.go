@@ -8,7 +8,7 @@ import (
 	"testing"
 )
 
-// @test TEST-INTERNAL_MODEL-028
+// @test-contract TEST-INTERNAL_MODEL-028
 func TestLinkType_Constants(t *testing.T) {
 	if LinkImplements != "implements" {
 		t.Errorf("LinkImplements = %q, want %q", LinkImplements, "implements")
@@ -21,6 +21,9 @@ func TestLinkType_Constants(t *testing.T) {
 	}
 	if LinkAnnotates != "annotates" {
 		t.Errorf("LinkAnnotates = %q, want %q", LinkAnnotates, "annotates")
+	}
+	if LinkDependsOn != "depends_on" || LinkSupersedes != "supersedes" {
+		t.Errorf("derived link constants are not stable")
 	}
 }
 
@@ -35,6 +38,8 @@ func TestReverseLinkType(t *testing.T) {
 		{"implements -> tests", LinkImplements, LinkTests},
 		{"references -> references", LinkReferences, LinkReferences},
 		{"annotates -> annotates", LinkAnnotates, LinkAnnotates},
+		{"depends_on -> depended_by", LinkDependsOn, LinkDependedBy},
+		{"supersedes -> deprecated_by", LinkSupersedes, LinkDeprecatedBy},
 		{"unknown -> same", LinkType("unknown"), LinkType("unknown")},
 	}
 

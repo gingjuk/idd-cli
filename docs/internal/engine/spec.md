@@ -1,112 +1,122 @@
 ---
-markers:
-  - id: SPEC-INTERNAL_ENGINE-001
-    name: Engine Core Struct
-  - id: SPEC-INTERNAL_ENGINE-002
-    name: Engine.New Method
-  - id: SPEC-INTERNAL_ENGINE-004
-    name: Engine.Run Method
-
-related_files:
-  spec: docs/internal/engine/spec.md
-  contract: docs/internal/engine/contract.md
-  design: docs/internal/engine/design.md
-  testing: docs/internal/engine/testing.md
-
+idd:
+  version: "1.0"
+  package: internal/engine
+  document: spec
 ---
 
-# Specification (engine)
+# Specifications: internal/engine
 
-## SPEC-INTERNAL_ENGINE-001: Engine Core Struct
+## SPEC-INTERNAL_ENGINE-001: Stateful repository validation orchestration
 
-**Design:** `EngineModule`
-
-**Contract:** `Engine`
+- **Design:** `ValidationEngine`
+- **Contract:** `RepositoryValidation`
 
 **Requirement:**
 
-The validation engine is the core orchestration component that coordinates collection, graph building, and validation rules.
+The engine must transform pre-collected identifier evidence and collector
+structural errors into one complete repository validation result by detecting
+cross-package duplicates, constructing the relationship graph, executing the
+configured and compatibility rule set, and preserving precise evidence for
+reporting.
 
-**Tests:** `TEST-INTERNAL_ENGINE-001`, `TEST-INTERNAL_ENGINE-002`, `TEST-INTERNAL_ENGINE-003`, `TEST-INTERNAL_ENGINE-004`, `TEST-INTERNAL_ENGINE-005`, `TEST-INTERNAL_ENGINE-006`, `TEST-INTERNAL_ENGINE-007`, `TEST-INTERNAL_ENGINE-008`, `TEST-INTERNAL_ENGINE-009`, `TEST-INTERNAL_ENGINE-010`, `TEST-INTERNAL_ENGINE-011`, `TEST-INTERNAL_ENGINE-012`
+### Required behavior
 
-**Status:** Done
+- Every document and code observation contributes to graph metadata without
+  erasing the other origin.
+- Forward references become typed, source-located edges.
+- Self-describing coverage, named Contract evidence, Component dependencies,
+  and lifecycle replacements retain their explicit relationship types; only
+  legacy links use type inference.
+- Public, test, and annotation policy consumes normalized syntax-tree
+  declarations for Go, TypeScript/TSX, JavaScript/JSX, C++, Java, and Python.
+- A configured extension without a pinned grammar or invalid supported-source
+  syntax yields a `source-parse` finding and never activates a regex fallback.
+- Rule failures accumulate as structured errors or warnings.
+- Self-describing collector findings survive engine execution.
+- Legacy-only rules do not reinterpret self-describing records.
+- Validity becomes true only when the final error collection is empty.
+- Findings are sorted and graph statistics always describe the built graph.
+- Optional graph output reflects post-verification state.
 
-**Implementation:** `internal/engine/engine.go`
+### Failure and implementation boundary
 
-**Key Types:**
+Validation findings are not returned as Go errors. Raw filesystem scan failures
+are generally skipped, and rules report missing evidence only when their own
+checks can observe it. The rule set is hard-coded; no production Rule plugin
+interface, collector interface, or separate linker exists.
 
-- `Engine` — Core validation engine with config, graph, and result
+The engine is not a semantic prose judge. A structurally valid graph can still
+contain incomplete or misleading human documentation and requires Skill-guided
+review.
 
-**Acceptance Criteria:**
+### Acceptance evidence
 
-- [x] Engine struct holds config, graph, and result
-- [x] Engine coordinates validation pipeline
-- [x] Engine supports context for cancellation
+**Acceptance:** Focused tests exercise every major rule family, typed and
+legacy graph interpretation, derived Contract coverage, Component dependency
+cycles, seven-language public and test declarations, annotation attachment and
+syntax failures, structural-error injection, duplicate diagnostics, exact
+ignore scopes, warning thresholds, result sorting, statistics, optional
+snapshots, and report construction.
 
-**Related:** `SPEC-INTERNAL_ENGINE-001`, `SPEC-INTERNAL_ENGINE-002`
+## SPEC-INTERNAL_ENGINE-002: Initialized single-run engine
 
-## SPEC-INTERNAL_ENGINE-002: Engine.New
-
-**Design:** `EngineModule`
-
-**Contract:** `New`
-
-**Requirement:**
-
-Factory function to create a new Engine instance with configuration.
-
-**Tests:** `TEST-INTERNAL_ENGINE-002`, `TEST-INTERNAL_ENGINE-003`
-
----
-
-**Status:** Done
-
-**Implementation:** `internal/engine/engine.go`
-
-**Function Signature:**
-`func New(cfg *config.Config) *Engine`
-
-**Purpose:** Creates a new validation engine with the given configuration.
-
-**Parameters:**
-
-- `cfg`: Configuration pointer
-
-**Returns:** A new Engine ready to run validation
-
-**Acceptance Criteria:**
-
-- [x] Engine created with config reference
-- [x] Empty graph initialized
-- [x] Empty result initialized
-
----
-
-## SPEC-INTERNAL_ENGINE-004: Engine.Run
-
-**Design:** `EngineModule`
-
-**Contract:** `Run`
+- **Design:** `ValidationEngine`
+- **Contract:** `EngineLifecycle`
 
 **Requirement:**
 
-Execute the validation pipeline for the given identifiers and return the accumulated validation result.
+Construction must retain the supplied configuration and allocate a non-nil
+empty graph and validation result ready to receive collector errors and one
+validation run.
 
-**Tests:** `TEST-INTERNAL_ENGINE-004`, `TEST-INTERNAL_ENGINE-005`
-**Function Signature:**
-`func (e *Engine) Run(ctx context.Context, ids *model.IdentifierSet) (*model.ValidationResult, error)`
+### Lifecycle boundary
 
-**Purpose:** Executes the validation pipeline for the given identifiers.
+Construction does not clone or validate configuration. The initial result is
+invalid with empty finding slices. Engine state is not reset by `Run`; callers
+must create a fresh engine for an independent run.
 
-**Parameters:**
+### Acceptance evidence
 
-- `ctx`: Context for cancellation
-- `ids`: Identifier set to validate
+**Acceptance:**
 
-**Returns:** Validation result with stats and errors
+Contract tests inspect non-nil fields, initial validity, and empty findings.
 
-**Acceptance Criteria:**
+## SPEC-INTERNAL_ENGINE-004: Deterministic run and result lifecycle
 
-- [x] Builds linkage graph from identifiers
-- [x] Runs all enabled validation rules
-- [x] Returns accumulated validation result
+- **Design:** `ValidationEngine`
+- **Contract:** `EngineLifecycle`
+
+**Requirement:**
+
+`Run` must perform duplicate detection, typed graph construction, statistics,
+validation, optional snapshotting, and return the engine-owned result with all
+collector and rule findings preserved. When the caller supplies source analyses,
+source rules must reuse that exact normalized evidence instead of reparsing or
+applying language-blind line rules.
+
+**Acceptance:** Lifecycle tests prove collector findings survive `Run`, typed
+edges and metadata reach the graph, source analyses drive declaration rules,
+validity reflects the final error set, output ordering is deterministic, and an
+optional snapshot describes the same completed graph.
+
+### Inputs, output, and context
+
+The identifier set and configuration must be non-nil. The result pointer remains
+owned by the engine and may be used by `BuildReport`. The accepted context is
+currently not checked; cancellation does not abort work. Operational failure is
+not currently returned, so callers inspect `result.Valid`, errors, and warnings.
+
+### Ordering and side effects
+
+Execution reads repository files according to configured patterns and mutates
+the graph/result. Duplicate errors are added before graph validation. Statistics
+are captured after graph construction; validation then sorts findings. An
+optional snapshot is created after validation has calculated relationship
+verification state.
+
+### Non-goals
+
+This specification does not promise safe engine reuse, concurrent execution,
+fail-fast rules, file repair, output rendering, or cancellation. Adding those
+capabilities requires explicit lifecycle and error contracts.

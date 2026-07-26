@@ -1,247 +1,156 @@
 ---
-markers:
-  - id: SPEC-INTERNAL_GRAPH-001
-    name: Graph Node Structure
-  - id: SPEC-INTERNAL_GRAPH-002
-    name: Graph Edge Structure
-  - id: SPEC-INTERNAL_GRAPH-003
-    name: Linkage Graph Structure
-  - id: SPEC-INTERNAL_GRAPH-004
-    name: Graph Index Structure
-  - id: SPEC-INTERNAL_GRAPH-005
-    name: Graph Factory Function
-  - id: SPEC-INTERNAL_GRAPH-006
-    name: LinkageGraph.NewLinkageGraph
-  - id: SPEC-INTERNAL_GRAPH-007
-    name: LinkageGraph.AddNode
-  - id: SPEC-INTERNAL_GRAPH-008
-    name: LinkageGraph.AddEdge
-  - id: SPEC-INTERNAL_GRAPH-009
-    name: NewLinkageGraph
-
-related_files:
-  spec: docs/internal/graph/spec.md
-  contract: docs/internal/graph/contract.md
-  design: docs/internal/graph/design.md
-  testing: docs/internal/graph/testing.md
-
+idd:
+  version: "1.0"
+  package: internal/graph
+  document: spec
 ---
 
-# Specification (graph)
+# Specifications: internal/graph
 
-## SPEC-INTERNAL_GRAPH-001: Graph Node Structure
+## SPEC-INTERNAL_GRAPH-001: Identifier node state
 
-**Design:** `GraphModule`
-
-**Contract:** `Node`
-
-**Requirement:**
-
-Node represents an IDD identifier within the linkage graph with incoming and outgoing edges.
-
-**Tests:** `TEST-INTERNAL_GRAPH-001`, `TEST-INTERNAL_GRAPH-002`, `TEST-INTERNAL_GRAPH-003`, `TEST-INTERNAL_GRAPH-004`, `TEST-INTERNAL_GRAPH-005`, `TEST-INTERNAL_GRAPH-006`, `TEST-INTERNAL_GRAPH-007`, `TEST-INTERNAL_GRAPH-008`, `TEST-INTERNAL_GRAPH-009`, `TEST-INTERNAL_GRAPH-010`, `TEST-INTERNAL_GRAPH-011`, `TEST-INTERNAL_GRAPH-012`, `TEST-INTERNAL_GRAPH-013`, `TEST-INTERNAL_GRAPH-014`, `TEST-INTERNAL_GRAPH-015`
-
-**Status:** Done
-
-**Implementation:** `internal/graph/graph.go`
-
-**Key Types:**
-
-- `Node` — Identifier node with edges and metadata
-
-**Acceptance Criteria:**
-
-- [x] Node stores ID, type, and metadata
-- [x] Node tracks incoming and outgoing edges
-- [x] Node provides methods to access edges
-
-**Related:** `SPEC-INTERNAL_GRAPH-002`, `SPEC-INTERNAL_GRAPH-003`
-
-## SPEC-INTERNAL_GRAPH-002: Graph Edge Structure
-
-**Design:** `GraphModule`
-
-**Contract:** `Edge`
+- **Design:** `LinkageGraphStore`
+- **Contract:** `GraphQuery`
 
 **Requirement:**
 
-Edge represents a directed relationship between two nodes in the linkage graph.
+Each graph identifier must have one node containing its ID, identifier type,
+mutable metadata, and private incoming and outgoing edge collections.
 
-**Tests:** `TEST-INTERNAL_GRAPH-001`, `TEST-INTERNAL_GRAPH-002`, `TEST-INTERNAL_GRAPH-003`, `TEST-INTERNAL_GRAPH-004`, `TEST-INTERNAL_GRAPH-005`, `TEST-INTERNAL_GRAPH-006`, `TEST-INTERNAL_GRAPH-007`, `TEST-INTERNAL_GRAPH-008`, `TEST-INTERNAL_GRAPH-009`, `TEST-INTERNAL_GRAPH-010`, `TEST-INTERNAL_GRAPH-011`, `TEST-INTERNAL_GRAPH-012`, `TEST-INTERNAL_GRAPH-013`, `TEST-INTERNAL_GRAPH-014`, `TEST-INTERNAL_GRAPH-015`
+### Ownership and boundary
 
-**Status:** Done
+Node identity is keyed only by the ID string. The first insertion determines
+the retained type. Metadata is not interpreted by the graph, and adjacency
+records only edges whose endpoints existed when those edges were added.
 
-**Implementation:** `internal/graph/graph.go`
+### Acceptance evidence
 
-**Key Types:**
+**Acceptance:**
 
-- `Edge` — Directed edge with type, source, and verification status
+Node insertion and adjacency tests verify initialized metadata, stable pointer
+reuse, type indexing, and incoming/outgoing edge attachment.
 
-**Acceptance Criteria:**
+## SPEC-INTERNAL_GRAPH-002: Directed relationship evidence
 
-- [x] Edge stores from/to node IDs
-- [x] Edge stores link type (tests, implements, references)
-- [x] Edge tracks source file and line number
-- [x] Edge tracks verification status
-
-**Related:** `SPEC-INTERNAL_GRAPH-001`, `SPEC-INTERNAL_GRAPH-003`
-
----
-
----
-
-## SPEC-INTERNAL_GRAPH-003: Linkage Graph Structure
-
-**Design:** `GraphModule`
-
-**Contract:** `LinkageGraph`
+- **Design:** `LinkageGraphStore`
+- **Contract:** `RelationshipVerification`
 
 **Requirement:**
 
-LinkageGraph manages nodes and edges for IDD identifier validation.
+Every relationship edge must retain source ID, target ID, link type, source file
+and line, plus mutable verification state so diagnostics can explain both the
+relationship and its evidence location.
 
-**Tests:** `TEST-INTERNAL_GRAPH-001`, `TEST-INTERNAL_GRAPH-002`, `TEST-INTERNAL_GRAPH-003`, `TEST-INTERNAL_GRAPH-004`, `TEST-INTERNAL_GRAPH-005`, `TEST-INTERNAL_GRAPH-006`, `TEST-INTERNAL_GRAPH-007`, `TEST-INTERNAL_GRAPH-008`, `TEST-INTERNAL_GRAPH-009`, `TEST-INTERNAL_GRAPH-010`, `TEST-INTERNAL_GRAPH-011`, `TEST-INTERNAL_GRAPH-012`, `TEST-INTERNAL_GRAPH-013`, `TEST-INTERNAL_GRAPH-014`, `TEST-INTERNAL_GRAPH-015`
+**Acceptance:** Every relationship edge
+must retain source ID, target ID, link type, source file and line, plus mutable
+verification state so diagnostics can explain both the relationship and its evidence
+location.
 
-**Status:** Done
+### Edge cases
 
-**Implementation:** `internal/graph/graph.go`
+Edges are not unique and do not require existing endpoints. Verification is
+derived later and can be reset on each verification pass.
 
-**Key Types:**
+## SPEC-INTERNAL_GRAPH-003: Mutable graph and typed traversal
 
-- `LinkageGraph` — Main graph structure with nodes, edges, and index
-
-**Public Functions:**
-
-## SPEC-INTERNAL_GRAPH-006: NewLinkageGraph
-
-**Design:** `GraphModule`
-
-**Contract:** `NewLinkageGraph`
-
-**Requirement:**
-
-Create a new empty linkage graph.
-
-**Tests:** `TEST-INTERNAL_GRAPH-006`
-
-**Function Signature:**
-`func NewLinkageGraph() *LinkageGraph`
-
-**Purpose:** Creates a new empty linkage graph.
-
----
-
-## SPEC-INTERNAL_GRAPH-007: LinkageGraph.AddNode
-
-**Design:** `GraphModule`
-
-**Contract:** `AddNode`
+- **Design:** `LinkageGraphStore`
+- **Contract:** `GraphQuery`
 
 **Requirement:**
 
-Add a node to the graph if it does not already exist.
+The graph must support direct node lookup, complete node and edge views,
+per-node adjacency, typed inbound and outbound filtering, counts, reciprocal
+verification, completeness checks, statistics, and snapshot projection over one
+coherent in-memory state.
 
-**Tests:** `TEST-INTERNAL_GRAPH-007`
+### Implementation boundary
 
-**Function Signature:**
-`func (g *LinkageGraph) AddNode(id string, idType model.IdentifierType) *Node`
+The graph does not infer relationships or choose validation rules. Returned
+collection views are not immutable, and concurrent reads during mutation are
+outside the contract.
 
-**Purpose:** Adds a node to the graph if it doesn't exist.
+### Acceptance evidence
 
----
+**Acceptance:**
 
-## SPEC-INTERNAL_GRAPH-008: LinkageGraph.AddEdge
+Tests cover lookup success and failure, typed filtering, reciprocal and
+one-direction relationships, counts, statistics, snapshots, and completeness
+outcomes.
 
-**Design:** `GraphModule`
+## SPEC-INTERNAL_GRAPH-004: Reverse-reference index
 
-**Contract:** `AddEdge`
-
-**Requirement:**
-
-Add a directed edge between two graph nodes.
-
-**Tests:** `TEST-INTERNAL_GRAPH-008`
-
-**Function Signature:**
-`func (g *LinkageGraph) AddEdge(from, to string, edgeType model.LinkType, source string, line int)`
-
-**Purpose:** Adds a directed edge between two nodes.
-
----
-
-## SPEC-INTERNAL_GRAPH-004: Graph Index Structure
-
-**Design:** `GraphModule`
-
-**Contract:** `Index`
+- **Design:** `LinkageGraphStore`
+- **Contract:** `GraphQuery`
 
 **Requirement:**
 
-Index provides fast lookup structures for nodes by ID, type, and backlinks.
+Every added edge must append its source ID to an index keyed by target ID so
+reverse references can be retrieved without scanning the global edge list.
 
-**Tests:** `TEST-INTERNAL_GRAPH-001`, `TEST-INTERNAL_GRAPH-002`, `TEST-INTERNAL_GRAPH-003`, `TEST-INTERNAL_GRAPH-004`, `TEST-INTERNAL_GRAPH-005`, `TEST-INTERNAL_GRAPH-006`, `TEST-INTERNAL_GRAPH-007`, `TEST-INTERNAL_GRAPH-008`, `TEST-INTERNAL_GRAPH-009`, `TEST-INTERNAL_GRAPH-010`, `TEST-INTERNAL_GRAPH-011`, `TEST-INTERNAL_GRAPH-012`, `TEST-INTERNAL_GRAPH-013`, `TEST-INTERNAL_GRAPH-014`, `TEST-INTERNAL_GRAPH-015`
+**Acceptance:** Every added edge must
+append its source ID to an index keyed by target ID so reverse references can be
+retrieved without scanning the global edge list.
 
-**Status:** Done
+### Boundaries
 
-**Implementation:** `internal/graph/graph.go`
+The index preserves insertion and duplicates. It contains an entry even when
+the target node does not exist. Successful lookup exposes the stored slice
+without copying.
 
-**Key Types:**
+## SPEC-INTERNAL_GRAPH-005: Fully initialized empty graph
 
-- `Index` — Fast lookup indexes for graph traversal
-
-**Acceptance Criteria:**
-
-- [x] Index stores nodes by ID for O(1) lookup
-- [x] Index stores nodes by type for filtering
-- [x] Index stores backlinks for reverse edge lookup
-
-**Related:** `SPEC-INTERNAL_GRAPH-003`, `SPEC-INTERNAL_GRAPH-005`
-
-## SPEC-INTERNAL_GRAPH-005: Graph Factory Function
-
-**Design:** `GraphModule`
-
-**Contract:** `NewLinkageGraph`
+- **Design:** `LinkageGraphStore`
+- **Contract:** `GraphMutation`
 
 **Requirement:**
 
-Factory function to create a new LinkageGraph instance.
+Graph construction must initialize all maps and slices so callers can add nodes
+and edges immediately without nil checks.
 
-**Tests:** `TEST-INTERNAL_GRAPH-009`, `TEST-INTERNAL_GRAPH-010`, `TEST-INTERNAL_GRAPH-011`, `TEST-INTERNAL_GRAPH-012`, `TEST-INTERNAL_GRAPH-013`, `TEST-INTERNAL_GRAPH-014`, `TEST-INTERNAL_GRAPH-015`
+### Acceptance evidence
 
-**Status:** Done
+**Acceptance:**
 
-**Implementation:** `internal/graph/graph.go`
+The constructor test asserts a non-nil graph, zero counts, and initialized
+internal collections through same-package access.
 
-**Public Functions:**
+## SPEC-INTERNAL_GRAPH-007: Idempotent node insertion
 
----
-
-## SPEC-INTERNAL_GRAPH-009: NewLinkageGraph
-
-**Design:** `GraphModule`
-
-**Contract:** `LinkageGraph`
+- **Design:** `LinkageGraphStore`
+- **Contract:** `GraphMutation`
 
 **Requirement:**
 
-Create a new empty linkage graph with initialized maps.
+Adding a previously unseen ID must create and index one node; adding the same ID
+again must return the existing node without changing its original type or
+duplicating its type-index entry.
 
-**Tests:** `TEST-INTERNAL_GRAPH-009`
+**Acceptance:** Adding a previously
+unseen ID must create and index one node; adding the same ID again must return the
+existing node without changing its original type or duplicating its type-index entry.
 
----
+### Non-goals
 
-**Function Signature:**
-`func NewLinkageGraph() *LinkageGraph`
+Insertion does not merge metadata, diagnose a conflicting type, or repair edges
+that were added before the node.
 
-**Purpose:** Creates a new empty linkage graph with initialized maps.
+## SPEC-INTERNAL_GRAPH-008: Edge insertion across graph views
 
-**Returns:** A new LinkageGraph pointer ready to accept nodes and edges
+- **Design:** `LinkageGraphStore`
+- **Contract:** `GraphMutation`
 
-**Acceptance Criteria:**
+**Requirement:**
 
-- [x] Creates empty node map
-- [x] Creates empty edge slice
-- [x] Initializes index with empty lookup maps
+Adding an edge must append one global edge, update available endpoint adjacency,
+and append the source to the target backlink index using the supplied type and
+location evidence.
 
-**Related:** `SPEC-INTERNAL_GRAPH-001`, `SPEC-INTERNAL_GRAPH-002`, `SPEC-INTERNAL_GRAPH-003`, `SPEC-INTERNAL_GRAPH-004`
+**Acceptance:** Adding an edge must
+append one global edge, update available endpoint adjacency, and append the source to
+the target backlink index using the supplied type and location evidence.
+
+### Failure and compatibility boundary
+
+The operation returns no error for missing endpoints and performs no duplicate
+check. Engine construction order is responsible for normal endpoint integrity;
+changing to rejection or deduplication would be observable behavior.

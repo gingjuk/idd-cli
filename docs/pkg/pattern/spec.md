@@ -1,236 +1,198 @@
 ---
-markers:
-  - id: SPEC-PKG_PATTERN-001
-    name: IDD Pattern Regex
-  - id: SPEC-PKG_PATTERN-002
-    name: Code Annotation Pattern
-  - id: SPEC-PKG_PATTERN-003
-    name: Annotation Type Mapping
-  - id: SPEC-PKG_PATTERN-004
-    name: Reference Extraction
-  - id: SPEC-PKG_PATTERN-005
-    name: Reference Splitting
-  - id: SPEC-PKG_PATTERN-006
-    name: Identifier Type Detection
-  - id: SPEC-PKG_PATTERN-007
-    name: Pattern Validation
-  - id: SPEC-PKG_PATTERN-008
-    name: IDD Reference Filter
-  - id: SPEC-PKG_PATTERN-009
-    name: Pattern Constants
-
-related_files:
-  spec: docs/pkg/pattern/spec.md
-  contract: docs/pkg/pattern/contract.md
-  design: docs/pkg/pattern/design.md
-  testing: docs/pkg/pattern/testing.md
-
+idd:
+  version: "1.0"
+  package: pkg/pattern
+  document: spec
 ---
 
-# Specification (pattern)
+# Specifications: pkg/pattern
 
-## SPEC-PKG_PATTERN-001: IDD Pattern Regex
+## SPEC-PKG_PATTERN-001: Built-in identifier recognition registry
 
-**Design:** `PatternModule`
-
-**Contract:** `IDDPattern`
+- **Design:** `SyntaxRecognizer`
+- **Contract:** `IdentifierSyntax`
 
 **Requirement:**
 
-Define regex patterns for IDD identifier recognition.
+The package must provide precompiled case-insensitive recognition patterns for
+SPEC, CONTRACT, TEST, DESIGN, and the internal PATTERN and WALK forms. Project
+module segments may contain uppercase letters, digits, and underscores.
 
-**Tests:** `TEST-PKG_PATTERN-001`
+### Boundary and rationale
 
-**Status:** Done
+The registry supports fast lexical scanning and examples; it is not the
+project's configurable documentation source and is not a declaration catalog.
+Map iteration order is intentionally not an output guarantee.
 
-**Implementation:** `pkg/pattern/idd.go`
+### Acceptance evidence
 
-**Key Patterns:**
+**Acceptance:**
 
-- SPEC pattern: `SPEC-[A-Z]+-[0-9]+`
-- TEST pattern: `TEST-[A-Z]+-[0-9]+`
-- CONTRACT pattern: `CONTRACT-[A-Z]+-[0-9]+`
-- DESIGN pattern: `DESIGN-[A-Z]+-[0-9]+`
+Pattern-validation tests distinguish supported forms from unknown types, and
+strict-format tests separately reject internal section markers as authored IDD
+identifiers.
 
----
+## SPEC-PKG_PATTERN-002: Source annotation recognition registry
 
-## SPEC-PKG_PATTERN-002: Code Annotation Pattern
-
-**Design:** `PatternModule`
-
-**Contract:** `AnnotationPattern`
-
-**Requirement:**
-
-Define regex patterns for code annotations (@implement, @test, @test-contract).
-
-**Tests:** `TEST-PKG_PATTERN-002`
-
-**Status:** Done
-
-**Implementation:** `pkg/pattern/idd.go`
-
-**Key Patterns:**
-
-- Annotation prefix pattern
-- Annotation value pattern
-
----
-
-## SPEC-PKG_PATTERN-003: Annotation Type Mapping
-
-**Design:** `PatternModule`
-
-**Contract:** `GetAnnotationType`
+- **Design:** `SyntaxRecognizer`
+- **Contract:** `AnnotationSyntax`
 
 **Requirement:**
 
-Map annotation prefixes to identifier types.
+The package must recognize `@implement`, `@test`, and `@test-contract`
+followed by one or more comma-separated three-part identifiers and associate
+the implementation prefix with SPEC and the two testing prefixes with TEST.
 
-**Tests:** `TEST-PKG_PATTERN-003`
+**Acceptance:** The package must
+recognize `@implement`, `@test`, and `@test-contract` followed by one or more
+comma-separated three-part identifiers and associate the implementation prefix with SPEC
+and the two testing prefixes with TEST.
 
-**Status:** Done
+### Edge cases
 
-**Implementation:** `pkg/pattern/idd.go`
+Whitespace around commas is accepted. A missing identifier is not matched by
+the extraction regex and is diagnosed later by engine annotation validation.
+The registry does not decide whether a recognized annotation is placed on a
+valid declaration.
 
-**Key Functions:**
+## SPEC-PKG_PATTERN-003: Annotation prefix type mapping
 
-- `GetAnnotationType(prefix string) string`
-- Maps: @implement → SPEC, @test → TEST, @test-contract → TEST
-
----
-
-## SPEC-PKG_PATTERN-004: Reference Extraction
-
-**Design:** `PatternModule`
-
-**Contract:** `ExtractIDDReferences`
-
-**Requirement:**
-
-Extract IDD references from content.
-
-**Tests:** `TEST-PKG_PATTERN-004`
-
-**Status:** Done
-
-**Implementation:** `pkg/pattern/idd.go`
-
-**Key Functions:**
-
-- `ExtractIDDReferences(content string) []string`
-- Extracts all IDD identifier references from text
-
----
-
-## SPEC-PKG_PATTERN-005: Reference Splitting
-
-**Design:** `PatternModule`
-
-**Contract:** `SplitAnnotationRefs`
+- **Design:** `SyntaxRecognizer`
+- **Contract:** `AnnotationSyntax`
 
 **Requirement:**
 
-Split comma-separated IDD references.
+Exact known annotation prefixes must map to their identifier type; unknown or
+differently cased prefixes must return no type.
 
-**Tests:** `TEST-PKG_PATTERN-005`
+### Acceptance evidence
 
-**Status:** Done
+**Acceptance:**
 
-**Implementation:** `pkg/pattern/idd.go`
+Table-driven tests include all three prefixes, an uppercase variation, an
+unknown value, and empty input.
 
-**Key Functions:**
+## SPEC-PKG_PATTERN-004: Explicit document reference extraction
 
-- `SplitAnnotationRefs(s string) []string`
-- Trims whitespace from each reference
-
----
-
-## SPEC-PKG_PATTERN-006: Identifier Type Detection
-
-**Design:** `PatternModule`
-
-**Contract:** `GetIdentifierType`
+- **Design:** `SyntaxRecognizer`
+- **Contract:** `DocumentReferenceSyntax`
 
 **Requirement:**
 
-Determine identifier type from reference string.
+Documentation scanning must only return identifier-shaped prose references when
+the occurrence is explicitly quoted or backtick-delimited, and returned
+identifiers must be normalized to uppercase.
 
-**Tests:** `TEST-PKG_PATTERN-006`
+**Acceptance:** Documentation scanning
+must only return identifier-shaped prose references when the occurrence is explicitly
+quoted or backtick-delimited, and returned identifiers must be normalized to uppercase.
 
-**Status:** Done
+### Failure and implementation boundary
 
-**Implementation:** `pkg/pattern/idd.go`
+Plain prose must not create graph edges accidentally. Duplicate occurrences
+remain duplicates, balanced Markdown delimiters are not parsed, and ordering
+between identifier types is not stable. Quoted lowercase references are a known
+current limitation because quote detection searches with the normalized value.
 
-**Key Functions:**
+## SPEC-PKG_PATTERN-005: Comma-separated annotation target splitting
 
-- `GetIdentifierType(ref string) string`
-- Returns "SPEC", "TEST", "CONTRACT", "DESIGN" or empty
-
----
-
-## SPEC-PKG_PATTERN-007: Pattern Validation
-
-**Design:** `PatternModule`
-
-**Contract:** `ValidateIDPattern`
-
-**Requirement:**
-
-Validate identifier against IDD pattern.
-
-**Tests:** `TEST-PKG_PATTERN-007`
-
-**Status:** Done
-
-**Implementation:** `pkg/pattern/idd.go`
-
-**Key Functions:**
-
-- `ValidateIDPattern(id string) error`
-- Validates against known patterns
-
----
-
-## SPEC-PKG_PATTERN-008: IDD Reference Filter
-
-**Design:** `PatternModule`
-
-**Contract:** `ExtractAnnotations`
+- **Design:** `SyntaxRecognizer`
+- **Contract:** `AnnotationSyntax`
 
 **Requirement:**
 
-Filter out quoted/backtick-wrapped identifiers.
+Annotation target lists must split on commas, trim surrounding whitespace,
+preserve target spelling, and omit empty elements.
 
-**Tests:** `TEST-PKG_PATTERN-008`
+**Acceptance:** Annotation target lists
+must split on commas, trim surrounding whitespace, preserve target spelling, and omit
+empty elements.
 
-**Status:** Done
+### Non-goals
 
-**Implementation:** `pkg/pattern/idd.go`
+Splitting does not validate identifier grammar, remove duplicates, or accept
+whitespace-only separation as multiple references. Those checks occur after
+lexical extraction.
 
-**Key Functions:**
+## SPEC-PKG_PATTERN-006: Broad identifier type detection
 
-- `ExtractAnnotations(content string) []string`
-- Filters out identifiers in backticks or quotes
-
----
-
-## SPEC-PKG_PATTERN-009: Pattern Constants
-
-**Design:** `PatternModule`
-
-**Contract:** `PatternConstants`
+- **Design:** `SyntaxRecognizer`
+- **Contract:** `IdentifierSyntax`
 
 **Requirement:**
 
-Define pattern constants for reuse.
+Given arbitrary text, the recognizer must return the first registry type whose
+regular expression finds supported identifier text, or the empty string when
+none is present.
 
-**Tests:** `TEST-PKG_PATTERN-007`
-**Status:** Done
+**Acceptance:** Given arbitrary text,
+the recognizer must return the first registry type whose regular expression finds
+supported identifier text, or the empty string when none is present.
 
-**Implementation:** `pkg/pattern/idd.go`
+### Boundary
 
-**Key Constants:**
+The input is not required to consist solely of the identifier. Callers that
+accept authored IDs must use strict validation instead.
 
-- Pattern strings
-- Annotation prefixes
+## SPEC-PKG_PATTERN-007: Broad pattern validity check
+
+- **Design:** `SyntaxRecognizer`
+- **Contract:** `IdentifierSyntax`
+
+**Requirement:**
+
+The broad validity check must succeed when any built-in identifier pattern is
+found and return an error naming the input otherwise.
+
+**Acceptance:** The broad validity check
+must succeed when any built-in identifier pattern is found and return an error naming
+the input otherwise.
+
+### Non-goals
+
+This check does not enforce whole-string format, package module ownership, or
+whether PATTERN and WALK forms are valid author-facing IDs.
+
+## SPEC-PKG_PATTERN-008: Annotation target extraction
+
+- **Design:** `SyntaxRecognizer`
+- **Contract:** `AnnotationSyntax`
+
+**Requirement:**
+
+Annotation extraction must scan for every known prefix, split each captured
+comma list, and return the targets without assigning graph relationships or
+discarding duplicates.
+
+### Acceptance evidence
+
+**Acceptance:**
+
+Tests cover single annotations, mixed annotation types, comma-separated
+targets, and content containing no annotations.
+
+## SPEC-PKG_PATTERN-009: Strict identifier format validation
+
+- **Design:** `SyntaxRecognizer`
+- **Contract:** `IdentifierSyntax`
+
+**Requirement:**
+
+Strict validation must reject candidates with the wrong segment count,
+unsupported IDD types, lowercase or punctuation-bearing modules, non-numeric
+number characters, and internal two-part section markers.
+
+### Known boundary
+
+The current implementation validates the characters found in module and number
+segments but does not explicitly reject an empty segment. This document does
+not claim a stronger guarantee than the code provides.
+
+### Acceptance evidence
+
+**Acceptance:**
+
+The table-driven validator suite covers all supported IDD types, compound
+underscore modules, invalid segment counts, unsupported types, lowercase
+modules, punctuation, non-digit numbers, empty overall input, and
+case-insensitive type spelling.

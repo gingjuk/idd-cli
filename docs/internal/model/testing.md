@@ -1,437 +1,409 @@
 ---
-markers:
-  - id: TEST-INTERNAL_MODEL-001
-    name: Model Test 1
-  - id: TEST-INTERNAL_MODEL-002
-    name: Model Test 2
-  - id: TEST-INTERNAL_MODEL-003
-    name: Model Test 3
-  - id: TEST-INTERNAL_MODEL-004
-    name: Model Test 4
-  - id: TEST-INTERNAL_MODEL-005
-    name: Model Test 5
-  - id: TEST-INTERNAL_MODEL-006
-    name: Model Test 6
-  - id: TEST-INTERNAL_MODEL-007
-    name: Model Test 7
-  - id: TEST-INTERNAL_MODEL-008
-    name: Model Test 8
-  - id: TEST-INTERNAL_MODEL-009
-    name: Model Test 9
-  - id: TEST-INTERNAL_MODEL-010
-    name: Model Test 10
-  - id: TEST-INTERNAL_MODEL-011
-    name: Model Test 11
-  - id: TEST-INTERNAL_MODEL-012
-    name: Model Test 12
-  - id: TEST-INTERNAL_MODEL-013
-    name: Model Test 13
-  - id: TEST-INTERNAL_MODEL-014
-    name: Model Test 14
-  - id: TEST-INTERNAL_MODEL-015
-    name: Model Test 15
-  - id: TEST-INTERNAL_MODEL-016
-    name: Model Test 16
-  - id: TEST-INTERNAL_MODEL-017
-    name: Model Test 17
-  - id: TEST-INTERNAL_MODEL-018
-    name: Model Test 18
-  - id: TEST-INTERNAL_MODEL-019
-    name: Model Test 19
-  - id: TEST-INTERNAL_MODEL-020
-    name: Model Test 20
-  - id: TEST-INTERNAL_MODEL-021
-    name: Model Test 21
-  - id: TEST-INTERNAL_MODEL-022
-    name: Model Test 22
-  - id: TEST-INTERNAL_MODEL-023
-    name: Model Test 23
-  - id: TEST-INTERNAL_MODEL-024
-    name: Model Test 24
-  - id: TEST-INTERNAL_MODEL-028
-    name: Link Type Constants
-  - id: TEST-INTERNAL_MODEL-029
-    name: Reverse Link Type
-  - id: TEST-INTERNAL_MODEL-030
-    name: New Link
-  - id: TEST-INTERNAL_MODEL-031
-    name: LLM Report Types
-
-related_files:
-  spec: docs/internal/model/spec.md
-  contract: docs/internal/model/contract.md
-  design: docs/internal/model/design.md
-  testing: docs/internal/model/testing.md
+idd:
+  version: "1.0"
+  package: internal/model
+  document: testing
 ---
 
-# Test Cases (model)
+# Testing: internal/model
 
-## TEST-INTERNAL_MODEL-001: ParseIdentifierType
+## TEST-INTERNAL_MODEL-001: Identifier set add, get, and presence
 
-**Status:** Done
+- **Kind:** `test`
+- **Covers:** `SPEC-INTERNAL_MODEL-004`, `SPEC-INTERNAL_MODEL-005`
 
 **Purpose:**
 
-Test identifier type parsing.
+Prove that adding an identifier updates presence and first-observation lookup
+while an unknown ID remains absent.
 
-**Spec Coverage:** `SPEC-INTERNAL_MODEL-001`
+**Oracle:** The test passes only when its assertions confirm adding
+an identifier updates presence and first-observation lookup while an unknown ID remains
+absent.
 
----
+## TEST-INTERNAL_MODEL-002: Unique identifier count
 
-## TEST-INTERNAL_MODEL-002: NewIdentifier
-
-**Status:** Done
-
-**Purpose:**
-
-Test identifier creation.
-
-**Spec Coverage:** `SPEC-INTERNAL_MODEL-002`
-
----
-
-## TEST-INTERNAL_MODEL-003: Identifier AddLink
-
-**Status:** Done
+- **Kind:** `test`
+- **Covers:** `SPEC-INTERNAL_MODEL-006`
 
 **Purpose:**
 
-Test adding links to identifiers.
+Prove zero count for a new set and one count per distinct ID after additions.
 
-**Spec Coverage:** `SPEC-INTERNAL_MODEL-003`
+**Oracle:** The test passes only when its assertions confirm zero count
+for a new set and one count per distinct ID after additions.
 
----
+## TEST-INTERNAL_MODEL-003: Unique sorted view cardinality
 
-## TEST-INTERNAL_MODEL-004: IdentifierSet Basics
-
-**Status:** Done
-
-**Purpose:**
-
-Test identifier set basic operations.
-
-**Spec Coverage:** `SPEC-INTERNAL_MODEL-004`
-
----
-
-## TEST-INTERNAL_MODEL-005: IdentifierSet Get Has
-
-**Status:** Done
+- **Kind:** `test`
+- **Covers:** `SPEC-INTERNAL_MODEL-006`
 
 **Purpose:**
 
-Test set access operations.
+Prove that ordinary iteration returns one entry for each distinct inserted ID.
 
-**Spec Coverage:** `SPEC-INTERNAL_MODEL-005`
+**Oracle:** The test passes only when its assertions confirm
+ordinary iteration returns one entry for each distinct inserted ID.
 
----
+## TEST-INTERNAL_MODEL-004: Set merge
 
-## TEST-INTERNAL_MODEL-006: IdentifierSet Count All
-
-**Status:** Done
-
-**Purpose:**
-
-Test count and retrieval operations.
-
-**Spec Coverage:** `SPEC-INTERNAL_MODEL-006`
-
----
-
-## TEST-INTERNAL_MODEL-007: IdentifierSet Merge
-
-**Status:** Done
+- **Kind:** `test`
+- **Covers:** `SPEC-INTERNAL_MODEL-007`
 
 **Purpose:**
 
-Test merging identifier sets.
+Prove that merging two sets makes both source observations available in the
+destination.
 
-**Spec Coverage:** `SPEC-INTERNAL_MODEL-007`
+**Oracle:** The test passes only when its assertions confirm merging
+two sets makes both source observations available in the destination.
 
----
+## TEST-INTERNAL_MODEL-005: Forward link append
 
-## TEST-INTERNAL_MODEL-008: NewAnnotation
-
-**Status:** Done
-
-**Purpose:**
-
-Test annotation creation.
-
-**Spec Coverage:** `SPEC-INTERNAL_MODEL-008`
-
----
-
-## TEST-INTERNAL_MODEL-009: Annotation ToIdentifier
-
-**Status:** Done
+- **Kind:** `test`
+- **Covers:** `SPEC-INTERNAL_MODEL-003`
 
 **Purpose:**
 
-Test annotation conversion.
+Prove that two appended relationship targets remain in the identifier's link
+slice.
 
-**Spec Coverage:** `SPEC-INTERNAL_MODEL-009`
+**Oracle:** The test passes only when its assertions confirm two
+appended relationship targets remain in the identifier's link slice.
 
----
+## TEST-INTERNAL_MODEL-006: Basic annotation projection
 
-## TEST-INTERNAL_MODEL-010: Validation Result Init
-
-**Status:** Done
-
-**Purpose:**
-
-Test validation result initialization.
-
-**Spec Coverage:** `SPEC-INTERNAL_MODEL-010`
-
----
-
-## TEST-INTERNAL_MODEL-011: Validation Result Add Error
-
-**Status:** Done
+- **Kind:** `test`
+- **Covers:** `SPEC-INTERNAL_MODEL-009`
 
 **Purpose:**
 
-Test adding errors to result.
+Prove that annotation identity, type, source, and raw text survive conversion to
+an identifier.
 
-**Spec Coverage:** `SPEC-INTERNAL_MODEL-011`
+**Oracle:** The test passes only when its assertions confirm
+annotation identity, type, source, and raw text survive conversion to an identifier.
 
----
+## TEST-INTERNAL_MODEL-007: Validation error string
 
-## TEST-INTERNAL_MODEL-012: Link Type Enum
-
-**Status:** Done
-
-**Purpose:**
-
-Test link type values.
-
-**Spec Coverage:** `SPEC-INTERNAL_MODEL-012`
-
----
-
-## TEST-INTERNAL_MODEL-013: Link Structure
-
-**Status:** Done
+- **Kind:** `test`
+- **Covers:** `SPEC-INTERNAL_MODEL-010`
 
 **Purpose:**
 
-Test link structure.
+Prove the stable `[rule] message` error representation independently of
+structured location fields.
 
-**Spec Coverage:** `SPEC-INTERNAL_MODEL-013`
+**Oracle:** The test passes only when its assertions confirm the stable
+`[rule] message` error representation independently of structured location fields.
 
----
+## TEST-INTERNAL_MODEL-008: Error accumulation invalidates
 
-## TEST-INTERNAL_MODEL-014: Origin Type
-
-**Status:** Done
-
-**Purpose:**
-
-Test origin type values.
-
-**Spec Coverage:** `SPEC-INTERNAL_MODEL-014`
-
----
-
-## TEST-INTERNAL_MODEL-015: Origin Operations
-
-**Status:** Done
+- **Kind:** `test`
+- **Covers:** `SPEC-INTERNAL_MODEL-011`
 
 **Purpose:**
 
-Test setting and getting origin.
+Prove that adding an error preserves one finding and leaves validity false.
 
-**Spec Coverage:** `SPEC-INTERNAL_MODEL-015`
+**Oracle:** The test passes only when its assertions confirm adding
+an error preserves one finding and leaves validity false.
 
----
+## TEST-INTERNAL_MODEL-009: Warning accumulation
 
-## TEST-INTERNAL_MODEL-016: NewIdentifierWithDescribe
-
-**Status:** Done
-
-**Purpose:**
-
-Test identifier creation with describe.
-
-**Spec Coverage:** `SPEC-INTERNAL_MODEL-011`
-
----
-
-## TEST-INTERNAL_MODEL-017: Identifier Origin Methods
-
-**Status:** Done
+- **Kind:** `test`
+- **Covers:** `SPEC-INTERNAL_MODEL-011`
 
 **Purpose:**
 
-Test origin getter and setter.
+Prove that warnings append without being treated as errors or changing the
+already-false initial validity state.
 
-**Spec Coverage:** `SPEC-INTERNAL_MODEL-017`
+**Oracle:** The test passes only when its assertions confirm
+warnings append without being treated as errors or changing the already-false initial
+validity state.
 
----
+## TEST-INTERNAL_MODEL-010: Finding sort by rule
 
-## TEST-INTERNAL_MODEL-018: Identifier Core
-
-**Status:** Done
-
-**Purpose:**
-
-Test identifier core fields.
-
-**Spec Coverage:** `SPEC-INTERNAL_MODEL-018`
-
----
-
-## TEST-INTERNAL_MODEL-019: Identifier Title
-
-**Status:** Done
+- **Kind:** `test`
+- **Covers:** `SPEC-INTERNAL_MODEL-011`
 
 **Purpose:**
 
-Test getting identifier title.
+Prove that sorting places lower rule names first when several errors are
+present.
 
-**Spec Coverage:** `SPEC-INTERNAL_MODEL-001`
+**Oracle:** The test passes only when its assertions confirm sorting
+places lower rule names first when several errors are present.
 
----
+## TEST-INTERNAL_MODEL-011: Annotation comment becomes description
 
-## TEST-INTERNAL_MODEL-020: Identifier Module
-
-**Status:** Done
-
-**Purpose:**
-
-Test getting identifier module.
-
-**Spec Coverage:** `SPEC-INTERNAL_MODEL-002`
-
----
-
-## TEST-INTERNAL_MODEL-021: Identifier Number
-
-**Status:** Done
+- **Kind:** `test`
+- **Covers:** `SPEC-INTERNAL_MODEL-009`
 
 **Purpose:**
 
-Test getting identifier number.
+Prove that a non-empty function comment is copied into the projected
+identifier's description.
 
-**Spec Coverage:** `SPEC-INTERNAL_MODEL-003`
+**Oracle:** The test passes only when its assertions confirm a
+non-empty function comment is copied into the projected identifier's description.
 
----
+## TEST-INTERNAL_MODEL-012: Missing annotation comment stays empty
 
-## TEST-INTERNAL_MODEL-022: Identifier LocalID
-
-**Status:** Done
-
-**Purpose:**
-
-Test getting identifier local ID.
-
-**Spec Coverage:** `SPEC-INTERNAL_MODEL-004`
-
----
-
-## TEST-INTERNAL_MODEL-023: Identifier String
-
-**Status:** Done
+- **Kind:** `test`
+- **Covers:** `SPEC-INTERNAL_MODEL-009`
 
 **Purpose:**
 
-Test identifier string representation.
+Prove that conversion does not invent a description when no declaration comment
+was collected.
 
-**Spec Coverage:** `SPEC-INTERNAL_MODEL-005`
+**Oracle:** The test passes only when its assertions confirm
+conversion does not invent a description when no declaration comment was collected.
 
----
+## TEST-INTERNAL_MODEL-013: All observations for one ID
 
-## TEST-INTERNAL_MODEL-024: Identifier Equals
-
-**Status:** Done
-
-**Purpose:**
-
-Test identifier equality check.
-
-**Spec Coverage:** `SPEC-INTERNAL_MODEL-006`
-
----
-
-## TEST-INTERNAL_MODEL-025: Link Type Definition
-
-**Status:** Done
+- **Kind:** `contract`
+- **Covers:** `SPEC-INTERNAL_MODEL-005`
+- **Contracts:** `IdentifierCollection`
 
 **Purpose:**
 
-Test link type enum values.
+Prove duplicate-preserving lookup for two observations and an empty result for
+an unknown ID.
 
-**Spec Coverage:** `SPEC-INTERNAL_MODEL-012`
+**Oracle:** The test passes only when its assertions prove
+duplicate-preserving lookup for two observations and an empty result for an unknown ID.
 
----
+## TEST-INTERNAL_MODEL-014: Exhaustive observation view
 
-## TEST-INTERNAL_MODEL-026: Link Structure
-
-**Status:** Done
-
-**Purpose:**
-
-Test link structure creation.
-
-**Spec Coverage:** `SPEC-INTERNAL_MODEL-013`
-
----
-
-## TEST-INTERNAL_MODEL-027: Link Operations
-
-**Status:** Done
+- **Kind:** `test`
+- **Covers:** `SPEC-INTERNAL_MODEL-006`
 
 **Purpose:**
 
-Test link operations.
+Prove that exhaustive iteration retains duplicate observations instead of
+collapsing them by ID.
 
-**Spec Coverage:** `SPEC-INTERNAL_MODEL-013`
+**Oracle:** The test passes only when its assertions confirm
+exhaustive iteration retains duplicate observations instead of collapsing them by ID.
 
----
+## TEST-INTERNAL_MODEL-015: Filtering by provenance
 
-## TEST-INTERNAL_MODEL-028: Link Type Constants
-
-**Status:** Done
-
-**Purpose:**
-
-Test link type constant values.
-
-**Spec Coverage:** `SPEC-INTERNAL_MODEL-012`
-
----
-
-## TEST-INTERNAL_MODEL-029: Reverse Link Type
-
-**Status:** Done
+- **Kind:** `test`
+- **Covers:** `SPEC-INTERNAL_MODEL-004`, `SPEC-INTERNAL_MODEL-014`
 
 **Purpose:**
 
-Test reversing link types (tests -> implements, etc).
+Prove that document and code observations are returned only by their matching
+origin filter.
 
-**Spec Coverage:** `SPEC-INTERNAL_MODEL-013`
+**Oracle:** The test passes only when its assertions confirm
+document and code observations are returned only by their matching origin filter.
 
----
+## TEST-INTERNAL_MODEL-016: Origin presence query
 
-## TEST-INTERNAL_MODEL-030: New Link
-
-**Status:** Done
-
-**Purpose:**
-
-Test creating a new link.
-
-**Spec Coverage:** `SPEC-INTERNAL_MODEL-013`
-
----
-
-## TEST-INTERNAL_MODEL-031: LLM Report Types
-
-**Status:** Done
+- **Kind:** `test`
+- **Covers:** `SPEC-INTERNAL_MODEL-004`, `SPEC-INTERNAL_MODEL-014`
 
 **Purpose:**
 
-Test that LLM report model types can represent and serialize finding-centered validation output.
+Prove positive, wrong-origin, and unknown-ID outcomes for origin presence.
 
-**Spec Coverage:** `SPEC-INTERNAL_MODEL-037`
+**Oracle:** The test passes only when its assertions confirm positive,
+wrong-origin, and unknown-ID outcomes for origin presence.
+
+## TEST-INTERNAL_MODEL-017: First-observation lookup
+
+- **Kind:** `test`
+- **Covers:** `SPEC-INTERNAL_MODEL-005`
+
+**Purpose:**
+
+Prove successful lookup of an inserted value and the false result for an
+unknown ID.
+
+**Oracle:** The test passes only when its assertions confirm successful
+lookup of an inserted value and the false result for an unknown ID.
+
+## TEST-INTERNAL_MODEL-018: Multi-rule result ordering
+
+- **Kind:** `contract`
+- **Covers:** `SPEC-INTERNAL_MODEL-011`
+- **Contracts:** `ValidationResult`
+
+**Purpose:**
+
+Prove deterministic ascending rule order across three distinct validation
+rules.
+
+**Oracle:** The test passes only when its assertions prove
+deterministic ascending rule order across three distinct validation rules.
+
+## TEST-INTERNAL_MODEL-019: Identifier type parsing
+
+- **Kind:** `contract`
+- **Covers:** `SPEC-INTERNAL_MODEL-001`
+- **Contracts:** `IdentifierVocabulary`
+
+**Purpose:**
+
+Prove case-insensitive parsing of all supported types and errors for invalid and
+empty input through table-driven cases.
+
+**Oracle:** The test passes only when its assertions prove
+case-insensitive parsing of all supported types and errors for invalid and empty input
+through table-driven cases.
+
+## TEST-INTERNAL_MODEL-020: Basic identifier construction
+
+- **Kind:** `contract`
+- **Covers:** `SPEC-INTERNAL_MODEL-002`, `SPEC-INTERNAL_MODEL-018`
+- **Contracts:** `IdentifierRecord`, `cmd/idd-cli#Identifier`
+
+**Purpose:**
+
+Prove identity, title, source, line, raw reference, and non-nil link
+initialization for the basic constructor.
+
+**Oracle:** The test passes only when its assertions confirm identity,
+title, source, line, raw reference, and non-nil link initialization for the basic
+constructor.
+
+## TEST-INTERNAL_MODEL-021: New validation result state
+
+- **Kind:** `test`
+- **Covers:** `SPEC-INTERNAL_MODEL-010`
+
+**Purpose:**
+
+Prove the initial invalid state and allocated empty error and warning slices.
+
+**Oracle:** The test passes only when its assertions confirm the initial
+invalid state and allocated empty error and warning slices.
+
+## TEST-INTERNAL_MODEL-022: Annotation construction
+
+- **Kind:** `contract`
+- **Covers:** `SPEC-INTERNAL_MODEL-008`
+- **Contracts:** `SourceAnnotation`
+
+**Purpose:**
+
+Prove that annotation construction retains type, target reference, source, and
+line evidence.
+
+**Oracle:** The test passes only when its assertions confirm
+annotation construction retains type, target reference, source, and line evidence.
+
+## TEST-INTERNAL_MODEL-023: Description-aware identifier construction
+
+- **Kind:** `test`
+- **Covers:** `SPEC-INTERNAL_MODEL-002`, `SPEC-INTERNAL_MODEL-018`
+
+**Purpose:**
+
+Prove preservation of the supplied description and default document origin in
+addition to the basic identifier fields.
+
+**Oracle:** The test passes only when its assertions confirm preservation
+of the supplied description and default document origin in addition to the basic
+identifier fields.
+
+## TEST-INTERNAL_MODEL-024: Annotation construction with comment
+
+- **Kind:** `test`
+- **Covers:** `SPEC-INTERNAL_MODEL-008`
+
+**Purpose:**
+
+Prove that the optional declaration comment is retained alongside ordinary
+annotation evidence.
+
+**Oracle:** The test passes only when its assertions confirm the
+optional declaration comment is retained alongside ordinary annotation evidence.
+
+## TEST-INTERNAL_MODEL-028: Relationship constants
+
+- **Kind:** `contract`
+- **Covers:** `SPEC-INTERNAL_MODEL-012`
+- **Contracts:** `Relationship`
+
+**Purpose:**
+
+Prove stable serialized strings for the primary relationship constants consumed
+by graph and reporter logic.
+
+**Oracle:** The test passes only when its assertions confirm stable
+serialized strings for the primary relationship constants consumed by graph and reporter
+logic.
+
+## TEST-INTERNAL_MODEL-029: Reverse relationship mapping
+
+- **Kind:** `test`
+- **Covers:** `SPEC-INTERNAL_MODEL-012`
+
+**Purpose:**
+
+Prove directional pairs, symmetric reference/annotation types, and pass-through
+behavior for an unknown type.
+
+**Oracle:** The test passes only when its assertions confirm directional
+pairs, symmetric reference/annotation types, and pass-through behavior for an unknown
+type.
+
+## TEST-INTERNAL_MODEL-030: Directed link construction
+
+- **Kind:** `test`
+- **Covers:** `SPEC-INTERNAL_MODEL-013`, `SPEC-INTERNAL_MODEL-015`
+
+**Purpose:**
+
+Prove exact preservation of endpoints, type, source, and line in a newly
+constructed link.
+
+**Oracle:** The test passes only when its assertions confirm exact
+preservation of endpoints, type, source, and line in a newly constructed link.
+
+## TEST-INTERNAL_MODEL-031: LLM report JSON round trip
+
+- **Kind:** `contract`
+- **Covers:** `SPEC-INTERNAL_MODEL-037`
+- **Contracts:** `LLMFindingReport`
+
+**Purpose:**
+
+Prove that a populated schema, summary group, finding, location, repair hint,
+and related identifier survive JSON marshal and unmarshal.
+
+**Oracle:** The test passes only when its assertions confirm a
+populated schema, summary group, finding, location, repair hint, and related identifier
+survive JSON marshal and unmarshal.
+
+## TEST-INTERNAL_MODEL-032: Explicit origin reassignment
+
+- **Kind:** `test`
+- **Covers:** `SPEC-INTERNAL_MODEL-017`
+
+**Purpose:**
+
+Prove that `SetOrigin` replaces the constructor's document origin with code
+origin on the same identifier.
+
+**Oracle:** The test passes only when its assertions confirm
+`SetOrigin` replaces the constructor's document origin with code origin on the same
+identifier.
+
+## Strategy
+
+Tests are deterministic in-memory unit tests. Table-driven cases cover enum and
+reverse-link mappings; exact field assertions cover constructors and mutation;
+JSON round trips cover the wire model. No test relies on filesystem state,
+time, randomness, or network access.
+
+The suite deliberately does not claim direct coverage of cross-directory
+duplicate grouping, nil insertion, mutation aliasing, duplicate-ID secondary
+ordering, concurrency, every link constant, every JSON omission rule, or
+invalid report field combinations. Engine and reporter tests cover some
+consumer behavior, but these model-level boundaries remain explicit.

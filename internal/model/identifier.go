@@ -51,31 +51,36 @@ const (
 // Identifier represents a single IDD identifier found in docs or code.
 // @implement SPEC-INTERNAL_MODEL-018
 type Identifier struct {
-	ID       string
-	Type     IdentifierType
-	Title    string
-	Describe string
-	Source   string
-	Line     int
-	RawRef   string
-	Links    []string
-	Origin   Origin
+	ID         string
+	Type       IdentifierType
+	Title      string
+	Describe   string
+	Source     string
+	Line       int
+	RawRef     string
+	Links      []string
+	TypedLinks []IdentifierLink
+	Origin     Origin
 	// Kind distinguishes behavior and contract TEST definitions/annotations.
 	Kind string
+	// Derived marks package-scoped Component and Contract graph nodes that are
+	// computed from self-describing Markdown rather than public IDD identifiers.
+	Derived bool
 }
 
 // NewIdentifier creates a new identifier with given fields.
 // @implement SPEC-INTERNAL_MODEL-002
 func NewIdentifier(id string, idType IdentifierType, title, source string, line int) *Identifier {
 	return &Identifier{
-		ID:     id,
-		Type:   idType,
-		Title:  title,
-		Source: source,
-		Line:   line,
-		RawRef: id,
-		Links:  make([]string, 0),
-		Origin: OriginDoc,
+		ID:         id,
+		Type:       idType,
+		Title:      title,
+		Source:     source,
+		Line:       line,
+		RawRef:     id,
+		Links:      make([]string, 0),
+		TypedLinks: make([]IdentifierLink, 0),
+		Origin:     OriginDoc,
 	}
 }
 
@@ -83,15 +88,16 @@ func NewIdentifier(id string, idType IdentifierType, title, source string, line 
 // @implement SPEC-INTERNAL_MODEL-002
 func NewIdentifierWithDescribe(id string, idType IdentifierType, title, describe, source string, line int) *Identifier {
 	return &Identifier{
-		ID:       id,
-		Type:     idType,
-		Title:    title,
-		Describe: describe,
-		Source:   source,
-		Line:     line,
-		RawRef:   id,
-		Links:    make([]string, 0),
-		Origin:   OriginDoc,
+		ID:         id,
+		Type:       idType,
+		Title:      title,
+		Describe:   describe,
+		Source:     source,
+		Line:       line,
+		RawRef:     id,
+		Links:      make([]string, 0),
+		TypedLinks: make([]IdentifierLink, 0),
+		Origin:     OriginDoc,
 	}
 }
 
@@ -99,6 +105,13 @@ func NewIdentifierWithDescribe(id string, idType IdentifierType, title, describe
 // @implement SPEC-INTERNAL_MODEL-003
 func (i *Identifier) AddLink(ref string) {
 	i.Links = append(i.Links, ref)
+}
+
+// AddTypedLink adds a relationship whose semantics cannot be inferred from
+// identifier types alone.
+// @implement SPEC-INTERNAL_MODEL-003
+func (i *Identifier) AddTypedLink(ref string, linkType LinkType) {
+	i.TypedLinks = append(i.TypedLinks, IdentifierLink{Ref: ref, Type: linkType})
 }
 
 // SetOrigin sets the origin of this identifier.
@@ -232,12 +245,14 @@ func (s *IdentifierSet) Count() int {
 // DuplicateDocGroups returns groups of doc-origin identifiers that share the same ID
 // across multiple source directories (packages), indicating a naming conflict.
 // Multiple files in the same directory referencing the same ID are not a conflict.
+// @implement SPEC-INTERNAL_MODEL-004
 func (s *IdentifierSet) DuplicateDocGroups() [][]*Identifier {
 	return s.duplicatesAcrossDirectories(OriginDoc)
 }
 
 // DuplicateCodeGroups returns groups of code-origin identifiers that share the same ID
 // across multiple source packages, indicating a naming conflict.
+// @implement SPEC-INTERNAL_MODEL-004
 func (s *IdentifierSet) DuplicateCodeGroups() [][]*Identifier {
 	return s.duplicatesAcrossDirectories(OriginCode)
 }
@@ -349,6 +364,7 @@ type ValidationError struct {
 }
 
 // Error implements error interface.
+// @implement SPEC-INTERNAL_MODEL-010
 func (e ValidationError) Error() string {
 	return fmt.Sprintf("[%s] %s", e.Rule, e.Message)
 }

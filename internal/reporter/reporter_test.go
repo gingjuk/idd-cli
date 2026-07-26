@@ -37,7 +37,7 @@ func TestNew(t *testing.T) {
 	}
 }
 
-// @test TEST-INTERNAL_REPORTER-001
+// @test-contract TEST-INTERNAL_REPORTER-001
 func TestReporter_Generate(t *testing.T) {
 	cfg := config.Default()
 	r := New(cfg, "json")
@@ -104,7 +104,7 @@ func TestReporter_Write_JSON(t *testing.T) {
 	}
 }
 
-// @test TEST-INTERNAL_REPORTER-011
+// @test-contract TEST-INTERNAL_REPORTER-011
 func TestReporter_Write_DefaultJSONUsesLLMSchema(t *testing.T) {
 	tmpDir := t.TempDir()
 	outputPath := filepath.Join(tmpDir, "report.json")
@@ -202,7 +202,7 @@ func TestReporter_Write_Markdown(t *testing.T) {
 	}
 }
 
-// @test TEST-INTERNAL_REPORTER-005
+// @test-contract TEST-INTERNAL_REPORTER-005
 func TestReporter_Write_UnsupportedFormat(t *testing.T) {
 	cfg := config.Default()
 	r := New(cfg, "xml")
@@ -331,7 +331,7 @@ func TestStatusIcon(t *testing.T) {
 	}
 }
 
-// @test TEST-INTERNAL_REPORTER-011
+// @test-contract TEST-INTERNAL_REPORTER-011
 func TestReporter_Write_JSONFindingReport(t *testing.T) {
 	tmpDir := t.TempDir()
 	outputPath := filepath.Join(tmpDir, "report.json")
@@ -545,10 +545,12 @@ func TestLookupRuleInfo_IDDDocumentFindings(t *testing.T) {
 		{rule: "idd-document-identity", wantFixText: "docs fix"},
 		{rule: "idd-document-set", wantFixText: "docs fix"},
 		{rule: "idd-document-schema", wantFixText: "field"},
+		{rule: "idd-document-incomplete", wantFixText: "docs status"},
 		{rule: "idd-document-reference", wantFixText: "declaration"},
 		{rule: "idd-document-markdown", wantFixText: "legacy"},
 		{rule: "idd-document-migration", wantFixText: "testing.md"},
 		{rule: "idd-document-test-kind", wantFixText: "annotation"},
+		{rule: "source-parse", wantFixText: "supported source extension"},
 	}
 
 	for _, tt := range tests {

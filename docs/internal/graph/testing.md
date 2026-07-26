@@ -1,219 +1,222 @@
 ---
-markers:
-  - id: TEST-INTERNAL_GRAPH-001
-    name: Graph Test 1
-  - id: TEST-INTERNAL_GRAPH-002
-    name: Graph Test 2
-  - id: TEST-INTERNAL_GRAPH-003
-    name: Graph Test 3
-  - id: TEST-INTERNAL_GRAPH-004
-    name: Graph Test 4
-  - id: TEST-INTERNAL_GRAPH-005
-    name: Graph Test 5
-  - id: TEST-INTERNAL_GRAPH-006
-    name: Graph Test 6
-  - id: TEST-INTERNAL_GRAPH-007
-    name: Graph Test 7
-  - id: TEST-INTERNAL_GRAPH-008
-    name: Graph Test 8
-  - id: TEST-INTERNAL_GRAPH-009
-    name: Graph Test 9
-  - id: TEST-INTERNAL_GRAPH-010
-    name: Graph Test 10
-  - id: TEST-INTERNAL_GRAPH-011
-    name: Graph Test 11
-  - id: TEST-INTERNAL_GRAPH-012
-    name: Graph Test 12
-  - id: TEST-INTERNAL_GRAPH-013
-    name: Graph Test 13
-  - id: TEST-INTERNAL_GRAPH-014
-    name: Graph Test 14
-  - id: TEST-INTERNAL_GRAPH-015
-    name: Graph Test 15
-
-related_files:
-  spec: docs/internal/graph/spec.md
-  contract: docs/internal/graph/contract.md
-  design: docs/internal/graph/design.md
-  testing: docs/internal/graph/testing.md
+idd:
+  version: "1.0"
+  package: internal/graph
+  document: testing
 ---
 
-# Test Cases (graph)
+# Testing: internal/graph
 
-## TEST-INTERNAL_GRAPH-001: NewLinkageGraph
+## TEST-INTERNAL_GRAPH-001: Node insertion and reuse
 
-**Status:** Done
+- **Kind:** `contract`
+- **Covers:** `SPEC-INTERNAL_GRAPH-001`, `SPEC-INTERNAL_GRAPH-007`
+- **Contracts:** `GraphMutation`, `GraphQuery`, `cmd/idd-cli#LinkageGraph`
 
 **Purpose:**
 
-Test graph initialization.
+Prove creation, initialized metadata, node count, ID lookup, and pointer reuse
+when the same ID is added twice.
 
-**Spec Coverage:** `SPEC-INTERNAL_GRAPH-001`, `SPEC-INTERNAL_GRAPH-002`, `SPEC-INTERNAL_GRAPH-003`, `SPEC-INTERNAL_GRAPH-004`, `SPEC-INTERNAL_GRAPH-005`
+**Oracle:** The test passes only when its assertions confirm creation,
+initialized metadata, node count, ID lookup, and pointer reuse when the same ID is added
+twice.
 
----
+## TEST-INTERNAL_GRAPH-002: Edge insertion
 
-## TEST-INTERNAL_GRAPH-002: AddNode
-
-**Status:** Done
-
-**Purpose:**
-
-Test node addition to graph.
-
-**Spec Coverage:** `SPEC-INTERNAL_GRAPH-001`, `SPEC-INTERNAL_GRAPH-002`, `SPEC-INTERNAL_GRAPH-003`, `SPEC-INTERNAL_GRAPH-004`, `SPEC-INTERNAL_GRAPH-005`
-
----
-
-## TEST-INTERNAL_GRAPH-003: AddEdge
-
-**Status:** Done
+- **Kind:** `contract`
+- **Covers:** `SPEC-INTERNAL_GRAPH-002`, `SPEC-INTERNAL_GRAPH-008`
+- **Contracts:** `RelationshipVerification`
 
 **Purpose:**
 
-Test edge addition between nodes.
+Prove that adding an edge between existing nodes records global edge data and
+updates source/outbound and target/inbound adjacency.
 
-**Spec Coverage:** `SPEC-INTERNAL_GRAPH-001`, `SPEC-INTERNAL_GRAPH-002`, `SPEC-INTERNAL_GRAPH-003`, `SPEC-INTERNAL_GRAPH-004`, `SPEC-INTERNAL_GRAPH-005`
+**Oracle:** The test passes only when its assertions confirm adding
+an edge between existing nodes records global edge data and updates source/outbound and
+target/inbound adjacency.
 
----
+## TEST-INTERNAL_GRAPH-003: Node lookup presence
 
-## TEST-INTERNAL_GRAPH-004: GetNode
-
-**Status:** Done
-
-**Purpose:**
-
-Test node lookup by ID.
-
-**Spec Coverage:** `SPEC-INTERNAL_GRAPH-001`, `SPEC-INTERNAL_GRAPH-002`, `SPEC-INTERNAL_GRAPH-003`, `SPEC-INTERNAL_GRAPH-004`, `SPEC-INTERNAL_GRAPH-005`
-
----
-
-## TEST-INTERNAL_GRAPH-005: NodeInOutEdges
-
-**Status:** Done
+- **Kind:** `contract`
+- **Covers:** `SPEC-INTERNAL_GRAPH-003`
+- **Contracts:** `GraphProjection`
 
 **Purpose:**
 
-Test edge traversal from nodes.
+Prove the pointer-and-boolean lookup contract for present and absent IDs.
 
-**Spec Coverage:** `SPEC-INTERNAL_GRAPH-001`, `SPEC-INTERNAL_GRAPH-002`, `SPEC-INTERNAL_GRAPH-003`, `SPEC-INTERNAL_GRAPH-004`, `SPEC-INTERNAL_GRAPH-005`
+**Oracle:** The test passes only when its assertions confirm the
+pointer-and-boolean lookup contract for present and absent IDs.
 
----
+## TEST-INTERNAL_GRAPH-004: Node adjacency views
 
-## TEST-INTERNAL_GRAPH-006: GetOutboundByType
-
-**Status:** Done
-
-**Purpose:**
-
-Test filtering outbound edges by type.
-
-**Spec Coverage:** `SPEC-INTERNAL_GRAPH-001`, `SPEC-INTERNAL_GRAPH-002`, `SPEC-INTERNAL_GRAPH-003`, `SPEC-INTERNAL_GRAPH-004`, `SPEC-INTERNAL_GRAPH-005`
-
----
-
-## TEST-INTERNAL_GRAPH-007: GetInboundByType
-
-**Status:** Done
+- **Kind:** `test`
+- **Covers:** `SPEC-INTERNAL_GRAPH-001`, `SPEC-INTERNAL_GRAPH-002`, `SPEC-INTERNAL_GRAPH-003`
 
 **Purpose:**
 
-Test filtering inbound edges by type.
+Prove that a directed relationship is visible in the source's outgoing and
+target's incoming collections with the expected endpoint IDs.
 
-**Spec Coverage:** `SPEC-INTERNAL_GRAPH-001`, `SPEC-INTERNAL_GRAPH-002`, `SPEC-INTERNAL_GRAPH-003`, `SPEC-INTERNAL_GRAPH-004`, `SPEC-INTERNAL_GRAPH-005`
+**Oracle:** The test passes only when its assertions confirm a
+directed relationship is visible in the source's outgoing and target's incoming
+collections with the expected endpoint IDs.
 
----
+## TEST-INTERNAL_GRAPH-005: Outbound relationship type filtering
 
-## TEST-INTERNAL_GRAPH-008: GetBacklinks
-
-**Status:** Done
-
-**Purpose:**
-
-Test reverse edge lookup using index.
-
-**Spec Coverage:** `SPEC-INTERNAL_GRAPH-001`, `SPEC-INTERNAL_GRAPH-002`, `SPEC-INTERNAL_GRAPH-003`, `SPEC-INTERNAL_GRAPH-004`, `SPEC-INTERNAL_GRAPH-005`
-
----
-
-## TEST-INTERNAL_GRAPH-009: VerifyBidirectionalLinks
-
-**Status:** Done
+- **Kind:** `test`
+- **Covers:** `SPEC-INTERNAL_GRAPH-003`
 
 **Purpose:**
 
-Test doc-link-consistency verification.
+Prove that outbound filtering separates relationship kinds and returns nil for
+a missing node.
 
-**Spec Coverage:** `SPEC-INTERNAL_GRAPH-001`, `SPEC-INTERNAL_GRAPH-002`, `SPEC-INTERNAL_GRAPH-003`, `SPEC-INTERNAL_GRAPH-004`, `SPEC-INTERNAL_GRAPH-005`, `SPEC-INTERNAL_GRAPH-009`
+**Oracle:** The test passes only when its assertions confirm
+outbound filtering separates relationship kinds and returns nil for a missing node.
 
----
+## TEST-INTERNAL_GRAPH-006: Inbound relationship type filtering
 
-## TEST-INTERNAL_GRAPH-010: ToSnapshot
-
-**Status:** Done
-
-**Purpose:**
-
-Test graph serialization to snapshot.
-
-**Spec Coverage:** `SPEC-INTERNAL_GRAPH-001`, `SPEC-INTERNAL_GRAPH-002`, `SPEC-INTERNAL_GRAPH-003`, `SPEC-INTERNAL_GRAPH-004`, `SPEC-INTERNAL_GRAPH-005`
-
----
-
-## TEST-INTERNAL_GRAPH-011: Stats
-
-**Status:** Done
+- **Kind:** `test`
+- **Covers:** `SPEC-INTERNAL_GRAPH-003`
 
 **Purpose:**
 
-Test statistics computation.
+Prove that inbound filtering returns all edges of the selected type targeting
+one node.
 
-**Spec Coverage:** `SPEC-INTERNAL_GRAPH-001`, `SPEC-INTERNAL_GRAPH-002`, `SPEC-INTERNAL_GRAPH-003`, `SPEC-INTERNAL_GRAPH-004`, `SPEC-INTERNAL_GRAPH-005`
+**Oracle:** The test passes only when its assertions confirm inbound
+filtering returns all edges of the selected type targeting one node.
 
----
+## TEST-INTERNAL_GRAPH-007: Backlink lookup
 
-## TEST-INTERNAL_GRAPH-012: ValidateCompleteness
-
-**Status:** Done
-
-**Purpose:**
-
-Test completeness validation.
-
-**Spec Coverage:** `SPEC-INTERNAL_GRAPH-001`, `SPEC-INTERNAL_GRAPH-002`, `SPEC-INTERNAL_GRAPH-003`, `SPEC-INTERNAL_GRAPH-004`, `SPEC-INTERNAL_GRAPH-005`
-
----
-
-## TEST-INTERNAL_GRAPH-013: Edge Verification
-
-**Status:** Done
+- **Kind:** `test`
+- **Covers:** `SPEC-INTERNAL_GRAPH-004`
 
 **Purpose:**
 
-Test edge verification marking.
+Prove that adding an edge makes its source directly retrievable from the
+target-keyed backlink index.
 
-**Spec Coverage:** `SPEC-INTERNAL_GRAPH-001`, `SPEC-INTERNAL_GRAPH-002`, `SPEC-INTERNAL_GRAPH-003`, `SPEC-INTERNAL_GRAPH-004`, `SPEC-INTERNAL_GRAPH-005`
+**Oracle:** The test passes only when its assertions confirm adding
+an edge makes its source directly retrievable from the target-keyed backlink index.
 
----
+## TEST-INTERNAL_GRAPH-008: Reciprocal relationships verify
 
-## TEST-INTERNAL_GRAPH-014: Index Backlink Lookup
-
-**Status:** Done
-
-**Purpose:**
-
-Test index-based backlink lookup performance.
-
-**Spec Coverage:** `SPEC-INTERNAL_GRAPH-001`, `SPEC-INTERNAL_GRAPH-002`, `SPEC-INTERNAL_GRAPH-003`, `SPEC-INTERNAL_GRAPH-004`, `SPEC-INTERNAL_GRAPH-005`
-
----
-
-## TEST-INTERNAL_GRAPH-015: Node Metadata
-
-**Status:** Done
+- **Kind:** `test`
+- **Covers:** `SPEC-INTERNAL_GRAPH-002`, `SPEC-INTERNAL_GRAPH-003`
 
 **Purpose:**
 
-Test node metadata storage and retrieval.
+Prove that opposite-direction `tests` and `implements` edges are both marked
+verified after recalculation.
 
-**Spec Coverage:** `SPEC-INTERNAL_GRAPH-001`, `SPEC-INTERNAL_GRAPH-002`, `SPEC-INTERNAL_GRAPH-003`, `SPEC-INTERNAL_GRAPH-004`, `SPEC-INTERNAL_GRAPH-005`
+**Oracle:** The test passes only when its assertions confirm
+opposite-direction `tests` and `implements` edges are both marked verified after
+recalculation.
+
+## TEST-INTERNAL_GRAPH-009: One-way relationships remain unverified
+
+- **Kind:** `test`
+- **Covers:** `SPEC-INTERNAL_GRAPH-002`, `SPEC-INTERNAL_GRAPH-003`
+
+**Purpose:**
+
+Prove that a relationship without its typed reverse edge has `Verified` false.
+
+**Oracle:** The test passes only when its assertions confirm a
+relationship without its typed reverse edge has `Verified` false.
+
+## TEST-INTERNAL_GRAPH-010: Snapshot projection
+
+- **Kind:** `test`
+- **Covers:** `SPEC-INTERNAL_GRAPH-003`
+
+**Purpose:**
+
+Prove that snapshot projection includes the expected number of node and edge
+summaries for a small graph.
+
+**Oracle:** The test passes only when its assertions confirm
+snapshot projection includes the expected number of node and edge summaries for a small
+graph.
+
+## TEST-INTERNAL_GRAPH-011: Statistics by identifier type
+
+- **Kind:** `test`
+- **Covers:** `SPEC-INTERNAL_GRAPH-003`
+
+**Purpose:**
+
+Prove total and per-type counts for a graph containing SPEC, TEST, and CONTRACT
+nodes.
+
+**Oracle:** The test passes only when its assertions confirm total and
+per-type counts for a graph containing SPEC, TEST, and CONTRACT nodes.
+
+## TEST-INTERNAL_GRAPH-012: Complete SPEC and TEST links
+
+- **Kind:** `test`
+- **Covers:** `SPEC-INTERNAL_GRAPH-003`
+
+**Purpose:**
+
+Prove that reciprocal SPEC/TEST coverage relationships yield no basic
+completeness errors.
+
+**Oracle:** The test passes only when its assertions confirm
+reciprocal SPEC/TEST coverage relationships yield no basic completeness errors.
+
+## TEST-INTERNAL_GRAPH-013: Missing SPEC and TEST links
+
+- **Kind:** `test`
+- **Covers:** `SPEC-INTERNAL_GRAPH-003`
+
+**Purpose:**
+
+Prove that an unlinked SPEC and unlinked TEST produce two completeness errors,
+one for each missing outbound relationship.
+
+**Oracle:** The test passes only when its assertions confirm an
+unlinked SPEC and unlinked TEST produce two completeness errors, one for each missing
+outbound relationship.
+
+## TEST-INTERNAL_GRAPH-014: Complete collection views
+
+- **Kind:** `test`
+- **Covers:** `SPEC-INTERNAL_GRAPH-003`
+
+**Purpose:**
+
+Prove that the node-map and edge-slice accessors expose all inserted entries.
+
+**Oracle:** The test passes only when its assertions confirm the
+node-map and edge-slice accessors expose all inserted entries.
+
+## TEST-INTERNAL_GRAPH-015: Empty graph construction
+
+- **Kind:** `test`
+- **Covers:** `SPEC-INTERNAL_GRAPH-005`
+
+**Purpose:**
+
+Prove that construction returns an initialized graph with non-nil internal
+collections and zero nodes and edges.
+
+**Oracle:** The test passes only when its assertions confirm
+construction returns an initialized graph with non-nil internal collections and zero
+nodes and edges.
+
+## Strategy
+
+Tests use small in-memory graphs and exact counts, IDs, types, and flags as
+oracles. Because tests are in the same package, constructor checks can inspect
+private collection initialization while behavioral cases use the public API.
+
+The suite does not cover missing endpoints at edge insertion, edges inserted
+before nodes, duplicate relationships, conflicting node types, mutation through
+borrowed collection views, node-order stability in snapshots, or concurrent
+access. Those exclusions define where future invariant hardening needs new
+tests.

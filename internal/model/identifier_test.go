@@ -9,7 +9,7 @@ import (
 	"testing"
 )
 
-// @test TEST-INTERNAL_MODEL-019
+// @test-contract TEST-INTERNAL_MODEL-019
 func TestParseIdentifierType(t *testing.T) {
 	tests := []struct {
 		name    string
@@ -41,7 +41,7 @@ func TestParseIdentifierType(t *testing.T) {
 	}
 }
 
-// @test TEST-INTERNAL_MODEL-020
+// @test-contract TEST-INTERNAL_MODEL-020
 func TestNewIdentifier(t *testing.T) {
 	id := NewIdentifier("SPEC-001", TypeSpec, "Test Spec", "docs/test.md", 10)
 
@@ -144,7 +144,7 @@ func TestIdentifier_AddLink(t *testing.T) {
 	}
 }
 
-// @test TEST-INTERNAL_MODEL-022
+// @test-contract TEST-INTERNAL_MODEL-022
 func TestNewAnnotation(t *testing.T) {
 	ann := NewAnnotation(TypeSpec, "SPEC-001", "test.go", "@implement SPEC-001", "context", 10)
 
@@ -308,7 +308,7 @@ func TestAnnotation_ToIdentifier_WithoutFunctionComment(t *testing.T) {
 	}
 }
 
-// @test TEST-INTERNAL_MODEL-013
+// @test-contract TEST-INTERNAL_MODEL-013
 func TestIdentifierSet_GetAll(t *testing.T) {
 	set := NewIdentifierSet()
 	spec1 := NewIdentifier("SPEC-001", TypeSpec, "", "file1.md", 1)
@@ -325,6 +325,17 @@ func TestIdentifierSet_GetAll(t *testing.T) {
 	none := set.GetAll("NONEXISTENT")
 	if len(none) != 0 {
 		t.Errorf("GetAll(NONEXISTENT) returned %d items, want 0", len(none))
+	}
+}
+
+// @test TEST-INTERNAL_MODEL-030
+func TestIdentifier_AddTypedLink(t *testing.T) {
+	identifier := NewIdentifier("SPEC-001", TypeSpec, "", "spec.md", 1)
+	identifier.AddTypedLink("SPEC-000", LinkSupersedes)
+	if len(identifier.TypedLinks) != 1 ||
+		identifier.TypedLinks[0].Ref != "SPEC-000" ||
+		identifier.TypedLinks[0].Type != LinkSupersedes {
+		t.Errorf("TypedLinks = %#v", identifier.TypedLinks)
 	}
 }
 
@@ -403,7 +414,18 @@ func TestIdentifierSet_Get(t *testing.T) {
 	}
 }
 
-// @test TEST-INTERNAL_MODEL-018
+// @test TEST-INTERNAL_MODEL-032
+func TestIdentifier_SetOrigin(t *testing.T) {
+	id := NewIdentifier("SPEC-001", TypeSpec, "", "docs/spec.md", 1)
+
+	id.SetOrigin(OriginCode)
+
+	if id.Origin != OriginCode {
+		t.Errorf("Origin = %v, want %v", id.Origin, OriginCode)
+	}
+}
+
+// @test-contract TEST-INTERNAL_MODEL-018
 func TestValidationResult_Sort_MultipleRules(t *testing.T) {
 	result := NewValidationResult()
 	result.AddError("zzz", "msg3", "", "", "")
@@ -423,7 +445,7 @@ func TestValidationResult_Sort_MultipleRules(t *testing.T) {
 	}
 }
 
-// @test TEST-INTERNAL_MODEL-031
+// @test-contract TEST-INTERNAL_MODEL-031
 func TestLLMReport_JSONSerialization(t *testing.T) {
 	report := LLMReport{
 		Schema: "idd.llm_report.v1",

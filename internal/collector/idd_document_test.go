@@ -8,10 +8,12 @@ import (
 	"context"
 	"os"
 	"path/filepath"
+	"reflect"
 	"strings"
 	"testing"
 
 	"github.com/jingxu9x/idd-cli/internal/config"
+	"github.com/jingxu9x/idd-cli/internal/model"
 )
 
 const validDesignDocument = `---
@@ -25,8 +27,17 @@ idd:
 
 ## Component: AuthModule
 
+- **Status:** ` + "`active`" + `
+- **Concerns:** ` + "`security`" + `
+
+**Purpose:**
+
 AuthModule owns the authentication boundary and keeps transport concerns out of
 credential verification.
+
+### Security
+
+Credential material never crosses the component boundary in plain text.
 
 ## Architecture
 
@@ -60,7 +71,17 @@ idd:
 
 ## Contract: Authenticator
 
-Authenticator exposes the authentication boundary.
+- **Status:** ` + "`active`" + `
+- **Concerns:** ` + "`compatibility`" + `
+
+**Guarantees:**
+
+Authenticator exposes one stable authentication boundary and returns the same
+public rejection category for invalid credentials.
+
+### Compatibility
+
+Existing callers retain the same input and error contract.
 `
 
 const validSpecDocument = `---
@@ -76,9 +97,20 @@ idd:
 
 - **Design:** ` + "`AuthModule`" + `
 - **Contract:** ` + "`Authenticator`" + `
+- **Status:** ` + "`active`" + `
+- **Concerns:** ` + "`security`" + `
 
 **Requirement:** Authenticate a user with credentials while exposing one stable
 failure for invalid credentials.
+
+**Acceptance:**
+
+Valid credentials succeed, while invalid credentials return the documented
+public rejection without exposing credential details.
+
+### Security
+
+Failures must not reveal which credential field was incorrect.
 
 Invalid credentials expose one stable failure.
 `
@@ -96,8 +128,13 @@ idd:
 
 - **Kind:** ` + "`test`" + `
 - **Covers:** ` + "`SPEC-INTERNAL_AUTH-001`" + `
+- **Status:** ` + "`active`" + `
 
 **Purpose:** Verify valid and invalid credentials.
+
+**Oracle:**
+
+The returned result and public error category exactly match the scenario table.
 
 ### Scenarios
 
@@ -105,7 +142,7 @@ idd:
 - Rejected credentials
 `
 
-// @test TEST-INTERNAL_COLLECTOR-021
+// @test-contract TEST-INTERNAL_COLLECTOR-021
 func TestParseIDDDocument(t *testing.T) {
 	tests := []struct {
 		name         string
@@ -236,7 +273,7 @@ idd:
 	}
 }
 
-// @test TEST-INTERNAL_COLLECTOR-021
+// @test-contract TEST-INTERNAL_COLLECTOR-021
 func TestParseIDDDocument_MarkdownRecords(t *testing.T) {
 	tests := []struct {
 		name           string
@@ -263,8 +300,34 @@ func TestParseIDDDocument_MarkdownRecords(t *testing.T) {
 				ID:          "SPEC-INTERNAL_AUTH-001",
 				Title:       "User authentication",
 				Requirement: "Authenticate a user with credentials while exposing one stable failure for invalid credentials.",
+				Acceptance:  "Valid credentials succeed, while invalid credentials return the documented public rejection without exposing credential details.",
 				Design:      "AuthModule",
 				Contract:    "Authenticator",
+				IDDRecordLifecycle: IDDRecordLifecycle{
+					Status:   "active",
+					Concerns: []string{"security"},
+				},
+			},
+		},
+		{
+			name: "spec requirement may start in the following paragraph",
+			content: strings.Replace(
+				validSpecDocument,
+				"**Requirement:** Authenticate a user with credentials while exposing one stable\nfailure for invalid credentials.",
+				"**Requirement:**\n\nAuthenticate a user with credentials while exposing one stable\nfailure for invalid credentials.",
+				1,
+			),
+			wantSpec: &IDDDocumentSpec{
+				ID:          "SPEC-INTERNAL_AUTH-001",
+				Title:       "User authentication",
+				Requirement: "Authenticate a user with credentials while exposing one stable failure for invalid credentials.",
+				Acceptance:  "Valid credentials succeed, while invalid credentials return the documented public rejection without exposing credential details.",
+				Design:      "AuthModule",
+				Contract:    "Authenticator",
+				IDDRecordLifecycle: IDDRecordLifecycle{
+					Status:   "active",
+					Concerns: []string{"security"},
+				},
 			},
 		},
 		{
@@ -274,8 +337,32 @@ func TestParseIDDDocument_MarkdownRecords(t *testing.T) {
 				ID:      "TEST-INTERNAL_AUTH-001",
 				Title:   "Authentication behavior",
 				Purpose: "Verify valid and invalid credentials.",
+				Oracle:  "The returned result and public error category exactly match the scenario table.",
 				Kind:    "test",
 				Covers:  []string{"SPEC-INTERNAL_AUTH-001"},
+				IDDRecordLifecycle: IDDRecordLifecycle{
+					Status: "active",
+				},
+			},
+		},
+		{
+			name: "test purpose may start in the following paragraph",
+			content: strings.Replace(
+				validTestingDocument,
+				"**Purpose:** Verify valid and invalid credentials.",
+				"**Purpose:**\n\nVerify valid and invalid credentials.",
+				1,
+			),
+			wantTest: &IDDDocumentTest{
+				ID:      "TEST-INTERNAL_AUTH-001",
+				Title:   "Authentication behavior",
+				Purpose: "Verify valid and invalid credentials.",
+				Oracle:  "The returned result and public error category exactly match the scenario table.",
+				Kind:    "test",
+				Covers:  []string{"SPEC-INTERNAL_AUTH-001"},
+				IDDRecordLifecycle: IDDRecordLifecycle{
+					Status: "active",
+				},
 			},
 		},
 		{
@@ -317,7 +404,7 @@ idd:
 				t.Errorf("Contracts = %q, want %q", got, strings.Join(tt.wantContracts, ","))
 			}
 			if tt.wantSpec != nil {
-				if len(document.Specs) != 1 || document.Specs[0] != *tt.wantSpec {
+				if len(document.Specs) != 1 || !reflect.DeepEqual(document.Specs[0], *tt.wantSpec) {
 					t.Errorf("Specs = %#v, want %#v", document.Specs, *tt.wantSpec)
 				}
 			} else if len(document.Specs) != 0 {
@@ -328,11 +415,7 @@ idd:
 					t.Fatalf("Tests = %#v, want one", document.Tests)
 				}
 				got := document.Tests[0]
-				if got.ID != tt.wantTest.ID ||
-					got.Title != tt.wantTest.Title ||
-					got.Purpose != tt.wantTest.Purpose ||
-					got.Kind != tt.wantTest.Kind ||
-					strings.Join(got.Covers, ",") != strings.Join(tt.wantTest.Covers, ",") {
+				if !reflect.DeepEqual(got, *tt.wantTest) {
 					t.Errorf("Tests[0] = %#v, want %#v", got, *tt.wantTest)
 				}
 			} else if len(document.Tests) != 0 {
@@ -342,7 +425,7 @@ idd:
 	}
 }
 
-// @test TEST-INTERNAL_COLLECTOR-021
+// @test-contract TEST-INTERNAL_COLLECTOR-021
 func TestDocCollector_IDDDocumentValidation(t *testing.T) {
 	tests := []struct {
 		name       string
@@ -476,7 +559,7 @@ idd:
 				)
 			},
 			wantRule:   "idd-document-schema",
-			wantCode:   "component",
+			wantCode:   "purpose",
 			wantSource: "design.md:",
 		},
 		{
@@ -485,12 +568,12 @@ idd:
 				replaceTestFile(
 					t,
 					filepath.Join(docsDir, "contract.md"),
-					"Authenticator exposes the authentication boundary.",
+					"Authenticator exposes one stable authentication boundary and returns the same\npublic rejection category for invalid credentials.",
 					"",
 				)
 			},
 			wantRule:   "idd-document-schema",
-			wantCode:   "contract",
+			wantCode:   "guarantees",
 			wantSource: "contract.md:",
 		},
 		{
@@ -637,7 +720,7 @@ idd:
 	}
 }
 
-// @test TEST-INTERNAL_COLLECTOR-021
+// @test-contract TEST-INTERNAL_COLLECTOR-021
 func TestDocCollector_IDDDocumentsBuildDerivedLinks(t *testing.T) {
 	docsDir := createIDDDocumentFixture(t)
 	collector := NewDocCollector(config.Default())
@@ -657,11 +740,32 @@ func TestDocCollector_IDDDocumentsBuildDerivedLinks(t *testing.T) {
 	if !ok {
 		t.Fatal("TEST-INTERNAL_AUTH-001 not collected")
 	}
-	if got := strings.Join(spec.Links, ","); got != "TEST-INTERNAL_AUTH-001" {
-		t.Errorf("SPEC links = %q, want derived TEST backlink", got)
+	componentID := derivedComponentID("internal/auth", "AuthModule")
+	contractID := derivedContractID("internal/auth", "Authenticator")
+	wantSpecLinks := []model.IdentifierLink{
+		{Ref: componentID, Type: model.LinkReferences},
+		{Ref: contractID, Type: model.LinkContract},
+		{Ref: "TEST-INTERNAL_AUTH-001", Type: model.LinkTests},
 	}
-	if got := strings.Join(test.Links, ","); got != "SPEC-INTERNAL_AUTH-001" {
-		t.Errorf("TEST links = %q, want declared SPEC coverage", got)
+	if !reflect.DeepEqual(spec.TypedLinks, wantSpecLinks) {
+		t.Errorf("SPEC typed links = %#v, want %#v", spec.TypedLinks, wantSpecLinks)
+	}
+	wantTestLinks := []model.IdentifierLink{
+		{Ref: "SPEC-INTERNAL_AUTH-001", Type: model.LinkImplements},
+	}
+	if !reflect.DeepEqual(test.TypedLinks, wantTestLinks) {
+		t.Errorf("TEST typed links = %#v, want %#v", test.TypedLinks, wantTestLinks)
+	}
+	if len(spec.Links) != 0 || len(test.Links) != 0 {
+		t.Errorf("self-describing documents emitted legacy links: SPEC=%v TEST=%v", spec.Links, test.Links)
+	}
+	component, ok := set.Get(componentID)
+	if !ok || !component.Derived || component.Kind != "component" {
+		t.Errorf("derived Component = %#v", component)
+	}
+	contract, ok := set.Get(contractID)
+	if !ok || !contract.Derived || contract.Kind != "contract" {
+		t.Errorf("derived Contract = %#v", contract)
 	}
 	if test.Kind != "test" {
 		t.Errorf("TEST kind = %q, want test", test.Kind)
@@ -674,7 +778,80 @@ func TestDocCollector_IDDDocumentsBuildDerivedLinks(t *testing.T) {
 	}
 }
 
-// @test TEST-INTERNAL_COLLECTOR-021
+// @test-contract TEST-INTERNAL_COLLECTOR-021
+func TestIDDDocumentCrossPackageReferencesBecomeTypedLinks(t *testing.T) {
+	specContent := strings.ReplaceAll(
+		validSpecDocument,
+		"`AuthModule`",
+		"`internal/shared#SharedModule`",
+	)
+	specContent = strings.ReplaceAll(
+		specContent,
+		"`Authenticator`",
+		"`internal/shared#SharedContract`",
+	)
+	testingContent := strings.Replace(
+		validTestingDocument,
+		"- **Status:** `active`",
+		"- **Status:** `active`\n- **Contracts:** `internal/shared#SharedContract`",
+		1,
+	)
+
+	documents := make(map[string]*parsedIDDDocument)
+	for role, content := range map[string]string{
+		"design":   validDesignDocument,
+		"contract": validContractDocument,
+		"spec":     specContent,
+		"testing":  testingContent,
+	} {
+		document, detected, err := parseIDDDocument(role+".md", []byte(content))
+		if err != nil || !detected {
+			t.Fatalf("parseIDDDocument(%s) = detected %v, error %v", role, detected, err)
+		}
+		documents[role] = document
+	}
+	if errs := validateIDDDocumentReferences(documents); len(errs) != 0 {
+		t.Fatalf("cross-package references were rejected locally: %v", errs)
+	}
+
+	set := model.NewIdentifierSet()
+	addIDDDocumentIdentifiers(documents, set)
+	spec, ok := set.Get("SPEC-INTERNAL_AUTH-001")
+	if !ok {
+		t.Fatal("SPEC-INTERNAL_AUTH-001 not collected")
+	}
+	test, ok := set.Get("TEST-INTERNAL_AUTH-001")
+	if !ok {
+		t.Fatal("TEST-INTERNAL_AUTH-001 not collected")
+	}
+
+	wantSpecLinks := []model.IdentifierLink{
+		{
+			Ref:  derivedComponentID("internal/shared", "SharedModule"),
+			Type: model.LinkReferences,
+		},
+		{
+			Ref:  derivedContractID("internal/shared", "SharedContract"),
+			Type: model.LinkContract,
+		},
+		{Ref: "TEST-INTERNAL_AUTH-001", Type: model.LinkTests},
+	}
+	if !reflect.DeepEqual(spec.TypedLinks, wantSpecLinks) {
+		t.Errorf("SPEC typed links = %#v, want %#v", spec.TypedLinks, wantSpecLinks)
+	}
+	wantTestLinks := []model.IdentifierLink{
+		{Ref: "SPEC-INTERNAL_AUTH-001", Type: model.LinkImplements},
+		{
+			Ref:  derivedContractID("internal/shared", "SharedContract"),
+			Type: model.LinkContractTests,
+		},
+	}
+	if !reflect.DeepEqual(test.TypedLinks, wantTestLinks) {
+		t.Errorf("TEST typed links = %#v, want %#v", test.TypedLinks, wantTestLinks)
+	}
+}
+
+// @test-contract TEST-INTERNAL_COLLECTOR-021
 func TestDocCollector_IDDDocumentTargetIncludesSiblings(t *testing.T) {
 	docsDir := createIDDDocumentFixture(t)
 	set, errs, err := NewDocCollector(config.Default()).Collect(
@@ -692,7 +869,7 @@ func TestDocCollector_IDDDocumentTargetIncludesSiblings(t *testing.T) {
 	}
 }
 
-// @test TEST-INTERNAL_COLLECTOR-021
+// @test-contract TEST-INTERNAL_COLLECTOR-021
 func TestMarshalIDDDocument(t *testing.T) {
 	document, body, err := ParseIDDDocument([]byte(validTestingDocument))
 	if err != nil {
@@ -722,7 +899,7 @@ func TestMarshalIDDDocument(t *testing.T) {
 	}
 }
 
-// @test TEST-INTERNAL_COLLECTOR-021
+// @test-contract TEST-INTERNAL_COLLECTOR-021
 func TestInitDocuments(t *testing.T) {
 	tests := []struct {
 		name        string
@@ -756,11 +933,32 @@ func TestInitDocuments(t *testing.T) {
 			}
 
 			docsDir := filepath.Join(projectRoot, "docs", filepath.FromSlash(tt.packagePath))
-			guidanceByRole := map[string]string{
-				"design":   "## Component: <name>",
-				"contract": "## Contract: <name>",
-				"spec":     "## SPEC-<MODULE>-<NUMBER>: <title>",
-				"testing":  "## TEST-<MODULE>-<NUMBER>: <title>",
+			guidanceByRole := map[string][]string{
+				"design": {
+					"## Component: <name>",
+					"responsibilities and state ownership",
+					"decisions and trade-offs",
+					"failure containment",
+				},
+				"contract": {
+					"## Contract: <name>",
+					"inputs and outputs",
+					"errors, side effects, invariants",
+					"compatibility",
+				},
+				"spec": {
+					"## SPEC-<MODULE>-<NUMBER>: <title>",
+					"edge and failure cases",
+					"implementation boundary and non-goals",
+					"acceptance",
+				},
+				"testing": {
+					"## TEST-<MODULE>-<NUMBER>: <title>",
+					"positive/negative/boundary/failure scenarios",
+					"fixtures and isolation",
+					"oracles",
+					"exclusions",
+				},
 			}
 			for filename, role := range iddDocumentRoles {
 				document, body, parseErr := ParseIDDDocument([]byte(readTestFile(t, filepath.Join(docsDir, filename))))
@@ -770,8 +968,10 @@ func TestInitDocuments(t *testing.T) {
 				if document.Package != tt.packagePath || document.Document != role {
 					t.Errorf("%s identity = package %q document %q", filename, document.Package, document.Document)
 				}
-				if !strings.Contains(string(body), guidanceByRole[role]) {
-					t.Errorf("%s body does not explain its canonical record: %q", filename, body)
+				for _, guidance := range guidanceByRole[role] {
+					if !strings.Contains(string(body), guidance) {
+						t.Errorf("%s body does not explain %q: %q", filename, guidance, body)
+					}
 				}
 			}
 			if _, statErr := os.Stat(filepath.Join(docsDir, "idd.yaml")); !os.IsNotExist(statErr) {
@@ -784,7 +984,7 @@ func TestInitDocuments(t *testing.T) {
 	}
 }
 
-// @test TEST-INTERNAL_COLLECTOR-021
+// @test-contract TEST-INTERNAL_COLLECTOR-021
 func TestInitDocuments_PrependsPlainNarrative(t *testing.T) {
 	projectRoot := t.TempDir()
 	packagePath := "internal/auth"
@@ -810,7 +1010,7 @@ func TestInitDocuments_PrependsPlainNarrative(t *testing.T) {
 	}
 }
 
-// @test TEST-INTERNAL_COLLECTOR-021
+// @test-contract TEST-INTERNAL_COLLECTOR-021
 func TestInitDocuments_MergesGenericFrontmatter(t *testing.T) {
 	projectRoot := t.TempDir()
 	packagePath := "internal/auth"
@@ -843,7 +1043,7 @@ func TestInitDocuments_MergesGenericFrontmatter(t *testing.T) {
 	}
 }
 
-// @test TEST-INTERNAL_COLLECTOR-021
+// @test-contract TEST-INTERNAL_COLLECTOR-021
 func TestInitDocuments_RefusesLegacyMetadataBeforeWriting(t *testing.T) {
 	projectRoot := t.TempDir()
 	packagePath := "internal/auth"
@@ -879,7 +1079,7 @@ markers:
 	}
 }
 
-// @test TEST-INTERNAL_COLLECTOR-021
+// @test-contract TEST-INTERNAL_COLLECTOR-021
 func TestHasLegacyDocumentMetadata(t *testing.T) {
 	tests := []struct {
 		name    string
@@ -901,7 +1101,7 @@ func TestHasLegacyDocumentMetadata(t *testing.T) {
 	}
 }
 
-// @test TEST-INTERNAL_COLLECTOR-021
+// @test-contract TEST-INTERNAL_COLLECTOR-021
 func TestInitDocuments_RefusesCentralCatalogBeforeWriting(t *testing.T) {
 	projectRoot := t.TempDir()
 	packagePath := "internal/auth"
@@ -926,7 +1126,7 @@ func TestInitDocuments_RefusesCentralCatalogBeforeWriting(t *testing.T) {
 	}
 }
 
-// @test TEST-INTERNAL_COLLECTOR-021
+// @test-contract TEST-INTERNAL_COLLECTOR-021
 func TestRepairDocuments(t *testing.T) {
 	docsDir := createIDDDocumentFixture(t)
 	replaceTestFile(t, filepath.Join(docsDir, "design.md"), `version: "1.0"`, `version: ""`)
@@ -978,7 +1178,7 @@ func TestRepairDocuments(t *testing.T) {
 	}
 }
 
-// @test TEST-INTERNAL_COLLECTOR-021
+// @test-contract TEST-INTERNAL_COLLECTOR-021
 func TestRepairDocuments_SingleFileHasSingleWriteTarget(t *testing.T) {
 	docsDir := createIDDDocumentFixture(t)
 	specPath := filepath.Join(docsDir, "spec.md")
@@ -998,7 +1198,7 @@ func TestRepairDocuments_SingleFileHasSingleWriteTarget(t *testing.T) {
 	}
 }
 
-// @test TEST-INTERNAL_COLLECTOR-021
+// @test-contract TEST-INTERNAL_COLLECTOR-021
 func TestRepairDocuments_RefusesCentralCatalog(t *testing.T) {
 	docsDir := createIDDDocumentFixture(t)
 	specPath := filepath.Join(docsDir, "spec.md")
@@ -1018,7 +1218,7 @@ func TestRepairDocuments_RefusesCentralCatalog(t *testing.T) {
 	}
 }
 
-// @test TEST-INTERNAL_COLLECTOR-021
+// @test-contract TEST-INTERNAL_COLLECTOR-021
 func TestRepairDocuments_RefusesYAMLSemanticRecords(t *testing.T) {
 	docsDir := createIDDDocumentFixture(t)
 	specPath := filepath.Join(docsDir, "spec.md")
