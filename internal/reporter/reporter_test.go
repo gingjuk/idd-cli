@@ -533,6 +533,82 @@ func TestReporter_buildLLMReport_GroupsRepeatedFindings(t *testing.T) {
 }
 
 // @test TEST-INTERNAL_REPORTER-013
+func TestReporter_buildLLMReport_SplitDocumentProvidesAgentMergePrompt(t *testing.T) {
+	cfg := config.Default()
+	r := New(cfg, "json")
+
+	report := &model.Report{
+		Result: model.ValidationResult{
+			Valid: false,
+			Errors: []model.ValidationError{
+				{
+					Rule:    "idd-document-filename",
+					Message: "IDD role documents are not split; merge design-auth.md into design.md",
+					Source:  "docs/internal/auth/design-auth.md:1",
+					Link:    "design.md",
+					Code:    "split-role",
+				},
+				{
+					Rule:    "idd-document-filename",
+					Message: "IDD role documents are not split; merge spec.api.md into spec.md",
+					Source:  "docs/internal/api/spec.api.md:1",
+					Link:    "spec.md",
+					Code:    "split-role",
+				},
+			},
+		},
+	}
+
+	llmReport := r.buildLLMReport(report)
+	if len(llmReport.Findings) != 2 {
+		t.Fatalf("len(Findings) = %d, want 2", len(llmReport.Findings))
+	}
+
+	prompt := llmReport.Findings[0].SuggestedFix
+	for _, want := range []string{
+		"Agent repair prompt:",
+		"`docs/internal/auth/design-auth.md`",
+		"`docs/internal/auth/design.md`",
+		"all unique, still-valid",
+		"implementation boundaries",
+		"without reducing",
+		"Only after verifying that no information was lost",
+		"remove `docs/internal/auth/design-auth.md`",
+		"`idd-cli docs status docs/internal/auth --format json`",
+		"`idd-cli run . --format json`",
+	} {
+		if !strings.Contains(prompt, want) {
+			t.Errorf("split repair prompt lacks %q:\n%s", want, prompt)
+		}
+	}
+
+	if len(llmReport.Summary.RuleGroups) != 1 {
+		t.Fatalf("len(RuleGroups) = %d, want 1", len(llmReport.Summary.RuleGroups))
+	}
+	groupPrompt := llmReport.Summary.RuleGroups[0].SuggestedFix
+	if strings.Contains(groupPrompt, "design-auth.md") ||
+		strings.Contains(groupPrompt, "spec.api.md") {
+		t.Errorf("group-level fix must not select one finding's file: %q", groupPrompt)
+	}
+
+	encoded, err := json.Marshal(llmReport)
+	if err != nil {
+		t.Fatalf("json.Marshal(LLMReport) error = %v", err)
+	}
+	if !strings.Contains(string(encoded), `"suggested_fix":"Agent repair prompt:`) {
+		t.Errorf("JSON output does not expose the repair prompt:\n%s", encoded)
+	}
+
+	var markdown strings.Builder
+	if err := r.writeLLMMarkdown(report, &markdown); err != nil {
+		t.Fatalf("writeLLMMarkdown() error = %v", err)
+	}
+	if !strings.Contains(markdown.String(), prompt) {
+		t.Errorf("LLM Markdown does not expose the per-finding repair prompt:\n%s", markdown.String())
+	}
+}
+
+// @test TEST-INTERNAL_REPORTER-013
 func TestLookupRuleInfo_IDDDocumentFindings(t *testing.T) {
 	tests := []struct {
 		rule        string
@@ -540,6 +616,7 @@ func TestLookupRuleInfo_IDDDocumentFindings(t *testing.T) {
 	}{
 		{rule: "idd-document-parse", wantFixText: "YAML"},
 		{rule: "idd-document-identity", wantFixText: "docs fix"},
+		{rule: "idd-document-filename", wantFixText: "canonical"},
 		{rule: "idd-document-set", wantFixText: "docs fix"},
 		{rule: "idd-document-schema", wantFixText: "field"},
 		{rule: "idd-document-incomplete", wantFixText: "docs status"},

@@ -2,7 +2,6 @@
 idd:
   version: "1.0"
   package: cmd/idd-cli
-  document: spec
 ---
 
 # Specifications: cmd/idd-cli
@@ -110,6 +109,14 @@ Repeated findings may be summarized by rule and severity for navigation, but
 the report must retain each concrete location. LLM Markdown emphasizes the
 canonical owner and safe next action; it must not recommend `docs fix` for
 semantic prose that only an author can repair.
+
+For each `split-role` filename finding, JSON `suggested_fix` and LLM Markdown
+`Fix` must name the exact split source and canonical target. The prompt must
+require all unique still-valid semantic content to survive, prohibit
+summary-only reduction and another role fragment, allow source removal only
+after no-loss verification, and end with package `docs status` and project
+`run` commands. A group that aggregates these findings must remain
+path-neutral.
 
 Report serialization errors or an unwritable destination are command failures.
 Verbose diagnostics stay on stderr so stdout JSON remains a single parseable
@@ -226,11 +233,14 @@ phase-oriented Cobra workflow.
 
 **Acceptance:**
 
-`docs init <package>` creates or adopts four role-owned, self-describing documents
-only after package, traversal, overwrite, central-catalog, and legacy-metadata
-preflight checks. New fill locations carry stable scaffold markers, and the
-command returns their deterministic work list instead of presenting generated
-guidance as completed documentation.
+`docs init <package>` creates or adopts exactly `design.md`, `contract.md`,
+`spec.md`, and `testing.md` only after package, traversal, overwrite,
+central-catalog, and legacy-metadata preflight checks. Each nested source
+sub-package is initialized separately at the matching nested `docs/<package>/`
+path. Frontmatter contains only version/package identity; the exact basename is
+the sole role authority. New fill locations carry stable scaffold markers, and
+the command returns their deterministic work list instead of presenting
+generated guidance as completed documentation.
 
 `docs status <path>` reads one role file or a document tree and returns schema
 `idd.document_status.v1`, complete/incomplete status, and exact
@@ -239,10 +249,17 @@ present, its required role structure is absent, or its bounded content is empty
 or a known placeholder. Existing records also remain incomplete while any
 role-schema required field is absent or placeholder-filled.
 
+If the target file or tree contains a split role document, `docs status`
+returns an operational error containing the same source/target,
+content-preservation, deletion-order, and verification guidance. It does not
+merge or delete the fragment.
+
 `docs fix <path>` normalizes only minimal identity metadata. A file target
 modifies only that document; a directory target may create missing skeletons.
 It preserves scaffold markers. Neither mutation mode reformats prose or infers
 requirements, titles, contracts, designs, purposes, kinds, or coverage.
+Neither mode accepts or emits `idd.document`, creates split role files, or
+imposes a document line-count limit.
 
 Generated skeleton guidance must ask authors for purpose, responsibilities,
 boundaries, rationale, failure cases, acceptance evidence, scenarios,

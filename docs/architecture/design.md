@@ -119,8 +119,9 @@ sound; that remains an explicit authoring/review responsibility.
 
 ## Document ownership model
 
-Each package uses four fixed Markdown files because their concerns evolve at
-different rates:
+Each scanned source package directory, including every nested sub-package,
+maps to an equally nested `docs/<package>/` directory and uses four fixed
+Markdown files because their concerns evolve at different rates:
 
 - `design.md` owns named components and the reasons responsibilities are
   divided as they are;
@@ -130,10 +131,12 @@ different rates:
   and contract;
 - `testing.md` owns TEST evidence and the TEST-to-SPEC `Covers` relationship.
 
-The fixed filenames eliminate repeated `related_files`. Minimal frontmatter
-identifies the package and role without copying semantic catalogs into YAML.
-TEST coverage is authored once in `testing.md`; the engine derives the reverse
-edge rather than requiring a second backlink in `spec.md`.
+The exact lowercase basename is the sole role authority and eliminates both
+repeated `related_files` and a duplicate `idd.document` value. Minimal
+frontmatter identifies only version and package; the former role field is
+invalid without a compatibility period. TEST coverage is authored once in
+`testing.md`; the engine derives the reverse edge rather than requiring a
+second backlink in `spec.md`.
 
 Small required prose anchors make generated omissions mechanically visible:
 Component `Purpose`, Contract `Guarantees`, SPEC `Requirement` and
@@ -148,6 +151,12 @@ The design deliberately permits unrestricted Markdown within each record.
 Subordinate headings, diagrams, examples, rationale, edge cases, and operational
 notes remain readable to people while the level-two record boundary and small
 fixed-field block remain deterministic for tools.
+
+There is no document line-count limit. A long role remains one canonical file;
+the collector rejects size- or feature-derived names such as
+`design-auth.md`, `contract_part.md`, `spec.api.md`, and
+`testing-extra.md`. Package granularity, rather than file splitting, bounds the
+documentation set.
 
 ## Validation lifecycle
 

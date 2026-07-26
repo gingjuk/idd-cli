@@ -2,7 +2,6 @@
 idd:
   version: "1.0"
   package: internal/collector
-  document: contract
 ---
 
 # Contracts: internal/collector
@@ -12,9 +11,11 @@ idd:
 **Guarantees:**
 
 `ParseIDDDocument` accepts an `idd` frontmatter block containing only
-`version`, `package`, and `document`. Unknown fields, semantic YAML catalogs,
-and malformed syntax are rejected. A document without an `idd` block is left
-to legacy parsing.
+`version` and `package`. The exact basename—`design.md`, `contract.md`,
+`spec.md`, or `testing.md`—is the sole role authority. The former
+`idd.document` key, every other unknown field, semantic YAML catalogs, and
+malformed syntax are rejected. There is no compatibility branch for
+`idd.document`. A document without an `idd` block is left to legacy parsing.
 
 The fixed filenames own disjoint declarations:
 
@@ -35,12 +36,14 @@ must not contain `#` or `,`, which are reserved reference separators.
 
 Records are bounded by level-two headings. Their fixed identity and
 relationship fields remain small, while the rest of each section is
-unrestricted human-authored Markdown whose depth follows the subject rather
-than a line-count target.
+unrestricted human-authored Markdown whose depth follows the subject. There is
+no document line-count limit and a role is never split into
+`design-*`, `contract-*`, `spec-*`, or `testing-*` files.
 
 Validation reports the exact Markdown record and field line for:
 
-- package or document-role values that disagree with the Markdown path;
+- version or package values that disagree with the Markdown path;
+- non-canonical or split role filenames;
 - identifiers that do not use the package-derived module;
 - missing self-describing documents;
 - incomplete or placeholder role fields and generated scaffold slots;
@@ -67,12 +70,22 @@ stable record-field slots for every required scalar or list field that is
 missing or still a placeholder. Required-field validation and status
 inspection consume the same role schema.
 
+If status inspection encounters a hyphenated, underscored, or dotted role
+split, it cannot produce a trustworthy completion list and returns an
+operational error containing an agent repair prompt. The prompt names the
+split source and adjacent canonical target, requires all unique still-valid
+semantic material to survive the merge, delays deletion until a no-loss
+comparison, forbids another split, and ends with `docs status` and full-project
+`run` commands. The inspector remains read-only and never performs that merge.
+
 ## Document initialization
 
-`InitDocuments` requires an existing project-relative package directory. It
-creates the four self-describing Markdown documents or prepends structural
-metadata to existing plain narratives. Existing non-IDD frontmatter keys are
-merged into the same frontmatter block and preserved.
+`InitDocuments` requires an existing project-relative package directory. Each
+source package, including a nested sub-package, is initialized independently at
+the equally nested `docs/<package>/` path. Initialization creates exactly the
+four canonical self-describing role documents or prepends structural metadata
+to existing plain narratives. Existing non-IDD frontmatter keys are merged
+into the same frontmatter block and preserved.
 
 Initialization performs a complete preflight before writing. If existing
 Markdown contains legacy markers or `related_files`, it returns an error so a
@@ -93,8 +106,9 @@ returns:
 
 Self-describing sets are discovered before legacy Markdown. Their bodies may
 use declared identifiers as detail headings but may not repeat legacy metadata.
-If none of the four fixed files has an `idd` block, the existing frontmatter
-parser remains authoritative.
+IDD frontmatter on any non-canonical basename and split role names are
+structural filename findings. If none of the four fixed files has an `idd`
+block, the existing frontmatter parser remains authoritative.
 
 TEST `Covers` fields generate both TEST-to-SPEC and reverse SPEC-to-TEST graph
 links. Authors declare the relationship only once.
@@ -166,6 +180,8 @@ document markers.
 | Missing target | Empty identifier set |
 | Ignored path during directory discovery | No collected identifiers or findings |
 | Invalid IDD frontmatter | Structured finding with Markdown line; other inputs continue |
+| IDD frontmatter on a non-canonical filename | `idd-document-filename` finding with generic canonical-filename guidance |
+| Split role filename | `idd-document-filename` finding naming the canonical target; completion inspection returns a path-specific agent merge prompt |
 | Generated slot remains | `idd-document-incomplete` finding and `docs status` work item |
 | Configured source has no pinned grammar | `source-parse` finding; remove the pattern or select a supported language |
 | Supported source has invalid syntax | `source-parse` finding; no source evidence from that file |

@@ -94,9 +94,16 @@ Trust code over README for implementation details.
 
 ## IDD Documentation System
 
-This tool validates the IDD (Intent-Driven Development) documentation system defined in `skills/SKILL.md`. Key conventions:
+This tool validates the IDD (Intent-Driven Development) documentation system
+defined in `cmd/idd-cli/skills/SKILL.md`. Key conventions:
 
-- `docs/` contains SPEC, CONTRACT, TEST, DESIGN markdown files
+- Every scanned source package and nested sub-package maps to
+  `docs/<package>/` and owns `design.md`, `contract.md`, `spec.md`, and
+  `testing.md`
+- The exact basename is the only document-role authority. IDD frontmatter
+  contains `version` and `package`; `idd.document` is invalid
+- IDD role files have no line-count limit and must not be split into
+  `design-*`, `contract-*`, `spec-*`, or `testing-*` files
 - `examples/self-describing-module-docs/` is the one normative four-file
   document example
 - `examples/idd-config-example.yaml` mirrors `config.Default()`
@@ -135,6 +142,9 @@ Before any commit, run idd-cli to ensure all docs are compliant:
 If validation fails, fix errors before committing. Common issues:
 
 - Generated scaffold markers or required fields remain incomplete
-- Document package/role identity does not match its intended `docs/` location
+- Document version/package identity does not match its intended `docs/`
+  location
+- A source package or sub-package lacks one of its four canonical files, or a
+  role was placed in a split/non-canonical filename
 - SPEC, TEST, Component, or Contract references do not resolve
 - Source annotations have no matching document record

@@ -2,7 +2,6 @@
 idd:
   version: "1.0"
   package: internal/config
-  document: spec
 ---
 
 # Specifications: internal/config
@@ -120,6 +119,11 @@ configurable repository gate must have an explicit boolean field, including grap
 consistency, coverage, document structure, doc/code correspondence, annotation rules,
 package document sets, and advisory description consistency. Defaults and the
 example configuration contain no package-path-comment switch.
+
+`require_pkg_doc_files` means every distinct directory containing a scanned,
+non-ignored supported source file maps to the same relative path below
+`docs/`, including nested sub-packages, and must contain the four canonical
+role filenames. It is not a line-count or document-splitting policy.
 
 ### Loaded-file boundary
 

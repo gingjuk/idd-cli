@@ -35,9 +35,10 @@ var (
 //
 // @implement SPEC-INTERNAL_COLLECTOR-001
 type IDDDocument struct {
-	Version          string                 `yaml:"version"`
-	Package          string                 `yaml:"package"`
-	Document         string                 `yaml:"document"`
+	Version string `yaml:"version"`
+	Package string `yaml:"package"`
+	// Document is derived from the canonical filename and is never serialized.
+	Document         string                 `yaml:"-"`
 	Components       []string               `yaml:"-"`
 	Contracts        []string               `yaml:"-"`
 	ComponentRecords []IDDDocumentComponent `yaml:"-"`
@@ -132,13 +133,12 @@ func (e *iddSemanticFrontmatterError) Error() string {
 	)
 }
 
-// ParseIDDDocument reads an IDD metadata block from leading Markdown
-// frontmatter. A legacy document without an `idd` key returns a nil document
-// and no error.
+// ParseIDDDocument reads an IDD metadata block and derives its role from path.
+// A legacy document without an `idd` key returns a nil document and no error.
 //
 // @implement SPEC-INTERNAL_COLLECTOR-001
-func ParseIDDDocument(data []byte) (*IDDDocument, []byte, error) {
-	parsed, detected, err := parseIDDDocument("", data)
+func ParseIDDDocument(path string, data []byte) (*IDDDocument, []byte, error) {
+	parsed, detected, err := parseIDDDocument(path, data)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -202,6 +202,14 @@ func parseIDDDocument(path string, data []byte) (*parsedIDDDocument, bool, error
 			err,
 		)
 	}
+	role, ok := iddDocumentRoles[filepath.Base(path)]
+	if !ok {
+		return nil, true, fmt.Errorf(
+			"self-describing IDD document must be named design.md, contract.md, spec.md, or testing.md",
+		)
+	}
+	metadata.Document = role
+
 	parsed := &parsedIDDDocument{
 		Path:     path,
 		Metadata: metadata,
@@ -215,10 +223,6 @@ func parseIDDDocument(path string, data []byte) (*parsedIDDDocument, bool, error
 			recordFieldLines: make(map[string][]map[string]int),
 		},
 		BodyStartLine: bodyStartLine,
-	}
-	role := metadata.Document
-	if pathRole, ok := iddDocumentRoles[filepath.Base(path)]; ok {
-		role = pathRole
 	}
 	parseIDDMarkdownRecords(parsed, role)
 	return parsed, true, nil
@@ -355,8 +359,23 @@ func iddMetadataNode(document *IDDDocument) *yaml.Node {
 	root := mappingNode()
 	appendMapping(root, scalarNode("version"), quotedScalarNode(document.Version))
 	appendMapping(root, scalarNode("package"), scalarNode(document.Package))
-	appendMapping(root, scalarNode("document"), scalarNode(document.Document))
 	return root
+}
+
+func splitIDDDocumentFilename(filename string) (string, bool) {
+	lower := strings.ToLower(filename)
+	if _, canonical := iddDocumentRoles[lower]; canonical {
+		return "", false
+	}
+	for canonical := range iddDocumentRoles {
+		stem := strings.TrimSuffix(canonical, filepath.Ext(canonical))
+		for _, separator := range []string{"-", "_", "."} {
+			if strings.HasPrefix(lower, stem+separator) && strings.HasSuffix(lower, ".md") {
+				return canonical, true
+			}
+		}
+	}
+	return "", false
 }
 
 type iddMarkdownRecord struct {

@@ -2,7 +2,6 @@
 idd:
   version: "1.0"
   package: internal/engine
-  document: testing
 ---
 
 # Testing: internal/engine
@@ -358,12 +357,15 @@ handling.
 
 **Purpose:**
 
-Prove a package documentation directory missing one or more of the four fixed
-role files produces package-set findings.
+Prove both a partially documented package and a nested source sub-package with
+no documentation directory produce findings for their missing canonical role
+files.
 
-**Oracle:** The test passes only when its assertions confirm a package
-documentation directory missing one or more of the four fixed role files produces
-package-set findings.
+**Oracle:** The test passes only when its assertions confirm the partial
+package reports only its absent files, while the nested source package reports
+all four paths under its exact nested `docs/<package>/` directory. The complete
+parent package must produce no finding and must not satisfy the child by prefix
+matching.
 
 ## TEST-INTERNAL_ENGINE-032: Complete package document set
 

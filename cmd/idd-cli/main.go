@@ -140,11 +140,12 @@ Example:
 var docsFixCmd = &cobra.Command{
 	Use:   "fix <docs-package-or-document>",
 	Short: "Normalize safe document metadata without inventing semantics",
-	Long: `Normalize version, package, and document role in self-describing IDD
-frontmatter. A directory target repairs the four-file set and creates missing
-skeletons. A Markdown file target writes only that file. Markdown bodies are
-preserved byte-for-byte; semantic records are neither rewritten nor invented.
-Use the paired IDD skill to resolve semantic findings reported by run.
+	Long: `Normalize version and package identity in self-describing IDD
+frontmatter. The exact filename remains the sole document-role authority. A
+directory target repairs the four-file set and creates missing skeletons. A
+Markdown file target writes only that file. Markdown bodies are preserved
+byte-for-byte; semantic records are neither rewritten nor invented. Use the
+paired IDD skill to resolve semantic findings reported by run.
 
 Example:
   idd-cli docs fix docs/internal/auth

@@ -2,7 +2,6 @@
 idd:
   version: "1.0"
   package: internal/model
-  document: testing
 ---
 
 # Testing: internal/model

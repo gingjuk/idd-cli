@@ -9,6 +9,8 @@
 # validation policy only. Self-describing Markdown owns Components, Contracts,
 # SPECs, TESTs, and their relationships. Declaration annotation identifiers are
 # the code-to-document join keys; source-file document paths are not configured.
+# The fixed basenames design.md, contract.md, spec.md, and testing.md determine
+# document role; frontmatter does not repeat it.
 
 version: "1.0"
 
@@ -99,7 +101,8 @@ validation:
   # Require @implement/@test/@test-contract annotations have identifiers
   require_annotation_identifier: true
 
-  # Require each package docs directory to contain all four role documents
+  # Require every scanned source package and nested sub-package to have the
+  # four canonical role files at docs/<package>/.
   require_pkg_doc_files: true
 
   # Require annotation types not split across consecutive lines

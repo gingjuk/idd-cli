@@ -126,7 +126,9 @@ The directive must be the complete normalized comment line; merely mentioning
 
 ## Document Structure
 
-Documents are organized by module in the `docs/` directory:
+Documents are organized by source package in the `docs/` directory. Every
+scanned package directory, including a nested sub-package, owns a separate
+document directory at the same project-relative path:
 
 ```text
 docs/
@@ -138,15 +140,34 @@ docs/
 └── IDD.md            # This file
 ```
 
-Each document has an `idd` frontmatter block containing only its identity:
+Each document has an `idd` frontmatter block containing only version and
+package identity:
 
 ```yaml
 # spec.md
 idd:
   version: "1.0"
   package: internal/auth
-  document: spec
 ```
+
+The exact lowercase basename is the only role authority: `design.md`,
+`contract.md`, `spec.md`, or `testing.md`. `idd.document` is invalid without a
+compatibility period, and headings do not override the filename.
+
+Each source package and sub-package must have all four files. They have no
+line-count limit: keep the complete human-readable design, contract,
+requirements, examples, boundaries, and test rationale in the owning files.
+Do not create split role names such as `design-auth.md`, `spec.part.md`, or
+`testing_extra.md`.
+
+An `idd-document-filename` finding for a split file is also a repair protocol.
+Its JSON `suggested_fix` and LLM Markdown `Fix` name the split source,
+canonical target, semantic material that must survive the merge, safe deletion
+order, and the exact follow-up checks. `docs status` returns equivalent guidance
+when a split blocks completion inspection. The agent reads both documents,
+merges without collapsing detailed prose into a summary, verifies that nothing
+was lost, and only then removes the fragment. idd-cli reports and checks this
+work but never performs the semantic merge itself.
 
 The semantic declarations live in human-readable Markdown records:
 
@@ -245,6 +266,9 @@ Packages where none of the four files has an `idd` block continue to use the
 legacy frontmatter format, so migration can happen one package at a time.
 `docs init` refuses legacy marker metadata and central catalogs before writing;
 migrate those relationships explicitly before enabling self-describing mode.
+Legacy marker compatibility does not accept the removed `idd.document` field:
+an `idd` block immediately uses filename-owned roles and version/package-only
+identity.
 The migration must preserve useful rationale, boundary discussion, failure
 behavior, examples, and test strategy; a smaller file is not automatically a
 better document.
@@ -276,15 +300,21 @@ complete association.
 ## Validation Rules
 
 1. **Document Schema** — Each role owns correctly shaped Markdown records.
-2. **Path Identity** — Package and role values match the Markdown path.
-3. **Document Set** — All four fixed documents are self-describing.
-4. **Migration Safety** — A package-local central marker catalog is rejected.
-5. **Reference Integrity** — Design, contract, and coverage references resolve.
-6. **Completeness** — Every SPEC has at least one derived TEST backlink.
-7. **TEST Kind** — `Kind: test` uses `@test`; `Kind: contract` uses
+2. **Filename Authority** — Only the four canonical basenames define IDD
+   roles; split role documents receive a path-specific agent merge prompt.
+3. **Path Identity** — Version and package identity match
+   `docs/<package>/`.
+4. **Document Set** — Every scanned source package and sub-package has all four
+   self-describing documents.
+5. **Migration Safety** — A package-local central marker catalog is rejected.
+6. **Reference Integrity** — Design, contract, and coverage references resolve.
+7. **Completeness** — Every SPEC has at least one derived TEST backlink.
+8. **TEST Kind** — `Kind: test` uses `@test`; `Kind: contract` uses
    `@test-contract`.
-8. **Doc/Code Correspondence** — Document identifiers match code annotations.
-9. **Legacy Compatibility** — Legacy rules apply when no `idd` block is present.
+9. **Doc/Code Correspondence** — Document identifiers match code annotations.
+10. **Legacy Compatibility** — Legacy marker rules apply when no `idd` block
+    is present; this does not accept the removed self-describing
+    `idd.document` field.
 
 ## Configuration Example
 

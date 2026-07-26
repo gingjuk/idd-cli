@@ -779,3 +779,87 @@ func TestDocCollector_shouldIgnore(t *testing.T) {
 		t.Error("Should not ignore paths not matching pattern")
 	}
 }
+
+// @test-contract TEST-INTERNAL_COLLECTOR-021
+func TestDocCollector_RejectsNonCanonicalRoleDocuments(t *testing.T) {
+	tests := []struct {
+		name     string
+		filename string
+		content  string
+		wantCode string
+		wantLink string
+	}{
+		{
+			name:     "split design document",
+			filename: "design-auth.md",
+			content:  "# Design extension\n",
+			wantCode: "split-role",
+			wantLink: "design.md",
+		},
+		{
+			name:     "underscore split spec document",
+			filename: "spec_auth.md",
+			content:  "# Specification extension\n",
+			wantCode: "split-role",
+			wantLink: "spec.md",
+		},
+		{
+			name:     "dotted split testing document",
+			filename: "testing.auth.md",
+			content:  "# Testing extension\n",
+			wantCode: "split-role",
+			wantLink: "testing.md",
+		},
+		{
+			name:     "IDD metadata on arbitrary filename",
+			filename: "architecture.md",
+			content: `---
+idd:
+  version: "1.0"
+  package: internal/auth
+---
+
+# Design: internal/auth
+`,
+			wantCode: "noncanonical-role",
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			docsDir := filepath.Join(t.TempDir(), "docs", "internal", "auth")
+			if err := os.MkdirAll(docsDir, 0o755); err != nil {
+				t.Fatalf("MkdirAll(%s) error = %v", docsDir, err)
+			}
+			path := filepath.Join(docsDir, test.filename)
+			if err := os.WriteFile(path, []byte(test.content), 0o644); err != nil {
+				t.Fatalf("WriteFile(%s) error = %v", path, err)
+			}
+
+			_, findings, err := NewDocCollector(config.Default()).Collect(
+				nil,
+				filepath.Dir(filepath.Dir(filepath.Dir(docsDir))),
+			)
+			if err != nil {
+				t.Fatalf("Collect() error = %v", err)
+			}
+			found := false
+			for _, finding := range findings {
+				if finding.Rule == "idd-document-filename" && finding.Code == test.wantCode {
+					found = true
+					if finding.Link != test.wantLink {
+						t.Errorf(
+							"finding.Link = %q, want canonical target %q",
+							finding.Link,
+							test.wantLink,
+						)
+					}
+					break
+				}
+			}
+			if !found {
+				t.Errorf("findings = %#v, want idd-document-filename/%s", findings, test.wantCode)
+			}
+		})
+	}
+}

@@ -7,6 +7,7 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"sort"
 	"strings"
 
 	"github.com/jingxu9x/idd-cli/internal/collector"
@@ -1151,18 +1152,14 @@ func directoryHasIDDDocumentMetadata(directory string) bool {
 	return false
 }
 
-// validatePkgDocFiles checks that every pkg docs directory contains all four
-// required documentation files: spec.md, contract.md, testing.md, design.md.
+// validatePkgDocFiles maps every scanned source package directory, including
+// nested packages, to docs/<package>/ and requires the four canonical files.
 func (e *Engine) validatePkgDocFiles() {
-	required := []string{"spec.md", "contract.md", "testing.md", "design.md"}
-
-	// Derive the docs root directories from configured patterns so the check
-	// works with both relative ("docs/**/*.md") and absolute paths (tests).
-	docsRoots := make(map[string]bool)
-	for _, pat := range e.cfg.Docs.Patterns {
-		slash := filepath.ToSlash(pat)
-		base := strings.SplitN(slash, "**", 2)[0]
-		docsRoots[filepath.Clean(base)] = true
+	required := []string{"design.md", "contract.md", "spec.md", "testing.md"}
+	docsRoots := configuredDocsRoots(e.cfg.Docs.Patterns)
+	docsRootSet := make(map[string]bool, len(docsRoots))
+	for _, root := range docsRoots {
+		docsRootSet[filepath.Clean(root)] = true
 	}
 
 	dirFiles := make(map[string]map[string]bool)
@@ -1171,7 +1168,7 @@ func (e *Engine) validatePkgDocFiles() {
 			return
 		}
 		dir := filepath.Clean(filepath.Dir(path))
-		if docsRoots[dir] {
+		if docsRootSet[dir] {
 			return // skip files sitting directly in the docs root
 		}
 		if dirFiles[dir] == nil {
@@ -1180,15 +1177,99 @@ func (e *Engine) validatePkgDocFiles() {
 		dirFiles[dir][filepath.Base(path)] = true
 	})
 
-	for dir, files := range dirFiles {
+	for _, analysis := range e.ensureSourceAnalyses() {
+		docsDir, ok := docsDirectoryForSource(analysis.Path, docsRoots)
+		if !ok || e.isIgnoredDocPath(docsDir) {
+			continue
+		}
+		if dirFiles[docsDir] == nil {
+			dirFiles[docsDir] = make(map[string]bool)
+		}
+	}
+
+	directories := make([]string, 0, len(dirFiles))
+	for dir := range dirFiles {
+		directories = append(directories, dir)
+	}
+	sort.Strings(directories)
+	for _, dir := range directories {
+		files := dirFiles[dir]
 		for _, req := range required {
 			if !files[req] {
 				e.result.AddError(
 					"pkg-doc-files",
 					fmt.Sprintf("pkg doc directory '%s' missing required file: %s", dir, req),
-					dir, "", "",
+					filepath.Join(dir, req),
+					"",
+					req,
 				)
 			}
 		}
 	}
+}
+
+func configuredDocsRoots(patterns []string) []string {
+	roots := make(map[string]bool)
+	for _, pattern := range patterns {
+		literal := pattern
+		if wildcard := strings.IndexAny(literal, "*?["); wildcard >= 0 {
+			literal = literal[:wildcard]
+		}
+		literal = strings.TrimRight(literal, `/\`)
+		if literal == "" {
+			continue
+		}
+		if filepath.Ext(literal) != "" {
+			literal = filepath.Dir(literal)
+		}
+		for current := filepath.Clean(literal); ; current = filepath.Dir(current) {
+			if filepath.Base(current) == "docs" {
+				roots[current] = true
+				break
+			}
+			parent := filepath.Dir(current)
+			if parent == current || current == "." {
+				break
+			}
+		}
+	}
+	result := make([]string, 0, len(roots))
+	for root := range roots {
+		result = append(result, root)
+	}
+	sort.Strings(result)
+	return result
+}
+
+func docsDirectoryForSource(sourcePath string, docsRoots []string) (string, bool) {
+	sourceAbsolute, err := filepath.Abs(sourcePath)
+	if err != nil {
+		return "", false
+	}
+
+	var selected string
+	selectedRootLength := -1
+	for _, docsRoot := range docsRoots {
+		docsAbsolute, absErr := filepath.Abs(docsRoot)
+		if absErr != nil {
+			continue
+		}
+		projectRoot := filepath.Dir(docsAbsolute)
+		relativeSource, relErr := filepath.Rel(projectRoot, sourceAbsolute)
+		if relErr != nil ||
+			relativeSource == ".." ||
+			strings.HasPrefix(relativeSource, ".."+string(filepath.Separator)) {
+			continue
+		}
+		packagePath := filepath.Dir(relativeSource)
+		if packagePath == "." || packagePath == "" {
+			continue
+		}
+		if len(projectRoot) <= selectedRootLength {
+			continue
+		}
+		selected = filepath.Clean(filepath.Join(docsRoot, packagePath))
+		selectedRootLength = len(projectRoot)
+	}
+	return selected, selected != ""
 }

@@ -2,7 +2,6 @@
 idd:
   version: "1.0"
   package: internal/collector
-  document: spec
 ---
 
 # Specifications: internal/collector
@@ -12,34 +11,50 @@ idd:
 - **Design:** `CollectorModule`
 - **Contract:** `IDDDocumentSet`
 
-**Requirement:** Parse and validate minimal IDD identity frontmatter plus
-human-readable role-specific Markdown records while preserving legacy Markdown
+**Requirement:** Parse and validate minimal IDD version/package frontmatter,
+derive the document role only from its canonical filename, and preserve
+human-readable role-specific Markdown records while retaining legacy Markdown
 collection and safe document initialization and repair.
 
 **Acceptance:**
 
-Each of the four Markdown documents is self-describing. Its YAML frontmatter
-contains only identity; its level-two Markdown records own design components,
-contracts, SPECs, or TESTs and coverage. The collector derives reverse
-SPEC-to-TEST links from `testing.md` `Covers` fields, so a relationship is
-written once without creating a shared write target.
+Each source package and nested sub-package maps independently to
+`docs/<package>/` and owns `design.md`, `contract.md`, `spec.md`, and
+`testing.md`. The exact lowercase basename is the only role authority. YAML
+frontmatter contains only `version` and `package`; the former `idd.document`
+field is rejected without a compatibility mode. Level-two Markdown records own
+design components, contracts, SPECs, or TESTs and coverage. The collector
+derives reverse SPEC-to-TEST links from `testing.md` `Covers` fields, so a
+relationship is written once without creating a shared write target.
 
 CommonMark AST parsing keeps normal prose, examples, and subordinate headings
 free-form while providing exact record and field source locations. Syntax
-errors, semantic YAML catalogs, unknown fields, path/package/role disagreement,
-package-derived module disagreement, missing files, placeholders, duplicates,
-large registry tables, and unresolved references become structured findings. A
-bad document set does not prevent unrelated packages from being collected.
+errors, semantic YAML catalogs, unknown fields, path/package disagreement,
+non-canonical or split role filenames, package-derived module disagreement,
+missing files, placeholders, duplicates, large registry tables, and unresolved
+references become structured findings. A bad document set does not prevent
+unrelated packages from being collected.
 
 Initialization is non-overwriting and refuses legacy metadata before its first
-write. Repair normalizes only identity and atomically replaces each selected
-Markdown file; it never reformats body prose or invents semantic records.
+write. Repair normalizes only version/package identity and atomically replaces
+each selected Markdown file; it never emits role metadata, reformats body
+prose, or invents semantic records.
 
 Generated skeletons prompt authors to explain responsibilities, boundaries,
 rationale, failures, acceptance evidence, scenarios, fixtures, and oracles.
 Those prompts do not become declarations and do not make an empty scaffold
 complete. The collector rejects empty or obvious placeholder content but does
-not use word counts as a substitute for semantic review.
+not use word, line, or file-size counts as a substitute for semantic review.
+Long role documents stay in the canonical file instead of being split into
+feature- or size-suffixed filenames.
+
+A split-role validation finding must retain enough structured evidence for the
+reporter to generate a path-specific agent prompt. Direct completion
+inspection of a split file or a tree containing one must return equivalent
+instructions: read the split and canonical documents, preserve all unique
+still-valid semantics rather than summarize them away, remove the split only
+after a no-loss review, and rerun package status plus full-project validation.
+Neither collection nor status inspection performs the merge or deletion.
 
 ## SPEC-INTERNAL_COLLECTOR-002: Document collector construction
 
@@ -256,11 +271,13 @@ select self-describing or legacy parsing deterministically for each package.
 
 **Acceptance:**
 
-Directory collection has two ordered passes:
+Directory collection has ordered phases:
 
-1. discover directories where a fixed document has an `idd` frontmatter block;
-2. parse each four-document set and then parse all other Markdown through the
-   legacy frontmatter path.
+1. reject IDD metadata on arbitrary filenames and role-derived split files;
+2. discover directories where a canonical document has an `idd` frontmatter
+   block;
+3. parse each four-document set and then parse other permitted Markdown through
+   the legacy frontmatter path.
 
 When the target is one fixed self-describing document, its three siblings are
 included in the same validation scope. The body may use a declared ID as an

@@ -2,7 +2,6 @@
 idd:
   version: "1.0"
   package: internal/collector
-  document: testing
 ---
 
 # Testing: internal/collector
@@ -235,17 +234,26 @@ malformed markers remain excluded.
   `SPEC-INTERNAL_COLLECTOR-017`
 - **Contracts:** `IDDDocumentSet`, `DocCollector`
 
-**Purpose:** Document tests verify minimal identity parsing, CommonMark
-records, exact diagnostics, scaffold completion, typed derived links, safe
-initialization, single-file writes, and idempotent repair.
+**Purpose:** Document tests verify filename-owned roles, minimal
+version/package identity parsing, CommonMark records, exact diagnostics,
+scaffold completion, typed derived links, safe initialization, single-file
+writes, idempotent repair, and actionable split-document recovery.
 
-**Oracle:** Generated documents first report deterministic incomplete slot
-names and exact marker lines. Removing only a marker remains incomplete;
-replacing every slot with valid role-owned content yields an empty work list.
-Normal collection reports the same incomplete state, while repair preserves
-markers and authored bodies byte-for-byte. Extended record fixtures also prove
-Purpose, Guarantees, Acceptance, Oracle, named Contract coverage,
-dependencies, concerns, and lifecycle validation.
+**Oracle:** Parsing succeeds only when the exact canonical basename determines
+the role and frontmatter contains no `document` field. Former role fields,
+IDD metadata on arbitrary names, and `design-*`, `contract-*`, `spec-*`, or
+`testing-*` splits produce their expected findings. Completion inspection of a
+split file and a directory containing it must return a prompt naming exact
+source and target paths, demanding preservation of unique semantics and
+implementation boundaries, forbidding summary-only reduction, delaying
+deletion until a no-loss review, and supplying both verification commands.
+Generated documents first report deterministic incomplete slot names and exact
+marker lines. Removing only a marker remains incomplete; replacing every slot
+with valid role-owned content yields an empty work list. Normal collection
+reports the same incomplete state, while repair preserves markers and authored
+bodies byte-for-byte. Extended record fixtures also prove Purpose, Guarantees,
+Acceptance, Oracle, named Contract coverage, dependencies, concerns, and
+lifecycle validation.
 
 ## TEST-INTERNAL_COLLECTOR-022: Collector boundary cases
 
@@ -383,7 +391,10 @@ and fixture boundaries.
 `TEST-INTERNAL_COLLECTOR-021` is table-driven around the new document model. It
 covers:
 
-- minimal identity YAML and CommonMark record parsing;
+- canonical filename role derivation, minimal version/package YAML, and
+  CommonMark record parsing;
+- rejection of the former `idd.document` key, arbitrary IDD filenames, and
+  hyphenated, underscored, or dotted role splits;
 - semantic-YAML migration findings, unknown fields, malformed YAML,
   module/path mismatches, placeholders, and unresolved references;
 - exact record/field source lines;
@@ -393,7 +404,8 @@ covers:
   validation;
 - typed reverse coverage, named Contract, dependency, and replacement links;
 - shared scaffold slots, deterministic `docs status` ordering, missing sibling
-  work items, marker/content dual completion, and repair preservation;
+  work items, marker/content dual completion, split-document recovery prompts,
+  and repair preservation;
 - narrative metadata and heading validation;
 - minimal-identity round-trip serialization with byte-preserved bodies;
 - large registry-table rejection and fenced-example isolation;

@@ -2,7 +2,6 @@
 idd:
   version: "1.0"
   package: internal/graph
-  document: contract
 ---
 
 # Contracts: internal/graph

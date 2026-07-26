@@ -2,7 +2,6 @@
 idd:
   version: "1.0"
   package: cmd/idd-cli
-  document: contract
 ---
 
 # Contracts: cmd/idd-cli
@@ -31,8 +30,10 @@ The complete project gate is `run .`: a narrower documentation target does not
 narrow source collection from the current working directory.
 
 `llm-markdown` is the agent repair format, Markdown is the human readout, and
-JSON is the automation-facing result. An invalid graph still writes its full
-report before exiting non-zero.
+JSON is the automation-facing result. JSON and LLM Markdown expose
+path-specific split-document repair prompts in the detailed finding, while a
+rule group remains path-neutral when it spans several files. An invalid graph
+still writes its full report before exiting non-zero.
 
 ### Inputs and scope
 
@@ -66,8 +67,12 @@ requirements and architecture.
 `docs init <package>`:
 
 - requires an existing project-relative package directory;
-- creates or adopts four self-describing Markdown files under
-  `docs/<package>/`;
+- creates or adopts exactly `design.md`, `contract.md`, `spec.md`, and
+  `testing.md` under `docs/<package>/`;
+- treats each nested source sub-package as an independent invocation and
+  equally nested documentation set;
+- writes only version/package identity because the exact basename is the sole
+  role authority;
 - never overwrites existing IDD or legacy metadata;
 - refuses legacy marker or `related_files` metadata before writing anything;
 - creates structural headings with stable `idd:scaffold` markers, never fake
@@ -86,7 +91,15 @@ role schema as generation and normal collection and reports schema
 `idd.document_status.v1`, overall `complete` or `incomplete` status, and a
 stable list of remaining slots. Each work item contains file, line, role, slot,
 and reason. Directory input may include multiple package document sets and
-reports missing sibling files as incomplete work.
+reports missing sibling files as incomplete work. A split role name or IDD
+frontmatter on a non-canonical filename is rejected rather than treated as
+another document role.
+
+A split role name returns a directly executable agent prompt in the operational
+error. It identifies source and canonical target, requires a complete
+content-preserving merge, defers deletion until no-loss verification, forbids
+another fragment, and supplies package-status and full-project validation
+commands. The read-only status command never merges or removes files.
 
 A generated slot is complete only when its scaffold marker is absent and the
 bounded Markdown contains effective, non-placeholder authored content. Removing
@@ -98,13 +111,18 @@ their own stable slots; a half-authored record cannot make the status complete.
 
 `docs fix <docs-package-or-document>`:
 
-- repairs the minimal version, package, and document identity;
+- repairs minimal version/package identity while deriving role from the
+  canonical filename;
 - creates missing skeletons for a directory target;
 - writes only the selected file for a file target;
 - preserves the Markdown body byte-for-byte;
 - therefore preserves scaffold markers and incomplete state;
 - never reformats prose or invents semantic records;
 - refuses malformed frontmatter rather than discarding unknown data.
+
+Repair neither accepts nor emits `idd.document` and never creates
+`design-*`, `contract-*`, `spec-*`, or `testing-*` fragments. There is no
+document line-count limit to repair around.
 
 The file form has one possible write target. The directory form has four
 structural targets and prepares every selected result before replacement.

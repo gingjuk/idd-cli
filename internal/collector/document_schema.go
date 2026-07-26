@@ -286,10 +286,7 @@ func InspectDocumentCompletion(path string) (*DocumentCompletionStatus, error) {
 		if !detected {
 			return nil, fmt.Errorf("%s is not a self-describing IDD document", target)
 		}
-		role := parsed.Metadata.Document
-		if pathRole, ok := iddDocumentRoles[filepath.Base(target)]; ok {
-			role = pathRole
-		}
+		role := iddDocumentRoles[filepath.Base(target)]
 		slots = append(slots, inspectParsedDocumentCompletion(parsed, role, true)...)
 	}
 	sortIncompleteSlots(slots)
@@ -315,7 +312,14 @@ func documentCompletionTargets(path string) ([]string, []IncompleteSlot, error) 
 		return nil, nil, fmt.Errorf("inspect document status path: %w", err)
 	}
 	if !info.IsDir() {
-		if _, ok := iddDocumentRoles[filepath.Base(cleanPath)]; !ok {
+		filename := filepath.Base(cleanPath)
+		if canonical, split := splitIDDDocumentFilename(filename); split {
+			return nil, nil, splitIDDDocumentCompletionError(
+				cleanPath,
+				filepath.Join(filepath.Dir(cleanPath), canonical),
+			)
+		}
+		if _, ok := iddDocumentRoles[filename]; !ok {
 			return nil, nil, fmt.Errorf("document status path must name an IDD role Markdown file or directory")
 		}
 		return []string{cleanPath}, nil, nil
@@ -329,7 +333,26 @@ func documentCompletionTargets(path string) ([]string, []IncompleteSlot, error) 
 		if entry.IsDir() {
 			return nil
 		}
+		if canonical, split := splitIDDDocumentFilename(entry.Name()); split {
+			return splitIDDDocumentCompletionError(
+				current,
+				filepath.Join(filepath.Dir(current), canonical),
+			)
+		}
 		if _, ok := iddDocumentRoles[entry.Name()]; !ok {
+			if filepath.Ext(entry.Name()) != ".md" {
+				return nil
+			}
+			data, readErr := os.ReadFile(current)
+			if readErr != nil {
+				return readErr
+			}
+			if hasIDDDocumentFrontmatter(data) {
+				return fmt.Errorf(
+					"%s has IDD frontmatter but is not one of design.md, contract.md, spec.md, or testing.md",
+					current,
+				)
+			}
 			return nil
 		}
 		data, readErr := os.ReadFile(current)
@@ -343,6 +366,10 @@ func documentCompletionTargets(path string) ([]string, []IncompleteSlot, error) 
 	})
 	if err != nil {
 		return nil, nil, fmt.Errorf("walk document status path: %w", err)
+	}
+	if packageFromDocumentPath(filepath.Join(cleanPath, "spec.md")) != "" &&
+		directoryContainsSupportedSource(packageSourceDirectory(cleanPath)) {
+		packageDirs[cleanPath] = true
 	}
 	if len(packageDirs) == 0 {
 		return nil, nil, fmt.Errorf("no IDD role documents found under %s", cleanPath)
@@ -371,6 +398,62 @@ func documentCompletionTargets(path string) ([]string, []IncompleteSlot, error) 
 	}
 	sort.Strings(targets)
 	return targets, missing, nil
+}
+
+func packageSourceDirectory(docsDir string) string {
+	packagePath := packageFromDocumentPath(filepath.Join(docsDir, "spec.md"))
+	if packagePath == "" {
+		return ""
+	}
+	for current := filepath.Clean(docsDir); ; current = filepath.Dir(current) {
+		if filepath.Base(current) == "docs" {
+			return filepath.Join(filepath.Dir(current), filepath.FromSlash(packagePath))
+		}
+		parent := filepath.Dir(current)
+		if parent == current {
+			return ""
+		}
+	}
+}
+
+func directoryContainsSupportedSource(directory string) bool {
+	if directory == "" {
+		return false
+	}
+	entries, err := os.ReadDir(directory)
+	if err != nil {
+		return false
+	}
+	for _, entry := range entries {
+		if !entry.IsDir() && SupportedSourcePath(entry.Name()) {
+			return true
+		}
+	}
+	return false
+}
+
+func splitIDDDocumentCompletionError(splitPath, canonicalPath string) error {
+	splitPath = filepath.Clean(splitPath)
+	canonicalPath = filepath.Clean(canonicalPath)
+	packageDir := filepath.Dir(canonicalPath)
+
+	return fmt.Errorf(
+		"%s is a split role document. Agent repair prompt: Read `%s` completely and read `%s` if it exists. "+
+			"If the canonical file is missing, run `idd-cli docs fix %s` to create the four-file structure. "+
+			"Merge all unique, still-valid requirements, behavior descriptions, design rationale, contracts, "+
+			"implementation boundaries, identifier relationships, examples, diagrams, and test evidence into `%s`. "+
+			"Preserve human-readable Markdown and semantic detail without reducing the content to a summary; "+
+			"remove `%s` only after verifying that no information was lost. Do not create another role split. "+
+			"Then run `idd-cli docs status %s --format json` and `idd-cli run . --format json`; "+
+			"resolve every related error or incomplete slot before finishing",
+		splitPath,
+		splitPath,
+		canonicalPath,
+		packageDir,
+		canonicalPath,
+		splitPath,
+		packageDir,
+	)
 }
 
 func inspectParsedDocumentCompletion(

@@ -2,7 +2,6 @@
 idd:
   version: "1.0"
   package: cmd/idd-cli
-  document: testing
 ---
 
 # Testing: cmd/idd-cli
@@ -64,9 +63,15 @@ Integration evidence covers configuration discovery/defaults, embedded Skill
 listing and byte-exact export, collector/engine handoff, all report formats,
 stdout/stderr isolation, document initialization/status/repair safety, and the
 project-root validity gate. Fresh scaffold fixtures prove that `docs init`
-returns the initial work list, `docs status` becomes complete only after
+creates only canonical role filenames with version/package frontmatter and
+returns the initial work list. `docs status` becomes complete only after
 authored content replaces every marker and every required record field is
-concrete, and `docs fix` preserves that state.
+concrete, while old `idd.document` metadata and split role filenames remain
+invalid. Split-role tests verify that detailed reports and direct completion
+inspection name exact source/target paths, require a content-complete merge,
+delay deletion until no-loss review, and return both verification commands;
+aggregated rule guidance must not select only the first split. `docs fix`
+preserves authored state without inventing another role file.
 
 Failure scenarios include invalid config, malformed documents, migration debt,
 unwritable outputs, invalid graphs that still emit reports, and document
@@ -170,8 +175,9 @@ derived coverage, validation rules, structured findings, document commands,
 and safe failure behavior.
 
 Unit tests use temporary package and documentation trees. Document tests
-exercise real YAML identity parsing, CommonMark records, per-file write scope,
-scaffold work-list stability, body preservation, and atomic repair boundaries.
+exercise filename-owned roles, minimal YAML identity parsing, nested
+package/document paths, CommonMark records, per-file write scope, scaffold
+work-list stability, body preservation, and atomic repair boundaries.
 Tree-sitter fixtures cover Go, TypeScript, TSX, JavaScript/JSX, C++, Java, and
 Python declaration binding and parse failure. Engine tests construct focused
 graphs and file fixtures.

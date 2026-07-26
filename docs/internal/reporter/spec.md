@@ -2,7 +2,6 @@
 idd:
   version: "1.0"
   package: internal/reporter
-  document: spec
 ---
 
 # Specifications: internal/reporter
@@ -133,7 +132,13 @@ unrelated report sections.
 
 ### Required behavior
 
-- known rules receive curated title, explanation, and fix guidance;
+- known rules receive curated title, explanation, and fix guidance, including
+  canonical filename guidance that directs split IDD content back into the
+  owning role file;
+- every `split-role` finding receives its own `suggested_fix` agent prompt with
+  exact source and canonical target paths, complete semantic-preservation
+  instructions, deletion only after a no-loss review, and deterministic
+  `docs status` plus full-project `run` commands;
 - unknown rules receive deterministic fallback text;
 - `path:line` evidence becomes a structured location;
 - primary and related identifiers are extracted without duplicating the
@@ -141,7 +146,7 @@ unrelated report sections.
 - graph-adjacent identifiers are included when a snapshot is available;
 - error and warning severity is preserved;
 - repeated severity/rule findings are grouped with sorted file and identifier
-  summaries; and
+  summaries, while group guidance stays path-neutral; and
 - top rule ranking is deterministic and capped.
 
 ### Boundary

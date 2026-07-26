@@ -2,7 +2,6 @@
 idd:
   version: "1.0"
   package: internal/engine
-  document: spec
 ---
 
 # Specifications: internal/engine
@@ -36,6 +35,10 @@ reporting.
   declarations for Go, TypeScript/TSX, JavaScript/JSX, C++, Java, and Python.
 - A configured extension without a pinned grammar or invalid supported-source
   syntax yields a `source-parse` finding and never activates a regex fallback.
+- Every distinct scanned source directory, including each nested sub-package,
+  maps to the exact same relative directory below `docs/` and requires
+  `design.md`, `contract.md`, `spec.md`, and `testing.md`; a parent package
+  cannot satisfy its child.
 - Rule failures accumulate as structured errors or warnings.
 - Self-describing collector findings survive engine execution.
 - Legacy-only rules do not reinterpret self-describing records.
@@ -63,6 +66,9 @@ syntax failures, structural-error injection, duplicate diagnostics, exact
 ignore scopes, identifier-derived code/document correspondence, headerless
 production/test/contract-test files, warning thresholds, result sorting,
 statistics, optional snapshots, and report construction.
+Package-set cases include a nested source package whose entire documentation
+directory is absent, proving that source inventory rather than existing docs
+alone drives completeness.
 
 ## SPEC-INTERNAL_ENGINE-002: Initialized single-run engine
 

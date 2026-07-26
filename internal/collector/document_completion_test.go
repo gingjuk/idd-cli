@@ -94,6 +94,39 @@ func TestInspectDocumentCompletion_GeneratedSlots(t *testing.T) {
 }
 
 // @test-contract TEST-INTERNAL_COLLECTOR-021
+func TestInspectDocumentCompletion_EmptyPackageReportsFourCanonicalFiles(t *testing.T) {
+	projectRoot := t.TempDir()
+	sourceDir := filepath.Join(projectRoot, "internal", "empty")
+	if err := os.MkdirAll(sourceDir, 0o755); err != nil {
+		t.Fatalf("MkdirAll(%s) error = %v", sourceDir, err)
+	}
+	if err := os.WriteFile(filepath.Join(sourceDir, "empty.go"), []byte("package empty\n"), 0o644); err != nil {
+		t.Fatalf("WriteFile(empty.go) error = %v", err)
+	}
+	docsDir := filepath.Join(projectRoot, "docs", "internal", "empty")
+	if err := os.MkdirAll(docsDir, 0o755); err != nil {
+		t.Fatalf("MkdirAll(%s) error = %v", docsDir, err)
+	}
+
+	status, err := InspectDocumentCompletion(docsDir)
+	if err != nil {
+		t.Fatalf("InspectDocumentCompletion(%s) error = %v", docsDir, err)
+	}
+	if status.Status != "incomplete" || len(status.IncompleteSlots) != 4 {
+		t.Fatalf("status = %#v, want four missing canonical files", status)
+	}
+	got := make([]string, 0, len(status.IncompleteSlots))
+	for _, slot := range status.IncompleteSlots {
+		got = append(got, filepath.Base(slot.File))
+	}
+	sort.Strings(got)
+	want := []string{"contract.md", "design.md", "spec.md", "testing.md"}
+	if strings.Join(got, ",") != strings.Join(want, ",") {
+		t.Errorf("missing files = %v, want %v", got, want)
+	}
+}
+
+// @test-contract TEST-INTERNAL_COLLECTOR-021
 func TestInspectDocumentCompletion_TreeSkipsLegacyRoleFiles(t *testing.T) {
 	projectRoot := t.TempDir()
 	packagePath := "internal/example"
@@ -127,6 +160,53 @@ func TestInspectDocumentCompletion_TreeSkipsLegacyRoleFiles(t *testing.T) {
 		if strings.Contains(slot.File, "architecture") {
 			t.Errorf("legacy role file became a completion target: %#v", slot)
 		}
+	}
+}
+
+// @test-contract TEST-INTERNAL_COLLECTOR-021
+func TestInspectDocumentCompletion_SplitRoleReturnsAgentMergePrompt(t *testing.T) {
+	docsDir := t.TempDir()
+	splitPath := filepath.Join(docsDir, "testing_contract.md")
+	canonicalPath := filepath.Join(docsDir, "testing.md")
+	if err := os.WriteFile(
+		splitPath,
+		[]byte("# Split testing notes\n\nKeep this authored evidence.\n"),
+		0o644,
+	); err != nil {
+		t.Fatalf("WriteFile(%s) error = %v", splitPath, err)
+	}
+
+	tests := []struct {
+		name   string
+		target string
+	}{
+		{name: "direct split file", target: splitPath},
+		{name: "directory containing split file", target: docsDir},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			status, err := InspectDocumentCompletion(test.target)
+			if err == nil {
+				t.Fatalf("InspectDocumentCompletion(%s) status = %#v, want error", test.target, status)
+			}
+			message := err.Error()
+			for _, want := range []string{
+				"Agent repair prompt:",
+				splitPath,
+				canonicalPath,
+				"all unique, still-valid",
+				"implementation boundaries",
+				"without reducing",
+				"only after verifying that no information was lost",
+				"idd-cli docs status",
+				"idd-cli run . --format json",
+			} {
+				if !strings.Contains(message, want) {
+					t.Errorf("split status error lacks %q:\n%s", want, message)
+				}
+			}
+		})
 	}
 }
 

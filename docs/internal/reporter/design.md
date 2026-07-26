@@ -2,7 +2,6 @@
 idd:
   version: "1.0"
   package: internal/reporter
-  document: design
 ---
 
 # Design: internal/reporter
@@ -58,6 +57,14 @@ absence of regex fallback. Named Contract coverage and Component dependency
 cycle findings point to `Contracts` and `Depends on`, preserving the canonical
 relationship owner.
 
+Split-role filename findings are the one path-sensitive repair specialization.
+The structured raw finding supplies the split source, canonical basename, and
+`split-role` code. `suggestedFix` joins the basename to the source directory and
+builds an executable prompt: read both documents, structurally create a missing
+target if necessary, merge all still-valid semantics without shortening them
+to a summary, verify no loss, remove the split source, and rerun package and
+project checks. The reporter does not inspect or mutate either file.
+
 Related identifiers come from the raw finding text and optional graph edges.
 This is context for repair, not proof that every related node caused the
 finding. The reporter must not alter validity or convert warnings into errors.
@@ -72,7 +79,9 @@ traditional stats and graph view.
 Errors are emitted before warnings in finding order. Top rules are ranked by
 frequency, then name, and limited to five. Groups are ranked by count, severity
 string, rule, and first occurrence; files and identifiers within groups are
-sorted.
+sorted. Group guidance comes from rule metadata rather than the first
+path-specific finding, so an aggregate cannot imply that repairing one file
+repairs every member.
 
 ## Architecture
 
@@ -107,9 +116,10 @@ Serializable data types remain in `internal/model`.
 `Write` performs case-insensitive dispatch. `Generate` copies report metadata
 and the validation result into a complete envelope.
 
-The LLM projection builds errors then warnings, enriches each finding, derives
-top rules and groups, and is used by both JSON and LLM Markdown. Human Markdown
-formats the complete report directly.
+The LLM projection builds errors then warnings, parses locations, derives any
+split-document prompt, enriches each finding, derives top rules and groups, and
+is used by both JSON and LLM Markdown. Human Markdown formats the complete
+report directly.
 
 ## Dependencies
 
@@ -127,4 +137,5 @@ LLM-oriented formats.
 Tests do not currently cover file-creation failure, short writes, atomicity,
 unsupported-format truncation, nil config/report/result inputs, every fallback
 rule, Windows-style locations, more than five top rules, or deterministic group
-ties.
+ties. Split-document prompt tests cover project-relative paths; they do not
+exercise filenames containing Markdown delimiter characters.

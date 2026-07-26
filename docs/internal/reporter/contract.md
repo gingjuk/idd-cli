@@ -2,7 +2,6 @@
 idd:
   version: "1.0"
   package: internal/reporter
-  document: contract
 ---
 
 # Contracts: internal/reporter
@@ -73,10 +72,25 @@ the raw link field and then scans message, code, and source.
 Top rules combine errors and warnings, rank by descending frequency and
 ascending name, and retain at most five. Rule groups share severity and rule,
 use one-based finding indexes, deduplicate and sort files/identifiers, and
-include the first finding's title and repair guidance.
+include the first finding's title plus package-neutral rule guidance. A group
+never embeds the first finding's path-specific instruction because one group
+may span several packages.
 
 Rule presentation metadata supplies known explanations and hints, including
 syntax-tree parse/binding failures, scaffold completion, named Contract
-coverage, and Component dependency cycles. Unknown rules receive a humanized
-title and generic guidance. Enrichment does not change the engine's underlying
-result.
+coverage, Component dependency cycles, and non-canonical or split IDD role
+filenames. Filename guidance names the four canonical files and directs content
+back to the owning file rather than recommending another fragment.
+
+For a `split-role` filename finding, the individual `suggested_fix` is a
+self-contained agent repair prompt. It derives the canonical target beside the
+reported source, requires both documents to be read, preserves every unique
+still-valid requirement, behavior, rationale, contract, implementation
+boundary, identifier relationship, example, diagram, and test-evidence note,
+and forbids summary-only replacement. The prompt permits removal of the split
+source only after a no-loss comparison and ends with package `docs status` and
+project `run` commands. A missing canonical file may be structurally created
+with `docs fix`, but that command is never presented as the semantic merge.
+
+Unknown rules receive a humanized title and generic guidance. Enrichment does
+not change the engine's underlying result.

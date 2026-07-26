@@ -2,7 +2,6 @@
 idd:
   version: "1.0"
   package: internal/reporter
-  document: testing
 ---
 
 # Testing: internal/reporter
@@ -185,12 +184,20 @@ related identifier context.
 Prove top-rule selection, one-based group indexes, expected/actual enrichment,
 graph-related identifiers, warning-severity preservation, repeated-finding
 aggregation, sorted file/identifier summaries, and curated guidance for every
-self-describing document rule.
+self-describing document rule. For split-role filenames, prove the detailed
+finding contains a complete agent merge prompt while aggregate rule guidance
+does not select only the first file.
 
 **Oracle:** The test passes only when its assertions confirm top-rule
 selection, one-based group indexes, expected/actual enrichment, graph-related
 identifiers, warning-severity preservation, repeated-finding aggregation, sorted
-file/identifier summaries, and curated guidance for every self-describing document rule.
+file/identifier summaries, and curated guidance for every self-describing
+document rule. A split filename finding must name its exact source and
+canonical target, demand preservation of unique semantic content and
+implementation boundaries, prohibit summary-only reduction, delay deletion
+until a no-loss review, and include package `docs status` plus project `run`
+commands. The group-level fix must contain neither one split source path nor
+another.
 
 ## Strategy
 

@@ -2,7 +2,6 @@
 idd:
   version: "1.0"
   package: internal/engine
-  document: design
 ---
 
 # Design: internal/engine
@@ -42,8 +41,10 @@ consume the normalized AST model.
   syntax-tree analyses;
 - join source and document observations by SPEC or TEST identifier, without
   file-level document paths;
-- read configured files only for remaining Markdown and package-document-set
-  rules;
+- map every scanned source directory, including nested sub-packages, to its
+  equally nested `docs/<package>/` four-file document set;
+- read configured files for remaining Markdown and package-document-set
+  evidence;
 - set validity from accumulated errors, sort findings, and attach statistics;
   and
 - create a complete internal report envelope when requested.
@@ -142,8 +143,10 @@ CodeCollector ---/                 +--> SourceAnalysis[]
 ```
 
 The graph is the relationship query layer. Normalized source analyses support
-annotation and declaration rules. Raw file walkers remain for legacy field
-order, headings, and complete four-file document sets.
+annotation and declaration rules and contribute the complete source-package
+inventory. Raw document walkers remain for legacy field order, headings, and
+existing four-file evidence, so a package with no documentation directory is
+still reportable.
 
 ## Package Layout
 
@@ -175,6 +178,13 @@ the supplied normalized analyses; remaining raw file rules call
 recursive or non-recursive standard-library walkers and skip ignored/unreadable
 files.
 
+`validatePkgDocFiles` derives the configured `docs` root, groups each source
+analysis by its containing project-relative directory, and maps that directory
+without collapsing sub-packages. It unions this inventory with discovered
+documentation directories, then reports each missing canonical basename at
+the path where the file belongs. Parent and child packages are exact path
+matches rather than prefix matches.
+
 ## Dependencies
 
 - `internal/config` supplies rule, scan, consistency, and graph-output policy.
@@ -195,8 +205,9 @@ can be injected without reproducing collector parsing.
 The suite exercises typed and legacy graph interpretation, correspondence,
 required fields, design content, TEST kind, seven-language declaration
 binding, public/test policy, detached/body/string annotations, parse failures,
-headerless production/test/contract-test sources, complete doc sets, ignore
-scopes, duplicates, consistency warnings, and report construction.
+headerless production/test/contract-test sources, complete doc sets, wholly
+absent nested-package doc sets, ignore scopes, duplicates, consistency
+warnings, and report construction.
 Important exclusions include actual context cancellation, engine reuse,
 concurrent access, broad I/O failure propagation, every interaction among rule
 flags, and complete semantic quality of documentation prose.

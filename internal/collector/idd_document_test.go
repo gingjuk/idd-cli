@@ -17,7 +17,6 @@ const validDesignDocument = `---
 idd:
   version: "1.0"
   package: internal/auth
-  document: design
 ---
 
 # Design
@@ -61,7 +60,6 @@ const validContractDocument = `---
 idd:
   version: "1.0"
   package: internal/auth
-  document: contract
 ---
 
 # Contracts
@@ -85,7 +83,6 @@ const validSpecDocument = `---
 idd:
   version: "1.0"
   package: internal/auth
-  document: spec
 ---
 
 # Specifications
@@ -116,7 +113,6 @@ const validTestingDocument = `---
 idd:
   version: "1.0"
   package: internal/auth
-  document: testing
 ---
 
 # Testing
@@ -143,6 +139,7 @@ The returned result and public error category exactly match the scenario table.
 func TestParseIDDDocument(t *testing.T) {
 	tests := []struct {
 		name         string
+		filename     string
 		content      string
 		wantDocument string
 		wantRecords  int
@@ -152,18 +149,19 @@ func TestParseIDDDocument(t *testing.T) {
 	}{
 		{
 			name:         "human readable spec record",
+			filename:     "spec.md",
 			content:      validSpecDocument,
 			wantDocument: "spec",
 			wantRecords:  1,
 			wantBody:     "# Specifications",
 		},
 		{
-			name: "multiline testing narrative remains hand editable",
+			name:     "multiline testing narrative remains hand editable",
+			filename: "testing.md",
 			content: `---
 idd:
   version: "1.0"
   package: internal/auth
-  document: testing
 ---
 
 # Testing
@@ -186,7 +184,8 @@ func newAuthenticator() Authenticator
 			wantBody:     "# Testing",
 		},
 		{
-			name: "legacy frontmatter is not claimed",
+			name:     "legacy frontmatter is not claimed",
+			filename: "spec.md",
 			content: `---
 markers:
   - id: SPEC-INTERNAL_AUTH-001
@@ -198,12 +197,12 @@ markers:
 			wantNil: true,
 		},
 		{
-			name: "semantic yaml records are rejected",
+			name:     "semantic yaml records are rejected",
+			filename: "spec.md",
 			content: `---
 idd:
   version: "1.0"
   package: internal/auth
-  document: spec
   specs: []
 ---
 
@@ -212,12 +211,12 @@ idd:
 			wantErr: true,
 		},
 		{
-			name: "unknown idd field is rejected",
+			name:     "unknown idd field is rejected",
+			filename: "spec.md",
 			content: `---
 idd:
   version: "1.0"
   package: internal/auth
-  document: spec
   unknown: true
 ---
 
@@ -226,7 +225,8 @@ idd:
 			wantErr: true,
 		},
 		{
-			name: "malformed idd yaml is rejected",
+			name:     "malformed idd yaml is rejected",
+			filename: "spec.md",
 			content: `---
 idd:
   version: [
@@ -240,7 +240,7 @@ idd:
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			document, body, err := ParseIDDDocument([]byte(tt.content))
+			document, body, err := ParseIDDDocument(tt.filename, []byte(tt.content))
 			if (err != nil) != tt.wantErr {
 				t.Fatalf("ParseIDDDocument() error = %v, wantErr %v", err, tt.wantErr)
 			}
@@ -271,9 +271,77 @@ idd:
 }
 
 // @test-contract TEST-INTERNAL_COLLECTOR-021
+func TestParseIDDDocument_RoleComesOnlyFromFilename(t *testing.T) {
+	const filenameOwnedDocument = `---
+idd:
+  version: "1.0"
+  package: internal/auth
+---
+
+# Specifications: internal/auth
+
+## SPEC-INTERNAL_AUTH-001: Authenticate
+
+- **Design:** ` + "`AuthModule`" + `
+- **Contract:** ` + "`Authenticator`" + `
+
+**Requirement:** Authenticate valid credentials.
+
+**Acceptance:** Valid credentials return the expected identity.
+`
+
+	parsed, detected, err := parseIDDDocument("docs/internal/auth/spec.md", []byte(filenameOwnedDocument))
+	if err != nil || !detected {
+		t.Fatalf("parseIDDDocument() = detected %v, error %v", detected, err)
+	}
+	if parsed.Metadata.Document != "spec" {
+		t.Errorf("derived document role = %q, want spec", parsed.Metadata.Document)
+	}
+	if len(parsed.Metadata.Specs) != 1 {
+		t.Errorf("parsed SPEC records = %d, want 1", len(parsed.Metadata.Specs))
+	}
+
+	const obsoleteDocumentField = `---
+idd:
+  version: "1.0"
+  package: internal/auth
+  document: spec
+---
+
+# Specifications: internal/auth
+`
+	_, detected, err = parseIDDDocument(
+		"docs/internal/auth/spec.md",
+		[]byte(obsoleteDocumentField),
+	)
+	if err == nil || !detected {
+		t.Fatalf("obsolete document field = detected %v, error %v; want a schema error", detected, err)
+	}
+}
+
+// @test-contract TEST-INTERNAL_COLLECTOR-021
+func TestMarshalIDDDocument_OmitsFilenameDerivedRole(t *testing.T) {
+	data, err := MarshalIDDDocument(
+		&IDDDocument{
+			Version:  "1.0",
+			Package:  "internal/auth",
+			Document: "spec",
+		},
+		[]byte("\n# Specifications: internal/auth\n"),
+	)
+	if err != nil {
+		t.Fatalf("MarshalIDDDocument() error = %v", err)
+	}
+	if strings.Contains(string(data), "document:") {
+		t.Errorf("filename-derived role leaked into frontmatter:\n%s", data)
+	}
+}
+
+// @test-contract TEST-INTERNAL_COLLECTOR-021
 func TestParseIDDDocument_MarkdownRecords(t *testing.T) {
 	tests := []struct {
 		name           string
+		filename       string
 		content        string
 		wantComponents []string
 		wantContracts  []string
@@ -282,17 +350,20 @@ func TestParseIDDDocument_MarkdownRecords(t *testing.T) {
 	}{
 		{
 			name:           "component heading owns design declaration",
+			filename:       "design.md",
 			content:        validDesignDocument,
 			wantComponents: []string{"AuthModule"},
 		},
 		{
 			name:          "contract heading owns contract declaration",
+			filename:      "contract.md",
 			content:       validContractDocument,
 			wantContracts: []string{"Authenticator"},
 		},
 		{
-			name:    "spec fields and wrapped requirement come from record block",
-			content: validSpecDocument,
+			name:     "spec fields and wrapped requirement come from record block",
+			filename: "spec.md",
+			content:  validSpecDocument,
 			wantSpec: &IDDDocumentSpec{
 				ID:          "SPEC-INTERNAL_AUTH-001",
 				Title:       "User authentication",
@@ -307,7 +378,8 @@ func TestParseIDDDocument_MarkdownRecords(t *testing.T) {
 			},
 		},
 		{
-			name: "spec requirement may start in the following paragraph",
+			name:     "spec requirement may start in the following paragraph",
+			filename: "spec.md",
 			content: strings.Replace(
 				validSpecDocument,
 				"**Requirement:** Authenticate a user with credentials while exposing one stable\nfailure for invalid credentials.",
@@ -328,8 +400,9 @@ func TestParseIDDDocument_MarkdownRecords(t *testing.T) {
 			},
 		},
 		{
-			name:    "test fields and purpose come from record block",
-			content: validTestingDocument,
+			name:     "test fields and purpose come from record block",
+			filename: "testing.md",
+			content:  validTestingDocument,
 			wantTest: &IDDDocumentTest{
 				ID:      "TEST-INTERNAL_AUTH-001",
 				Title:   "Authentication behavior",
@@ -343,7 +416,8 @@ func TestParseIDDDocument_MarkdownRecords(t *testing.T) {
 			},
 		},
 		{
-			name: "test purpose may start in the following paragraph",
+			name:     "test purpose may start in the following paragraph",
+			filename: "testing.md",
 			content: strings.Replace(
 				validTestingDocument,
 				"**Purpose:** Verify valid and invalid credentials.",
@@ -363,12 +437,12 @@ func TestParseIDDDocument_MarkdownRecords(t *testing.T) {
 			},
 		},
 		{
-			name: "record-like content in code fence is ignored",
+			name:     "record-like content in code fence is ignored",
+			filename: "spec.md",
 			content: `---
 idd:
   version: "1.0"
   package: internal/auth
-  document: spec
 ---
 
 # Specifications
@@ -387,7 +461,7 @@ idd:
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			document, _, err := ParseIDDDocument([]byte(tt.content))
+			document, _, err := ParseIDDDocument(tt.filename, []byte(tt.content))
 			if err != nil {
 				t.Fatalf("ParseIDDDocument() error = %v", err)
 			}
@@ -442,12 +516,17 @@ func TestDocCollector_IDDDocumentValidation(t *testing.T) {
 			wantSource: "spec.md:",
 		},
 		{
-			name: "role follows fixed filename",
+			name: "former document field is rejected",
 			mutate: func(t *testing.T, docsDir string) {
-				replaceTestFile(t, filepath.Join(docsDir, "testing.md"), "document: testing", "document: spec")
+				replaceTestFile(
+					t,
+					filepath.Join(docsDir, "testing.md"),
+					"  package: internal/auth",
+					"  package: internal/auth\n  document: testing",
+				)
 			},
-			wantRule:   "idd-document-identity",
-			wantCode:   "document",
+			wantRule:   "idd-document-parse",
+			wantCode:   "testing",
 			wantSource: "testing.md:",
 		},
 		{
@@ -456,8 +535,8 @@ func TestDocCollector_IDDDocumentValidation(t *testing.T) {
 				replaceTestFile(
 					t,
 					filepath.Join(docsDir, "spec.md"),
-					"  document: spec",
-					"  unknown_field: true\n  document: spec",
+					"  package: internal/auth",
+					"  package: internal/auth\n  unknown_field: true",
 				)
 			},
 			wantRule:   "idd-document-parse",
@@ -499,7 +578,6 @@ func TestDocCollector_IDDDocumentValidation(t *testing.T) {
 idd:
   version: "1.0"
   package: internal/auth
-  document: spec
 ---
 
 # Specifications
@@ -636,8 +714,8 @@ idd:
 				replaceTestFile(
 					t,
 					filepath.Join(docsDir, "spec.md"),
-					"  document: spec",
-					"  document: spec\n  specs: []",
+					"  package: internal/auth",
+					"  package: internal/auth\n  specs: []",
 				)
 			},
 			wantRule:   "idd-document-migration",
@@ -868,7 +946,7 @@ func TestDocCollector_IDDDocumentTargetIncludesSiblings(t *testing.T) {
 
 // @test-contract TEST-INTERNAL_COLLECTOR-021
 func TestMarshalIDDDocument(t *testing.T) {
-	document, body, err := ParseIDDDocument([]byte(validTestingDocument))
+	document, body, err := ParseIDDDocument("testing.md", []byte(validTestingDocument))
 	if err != nil {
 		t.Fatalf("ParseIDDDocument() error = %v", err)
 	}
@@ -884,7 +962,7 @@ func TestMarshalIDDDocument(t *testing.T) {
 		t.Errorf("MarshalIDDDocument() lost Markdown TEST record:\n%s", output)
 	}
 
-	roundTrip, roundTripBody, err := ParseIDDDocument(data)
+	roundTrip, roundTripBody, err := ParseIDDDocument("testing.md", data)
 	if err != nil {
 		t.Fatalf("round-trip ParseIDDDocument() error = %v", err)
 	}
@@ -958,7 +1036,10 @@ func TestInitDocuments(t *testing.T) {
 				},
 			}
 			for filename, role := range iddDocumentRoles {
-				document, body, parseErr := ParseIDDDocument([]byte(readTestFile(t, filepath.Join(docsDir, filename))))
+				document, body, parseErr := ParseIDDDocument(
+					filename,
+					[]byte(readTestFile(t, filepath.Join(docsDir, filename))),
+				)
 				if parseErr != nil || document == nil {
 					t.Fatalf("generated %s cannot be parsed: document=%#v error=%v", filename, document, parseErr)
 				}
@@ -998,7 +1079,10 @@ func TestInitDocuments_PrependsPlainNarrative(t *testing.T) {
 	if _, err := InitDocuments(projectRoot, packagePath); err != nil {
 		t.Fatalf("InitDocuments() error = %v", err)
 	}
-	_, body, err := ParseIDDDocument([]byte(readTestFile(t, filepath.Join(docsDir, "design.md"))))
+	_, body, err := ParseIDDDocument(
+		"design.md",
+		[]byte(readTestFile(t, filepath.Join(docsDir, "design.md"))),
+	)
 	if err != nil {
 		t.Fatalf("ParseIDDDocument(design.md) error = %v", err)
 	}
@@ -1031,7 +1115,7 @@ func TestInitDocuments_MergesGenericFrontmatter(t *testing.T) {
 	if !strings.Contains(content, "title: Custom design") {
 		t.Errorf("design.md lost generic frontmatter:\n%s", content)
 	}
-	_, body, err := ParseIDDDocument([]byte(content))
+	_, body, err := ParseIDDDocument("design.md", []byte(content))
 	if err != nil {
 		t.Fatalf("ParseIDDDocument(design.md) error = %v", err)
 	}
@@ -1131,7 +1215,10 @@ func TestRepairDocuments(t *testing.T) {
 
 	bodies := make(map[string]string)
 	for filename := range iddDocumentRoles {
-		_, body, err := ParseIDDDocument([]byte(readTestFile(t, filepath.Join(docsDir, filename))))
+		_, body, err := ParseIDDDocument(
+			filename,
+			[]byte(readTestFile(t, filepath.Join(docsDir, filename))),
+		)
 		if err != nil {
 			t.Fatalf("ParseIDDDocument(%s) error = %v", filename, err)
 		}
@@ -1146,7 +1233,10 @@ func TestRepairDocuments(t *testing.T) {
 		t.Fatalf("RepairDocuments() changed = %v, want design.md only", changed)
 	}
 
-	design, _, err := ParseIDDDocument([]byte(readTestFile(t, filepath.Join(docsDir, "design.md"))))
+	design, _, err := ParseIDDDocument(
+		"design.md",
+		[]byte(readTestFile(t, filepath.Join(docsDir, "design.md"))),
+	)
 	if err != nil {
 		t.Fatalf("ParseIDDDocument(design.md) error = %v", err)
 	}
@@ -1157,7 +1247,10 @@ func TestRepairDocuments(t *testing.T) {
 		t.Errorf("components = %q, want Markdown component declaration", got)
 	}
 	for filename, wantBody := range bodies {
-		_, gotBody, parseErr := ParseIDDDocument([]byte(readTestFile(t, filepath.Join(docsDir, filename))))
+		_, gotBody, parseErr := ParseIDDDocument(
+			filename,
+			[]byte(readTestFile(t, filepath.Join(docsDir, filename))),
+		)
 		if parseErr != nil {
 			t.Fatalf("ParseIDDDocument(%s) after repair error = %v", filename, parseErr)
 		}
@@ -1219,7 +1312,7 @@ func TestRepairDocuments_RefusesCentralCatalog(t *testing.T) {
 func TestRepairDocuments_RefusesYAMLSemanticRecords(t *testing.T) {
 	docsDir := createIDDDocumentFixture(t)
 	specPath := filepath.Join(docsDir, "spec.md")
-	replaceTestFile(t, specPath, "  document: spec", "  document: spec\n  specs: []")
+	replaceTestFile(t, specPath, "  package: internal/auth", "  package: internal/auth\n  specs: []")
 	before := readTestFile(t, specPath)
 
 	changed, err := RepairDocuments(specPath)

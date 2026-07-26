@@ -161,7 +161,9 @@ underscores.
 
 ## Documentation Structure
 
-Each module should have documentation under `docs/<path>/`:
+Each scanned source package directory has its own documentation under the same
+project-relative `docs/<path>/`. A nested source package is an independent
+package and therefore owns an equally nested document set:
 
 ```text
 docs/
@@ -183,8 +185,26 @@ Every file is self-describing. YAML frontmatter contains only identity:
 idd:
   version: "1.0"
   package: internal/auth
-  document: spec # design, contract, spec, or testing
 ```
+
+The exact lowercase filename is the only document-role marker:
+`design.md`, `contract.md`, `spec.md`, or `testing.md`. The former
+`idd.document` field is invalid; there is no compatibility period for it.
+Headings and prose do not determine the role.
+
+Each package owns one file of each role. IDD documents have no line-count
+limit, so keep detailed rationale, requirements, boundaries, examples,
+diagrams, and small local tables in those four files. Do not split a role into
+names such as `design-auth.md`, `spec.part.md`, or `testing_extra.md`.
+
+When `idd-cli` finds a split role file, default JSON places a directly usable
+agent repair prompt in that finding's `suggested_fix`; LLM Markdown prints the
+same prompt under `Fix`. It names the split source and canonical target,
+requires a content-complete merge without summarizing away semantic detail,
+allows deletion only after a no-loss comparison, and ends with package status
+and project validation commands. `docs status` returns the same repair intent
+when its target contains a split file. The CLI never merges or deletes authored
+prose automatically.
 
 Semantic records are Markdown sections in the file that owns them. Their fixed
 fields are deliberately small, but their explanatory prose should be as
@@ -283,6 +303,8 @@ canonical, validated source.
 If none of the four files has an `idd` block, idd-cli continues to use the
 legacy frontmatter format. `docs init` refuses legacy marker metadata and old
 central catalogs before writing, so migration remains explicit.
+This legacy marker mode does not accept `idd.document`; once an `idd` block is
+present, only version/package identity and the canonical basename are valid.
 
 Migration changes ownership, not documentation depth. Preserve useful
 requirements, design reasoning, boundary explanations, failure cases,
@@ -348,7 +370,8 @@ idd-cli enforces these rules:
 | Rule | Description |
 |------|-------------|
 | `idd-document-schema` | Each file contains valid role-owned records, required fields, lifecycle state, and concern sections |
-| `idd-document-identity` | Package and role match `docs/<package>/<role>.md` |
+| `idd-document-identity` | Version and package match the canonical `docs/<package>/` location |
+| `idd-document-filename` | IDD role documents use only the four canonical basenames; split files receive a path-specific, content-preserving agent merge prompt |
 | `idd-document-set` | All four self-describing documents exist |
 | `idd-document-reference` | Design, contract, and coverage references resolve |
 | `idd-document-incomplete` | Generated scaffold slots still need authored content |

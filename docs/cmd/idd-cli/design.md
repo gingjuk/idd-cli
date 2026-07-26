@@ -2,7 +2,6 @@
 idd:
   version: "1.0"
   package: cmd/idd-cli
-  document: design
 ---
 
 # Design: cmd/idd-cli
@@ -83,8 +82,10 @@ normal mechanism.
 `docs init <package>` treats the package path as project-relative and delegates
 to `InitDocuments(".", package)`. The collector layer performs path,
 package-existence, legacy-metadata, and central-catalog preflight before any
-write. After creation it runs `InspectDocumentCompletion` and serializes both
-the changed-path list and the exact incomplete-slot work list.
+write. It creates the four canonical basenames with version/package-only
+frontmatter; a nested package is initialized independently at its matching
+nested path. After creation it runs `InspectDocumentCompletion` and serializes
+both the changed-path list and the exact incomplete-slot work list.
 
 `docs status <path>` calls the same completion inspector without mutation. JSON
 is the agent-oriented stable wire shape; human output summarizes completion or
@@ -94,11 +95,20 @@ generation, validation, and status from drifting into different definitions of
 record-field slots as authors add records, so every missing required field
 remains directly actionable.
 
+When traversal sees a role-derived split filename, completion inspection stops
+because a fragment cannot be assigned an independent completion state. Its
+error carries the source, adjacent canonical target, content-preservation
+rules, safe deletion order, and both verification commands. The normal
+validation path carries the same source/target evidence into the reporter,
+which emits a per-finding prompt in JSON and LLM Markdown. Group summaries stay
+generic so a multi-package group does not select only its first file.
+
 `docs fix <path>` delegates file-vs-directory semantics to
 `RepairDocuments`. A file target can change only that named document; a
-directory target owns structural identity for all four roles and may create
-missing skeletons. The command never interprets a validation finding as
-permission to rewrite prose.
+directory target owns version/package identity for all four canonical roles
+and may create missing skeletons. Role comes only from the exact basename; the
+command never interprets a validation finding as permission to rewrite prose
+or split a long document.
 
 Mutation commands report structural changes as JSON by default or as a
 human-readable path list for other formats. An empty change list is a

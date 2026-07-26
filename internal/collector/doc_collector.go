@@ -3,6 +3,7 @@ package collector
 
 import (
 	"context"
+	"fmt"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -122,6 +123,42 @@ func (c *DocCollector) Collect(ctx context.Context, targetPath string) (*model.I
 		))
 	}
 
+	invalidIDDPaths := make(map[string]bool)
+	for _, path := range markdownPaths {
+		filename := filepath.Base(path)
+		if _, fixedDocument := iddDocumentRoles[filename]; fixedDocument {
+			continue
+		}
+		if canonical, split := splitIDDDocumentFilename(filename); split {
+			errors = append(errors, iddDocumentValidationError(
+				"idd-document-filename",
+				fmt.Sprintf(
+					"IDD role documents are not split; merge %s into %s",
+					filename,
+					canonical,
+				),
+				path,
+				1,
+				canonical,
+				"split-role",
+			))
+			invalidIDDPaths[path] = true
+			continue
+		}
+		data, readErr := os.ReadFile(path)
+		if readErr == nil && hasIDDDocumentFrontmatter(data) {
+			errors = append(errors, iddDocumentValidationError(
+				"idd-document-filename",
+				"IDD frontmatter is allowed only in design.md, contract.md, spec.md, or testing.md",
+				path,
+				1,
+				"",
+				"noncanonical-role",
+			))
+			invalidIDDPaths[path] = true
+		}
+	}
+
 	iddDirectories := make(map[string]bool)
 	for _, path := range markdownPaths {
 		if _, fixedDocument := iddDocumentRoles[filepath.Base(path)]; !fixedDocument {
@@ -137,6 +174,9 @@ func (c *DocCollector) Collect(ctx context.Context, targetPath string) (*model.I
 		errors = append(errors, c.collectIDDDocumentSet(directory, set)...)
 	}
 	for _, path := range markdownPaths {
+		if invalidIDDPaths[path] {
+			continue
+		}
 		if iddDirectories[filepath.Clean(filepath.Dir(path))] {
 			if _, fixedDocument := iddDocumentRoles[filepath.Base(path)]; !fixedDocument {
 				errors = append(errors, c.collectIDDPackageNarrative(path, set)...)

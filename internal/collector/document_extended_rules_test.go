@@ -12,7 +12,7 @@ import (
 
 // @test-contract TEST-INTERNAL_COLLECTOR-021
 func TestParseIDDDocument_ExtendedRecordFields(t *testing.T) {
-	design, _, err := ParseIDDDocument([]byte(strings.Replace(
+	design, _, err := ParseIDDDocument("design.md", []byte(strings.Replace(
 		validDesignDocument,
 		"- **Concerns:** `security`",
 		"- **Depends on:** `internal/store#CredentialStore`, `AuditTrail`\n- **Concerns:** `security`",
@@ -33,7 +33,7 @@ func TestParseIDDDocument_ExtendedRecordFields(t *testing.T) {
 		t.Errorf("Component record = %#v", component)
 	}
 
-	contract, _, err := ParseIDDDocument([]byte(validContractDocument))
+	contract, _, err := ParseIDDDocument("contract.md", []byte(validContractDocument))
 	if err != nil {
 		t.Fatalf("ParseIDDDocument(contract) error = %v", err)
 	}
@@ -47,7 +47,7 @@ func TestParseIDDDocument_ExtendedRecordFields(t *testing.T) {
 		t.Errorf("Contract record = %#v", got)
 	}
 
-	spec, _, err := ParseIDDDocument([]byte(strings.Replace(
+	spec, _, err := ParseIDDDocument("spec.md", []byte(strings.Replace(
 		validSpecDocument,
 		"- **Status:** `active`",
 		"- **Status:** `superseded`\n- **Deprecated by:** `SPEC-INTERNAL_AUTH-002`",
@@ -73,7 +73,7 @@ func TestParseIDDDocument_ExtendedRecordFields(t *testing.T) {
 		"- **Contracts:** `Authenticator`\n- **Status:** `active`\n- **Supersedes:** `TEST-INTERNAL_AUTH-000`\n- **Concerns:** `compatibility`",
 		1,
 	)
-	testingDocument, _, err := ParseIDDDocument([]byte(contractTest))
+	testingDocument, _, err := ParseIDDDocument("testing.md", []byte(contractTest))
 	if err != nil {
 		t.Fatalf("ParseIDDDocument(testing) error = %v", err)
 	}

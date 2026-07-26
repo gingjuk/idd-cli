@@ -159,8 +159,6 @@ Temporary filesystem fixtures.
 idd:
   version: "1.0"
   package: internal/example
-  document: design
-  components: []
 ---
 
 ` + tt.content
@@ -475,8 +473,6 @@ Content
 idd:
   version: "1.0"
   package: test
-  document: spec
-  specs: []
 ---
 # Specifications
 `,
@@ -508,7 +504,7 @@ idd:
 				t.Fatalf("WriteFile(%s) error = %v", filename, err)
 			}
 			if tt.selfDescribingSibling {
-				contract := "---\nidd: {version: \"1.0\", package: test, document: contract, contracts: []}\n---\n# Contracts\n"
+				contract := "---\nidd: {version: \"1.0\", package: test}\n---\n# Contracts\n"
 				if err := os.WriteFile(filepath.Join(docsDir, "contract.md"), []byte(contract), 0o644); err != nil {
 					t.Fatalf("WriteFile(contract.md) error = %v", err)
 				}
@@ -640,6 +636,59 @@ func TestEngine_PkgDocFiles_MissingFiles(t *testing.T) {
 	for msg := range missing {
 		if strings.Contains(msg, "spec.md") {
 			t.Errorf("unexpected pkg-doc-files error for spec.md: %s", msg)
+		}
+	}
+}
+
+// @test TEST-INTERNAL_ENGINE-031
+func TestEngine_PkgDocFiles_RequiresNestedSourcePackageDocumentSet(t *testing.T) {
+	projectRoot := t.TempDir()
+	docsRoot := filepath.Join(projectRoot, "docs")
+	parentDocs := filepath.Join(docsRoot, "internal", "parent")
+	if err := os.MkdirAll(parentDocs, 0o755); err != nil {
+		t.Fatalf("MkdirAll(%s) error = %v", parentDocs, err)
+	}
+	for _, filename := range []string{"design.md", "contract.md", "spec.md", "testing.md"} {
+		if err := os.WriteFile(filepath.Join(parentDocs, filename), []byte("# content\n"), 0o644); err != nil {
+			t.Fatalf("WriteFile(%s) error = %v", filename, err)
+		}
+	}
+
+	cfg := &config.Config{
+		Version: "1.0",
+		Docs: config.DocsConfig{
+			Patterns: []string{filepath.Join(docsRoot, "**/*.md")},
+		},
+		Validation: config.ValidationConfig{RequirePkgDocFiles: true},
+	}
+	eng := New(cfg)
+	eng.SetSourceAnalyses([]*collector.SourceAnalysis{
+		{Path: filepath.Join(projectRoot, "internal", "parent", "parent.go")},
+		{Path: filepath.Join(projectRoot, "internal", "parent", "sub", "child.go")},
+	})
+
+	result, err := eng.Run(context.Background(), model.NewIdentifierSet())
+	if err != nil {
+		t.Fatalf("Run() error = %v", err)
+	}
+
+	nestedDocs := filepath.Join(docsRoot, "internal", "parent", "sub")
+	missing := make(map[string]bool)
+	for _, finding := range result.Errors {
+		if finding.Rule != "pkg-doc-files" {
+			continue
+		}
+		findingDir := filepath.Clean(filepath.Dir(finding.Source))
+		if findingDir == filepath.Clean(nestedDocs) {
+			missing[finding.Code] = true
+		}
+		if findingDir == filepath.Clean(parentDocs) {
+			t.Errorf("complete parent package reported missing docs: %#v", finding)
+		}
+	}
+	for _, filename := range []string{"design.md", "contract.md", "spec.md", "testing.md"} {
+		if !missing[filename] {
+			t.Errorf("nested source package missing finding for %s: %#v", filename, result.Errors)
 		}
 	}
 }

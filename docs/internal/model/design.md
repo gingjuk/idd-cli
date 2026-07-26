@@ -2,7 +2,6 @@
 idd:
   version: "1.0"
   package: internal/model
-  document: design
 ---
 
 # Design: internal/model

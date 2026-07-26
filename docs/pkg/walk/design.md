@@ -2,7 +2,6 @@
 idd:
   version: "1.0"
   package: pkg/walk
-  document: design
 ---
 
 # Design: pkg/walk

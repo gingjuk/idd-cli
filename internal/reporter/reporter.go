@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"path/filepath"
 	"regexp"
 	"sort"
 	"strconv"
@@ -124,14 +125,20 @@ var (
 		"idd-document-parse": {
 			Severity:    "error",
 			Title:       "IDD document frontmatter cannot be parsed",
-			Explanation: "The document's idd block must be valid YAML containing only version, package, and document identity.",
+			Explanation: "The document's idd block must be valid YAML containing only version and package identity; the filename owns its role.",
 			FixHint:     "Correct the YAML syntax or misspelled field at the reported Markdown line, then rerun validation.",
 		},
 		"idd-document-identity": {
 			Severity:    "error",
 			Title:       "IDD document identity is inconsistent",
-			Explanation: "The package and document role must agree with docs/<package>/<role>.md.",
-			FixHint:     "Run idd-cli docs fix on the reported document or package directory to repair structural identity values.",
+			Explanation: "The package identity must agree with docs/<package>/; the canonical filename determines the document role.",
+			FixHint:     "Move the file to the matching package path or run idd-cli docs fix to repair version and package identity.",
+		},
+		"idd-document-filename": {
+			Severity:    "error",
+			Title:       "IDD document filename is not canonical",
+			Explanation: "Each package owns exactly design.md, contract.md, spec.md, and testing.md; role documents are never split by size or feature.",
+			FixHint:     "Classify the document by its content. Move or merge complete IDD role content into the canonical design.md, contract.md, spec.md, or testing.md owner; otherwise remove invalid IDD frontmatter. For a split-role finding, follow its path-specific prompt and delete the split only after verifying the merge.",
 		},
 		"idd-document-set": {
 			Severity:    "error",
@@ -353,17 +360,18 @@ func (r *Reporter) buildFinding(validationErr model.ValidationError, severity st
 	info := lookupRuleInfo(validationErr.Rule, severity)
 	identifier := primaryIdentifier(validationErr)
 	expected, actual := expectedActual(validationErr, info)
+	location := parseLocation(validationErr.Source)
 
 	finding := model.LLMFinding{
 		Severity:           severity,
 		Rule:               validationErr.Rule,
 		Title:              info.Title,
-		Location:           parseLocation(validationErr.Source),
+		Location:           location,
 		Identifier:         identifier,
 		Problem:            problemText(validationErr, info),
 		Expected:           expected,
 		Actual:             actual,
-		SuggestedFix:       info.FixHint,
+		SuggestedFix:       suggestedFix(validationErr, location, info),
 		RelatedIdentifiers: relatedIdentifiers(validationErr, identifier, graphSnapshot),
 	}
 
@@ -381,6 +389,47 @@ func (r *Reporter) buildFinding(validationErr model.ValidationError, severity st
 	}
 
 	return finding
+}
+
+func suggestedFix(
+	validationErr model.ValidationError,
+	location model.LLMLocation,
+	info ruleInfo,
+) string {
+	if validationErr.Rule != "idd-document-filename" ||
+		validationErr.Code != "split-role" ||
+		location.File == "" {
+		return info.FixHint
+	}
+
+	canonicalName := filepath.Base(validationErr.Link)
+	switch canonicalName {
+	case "design.md", "contract.md", "spec.md", "testing.md":
+	default:
+		return info.FixHint
+	}
+
+	splitPath := filepath.Clean(location.File)
+	packageDir := filepath.Dir(splitPath)
+	canonicalPath := filepath.Join(packageDir, canonicalName)
+
+	return fmt.Sprintf(
+		"Agent repair prompt: Read `%s` completely and read `%s` if it exists. "+
+			"If the canonical file is missing, run `idd-cli docs fix %s` to create the four-file structure. "+
+			"Merge all unique, still-valid requirements, behavior descriptions, design rationale, contracts, "+
+			"implementation boundaries, identifier relationships, examples, diagrams, and test evidence from `%s` into `%s`. "+
+			"Preserve human-readable Markdown and semantic detail; reconcile duplicate headings without reducing the content "+
+			"to a summary, and do not create another role split. Only after verifying that no information was lost, remove `%s`. "+
+			"Then run `idd-cli docs status %s --format json` and `idd-cli run . --format json`; "+
+			"resolve every related error or incomplete slot before finishing.",
+		splitPath,
+		canonicalPath,
+		packageDir,
+		splitPath,
+		canonicalPath,
+		splitPath,
+		packageDir,
+	)
 }
 
 func lookupRuleInfo(rule, defaultSeverity string) ruleInfo {
@@ -530,7 +579,7 @@ func groupFindings(findings []model.LLMFinding) []model.LLMFindingGroup {
 					Severity:     finding.Severity,
 					Rule:         finding.Rule,
 					Title:        finding.Title,
-					SuggestedFix: finding.SuggestedFix,
+					SuggestedFix: lookupRuleInfo(finding.Rule, finding.Severity).FixHint,
 				},
 				fileSet:    make(map[string]bool),
 				idSet:      make(map[string]bool),

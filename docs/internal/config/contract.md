@@ -2,7 +2,6 @@
 idd:
   version: "1.0"
   package: internal/config
-  document: contract
 ---
 
 # Contracts: internal/config

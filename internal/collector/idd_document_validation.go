@@ -126,16 +126,6 @@ func validateIDDDocument(document *parsedIDDDocument, expectedRole string) []*mo
 			index.topFieldLine("package"),
 		)
 	}
-	if metadata.Document != expectedRole {
-		addError(
-			"idd-document-identity",
-			fmt.Sprintf("document must be %q in %s", expectedRole, filepath.Base(document.Path)),
-			"",
-			"document",
-			index.topFieldLine("document"),
-		)
-	}
-
 	switch expectedRole {
 	case "design":
 		errors = append(errors, validateIDDComponents(document)...)

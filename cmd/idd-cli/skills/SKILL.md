@@ -73,6 +73,11 @@ This creates `docs/internal/auth/{design,contract,spec,testing}.md` and returns
 the initial `incomplete_slots` work list. Generated files are intentionally
 invalid until authored.
 
+Create one independent four-file set for every scanned source package
+directory, including nested sub-packages. For example,
+`internal/auth/token` owns `docs/internal/auth/token/`; it does not inherit the
+documents of `internal/auth`.
+
 Do not run `docs init` over existing self-describing or legacy records.
 For an existing package, migrate deliberately or use:
 
@@ -156,19 +161,64 @@ Confirm:
 
 ## Canonical document model
 
-Each file begins with minimal identity only:
+The lowercase basename is the sole authority for document role:
+
+| Filename | Role |
+| --- | --- |
+| `design.md` | design |
+| `contract.md` | contract |
+| `spec.md` | specification |
+| `testing.md` | testing |
+
+Each file begins with minimal version and package identity only:
 
 ```yaml
 ---
 idd:
   version: "1.0"
   package: internal/auth
-  document: design
 ---
 ```
 
-The `document` value is one of `design`, `contract`, `spec`, or `testing` and
-must match the filename. Semantic records live in Markdown.
+Do not add an `idd.document` field: it is invalid and idd-cli does not provide
+a compatibility mode for it. Do not infer the role from the H1 or prose.
+Semantic records live in Markdown.
+
+Every source package directory maps to the same project-relative path below
+`docs/` and owns exactly these four role files. Nested source packages own
+nested four-file sets. Documents have no line-count limit. Keep rich prose,
+diagrams, examples, subordinate headings, and small local tables in the owning
+file; never create `design-*`, `contract-*`, `spec-*`, or `testing-*` files to
+split a role by size or feature.
+
+### Repair a split-role finding
+
+The default JSON report exposes the executable instruction in each
+`idd-document-filename` finding's `suggested_fix`; LLM Markdown prints the same
+instruction under `Fix`. Follow the per-finding prompt rather than applying
+the group summary to only one file.
+
+For each split file:
+
+1. read the split source completely and read its canonical target if present;
+2. if the target is missing, use `idd-cli docs fix <docs-package>` only to
+   create the structural four-file set;
+3. merge every unique, still-valid requirement, behavior description, design
+   rationale, contract, implementation boundary, identifier relationship,
+   example, diagram, and test-evidence note into the canonical target;
+4. reconcile duplicate headings while preserving human-readable Markdown and
+   semantic depth—do not replace detailed text with a summary and do not create
+   another split file;
+5. remove the split source only after comparing both files and verifying that
+   no information was lost; and
+6. run the exact `docs status` command from the prompt, then
+   `idd-cli run . --format json`, until no related finding or incomplete slot
+   remains.
+
+`docs status` returns this repair prompt as an operational error when the
+requested file or tree contains a split role document. The CLI never performs
+the merge or deletion itself because both operations require semantic
+judgment.
 
 ### design.md
 
@@ -369,6 +419,8 @@ idd-cli can check:
 
 - document identity, required records and fields, placeholder state, and exact
   locations;
+- canonical role filenames and one complete four-file set for every scanned
+  source package, including nested packages;
 - reference resolution, duplicate names/IDs, lifecycle agreement and cycles,
   conditional concern sections, dependency cycles, coverage, and orphans;
 - source parseability, annotation syntax, declaration attachment, visibility,
@@ -399,7 +451,13 @@ Upgrade package by package on a dedicated branch:
    `require_package_doc_comment` configuration key; code/document pairing is
    controlled by `require_doc_code_correspondence`.
 3. Preserve rich prose. Add minimal identity and move declarations into the
-   owning H2 records; do not replace prose with YAML or a large table.
+   owning H2 records; delete any obsolete `idd.document` field immediately and
+   do not replace prose with YAML or a large table.
+   Map every source sub-package to its own equally nested `docs/<package>/`
+   directory. For every `design-*`, `contract-*`, `spec-*`, or `testing-*`
+   fragment, follow the finding's path-specific repair prompt and compare the
+   merged result before deleting the fragment; document length is not a
+   validation constraint.
 4. Add concrete `Purpose`, `Guarantees`, `Acceptance`, and `Oracle` labels to
    existing evidence. Do not insert placeholders.
 5. Derive each contract TEST's `Contracts` from the guarantees it actually
@@ -429,7 +487,7 @@ idd-cli docs init internal/auth --format json
 # Inspect completion without modifying files
 idd-cli docs status docs/internal/auth --format json
 
-# Normalize safe identity while preserving body and markers
+# Normalize safe version/package identity while preserving body and markers
 idd-cli docs fix docs/internal/auth
 
 # Run the authoritative project gate

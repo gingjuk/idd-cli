@@ -2,7 +2,6 @@
 idd:
   version: "1.0"
   package: internal/collector
-  document: design
 ---
 
 # Design: internal/collector
@@ -27,7 +26,7 @@ evidence.
 It also owns the only safe structural document mutations: creating a new
 four-file skeleton and normalizing path-derived identity. Those operations are
 kept next to document parsing so they share one definition of package path,
-role, frontmatter, and body preservation.
+canonical filename, frontmatter, and body preservation.
 
 ### Boundaries
 
@@ -48,7 +47,8 @@ SPEC, and TEST references cross files. Directory-level mode selection prevents
 one sibling from using the new model while another silently contributes legacy
 links. CommonMark AST parsing distinguishes authored headings and fields from
 fenced examples, while YAML nodes retain the exact identity-field locations
-needed for repairable diagnostics.
+needed for repairable diagnostics. The exact basename is the one role
+authority, avoiding a second value that can disagree with the filesystem.
 
 ## Architecture
 
@@ -75,11 +75,14 @@ CodeCollector
 
 1. walk the requested target and collect Markdown plus package-local
    `idd.yaml` candidates, applying documentation ignore rules;
-2. inspect fixed role files for a top-level `idd` block;
-3. mark each matching directory as self-describing and sort all paths for
+2. reject IDD metadata on non-canonical names and reject split role names such
+   as `design-auth.md`, recording the source, canonical basename, and
+   `split-role` code needed by the reporter's path-specific repair prompt;
+3. inspect the four fixed role files for a top-level `idd` block;
+4. mark each matching directory as self-describing and sort all paths for
    deterministic processing;
-4. parse every marked directory as one four-file set;
-5. send unmarked Markdown through the legacy parser.
+5. parse every marked directory as one four-file set;
+6. send unmarked Markdown through the legacy parser.
 
 When the explicit target is one of the four fixed files, its existing siblings
 are added to the same scope. This preserves package-level reference validation
@@ -96,10 +99,12 @@ Each document is processed in layers:
 
 1. `splitLeadingFrontmatter` isolates only a real leading frontmatter block and
    preserves the remaining body bytes.
-2. YAML decoding requires a top-level `idd` mapping with `version`, `package`,
-   and `document`. Unknown keys and semantic catalogs are rejected.
-3. The path-derived package and fixed filename establish expected identity and
-   module prefix.
+2. YAML decoding requires a top-level `idd` mapping containing only `version`
+   and `package`. `idd.document`, other unknown keys, and semantic catalogs are
+   rejected immediately without a compatibility branch.
+3. The path-derived package establishes expected identity and module prefix;
+   the exact lowercase filename establishes the role before Markdown records
+   are parsed.
 4. Goldmark parses the body. Level-two role headings define records, while
    subordinate prose, examples, lists, diagrams, and code blocks remain
    human-authored content.
@@ -117,9 +122,18 @@ Issues retain a rule, message, path, line, related identifier, and field code.
 YAML line offsets and Markdown AST segments are normalized before the finding
 leaves the package.
 
-The parser deliberately does not impose a prose length. Structural checks can
-reject empty or obvious placeholder content, but semantic sufficiency belongs
-to the Skill and human review.
+The parser deliberately does not impose a prose or document length.
+Structural checks can reject empty or obvious placeholder content, but
+semantic sufficiency belongs to the Skill and human review. Long documents
+remain in the canonical role file rather than producing `design-*`,
+`contract-*`, `spec-*`, or `testing-*` fragments.
+
+`InspectDocumentCompletion` treats those split names as a blocking structural
+state rather than pretending their content belongs to a completion slot. Its
+error prompt instructs the agent to read both source and target, structurally
+create a missing canonical set if needed, preserve detailed semantics during
+the merge, compare before deleting, and rerun the package and project gates.
+The collector formats guidance but retains a read-only boundary.
 
 ### Legacy isolation
 
@@ -163,9 +177,11 @@ directives when they intentionally contain annotation syntax.
 ### Initialization
 
 `InitDocuments` validates that the package path is project-relative and the
-source package exists. Before writing, it checks all four target files for
-self-describing metadata, legacy markers/relationships, malformed generic
-frontmatter, and a package-local central catalog.
+source package exists. Every nested source package is initialized separately
+at its matching nested `docs/<package>/` path. Before writing, initialization
+checks all four target files for self-describing metadata, legacy
+markers/relationships, malformed generic frontmatter, and a package-local
+central catalog.
 
 Only after complete preflight does it create the documentation directory and
 write each role. Missing files receive minimal identity plus detailed
@@ -178,8 +194,8 @@ authors and `docs fix`, not repeated initialization.
 
 ### Repair
 
-`RepairDocuments` derives package and role identity from
-`docs/<package>/<role>.md`. A file target parses and potentially replaces only
+`RepairDocuments` derives the package from `docs/<package>/` and the role from
+the canonical basename. A file target parses and potentially replaces only
 that file. A directory target prepares all four outputs before the write phase
 and may add missing skeletons.
 
@@ -189,8 +205,10 @@ target while preserving permissions. Malformed frontmatter, semantic YAML,
 legacy metadata, or a central catalog aborts repair rather than being
 discarded.
 
-Repair can normalize facts proven by the path; it cannot decide how to rewrite
-a requirement, contract, design decision, purpose, or coverage relationship.
+Repair can normalize version and package identity proven by the path; it
+cannot decide how to rewrite a requirement, contract, design decision,
+purpose, or coverage relationship. It does not accept or emit
+`idd.document`.
 
 ## Package Layout
 
@@ -255,8 +273,9 @@ Initialization and repair are separate from collection:
 
 ## Testability Hooks
 
-- Pure IDD document parsing and marshaling accept byte slices, so tests can
-  assert exact body preservation, frontmatter shape, fenced-example isolation,
+- Pure IDD document parsing accepts a filename and byte slice, while marshaling
+  accepts identity plus body bytes. Tests assert filename-owned roles, exact
+  body preservation, minimal frontmatter shape, fenced-example isolation,
   wrapped fields, and source lines.
 - Identity diagnostics use YAML node locations; semantic diagnostics use
   Markdown AST source positions. Focused cases verify offsets instead of only
@@ -290,5 +309,6 @@ traceability; adding a new semantic field should be justified by a graph or
 validation need rather than a desire to structure every paragraph.
 
 Future language support belongs in source collection. Future document roles or
-record shapes affect identity, set discovery, reference validation, templates,
-report metadata, the embedded Skill, and migration rules together.
+record shapes affect the canonical filename set, discovery, reference
+validation, templates, report metadata, the embedded Skill, and migration
+rules together.

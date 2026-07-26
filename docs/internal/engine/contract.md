@@ -2,7 +2,6 @@
 idd:
   version: "1.0"
   package: internal/engine
-  document: contract
 ---
 
 # Contracts: internal/engine
@@ -91,10 +90,11 @@ sections, legacy SPEC fields, self-describing TEST annotation kind, legacy
 contract/design marker presence, documented implementation paths, legacy
 relationship consistency, duplicate headings, orphan identifiers, doc/code
 correspondence joined by identifier, syntax-tree public declaration and test
-rules, legacy `related_files`, complete package doc sets, annotation
-identifier/placement/duplication checks, source parse failures, duplicate IDs,
-and optional advisory description consistency. File-level `Spec`, `Contract`,
-and `Test` paths are not an input to this contract.
+rules, legacy `related_files`, complete package doc sets for every scanned
+source directory, annotation identifier/placement/duplication checks, source
+parse failures, duplicate IDs, and optional advisory description consistency.
+File-level `Spec`, `Contract`, and `Test` paths are not an input to this
+contract.
 
 Rules report all detected issues instead of stopping after the first. Errors and
 warnings include the most precise source available. Legacy-only rules skip
@@ -115,6 +115,13 @@ Source annotation rules are the exception to raw line walking. They consume
 extension without a grammar or a syntax error in a supported source is a hard
 `source-parse` finding and prevents policy decisions from partial trees; no
 regex fallback is part of this contract.
+
+The package-document-set rule also consumes those source analyses. Every
+distinct containing directory maps from `<package>/` to
+`docs/<package>/`, including nested sub-packages, and must contain
+`design.md`, `contract.md`, `spec.md`, and `testing.md`. A parent package's
+documents never satisfy a child package. Documentation directly at the docs
+root remains project narrative rather than a package set.
 
 The contract does not promise one unified ignore algorithm across every rule.
 Changing scan or ignore semantics requires rule-specific regression tests.
