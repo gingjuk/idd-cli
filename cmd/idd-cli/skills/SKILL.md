@@ -1,6 +1,6 @@
 ---
 name: intent-driven-development
-description: Use Intent-Driven Development with idd-cli to turn an approved user request into human-readable design, contract, specification, and testing documents; bind those records to source declarations in supported languages; validate and repair traceability; and carry the work through tests, review, and commit
+description: Use Intent-Driven Development with idd-cli to turn an approved user request into human-readable design, contract, specification, and testing documents; bind those records to source declarations; validate and repair traceability; and carry the work through tests, review, and commit
 license: MIT
 metadata:
   audience: agents
@@ -13,103 +13,107 @@ metadata:
 > Protected Skill: change this file only with explicit user approval.
 
 Use this workflow when a repository uses the four IDD documents and
-`idd-cli`. Treat the approved user request and confirmed decisions as the
-source of truth. A dedicated `intent.md` is optional: idd-cli neither requires
-one nor builds Intent-to-SPEC relationships.
+`idd-cli`. Treat the approved request and confirmed decisions as the source of
+truth. A dedicated `intent.md` is optional, and SPEC records do not contain an
+Intent-source field.
 
-## Skill and CLI responsibilities
+## Responsibility boundary
 
-The agent authors and reviews meaning. idd-cli checks deterministic evidence.
+The agent authors and reviews meaning. idd-cli owns deterministic mechanics.
 
-- The agent explains requirements, behavior, rationale, boundaries,
-  guarantees, failures, acceptance evidence, test oracles, and exclusions.
-- idd-cli creates visible scaffolds, parses fixed Markdown records, validates
-  references and lifecycle rules, binds source annotations through syntax
-  trees, builds the linkage graph, and reports exact findings.
-- `.idd.yaml` configures scanning and rules. It never owns Component,
-  Contract, SPEC, TEST, or completion-marker records.
-- `docs fix` repairs only path-proven identity and missing structure. It must
-  not invent prose, coverage, or lifecycle decisions.
+The agent must:
 
-A passing command proves structural consistency, not that prose is true,
-complete for the domain, or implemented correctly. Review those questions
-explicitly.
+- explain requirements, behavior, rationale, guarantees, boundaries, failure
+  behavior, exclusions, acceptance evidence, and test oracles;
+- keep the documents understandable to humans instead of reducing them to
+  registries, placeholders, or summaries;
+- reconcile conflicting or obsolete prose and decide whether implementation
+  and tests actually satisfy the documented intent; and
+- preserve useful information while migrating or repairing documents.
 
-## End-to-end workflow
+Use idd-cli to:
 
-### 1. Capture and track the approved work
+- create the canonical four-file scaffold and report unfinished slots;
+- validate filenames, identity, record fields, references, lifecycle rules,
+  package coverage, source annotations, and doc/code correspondence;
+- produce path- and finding-specific repair instructions; and
+- repair only safe structure with `docs fix`.
+
+`.idd.yaml` configures scanning and validation. It does not own Component,
+Contract, SPEC, TEST, or completion-marker records. A passing validation proves
+structural consistency, not semantic truth or implementation correctness.
+
+## Workflow
+
+### 1. Record the approved work
 
 For non-trivial work, create or update `.planning/` with:
 
-- the user request and confirmed decisions;
+- the approved request and decisions;
 - observable success criteria;
 - constraints and out-of-scope items;
-- implementation phases and one current next action;
+- implementation phases and the current next action; and
 - verification and migration risks.
 
-Do not add an optional Intent source field to SPEC records. Keep plan status
-current until no required item remains.
+Keep the plan current until every accepted item is complete. Do not add an
+Intent-source field to SPEC records.
 
-### 2. Establish the repository baseline
+### 2. Establish a baseline
 
-From the project root:
+From the project root, inspect the current machine-readable state:
 
 ```bash
 idd-cli docs status docs --format json
 idd-cli run . --format json
 ```
 
-Also inspect the real code, tests, configuration, existing documents, and
-working-tree changes. Preserve unrelated user changes. Separate existing
-findings from findings introduced by the requested work.
+Also inspect the real code, tests, configuration, documents, and working-tree
+changes. Separate existing findings from findings introduced by the requested
+work, and preserve unrelated user changes.
 
-### 3. Bootstrap only a new package
+### 3. Initialize only new packages
+
+For a new source package, run:
 
 ```bash
 idd-cli docs init internal/auth --format json
 ```
 
-This creates `docs/internal/auth/{design,contract,spec,testing}.md` and returns
-the initial `incomplete_slots` work list. Generated files are intentionally
-invalid until authored.
+The command creates `docs/internal/auth/{design,contract,spec,testing}.md` and
+returns the initial `incomplete_slots` work list. Generated files are
+intentionally incomplete until their guidance is replaced with
+package-specific content.
 
-Create one independent four-file set for every scanned source package
-directory, including nested sub-packages. For example,
-`internal/auth/token` owns `docs/internal/auth/token/`; it does not inherit the
-documents of `internal/auth`.
+Every scanned source package directory, including a nested sub-package, owns
+an equally nested four-file document set. A child package never inherits its
+parent package's records.
 
-Do not run `docs init` over existing self-describing or legacy records.
-For an existing package, migrate deliberately or use:
+Do not initialize over an existing self-describing or legacy package. Use
+`docs fix` only when a CLI finding explicitly calls for missing structure or
+path-proven identity repair. It must not invent prose, coverage, or lifecycle
+decisions.
 
-```bash
-idd-cli docs fix docs/internal/auth
-```
+### 4. Author documents in dependency order
 
-`docs fix` preserves the Markdown body and every scaffold marker. It may
-normalize minimal identity or create a missing skeleton, but it cannot complete
-semantic work.
+Write the four files in this order:
 
-### 4. Author the four documents in dependency order
+1. `design.md`: define ownership, architecture, boundaries, dependencies,
+   decisions, failure containment, and testability.
+2. `contract.md`: define externally meaningful guarantees, inputs, outputs,
+   errors, side effects, invariants, and compatibility.
+3. `spec.md`: define required behavior and observable acceptance evidence,
+   referring to the owning Components and Contracts.
+4. `testing.md`: define evidence strategy, TEST records, concrete oracles,
+   fixtures, isolation, and intentional exclusions.
 
-Use ordinary Markdown prose, lists, diagrams, small comparison tables, and
-examples. Do not turn the documents into large registry tables or semantic
-YAML catalogs.
+Use ordinary Markdown prose, diagrams, examples, and small local tables where
+they improve understanding. Do not turn the documents into large tables or
+semantic YAML catalogs. When implementation exposes a missing decision, update
+the owning document before relying on the code change.
 
-1. `design.md`: ownership, architecture, boundaries, dependencies, decisions,
-   failure containment, and testability.
-2. `contract.md`: externally meaningful guarantees, inputs, outputs, errors,
-   side effects, invariants, and compatibility.
-3. `spec.md`: required behavior and acceptance evidence, referring to named
-   Components and Contracts.
-4. `testing.md`: evidence strategy, TEST records, concrete oracles, fixtures,
-   isolation, and exclusions.
+### 5. Bind declarations to records
 
-When implementation reveals a missing decision, update the owning document
-before relying on the code change.
-
-### 5. Bind code and tests
-
-Add declaration comments:
+Use the annotation spellings configured in `.idd.yaml`. With the defaults:
 
 ```go
 // @implement SPEC-INTERNAL_AUTH-001
@@ -122,18 +126,18 @@ func TestAuthenticate(t *testing.T) { ... }
 func TestAuthenticatorContract(t *testing.T) { ... }
 ```
 
-One annotation may reference several same-kind IDs separated by commas.
-Annotations are evidence, not substitutes for declaration comments or document
-prose.
+Place annotations on the declarations they describe. One annotation may list
+several same-kind identifiers separated by commas.
 
-Do not repeat package document paths in source-file headers. Lines such as
-`Spec: docs/<package>/spec.md`, `Contract: ...`, and `Test: ...` are neither
-required nor consumed. idd-cli owns the association by joining each
-syntax-tree-bound identifier to its self-describing SPEC or TEST record.
-Ordinary language package/module comments remain human-owned and may be kept
-when they are useful.
+Do not add repeated `Spec:`, `Contract:`, or `Test:` document paths to source
+headers. idd-cli derives code-to-document ownership from identifiers and the
+owning package documents. Keep ordinary language package or module comments
+when they help human readers.
 
-### 6. Validate after each coherent slice
+### 6. Validate each coherent slice
+
+Run focused completion inspection while authoring, followed by the project
+gate:
 
 ```bash
 idd-cli docs status docs/internal/auth --format json
@@ -141,36 +145,35 @@ idd-cli run . --format llm-markdown
 idd-cli run . --format json
 ```
 
-Fix the earliest causal finding first. A missing declaration may cause several
-coverage and orphan findings; do not patch each symptom independently.
-Re-run focused tests, then the repository's complete test, race, lint, build,
-and IDD gates.
+Treat `incomplete_slots` and each finding's `suggested_fix` as the
+machine-owned work queue. Fix the earliest causal finding first; missing
+records or declarations can produce several downstream findings.
+
+Then run the repository's relevant focused tests and its complete test, race,
+lint, build, and IDD gates.
 
 ### 7. Review and finish
 
-Confirm:
+Before committing, confirm that:
 
-- each acceptance statement is observable;
-- every Contract guarantee has named contract-test evidence;
-- every TEST Oracle says what result distinguishes pass from fail;
-- boundaries, failures, concurrency, persistence, security, performance, and
-  compatibility are addressed where relevant;
-- code annotations bind to the intended declarations;
-- `.planning` has no unfinished accepted item;
-- final validation is clean before commit.
+- every acceptance statement is observable;
+- each Contract guarantee has named contract-test evidence;
+- every TEST Oracle distinguishes pass from fail;
+- relevant failure, concurrency, persistence, security, performance, and
+  compatibility boundaries are explained;
+- annotations bind to the intended declarations;
+- prose agrees with the resulting code and tests;
+- `.planning` contains no unfinished accepted item; and
+- final validation is clean.
 
-## Canonical document model
+## Authoring contract
 
-The lowercase basename is the sole authority for document role:
+### Canonical package documents
 
-| Filename | Role |
-| --- | --- |
-| `design.md` | design |
-| `contract.md` | contract |
-| `spec.md` | specification |
-| `testing.md` | testing |
+The exact lowercase basename is the sole document-role authority:
+`design.md`, `contract.md`, `spec.md`, and `testing.md`.
 
-Each file begins with minimal version and package identity only:
+Each file begins with version and package identity:
 
 ```yaml
 ---
@@ -180,320 +183,144 @@ idd:
 ---
 ```
 
-Do not add an `idd.document` field: it is invalid and idd-cli does not provide
-a compatibility mode for it. Do not infer the role from the H1 or prose.
-Semantic records live in Markdown.
+Do not add `idd.document`; the filename already supplies the role. Every source
+package maps to the same project-relative path below `docs/`.
 
-Every source package directory maps to the same project-relative path below
-`docs/` and owns exactly these four role files. Nested source packages own
-nested four-file sets. Documents have no line-count limit. Keep rich prose,
-diagrams, examples, subordinate headings, and small local tables in the owning
-file; never create `design-*`, `contract-*`, `spec-*`, or `testing-*` files to
-split a role by size or feature.
+There is no document line limit. Keep rich explanation in the canonical file
+instead of creating `design-*`, `contract-*`, `spec-*`, `testing-*`, or similar
+split-role files. When such a file is reported, follow its `suggested_fix`,
+merge all still-valid information into the canonical target, compare both
+files, and only then remove the split source.
 
-### Repair a split-role finding
+### Semantic responsibilities
 
-The default JSON report exposes the executable instruction in each
-`idd-document-filename` finding's `suggested_fix`; LLM Markdown prints the same
-instruction under `Fix`. Follow the per-finding prompt rather than applying
-the group summary to only one file.
+Use record fields as traceability anchors, not as replacements for narrative:
 
-For each split file:
+- A Component explains why an implementation boundary exists, what it owns,
+  what it delegates, how failures are contained, and how it can be tested.
+- A Contract explains stable behavior visible across a boundary, including
+  success, failure, invariants, side effects, and compatibility expectations.
+- A SPEC explains required behavior, its design and contract context, and
+  concrete evidence by which a reviewer can accept or reject it.
+- A TEST explains the evidence it supplies, the scenario or boundary exercised,
+  and the exact result that forms its oracle.
 
-1. read the split source completely and read its canonical target if present;
-2. if the target is missing, use `idd-cli docs fix <docs-package>` only to
-   create the structural four-file set;
-3. merge every unique, still-valid requirement, behavior description, design
-   rationale, contract, implementation boundary, identifier relationship,
-   example, diagram, and test-evidence note into the canonical target;
-4. reconcile duplicate headings while preserving human-readable Markdown and
-   semantic depth—do not replace detailed text with a summary and do not create
-   another split file;
-5. remove the split source only after comparing both files and verifying that
-   no information was lost; and
-6. run the exact `docs status` command from the prompt, then
-   `idd-cli run . --format json`, until no related finding or incomplete slot
-   remains.
+Address only concerns relevant to the package, but describe them fully enough
+that a maintainer can understand the intended implementation boundary without
+reconstructing it from code.
 
-`docs status` returns this repair prompt as an operational error when the
-requested file or tree contains a split role document. The CLI never performs
-the merge or deletion itself because both operations require semantic
-judgment.
+### Minimal record syntax
 
-### design.md
+Use `docs init` as the template authority and `docs status` as the completion
+authority. When adding a record to an existing document, preserve these
+minimum shapes:
 
 ```markdown
 ## Component: AuthModule
 
-- **Status:** `active`
-- **Depends on:** `CredentialStore`, `internal/audit#AuditLog`
-- **Concerns:** `security`, `concurrency`
+**Purpose:** Explain the component's ownership and boundary.
 
-**Purpose:** Own credential verification and isolate it from transport code.
-
-### Security
-
-Plain-text credentials never leave the call boundary.
-
-### Concurrency
-
-The component has no mutable process-global authentication state.
-```
-
-`Purpose` is required. `Depends on`, lifecycle fields, and `Concerns` are
-optional. The document also requires non-empty `## Architecture`,
-`## Package Layout`, `## Function Composition`, `## Dependencies`, and
-`## Testability Hooks` sections.
-
-### contract.md
-
-```markdown
 ## Contract: Authenticator
 
-- **Status:** `active`
-- **Concerns:** `compatibility`
+**Guarantees:** Explain externally visible success and failure behavior.
 
-**Guarantees:** Valid credentials return a token; rejected credentials return
-one stable public error without revealing which field failed.
-
-### Compatibility
-
-Existing callers retain the same input and public error categories.
-```
-
-`Guarantees` is required. Keep signatures and concise comparison tables near
-the prose they clarify; the prose remains authoritative.
-
-### spec.md
-
-```markdown
 ## SPEC-INTERNAL_AUTH-001: Authenticate credentials
 
 - **Design:** `AuthModule`
 - **Contract:** `Authenticator`
-- **Status:** `active`
 
-**Requirement:** Authenticate valid credentials without exposing rejection
-details.
+**Requirement:** State the required behavior.
 
-**Acceptance:** A valid fixture yields a non-empty token; every invalid fixture
-yields the documented public rejection and no credential detail.
-```
+**Acceptance:** State observable acceptance evidence.
 
-`Design`, `Contract`, `Requirement`, and `Acceptance` are required. There is no
-required or optional Intent-source field in the idd-cli schema.
-
-### testing.md
-
-```markdown
 ## TEST-INTERNAL_AUTH-001: Authentication behavior
 
 - **Kind:** `test`
 - **Covers:** `SPEC-INTERNAL_AUTH-001`
 
-**Purpose:** Exercise accepted and rejected credential scenarios.
+**Purpose:** State what evidence this test supplies.
 
-**Oracle:** The returned token or public rejection exactly matches each
-scenario row.
-
-## TEST-INTERNAL_AUTH-002: Authenticator boundary
-
-- **Kind:** `contract`
-- **Covers:** `SPEC-INTERNAL_AUTH-001`
-- **Contracts:** `Authenticator`
-
-**Purpose:** Protect the externally visible authentication boundary.
-
-**Oracle:** All documented success, rejection, and redaction guarantees hold
-for every implementation under test.
+**Oracle:** State the exact result that distinguishes pass from fail.
 ```
 
-`Kind`, `Covers`, `Purpose`, and `Oracle` are required. `Kind: contract` also
-requires one or more named `Contracts`; a behavior TEST must not declare that
-field.
+A contract TEST uses `Kind: contract` and adds `Contracts` naming the
+guarantees it actually exercises. Do not assign every package Contract by
+default. Let the current CLI schema and its findings govern optional fields,
+allowed values, and conditional requirements.
 
-## Relationship rules
+### Relationship rules the author must understand
 
-- Component and Contract names are package-local human names. idd-cli derives
-  internal graph keys; authors do not create `DESIGN-*` or `CONTRACT-*`
-  markers for them. Names must not contain `#` or `,`, because those characters
-  delimit package-qualified and list references.
-- A local reference uses the name. A cross-package Component or Contract
-  reference uses `<package>#<name>`.
-- TEST `Covers` is the single authored TEST-to-SPEC relationship. The reverse
-  graph relationship is derived.
-- Contract TEST `Contracts` is the single authored evidence link to named
-  Contract records.
-- `Depends on` targets must resolve and the Component dependency graph must be
-  acyclic.
+- Component and Contract names are package-local. Use the local name inside
+  the package and `<package>#<name>` for a cross-package reference.
+- `Covers` is the single authored TEST-to-SPEC relationship; idd-cli derives
+  the reverse relationship.
+- A contract TEST's `Contracts` field is the authored evidence link to Contract
+  records.
+- Dependencies, lifecycle links, and concern declarations must express real
+  design decisions. Do not add values merely to silence validation.
+- An annotation is implementation or test evidence, not a substitute for
+  document prose or a declaration's normal explanatory comment.
 
-Optional lifecycle values are:
+## Work from CLI findings
 
-- `Status`: `active`, `deprecated`, or `superseded`;
-- `Supersedes`: same-kind records replaced by this record;
-- `Deprecated by`: the same-kind replacement for this record.
+Do not reproduce the validator's field catalogs or infer completion from
+document length. Follow the current binary's output:
 
-Either side may establish a replacement, avoiding mandatory edits to both old
-and new records. If both sides are authored they must agree. A `superseded`
-record must have exactly one derived replacement, and replacement relationships
-must not self-link or form cycles.
+- `docs status` identifies each unfinished file, line, role, slot, and reason.
+- A scaffold location is complete only after concrete content is written and
+  its temporary marker is removed. Removing a marker alone does not pass.
+- `run` reports reference, lifecycle, package-set, source-parse, annotation,
+  coverage, and correspondence failures with a repair hint.
+- `docs fix` may normalize safe identity or create missing skeletons. It never
+  performs semantic merges, deletes split documents, or authors meaning.
 
-`Concerns` accepts `security`, `concurrency`, `persistence`, `performance`, and
-`compatibility`. Every selected concern requires a non-empty same-named
-level-three section inside that record. Do not infer concern tags from prose.
+Read an affected document and its canonical target completely before applying
+a destructive repair. Preserve requirements, rationale, examples, diagrams,
+boundaries, identifiers, and test evidence; do not replace detailed content
+with a thin summary. Re-run the focused command from the finding and then the
+full gate.
 
-## Scaffold completion protocol
+## Human review boundary
 
-Generated fill locations contain stable temporary markers:
+idd-cli can establish that expected files and fields exist, references resolve,
+annotations attach to supported-language declarations, and the configured
+traceability graph is internally consistent.
 
-```markdown
-<!-- idd:scaffold slot="design.architecture" -->
-```
+The agent must still decide whether:
 
-An agent knows what remains by reading `docs status`, not by guessing from
-length or keywords. Each `incomplete_slots` entry contains file, line, role,
-slot, and reason.
+- the requirement represents the approved product decision;
+- the prose covers the relevant domain and operational risks;
+- the design and contract describe coherent boundaries;
+- implementation behavior fulfills each guarantee;
+- acceptance evidence is meaningful; and
+- tests, fixtures, and assertions provide a sufficient oracle.
 
-A slot is complete only when:
-
-1. its marker is removed; and
-2. its bounded canonical record or section contains effective,
-   non-placeholder authored content.
-
-Deleting a marker alone does not pass. Headings, HTML comments, generated
-guidance blockquotes, empty containers, `TBD`, `TODO`, and `auto-generated` do
-not count as authored content. Once a record heading exists, `docs status`
-also returns a record-field slot for every missing required field, including
-conditional contract TEST `Contracts`. Remove a marker only after filling its
-location, and continue until both `docs status` and `run` pass.
-
-## Syntax-tree source binding
-
-idd-cli parses configured source files with pinned Tree-sitter grammars:
-
-- Go: `.go`
-- TypeScript and TSX: `.ts`, `.tsx`
-- JavaScript and JSX: `.js`, `.jsx`
-- C++: `.cpp`, `.cc`, `.cxx`, `.hpp`, `.hh`, `.hxx`
-- Java: `.java`
-- Python: `.py`
-
-The parser recognizes real comment nodes, declarations, visibility, and test
-conventions. It rejects annotation-looking strings, executable-body comments,
-and detached annotations. Configured extensions without a pinned grammar and
-syntax errors in supported files produce `source-parse`; idd-cli does not
-silently fall back to line matching.
-
-The spellings below are defaults. Read `code.annotations` in `.idd.yaml`; when
-a repository configures different `spec`, `test`, or `test_contract` prefixes,
-use those exact spellings. idd-cli normalizes them back to the same three
-semantic kinds.
-
-Public production declarations require `@implement`. Test files are excluded
-from the public-API rule, while real test declarations require `@test` or
-`@test-contract`. Contract-test-named files require the contract form; a normal
-test file may still use `@test-contract` when the documented TEST kind is
-contract.
-
-Code-to-document association is identifier-derived for every supported
-language. A documented identifier without a source annotation and a source
-annotation without a document record both produce `doc-code-correspondence`.
-Do not add a second file-level path mechanism.
-
-Ignore directives must be standalone comment directives:
-
-```text
-idd:ignore start
-idd:ignore end
-```
-
-A prose mention of `idd:ignore` does not activate an ignore range.
-
-The official grammar bindings require CGO. Use the repository's CGO-enabled
-build and test commands rather than treating a CGO-disabled compile failure as
-a document defect.
-
-## Deterministic checks and review boundary
-
-idd-cli can check:
-
-- document identity, required records and fields, placeholder state, and exact
-  locations;
-- canonical role filenames and one complete four-file set for every scanned
-  source package, including nested packages;
-- reference resolution, duplicate names/IDs, lifecycle agreement and cycles,
-  conditional concern sections, dependency cycles, coverage, and orphans;
-- source parseability, annotation syntax, declaration attachment, visibility,
-  test kind, and doc/code correspondence;
-- package document sets and configured legacy compatibility rules.
-
-idd-cli cannot prove:
-
-- that a requirement is the right product decision;
-- that prose covers every domain risk;
-- that a guarantee is implemented correctly;
-- that assertions or test data form a sufficient oracle;
-- that a lexical similarity score represents semantic consistency.
-
-The optional TF-IDF consistency warning is disabled by default. Enable it only
-as a drift hint; never use it as approval or as a replacement for review.
+Treat optional lexical-consistency warnings only as drift hints, never as
+approval or a replacement for review.
 
 ## Existing-project upgrade
 
 Upgrade package by package on a dedicated branch:
 
-1. Build the intended idd-cli version and export its paired Skill.
-2. Inventory legacy markers, central catalogs, duplicate relationships,
-   repeated source-file document paths, source annotations, and current
-   validation findings. Remove `Spec:`, `Contract:`, and `Test:` header paths
-   after confirming the declaration annotations resolve; preserve useful
-   language package/module descriptions. Remove the obsolete
-   `require_package_doc_comment` configuration key; code/document pairing is
-   controlled by `require_doc_code_correspondence`.
-3. Preserve rich prose. Add minimal identity and move declarations into the
-   owning H2 records; delete any obsolete `idd.document` field immediately and
-   do not replace prose with YAML or a large table.
-   Map every source sub-package to its own equally nested `docs/<package>/`
-   directory. For every `design-*`, `contract-*`, `spec-*`, or `testing-*`
-   fragment, follow the finding's path-specific repair prompt and compare the
-   merged result before deleting the fragment; document length is not a
-   validation constraint.
-4. Add concrete `Purpose`, `Guarantees`, `Acceptance`, and `Oracle` labels to
-   existing evidence. Do not insert placeholders.
-5. Derive each contract TEST's `Contracts` from the guarantees it actually
-   exercises; do not assign every package Contract indiscriminately.
-6. Normalize lifecycle and dependency names, then resolve cross-package
-   targets with package-qualified references.
-7. Move annotations onto real declarations and fix syntax errors before
-   trusting correspondence results.
-8. Use `docs status` and `run` after each package. Use `docs fix` only for
-   structural identity; verify it is idempotent.
-9. Run the old test baseline plus the full new gates, review the final graph,
-   and commit only after the plan and findings are closed.
+1. Build the intended idd-cli version, use its paired Skill, and record the old
+   test and validation baseline.
+2. Inventory legacy records, central catalogs, split-role files, repeated
+   source-header paths, annotations, and current findings before editing.
+3. Preserve rich prose while moving records into the owning canonical files.
+   Add filename-derived identity, not role metadata or large YAML registries.
+4. Give every nested source package its own nested four-file set. Merge split
+   files with the finding-specific prompt and compare before deleting them.
+5. Remove repeated source-header document paths only after confirming that
+   declaration annotations resolve to the intended records.
+6. Add concrete Purpose, Guarantees, Requirement, Acceptance, and Oracle
+   content. Never insert placeholders merely to make a migration pass.
+7. Resolve lifecycle, dependency, concern, contract-evidence, and cross-package
+   relationships from their actual meaning rather than bulk-filling values.
+8. Move annotations onto real declarations and resolve parse failures before
+   trusting doc/code correspondence results.
+9. Run `docs status`, `run`, and relevant tests after each package, then run
+   the repository's complete gates before committing.
 
-Legacy packages may remain on the legacy parser until explicitly migrated.
-Never mix legacy `markers` or `related_files` with self-describing `idd`
-frontmatter in one package.
-
-## Operational commands
-
-```bash
-# Export the workflow embedded in this binary
-idd-cli generate skill --output idd-skill.md
-
-# Create new-package scaffolds and return the work list
-idd-cli docs init internal/auth --format json
-
-# Inspect completion without modifying files
-idd-cli docs status docs/internal/auth --format json
-
-# Normalize safe version/package identity while preserving body and markers
-idd-cli docs fix docs/internal/auth
-
-# Run the authoritative project gate
-idd-cli run . --format llm-markdown
-idd-cli run . --format json --output idd-report.json
-```
-
-Run from project root unless the repository documents another scope. An
-invalid graph still writes the requested report and exits non-zero.
+Do not mix legacy marker records with self-describing `idd` frontmatter inside
+one package. Use the current CLI findings to determine the remaining mechanical
+work and the documents themselves to preserve semantic depth.
