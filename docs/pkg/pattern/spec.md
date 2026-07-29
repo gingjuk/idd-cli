@@ -42,10 +42,10 @@ The package must recognize `@implement`, `@test`, and `@test-contract`
 followed by one or more comma-separated three-part identifiers and associate
 the implementation prefix with SPEC and the two testing prefixes with TEST.
 
-**Acceptance:** The package must
-recognize `@implement`, `@test`, and `@test-contract` followed by one or more
-comma-separated three-part identifiers and associate the implementation prefix with SPEC
-and the two testing prefixes with TEST.
+**Acceptance:** Table-driven prefix tests map the three exact supported
+spellings to SPEC or TEST and reject differently cased, unknown, and empty
+prefixes. Extraction cases cover one annotation, mixed kinds, comma-separated
+targets, and content with no annotation.
 
 ### Edge cases
 
@@ -82,9 +82,10 @@ Documentation scanning must only return identifier-shaped prose references when
 the occurrence is explicitly quoted or backtick-delimited, and returned
 identifiers must be normalized to uppercase.
 
-**Acceptance:** Documentation scanning
-must only return identifier-shaped prose references when the occurrence is explicitly
-quoted or backtick-delimited, and returned identifiers must be normalized to uppercase.
+**Acceptance:** Table-driven extraction compares exact returned slices for
+backtick-delimited, double-quoted, unquoted, empty, and partial-match inputs.
+Plain identifier-shaped prose yields no reference, while accepted references
+retain the current normalization and adjacency behavior.
 
 ### Failure and implementation boundary
 
@@ -103,9 +104,9 @@ current limitation because quote detection searches with the normalized value.
 Annotation target lists must split on commas, trim surrounding whitespace,
 preserve target spelling, and omit empty elements.
 
-**Acceptance:** Annotation target lists
-must split on commas, trim surrounding whitespace, preserve target spelling, and omit
-empty elements.
+**Acceptance:** One target, several targets with surrounding whitespace,
+trailing commas, repeated spellings, and empty input produce the expected
+slices. Returned values keep their original case and order.
 
 ### Non-goals
 
@@ -124,9 +125,9 @@ Given arbitrary text, the recognizer must return the first registry type whose
 regular expression finds supported identifier text, or the empty string when
 none is present.
 
-**Acceptance:** Given arbitrary text,
-the recognizer must return the first registry type whose regular expression finds
-supported identifier text, or the empty string when none is present.
+**Acceptance:** Every registered identifier family, mixed-case type text, and
+identifiers embedded in surrounding prose return their registered type.
+Unknown text and empty input return the empty string.
 
 ### Boundary
 
@@ -143,9 +144,9 @@ accept authored IDs must use strict validation instead.
 The broad validity check must succeed when any built-in identifier pattern is
 found and return an error naming the input otherwise.
 
-**Acceptance:** The broad validity check
-must succeed when any built-in identifier pattern is found and return an error naming
-the input otherwise.
+**Acceptance:** Representative SPEC, CONTRACT, TEST, DESIGN, PATTERN, and WALK
+text is accepted even inside surrounding content. Unknown and empty values
+return a non-nil error containing the rejected input.
 
 ### Non-goals
 

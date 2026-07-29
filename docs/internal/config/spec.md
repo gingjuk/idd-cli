@@ -43,9 +43,11 @@ Documentation configuration must carry file patterns, role-specific identifier
 pattern strings, and ignored path patterns without treating any of those values
 as semantic document records.
 
-**Acceptance:** Documentation
-configuration must carry file patterns, role-specific identifier pattern strings, and
-ignored path patterns without treating any of those values as semantic document records.
+**Acceptance:** The built-in-profile contract test observes the configured
+documentation globs, identifier-pattern roles, and ignored paths through the
+root configuration. Loading `examples/idd-config-example.yaml` must produce a
+value deeply equal to `Default()`, so a missing or stale discovery value fails
+the executable configuration example.
 
 ### Boundary
 
@@ -64,9 +66,10 @@ Identifier pattern settings must expose distinct strings for SPEC, TEST, and
 contract-TEST recognition so collectors can preserve annotation kind while
 using a common TEST identifier namespace.
 
-**Acceptance:** Identifier pattern
-settings must expose distinct strings for SPEC, TEST, and contract-TEST recognition so
-collectors can preserve annotation kind while using a common TEST identifier namespace.
+**Acceptance:** The default/example equality test preserves all three pattern
+roles as distinct configuration fields. Collector tests then demonstrate that
+SPEC annotations and both TEST annotation kinds retain their configured kind
+while contract and ordinary tests share the TEST identifier namespace.
 
 ### Non-goals
 
@@ -114,11 +117,11 @@ association is not a separate
 file-header policy: it is the enabled correspondence rule joining matching
 identifier evidence.
 
-**Acceptance:** Every independently
-configurable repository gate must have an explicit boolean field, including graph
-consistency, coverage, document structure, doc/code correspondence, annotation rules,
-and package document sets. Defaults and the
-example configuration contain no package-path-comment switch.
+**Acceptance:** `TestDefault` observes an enabled representative gate, and
+`TestDefaultMatchesExampleConfiguration` compares every validation switch in
+the maintained YAML example with `Default()`. Adding, removing, or changing a
+default gate without synchronizing the example makes that contract test fail.
+Neither value contains the removed package-path-comment switch.
 
 `require_pkg_doc_files` means every distinct directory containing a scanned,
 non-ignored supported source file maps to the same relative path below
@@ -193,11 +196,11 @@ usable by the CLI, with collection patterns, annotation roles, ignore paths,
 deterministic validation gates, and no active lexical or semantic scoring
 policy.
 
-**Acceptance:** The default constructor
-must return a fresh non-nil profile that is immediately usable by the CLI, with
-collection patterns, annotation roles, ignore paths, and deterministic
-validation gates without assigning defaults or runtime meaning to the
-deprecated consistency alias.
+**Acceptance:** `TestDefault` observes version `1.0`, the complete supported
+source-pattern set, an enabled validation gate, and a zero-valued deprecated
+consistency alias. The example-configuration contract test then loads the
+maintained YAML and requires deep equality with a fresh `Default()` value,
+detecting stale collection, annotation, validation, or output defaults.
 
 ### Compatibility boundary
 

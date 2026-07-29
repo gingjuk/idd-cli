@@ -40,10 +40,10 @@ Every relationship edge must retain source ID, target ID, link type, source file
 and line, plus mutable verification state so diagnostics can explain both the
 relationship and its evidence location.
 
-**Acceptance:** Every relationship edge
-must retain source ID, target ID, link type, source file and line, plus mutable
-verification state so diagnostics can explain both the relationship and its evidence
-location.
+**Acceptance:** Inspecting a newly added edge yields the exact source, target,
+relationship type, file, and line supplied by the caller. After verification,
+a reciprocal edge pair has both flags set while an unpaired relationship
+remains unverified.
 
 ### Edge cases
 
@@ -86,9 +86,9 @@ outcomes.
 Every added edge must append its source ID to an index keyed by target ID so
 reverse references can be retrieved without scanning the global edge list.
 
-**Acceptance:** Every added edge must
-append its source ID to an index keyed by target ID so reverse references can be
-retrieved without scanning the global edge list.
+**Acceptance:** After adding an edge, backlink lookup by its target returns the
+source ID, while lookup by an unrelated target returns no sources. Repeated
+edges remain repeated and appear in insertion order.
 
 ### Boundaries
 
@@ -124,9 +124,9 @@ Adding a previously unseen ID must create and index one node; adding the same ID
 again must return the existing node without changing its original type or
 duplicating its type-index entry.
 
-**Acceptance:** Adding a previously
-unseen ID must create and index one node; adding the same ID again must return the
-existing node without changing its original type or duplicating its type-index entry.
+**Acceptance:** After the first add, lookup by ID and type returns one
+initialized node. A second add of that ID returns the same pointer, and node
+and type-index counts remain one.
 
 ### Non-goals
 
@@ -144,9 +144,10 @@ Adding an edge must append one global edge, update available endpoint adjacency,
 and append the source to the target backlink index using the supplied type and
 location evidence.
 
-**Acceptance:** Adding an edge must
-append one global edge, update available endpoint adjacency, and append the source to
-the target backlink index using the supplied type and location evidence.
+**Acceptance:** Given both endpoint nodes, one insertion produces one global
+edge, one outgoing source adjacency, one incoming target adjacency, and one
+target-keyed backlink. Each view exposes the supplied endpoint and relationship
+evidence.
 
 ### Failure and compatibility boundary
 

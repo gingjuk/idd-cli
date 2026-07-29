@@ -40,9 +40,10 @@ Construction must retain the supplied configuration and format, defaulting only
 an empty format to JSON. Case normalization must be deferred to output
 dispatch.
 
-**Acceptance:** Construction must retain
-the supplied configuration and format, defaulting only an empty format to JSON. Case
-normalization must be deferred to output dispatch.
+**Acceptance:** Constructor tests compare the retained configuration pointer
+and format with their inputs, require an empty format to become JSON, and
+preserve mixed-case explicit formats until writing dispatches them
+case-insensitively.
 
 ### Edge cases
 
@@ -60,9 +61,11 @@ Generation must combine tool identity, hard-coded reporter version, an RFC3339
 timestamp, collection-relevant configuration summary, and the supplied
 validation result into one report.
 
-**Acceptance:** Generation must combine
-tool identity, hard-coded reporter version, an RFC3339 timestamp, collection-relevant
-configuration summary, and the supplied validation result into one report.
+**Acceptance:** Generating a report from a known configuration and validation
+result yields the expected tool name and fixed reporter version, a parseable
+non-empty RFC3339 timestamp, the selected configuration summary, and the same
+validity, findings, statistics, and optional graph evidence as the input
+result.
 
 ### Ownership
 
@@ -105,9 +108,11 @@ JSON and LLM Markdown must expose schema status, summary counts and groups, and
 actionable findings from one shared projection. Empty-format output must use
 the same JSON schema.
 
-**Acceptance:** JSON and LLM Markdown
-must expose schema status, summary counts and groups, and actionable findings from one
-shared projection. Empty-format output must use the same JSON schema.
+**Acceptance:** JSON produced through both empty-format and explicit-JSON
+paths decodes as `idd.llm_report.v1` with the expected status, counts,
+locations, identifiers, and repair guidance. The same failing input rendered
+as LLM Markdown contains its group, rule, severity, exact location, problem,
+fix, and related identifiers; a passing input reports no findings.
 
 ### Required behavior
 
@@ -126,9 +131,11 @@ with no findings must explicitly say so.
 Raw validation errors must be enriched with enough local context for a repair
 agent to act without joining unrelated report sections.
 
-**Acceptance:** Raw validation errors
-must be enriched with enough local context for a repair agent to act without joining
-unrelated report sections.
+**Acceptance:** Enrichment tests compare the projected finding's structured
+location, expected/actual values, primary and related identifiers, severity,
+curated rule guidance, and graph-adjacent evidence. Repeated-rule tests require
+stable one-based indexes and sorted file/identifier summaries while ensuring
+group guidance contains no finding-specific path.
 
 ### Required behavior
 

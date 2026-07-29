@@ -56,10 +56,10 @@ including source-aware deprecation diagnostics, plus errors for a missing path
 and malformed YAML. Preserved deprecated alias values and its warning are the
 success oracle; non-nil errors are the failure oracle.
 
-**Oracle:** The test passes only when its assertions confirm successful
-decoding and validation from an isolated temporary YAML file, plus errors for a missing
-path and malformed YAML. Preserved deprecated alias values are the success oracle;
-non-nil errors are the failure oracle.
+**Oracle:** Loading the valid fixture returns the authored deprecated values
+unchanged and one source-aware removal warning. A fixture without the key has
+no warning, while zero or null alias mappings still warn. Missing paths and
+malformed YAML return non-nil stage-qualified errors and no configuration.
 
 ## Strategy
 

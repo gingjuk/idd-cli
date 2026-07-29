@@ -66,8 +66,10 @@ configuration.
 
 **Acceptance:**
 
-The collector retains the configuration used for document discovery,
-validation, and ignore-path decisions.
+Constructor contract tests require a non-nil collector and compare its retained
+configuration pointer with the supplied value. Collection tests then observe
+that its document patterns and ignore paths select the expected Markdown
+evidence.
 
 Construction performs no filesystem access and does not copy or normalize the
 configuration. The caller owns supplying a validated, non-nil configuration
@@ -83,8 +85,11 @@ files.
 
 **Acceptance:**
 
-Source annotations are normalized into the same identifier model as
-documentation records.
+Seven-language table-driven fixtures compare declaration name, kind,
+visibility, source line, attached annotation kind, and resulting code-origin
+identifier. String literals, body comments, detached comments, ignored ranges,
+malformed syntax, and configured-but-unsupported extensions must not produce a
+fallback identifier.
 
 The collector represents source evidence only. It does not resolve whether a
 referenced document identifier exists, build graph relationships, or judge
@@ -101,8 +106,10 @@ configuration.
 
 **Acceptance:**
 
-The resulting collector applies the configured source patterns and ignore
-rules.
+Constructor tests require a non-nil collector retaining the supplied
+configuration. Temporary source trees then demonstrate that configured
+extensions and annotation prefixes are collected, configured ignore paths are
+excluded, and unrelated Markdown files contribute no source evidence.
 
 Construction has no traversal side effects and retains the configuration for
 the collector lifetime. Multiple collectors may operate independently, but a
@@ -119,8 +126,9 @@ descriptions.
 
 **Acceptance:**
 
-Legacy marker values remain available to packages that have not migrated to
-self-describing documents.
+Parsing a legacy marker with an ID, display name, and description preserves
+all three values. The marker-description test compares the exact authored text
+used by human-facing diagnostics.
 
 Each value retains the declared ID, display name, and optional description
 needed by the legacy parser. It is compatibility data, not a canonical record
@@ -136,7 +144,10 @@ frontmatter.
 
 **Acceptance:**
 
-The legacy relationship set keeps the four fixed document roles explicit.
+Decoding frontmatter with explicit design, contract, specification, and
+testing paths must return each authored value in its matching field.
+Collecting that fixture must retain those related-file paths without entering
+self-describing mode.
 
 Paths describe where legacy declarations and backlinks are expected. They are
 validated as metadata but never copied into self-describing frontmatter,
@@ -152,8 +163,11 @@ frontmatter value.
 
 **Acceptance:**
 
-The legacy parser exposes both kinds of metadata without mixing them into the
-new document model.
+Given valid legacy YAML containing markers and related narrative paths, the
+parsed value exposes both groups without losing or reclassifying either. The
+same package remains on the legacy collection path; minimal
+`idd.version`/`idd.package` documents are parsed through the separate
+self-describing representation.
 
 The value may contain markers, related files, or both. Absence of a leading
 frontmatter block yields no legacy metadata rather than an invented empty
@@ -169,7 +183,10 @@ fenced-code separators as metadata boundaries.
 
 **Acceptance:**
 
-Only the leading frontmatter block can define legacy document metadata.
+Table-driven parsing distinguishes valid leading YAML, no frontmatter, an
+empty marker list, malformed YAML, and `---` delimiters inside fenced examples.
+Only the leading block produces metadata; malformed leading YAML returns an
+error rather than a partial value.
 
 The parser ignores `---` sequences inside the body and fenced examples, returns
 `nil` when no leading block exists, and preserves YAML decode errors so callers
@@ -185,7 +202,10 @@ Markdown detail headings.
 
 **Acceptance:**
 
-Declared legacy markers must have matching human-readable definitions.
+Validation fixtures distinguish a marker with its matching detail heading from
+a missing heading, a malformed or description-free heading, and an ordinary
+inline mention. The failing cases report the affected identifier instead of
+inventing a definition.
 
 Validation distinguishes a heading definition from an inline reference. Every
 declared marker must resolve to an appropriate heading, and every discovered
@@ -202,7 +222,10 @@ fenced code.
 
 **Acceptance:**
 
-Legacy references remain backtick-delimited in narrative Markdown.
+Formatting-validation fixtures place the same declared marker in a heading, a
+backtick-delimited reference, and bare body prose. Definitions and explicit
+references are accepted; a bare body occurrence produces a source-located
+formatting finding, while frontmatter and fenced examples remain excluded.
 
 The scan excludes frontmatter, headings that define a marker, fenced code, and
 quoted examples. Its purpose is to keep references visibly distinct for human
@@ -219,12 +242,15 @@ a meaningful description after a colon.
 
 **Acceptance:**
 
-Malformed or description-free legacy headings produce structural findings.
+Heading-validation cases accept an identifier heading only when its ID matches
+the declaration and a colon is followed by meaningful text. Missing, bare,
+mismatched, or malformed headings produce a source-located finding naming the
+declared marker.
 
-The accepted shape is a level-two identifier followed by a colon and meaningful
-title. Identifier syntax remains strict and package-oriented; internal section
-markers or a copied identifier used as its own title do not become valid
-requirements.
+The accepted legacy shape is a Markdown identifier heading followed by a colon
+and meaningful title. Identifier syntax remains strict and package-oriented;
+internal section markers or a copied identifier used as its own title do not
+become valid requirements.
 
 ## SPEC-INTERNAL_COLLECTOR-012: Narrative filename mapping
 
@@ -236,8 +262,9 @@ filename.
 
 **Acceptance:**
 
-The mapping keeps legacy declarations in the same four conceptual roles as the
-self-describing format.
+The mapping test compares SPEC, TEST, CONTRACT, and DESIGN identifiers with
+`spec.md`, `testing.md`, `contract.md`, and `design.md` respectively, and
+requires an unknown identifier kind to return an empty filename.
 
 SPEC maps to `spec.md`, TEST to `testing.md`, CONTRACT to `contract.md`, and
 DESIGN to `design.md`. Unknown and internal marker types return no narrative
@@ -253,8 +280,11 @@ file assigned to their type while allowing root documentation.
 
 **Acceptance:**
 
-Package documentation is checked for role placement without applying the rule
-to root-level explanatory documents.
+For a package-local legacy declaration, a matching role filename returns no
+placement error and a mismatched role filename reports the expected canonical
+file. Root-document cases return no placement error, allowing explanatory
+Markdown to mention identifiers without becoming a package-local declaration
+owner.
 
 The check uses the file basename and identifier type. Root documentation may
 quote identifiers for onboarding or architecture discussion, while a

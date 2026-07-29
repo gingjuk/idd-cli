@@ -66,8 +66,8 @@ legacy graph interpretation, derived Contract coverage, Component dependency
 cycles, seven-language public and test declarations, annotation attachment and
 syntax failures, structural-error injection, duplicate diagnostics, exact
 ignore scopes, identifier-derived code/document correspondence, headerless
-production/test/contract-test files, warning thresholds, result sorting,
-statistics, optional snapshots, and report construction.
+production/test/contract-test files, deprecated-alias warning propagation,
+result sorting, statistics, optional snapshots, and report construction.
 Package-set cases include a nested source package whose entire documentation
 directory is absent, proving that source inventory rather than existing docs
 alone drives completeness.

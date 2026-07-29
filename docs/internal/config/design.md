@@ -27,7 +27,7 @@ complete value returned by `Default`.
   output settings;
 - return the full built-in profile used when the CLI chooses defaults;
 - read and decode a specific YAML file;
-- normalize selected omitted or out-of-range values;
+- normalize selected omitted collection values;
 - reject missing or unknown annotation-map keys and ambiguous or unusable
   prefix values; and
 - wrap read, parse, and validation failures with stage context.
@@ -94,8 +94,10 @@ policy.
 `Load` performs read, decode, and `Validate` in that order, returning no partial
 configuration on failure. `Validate` first supplies collection defaults, then
 ensures annotation keys are exactly `spec`, `test`, and `test_contract`,
-validates their lexical values, and finally normalizes the threshold. `Default`
-does not call `Validate`; it constructs the intended profile directly.
+and validates their lexical values. It deliberately leaves the deprecated
+consistency fields unchanged; no similarity threshold is normalized or used.
+`Default` does not call `Validate`; it constructs the intended profile
+directly.
 
 ## Dependencies
 
@@ -107,8 +109,9 @@ outside the package.
 
 `Default` and `Validate` are deterministic. Load tests use temporary YAML files
 to exercise successful decoding and parse failures, while missing paths test
-read errors without mocks. Table-driven key and threshold cases expose
-normalization and rejection behavior.
+read errors without mocks. Table-driven annotation-key cases expose
+normalization and rejection behavior, while deprecated-threshold cases prove
+that compatibility values are preserved without affecting validation.
 
 The current tests compare the complete example profile with `Default` but do
 not cover unknown YAML fields, partial-file zero-value booleans, regex
