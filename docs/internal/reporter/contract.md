@@ -79,8 +79,10 @@ may span several packages.
 Rule presentation metadata supplies known explanations and hints, including
 syntax-tree parse/binding failures, scaffold completion, named Contract
 coverage, Component dependency cycles, and non-canonical or split IDD role
-filenames. Filename guidance names the four canonical files and directs content
-back to the owning file rather than recommending another fragment.
+filenames. `deprecated-config` guidance removes the named obsolete YAML key and
+points semantic review to review-context. Filename guidance names the four
+canonical files and directs content back to the owning file rather than
+recommending another fragment.
 
 For a `split-role` filename finding, the individual `suggested_fix` is a
 self-contained agent repair prompt. It derives the canonical target beside the
@@ -94,3 +96,19 @@ with `docs fix`, but that command is never presented as the semantic merge.
 
 Unknown rules receive a humanized title and generic guidance. Enrichment does
 not change the engine's underlying result.
+
+## Contract: ReviewContextReport
+
+**Guarantees:**
+
+Review-context rendering serializes the collector-owned
+`idd.spec_review_context.v1` value without inventing findings or verdicts.
+JSON preserves the schema exactly. Markdown and LLM Markdown present the same
+SPEC, Contract, TEST, declaration, issue, and truncation evidence with neutral
+questions for a human or model reviewer.
+
+When more than one context is requested, JSON uses
+`idd.spec_review_context_batch.v1` with ordered `requested_spec_ids` and
+`contexts`. Markdown uses one batch heading and an independent nested review
+section for each SPEC. A single context retains the existing single-SPEC JSON
+and Markdown shape.

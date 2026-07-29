@@ -135,6 +135,8 @@ unrelated report sections.
 - known rules receive curated title, explanation, and fix guidance, including
   canonical filename guidance that directs split IDD content back into the
   owning role file;
+- `deprecated-config` names the obsolete configuration path and directs removal
+  rather than suggesting changes to documents or source annotations;
 - every `split-role` finding receives its own `suggested_fix` agent prompt with
   exact source and canonical target paths, complete semantic-preservation
   instructions, deletion only after a no-loss review, and deterministic
@@ -153,3 +155,21 @@ unrelated report sections.
 
 Enrichment is lexical and graph-adjacent, not causal analysis. Suggested fixes
 remain guidance and may require Skill-guided semantic judgment.
+
+## SPEC-INTERNAL_REPORTER-013: Evidence-only review-context rendering
+
+- **Design:** `ReportRenderer`
+- **Contract:** `ReviewContextReport`
+
+**Requirement:** Render one or a bounded ordered batch of collector-owned SPEC
+review contexts as JSON or Markdown without adding a semantic score, warning,
+or approval.
+
+**Acceptance:** JSON preserves schema `idd.spec_review_context.v1`; Markdown
+contains the same authored, implementation, and covering-test source evidence,
+visible record-or-declaration truncation, and neutral review questions.
+Unsupported formats return an operational error.
+
+Multiple contexts use schema `idd.spec_review_context_batch.v1`, preserve
+first-request order, and render independently within one output. A one-context
+call remains byte-compatible with the single-context renderer.

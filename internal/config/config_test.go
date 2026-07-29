@@ -5,6 +5,7 @@ import (
 	"os"
 	"path/filepath"
 	"reflect"
+	"strings"
 	"testing"
 )
 
@@ -17,15 +18,15 @@ func TestDefault(t *testing.T) {
 	}
 
 	if cfg.Validation.ConsistencyCheck.Enabled {
-		t.Error("ConsistencyCheck should be opt-in by default")
+		t.Error("deprecated ConsistencyCheck should be zero-valued by default")
 	}
 
 	if !cfg.Validation.RequireSpecFields {
 		t.Error("RequireSpecFields should be enabled by default")
 	}
 
-	if cfg.Validation.ConsistencyCheck.Threshold != 0.3 {
-		t.Errorf("ConsistencyCheck.Threshold = %f, want 0.3", cfg.Validation.ConsistencyCheck.Threshold)
+	if cfg.Validation.ConsistencyCheck.Threshold != 0 {
+		t.Errorf("ConsistencyCheck.Threshold = %f, want 0", cfg.Validation.ConsistencyCheck.Threshold)
 	}
 
 	if !reflect.DeepEqual(cfg.Code.Patterns, defaultCodePatterns) {
@@ -48,9 +49,9 @@ func TestDefaultMatchesExampleConfiguration(t *testing.T) {
 // @test-contract TEST-INTERNAL_CONFIG-001
 func TestConfig_Validate(t *testing.T) {
 	tests := []struct {
-		name      string
-		cfg       *Config
-		wantPanic bool
+		name          string
+		cfg           *Config
+		wantThreshold float64
 	}{
 		{
 			name: "valid config",
@@ -63,7 +64,7 @@ func TestConfig_Validate(t *testing.T) {
 					},
 				},
 			},
-			wantPanic: false,
+			wantThreshold: 0.5,
 		},
 		{
 			name: "threshold below zero",
@@ -76,7 +77,7 @@ func TestConfig_Validate(t *testing.T) {
 					},
 				},
 			},
-			wantPanic: false,
+			wantThreshold: -0.5,
 		},
 		{
 			name: "threshold above one",
@@ -89,7 +90,7 @@ func TestConfig_Validate(t *testing.T) {
 					},
 				},
 			},
-			wantPanic: false,
+			wantThreshold: 1.5,
 		},
 	}
 
@@ -100,11 +101,12 @@ func TestConfig_Validate(t *testing.T) {
 				t.Errorf("Validate() error = %v", err)
 			}
 
-			if tt.cfg.Validation.ConsistencyCheck.Threshold < 0 {
-				t.Errorf("Threshold should be normalized to >= 0, got %f", tt.cfg.Validation.ConsistencyCheck.Threshold)
-			}
-			if tt.cfg.Validation.ConsistencyCheck.Threshold > 1.0 {
-				t.Errorf("Threshold should be normalized to <= 1.0, got %f", tt.cfg.Validation.ConsistencyCheck.Threshold)
+			if tt.cfg.Validation.ConsistencyCheck.Threshold != tt.wantThreshold {
+				t.Errorf(
+					"deprecated threshold = %f, want unchanged %f",
+					tt.cfg.Validation.ConsistencyCheck.Threshold,
+					tt.wantThreshold,
+				)
 			}
 		})
 	}
@@ -140,6 +142,84 @@ validation:
 
 	if !loaded.Validation.ConsistencyCheck.Enabled {
 		t.Error("Enabled should be true")
+	}
+	warnings := loaded.DeprecationWarnings()
+	if len(warnings) != 1 {
+		t.Fatalf("DeprecationWarnings() = %#v, want one warning", warnings)
+	}
+	warning := warnings[0]
+	if warning.Path != "validation.consistency_check" ||
+		warning.Source != cfgPath ||
+		!strings.Contains(warning.Message, "deprecated and ignored") ||
+		!strings.Contains(warning.Message, "remove it") ||
+		!strings.Contains(warning.Message, "docs review-context") {
+		t.Errorf("deprecation warning = %#v", warning)
+	}
+}
+
+// @test-contract TEST-INTERNAL_CONFIG-001, TEST-INTERNAL_CONFIG-003
+func TestLoad_DeprecationWarningUsesKeyPresence(t *testing.T) {
+	tests := []struct {
+		name         string
+		validation   string
+		wantWarnings int
+	}{
+		{
+			name: "absent key remains quiet",
+			validation: `validation:
+  require_spec_fields: true
+`,
+		},
+		{
+			name: "zero values still warn",
+			validation: `validation:
+  consistency_check:
+    enabled: false
+    threshold: 0
+`,
+			wantWarnings: 1,
+		},
+		{
+			name: "null mapping still warns",
+			validation: `validation:
+  consistency_check:
+`,
+			wantWarnings: 1,
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			cfgPath := filepath.Join(t.TempDir(), "idd.yaml")
+			if err := os.WriteFile(cfgPath, []byte("version: \"1.0\"\n"+test.validation), 0o644); err != nil {
+				t.Fatalf("WriteFile() error = %v", err)
+			}
+			cfg, err := Load(cfgPath)
+			if err != nil {
+				t.Fatalf("Load() error = %v", err)
+			}
+			if got := len(cfg.DeprecationWarnings()); got != test.wantWarnings {
+				t.Errorf("warnings = %d, want %d", got, test.wantWarnings)
+			}
+		})
+	}
+}
+
+// @test-contract TEST-INTERNAL_CONFIG-001
+func TestDeprecationWarnings_ReturnsCopy(t *testing.T) {
+	cfgPath := filepath.Join(t.TempDir(), "idd.yaml")
+	data := []byte("validation:\n  consistency_check: {}\n")
+	if err := os.WriteFile(cfgPath, data, 0o644); err != nil {
+		t.Fatalf("WriteFile() error = %v", err)
+	}
+	cfg, err := Load(cfgPath)
+	if err != nil {
+		t.Fatalf("Load() error = %v", err)
+	}
+	warnings := cfg.DeprecationWarnings()
+	warnings[0].Path = "changed"
+	if got := cfg.DeprecationWarnings()[0].Path; got != "validation.consistency_check" {
+		t.Errorf("stored warning path = %q, want immutable copy", got)
 	}
 }
 

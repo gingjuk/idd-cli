@@ -55,7 +55,7 @@ through subprocess-heavy unit tests.
   `SPEC-CMD_IDD_CLI-009`, `SPEC-CMD_IDD_CLI-010`
 
 **Purpose:** Cross-package tests verify configuration, engine, reporting,
-similarity, embedding, and command collaborators.
+review-context, embedding, and command collaborators.
 
 ### Evidence and scenarios
 
@@ -143,11 +143,14 @@ not consume the fixture interface.
 - **Contracts:** `CLI`
 
 **Purpose:** Verify the executable exposes the documented validation, Skill,
-and document-management command hierarchy plus its stable persistent options.
+and document-management command hierarchy plus its stable persistent and
+review-context options.
 
 **Oracle:** The Cobra command tree contains `run`, `lint`, `skills`,
-`generate`, and `docs`; `docs` contains `init`, `fix`, and `status`; and the
-root exposes configuration, output, format, verbosity, and no-config flags.
+`generate`, and `docs`; `docs` contains `init`, `fix`, `status`, and
+`review-context`; every document subcommand accepts multiple non-empty
+positional targets, `review-context` owns `--docs-path`; and the root exposes
+configuration, output, format, verbosity, and no-config flags.
 
 ## TEST-CMD_IDD_CLI-006: Embedded Skill boundary contract
 
@@ -185,7 +188,7 @@ graphs and file fixtures.
 ## Integration behavior
 
 `TEST-CMD_IDD_CLI-002` covers collaboration among configuration, collectors,
-the engine, similarity scoring, reporters, and the embedded skill filesystem.
+the engine, review-context rendering, reporters, and the embedded skill filesystem.
 
 The repository-level acceptance check builds the actual `idd-cli` binary and
 runs it against the repository. JSON output must parse successfully and contain

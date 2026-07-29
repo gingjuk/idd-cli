@@ -54,9 +54,9 @@ never contain banners, progress, or duplicate error prose.
 
 ### Side effects and semantic boundary
 
-`run`, `lint`, and `skills` are read-only except for an explicit report output.
-`generate skill` writes only its explicit output. Document mutations are
-limited to the two documented subcommands.
+`run`, `lint`, `skills`, and `docs review-context` are read-only except for an
+explicit report output. `generate skill` writes only its explicit output.
+Document mutations are limited to `docs init` and `docs fix`.
 
 A successful process status means enabled structure and traceability rules
 passed. It does not certify the accuracy or sufficiency of human-authored
@@ -64,9 +64,10 @@ requirements and architecture.
 
 ## Document initialization
 
-`docs init <package>`:
+`docs init <package>...`:
 
-- requires an existing project-relative package directory;
+- requires every requested project-relative package directory to exist;
+- deduplicates repeated packages and preflights the whole batch before writing;
 - creates or adopts exactly `design.md`, `contract.md`, `spec.md`, and
   `testing.md` under `docs/<package>/`;
 - treats each nested source sub-package as an independent invocation and
@@ -86,14 +87,15 @@ Successful output lists exactly the paths created or adopted.
 
 ## Document completion status
 
-`docs status <docs-package-or-document>` is read-only. It uses the same shared
-role schema as generation and normal collection and reports schema
-`idd.document_status.v1`, overall `complete` or `incomplete` status, and a
-stable list of remaining slots. Each work item contains file, line, role, slot,
-and reason. Directory input may include multiple package document sets and
-reports missing sibling files as incomplete work. A split role name or IDD
-frontmatter on a non-canonical filename is rejected rather than treated as
-another document role.
+`docs status <docs-package-or-document>...` is read-only. It uses the same
+shared role schema as generation and normal collection and reports schema
+`idd.document_status.v1`, normalized first-occurrence targets, overall
+`complete` or `incomplete` status, and a stable list of remaining slots. Each
+work item contains file, line, role, slot, and reason. Directory input may
+include multiple package document sets and reports missing sibling files as
+incomplete work. Repeated or overlapping inputs do not duplicate a work item.
+A split role name or IDD frontmatter on a non-canonical filename is rejected
+rather than treated as another document role.
 
 A split role name returns a directly executable agent prompt in the operational
 error. It identifies source and canonical target, requires a complete
@@ -109,7 +111,7 @@ their own stable slots; a half-authored record cannot make the status complete.
 
 ## Document repair
 
-`docs fix <docs-package-or-document>`:
+`docs fix <docs-package-or-document>...`:
 
 - repairs minimal version/package identity while deriving role from the
   canonical filename;
@@ -119,6 +121,8 @@ their own stable slots; a half-authored record cannot make the status complete.
 - therefore preserves scaffold markers and incomplete state;
 - never reformats prose or invents semantic records;
 - refuses malformed frontmatter rather than discarding unknown data.
+- preflights every target, deduplicates overlapping write paths, and applies no
+  writes when an expected input error occurs anywhere in the batch.
 
 Repair neither accepts nor emits `idd.document` and never creates
 `design-*`, `contract-*`, `spec-*`, or `testing-*` fragments. There is no
@@ -127,6 +131,10 @@ document line-count limit to repair around.
 The file form has one possible write target. The directory form has four
 structural targets and prepares every selected result before replacement.
 An empty changed-path list is a successful idempotent repair.
+
+Batch preflight is not a cross-filesystem transaction guarantee. If an
+unexpected I/O failure occurs while an already validated write plan is being
+applied, earlier writes remain individually atomic but may already be visible.
 
 Repair is not a formatter and cannot resolve semantic findings. Requirements,
 contracts, design decisions, purposes, scenarios, and coverage remain authored
@@ -139,7 +147,7 @@ Link construction and validation rules are methods in `internal/engine`.
 There is no production `Collector`, `Linker`, or `Rule` extension interface.
 
 The command surface is the `CLI` boundary. Its concrete collaborators are
-`LinkageGraph`, `Config`, `Engine`, `Identifier`, `Reporter`, and `TFIDF`.
+`LinkageGraph`, `Config`, `Engine`, `Identifier`, and `Reporter`.
 Embedded skill access is provided by `SkillsFS`, `ListEmbeddedSkills`, and
 `ReadEmbeddedSkill`; the `SkillInfo` type is the serialized skill metadata
 boundary.
@@ -152,7 +160,8 @@ instructions stay aligned with validator behavior.
 
 **Guarantees:**
 
-`Config` defines validation patterns, paths, output, and consistency thresholds.
+`Config` defines validation patterns, paths, output, and deprecated
+compatibility fields.
 The CLI loads it from the explicit path or documented project defaults before
 applying invocation-only flag overrides.
 
@@ -160,8 +169,12 @@ applying invocation-only flag overrides.
 and coverage remain in their owning Markdown records.
 
 Missing optional values receive deterministic defaults. Unknown or inconsistent
-annotation keys and invalid thresholds return configuration errors before
-collection. Loading and validation do not rewrite the configuration file.
+annotation keys return configuration errors before collection. Deprecated
+consistency values are accepted and ignored behaviorally, but explicit YAML
+presence produces a warning that names the key, source, cleanup action, and
+review-context replacement. `run` and `lint` include it in their report;
+`docs review-context` writes it to stderr. Loading and validation do not rewrite
+the configuration file.
 
 ## Contract: Engine
 
@@ -180,7 +193,7 @@ through regex fallback. Validation findings are result data; unexpected
 execution failures are returned errors.
 
 The engine does not read authoring intent or mutate evidence. Rules may verify
-presence, shape, consistency, and configured similarity, but cannot declare a
+presence, shape, and traceability, but cannot declare a
 thin design explanation semantically adequate.
 
 ## Contract: Identifier
@@ -248,14 +261,18 @@ Paths are relative to the embedded filesystem. Reading an unknown path returns
 an error. Export copies the exact embedded bytes so an installed Skill can be
 compared directly with the binary-owned version.
 
-## Contract: TFIDF
+## SPEC review context
 
-**Guarantees:**
+`docs review-context <SPEC-ID>...` emits deterministic evidence after one
+documentation scan and one source scan. One SPEC uses schema
+`idd.spec_review_context.v1`; multiple SPECs use
+`idd.spec_review_context_batch.v1` with first-request ordering. `--docs-path`
+selects documentation input without conflicting with positional SPEC IDs.
 
-`TFIDF` compares meaningful descriptions while excluding declaration-only
-function locators from semantic consistency scoring.
-
-Similarity is advisory text comparison, not a proof that implementation
-matches intent. Empty descriptions and source locators such as
-`[function: Name]` are skipped rather than converted into misleading low-score
-warnings.
+Each context includes the selected canonical SPEC, named Contract guarantees,
+covering TEST records, and annotated declaration excerpts.
+Declaration evidence includes both implementation annotations for the SPEC and
+test annotations for its covering TEST IDs. It never emits a semantic approval,
+warning, or score and never changes the validation result. Requests are
+deduplicated, bounded to ten unique IDs, and fail atomically if any ID cannot
+produce trustworthy evidence.

@@ -380,6 +380,38 @@ through the exported package surface.
 set, origin, finding, or error boundary without relying on an undocumented
 collector interface or accepting detached source annotations.
 
+## TEST-INTERNAL_COLLECTOR-031: Focused SPEC review evidence
+
+- **Kind:** `contract`
+- **Covers:** `SPEC-INTERNAL_COLLECTOR-026`
+- **Contracts:** `SpecReviewContext`
+
+**Purpose:** Verify deterministic collection of one SPEC, its Contract,
+covering TEST records, and annotated implementation and test declaration
+excerpts, plus shared-scan multi-SPEC collection, ordered deduplication, the
+ten-SPEC limit, cross-package evidence, peer-H2 record boundaries, and missing,
+duplicate, ignored, and bounded-excerpt cases.
+
+**Oracle:** Table-driven fixtures return complete contexts in first-request
+order, collect documentation/source once per batch, collapse repeated IDs, and
+return atomic operational errors for malformed, absent, multiply owned, empty,
+or oversized requests. No case produces a semantic score or verdict.
+
+## TEST-INTERNAL_COLLECTOR-032: Batch document operations
+
+- **Kind:** `contract`
+- **Covers:** `SPEC-INTERNAL_COLLECTOR-027`
+- **Contracts:** `IDDDocumentSet`
+
+**Purpose:** Verify multi-target completion aggregation and whole-batch
+initialization and repair preflight.
+
+**Oracle:** Table-driven fixtures prove normalized first-occurrence targets,
+relative-versus-absolute path identity, stable incomplete-slot ordering,
+overlap and duplicate deduplication, and single-target compatibility.
+Initialization and repair apply each planned path once, while a later invalid
+batch member leaves every earlier valid member unchanged.
+
 ## Strategy
 
 This document owns TEST titles, purposes, kinds, and coverage. Test source uses
@@ -406,6 +438,8 @@ covers:
 - shared scaffold slots, deterministic `docs status` ordering, missing sibling
   work items, marker/content dual completion, split-document recovery prompts,
   and repair preservation;
+- multi-target status aggregation, overlap deduplication, and whole-batch
+  initialization and repair preflight;
 - narrative metadata and heading validation;
 - minimal-identity round-trip serialization with byte-preserved bodies;
 - large registry-table rejection and fenced-example isolation;

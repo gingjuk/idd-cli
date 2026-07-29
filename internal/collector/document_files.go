@@ -12,17 +12,54 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
+type pendingDocumentWrite struct {
+	path string
+	data []byte
+	new  bool
+}
+
 // InitDocuments creates or adopts the four package-local self-describing
 // Markdown documents. It never overwrites existing IDD or legacy metadata.
 //
 // @implement SPEC-INTERNAL_COLLECTOR-001
 func InitDocuments(projectRoot, packagePath string) ([]string, error) {
-	cleanPackage, err := validateDocumentPackagePath(packagePath)
-	if err != nil {
-		return nil, err
+	return InitDocumentPackages(projectRoot, []string{packagePath})
+}
+
+// InitDocumentPackages creates or adopts canonical document sets for one or
+// more packages after every package has passed preflight.
+// @implement SPEC-INTERNAL_COLLECTOR-027
+func InitDocumentPackages(projectRoot string, packagePaths []string) ([]string, error) {
+	if len(packagePaths) == 0 {
+		return nil, fmt.Errorf("at least one package path is required")
 	}
 
 	projectRoot = filepath.Clean(projectRoot)
+	seen := make(map[string]bool, len(packagePaths))
+	var pending []pendingDocumentWrite
+	for _, packagePath := range packagePaths {
+		cleanPackage, err := validateDocumentPackagePath(packagePath)
+		if err != nil {
+			return nil, err
+		}
+		if seen[cleanPackage] {
+			continue
+		}
+		seen[cleanPackage] = true
+
+		planned, planErr := planInitDocuments(projectRoot, cleanPackage)
+		if planErr != nil {
+			return nil, planErr
+		}
+		pending, planErr = mergePendingDocumentWrites(pending, planned)
+		if planErr != nil {
+			return nil, planErr
+		}
+	}
+	return applyPendingDocumentWrites(pending)
+}
+
+func planInitDocuments(projectRoot, cleanPackage string) ([]pendingDocumentWrite, error) {
 	codePath := filepath.Join(projectRoot, cleanPackage)
 	if info, statErr := os.Stat(codePath); statErr != nil || !info.IsDir() {
 		return nil, fmt.Errorf("package directory %s does not exist", codePath)
@@ -58,12 +95,8 @@ func InitDocuments(projectRoot, packagePath string) ([]string, error) {
 		}
 	}
 
-	if err := os.MkdirAll(docsDir, 0o755); err != nil {
-		return nil, fmt.Errorf("create documentation directory: %w", err)
-	}
-
 	packageSlash := filepath.ToSlash(cleanPackage)
-	changed := make([]string, 0, len(iddDocumentOrder))
+	pending := make([]pendingDocumentWrite, 0, len(iddDocumentOrder))
 	for _, filename := range iddDocumentOrder {
 		path := filepath.Join(docsDir, filename)
 		role := iddDocumentRoles[filename]
@@ -75,12 +108,12 @@ func InitDocuments(projectRoot, packagePath string) ([]string, error) {
 			var root *yaml.Node
 			frontmatter, existingBody, _, _, found, splitErr := splitLeadingFrontmatter(existing)
 			if splitErr != nil {
-				return changed, fmt.Errorf("parse existing frontmatter in %s: %w", path, splitErr)
+				return nil, fmt.Errorf("parse existing frontmatter in %s: %w", path, splitErr)
 			}
 			if found {
 				var yamlDocument yaml.Node
 				if unmarshalErr := yaml.Unmarshal(frontmatter, &yamlDocument); unmarshalErr != nil {
-					return changed, fmt.Errorf("parse existing frontmatter in %s: %w", path, unmarshalErr)
+					return nil, fmt.Errorf("parse existing frontmatter in %s: %w", path, unmarshalErr)
 				}
 				root = documentRoot(&yamlDocument)
 				if root == nil || root.Kind == 0 {
@@ -90,27 +123,20 @@ func InitDocuments(projectRoot, packagePath string) ([]string, error) {
 			}
 			rendered, marshalErr := marshalIDDDocument(metadata, body, root)
 			if marshalErr != nil {
-				return changed, marshalErr
+				return nil, marshalErr
 			}
-			if writeErr := replaceFileAtomically(path, rendered); writeErr != nil {
-				return changed, writeErr
-			}
-			changed = append(changed, path)
+			pending = append(pending, pendingDocumentWrite{path: path, data: rendered})
 		case os.IsNotExist(readErr):
 			rendered, marshalErr := MarshalIDDDocument(metadata, []byte(documentNarrativeTemplate(packageSlash, role)))
 			if marshalErr != nil {
-				return changed, marshalErr
+				return nil, marshalErr
 			}
-			if writeErr := writeExclusiveFile(path, rendered); writeErr != nil {
-				return changed, writeErr
-			}
-			changed = append(changed, path)
+			pending = append(pending, pendingDocumentWrite{path: path, data: rendered, new: true})
 		default:
-			return changed, fmt.Errorf("read existing document %s: %w", path, readErr)
+			return nil, fmt.Errorf("read existing document %s: %w", path, readErr)
 		}
 	}
-	sort.Strings(changed)
-	return changed, nil
+	return pending, nil
 }
 
 // RepairDocuments normalizes safe metadata in either one self-describing
@@ -119,6 +145,33 @@ func InitDocuments(projectRoot, packagePath string) ([]string, error) {
 //
 // @implement SPEC-INTERNAL_COLLECTOR-001
 func RepairDocuments(path string) ([]string, error) {
+	return RepairDocumentTargets([]string{path})
+}
+
+// RepairDocumentTargets normalizes one or more role files or package
+// directories after every target has passed preflight.
+// @implement SPEC-INTERNAL_COLLECTOR-027
+func RepairDocumentTargets(paths []string) ([]string, error) {
+	targetPaths, err := normalizeDocumentTargetPaths(paths)
+	if err != nil {
+		return nil, err
+	}
+
+	var pending []pendingDocumentWrite
+	for _, path := range targetPaths {
+		planned, planErr := planRepairDocuments(path)
+		if planErr != nil {
+			return nil, planErr
+		}
+		pending, planErr = mergePendingDocumentWrites(pending, planned)
+		if planErr != nil {
+			return nil, planErr
+		}
+	}
+	return applyPendingDocumentWrites(pending)
+}
+
+func planRepairDocuments(path string) ([]pendingDocumentWrite, error) {
 	cleanPath := filepath.Clean(path)
 	info, err := os.Stat(cleanPath)
 	if err != nil {
@@ -153,12 +206,7 @@ func RepairDocuments(path string) ([]string, error) {
 		return nil, fmt.Errorf("documents must be located at docs/<package>/")
 	}
 
-	type pendingWrite struct {
-		path string
-		data []byte
-		new  bool
-	}
-	pending := make([]pendingWrite, 0, len(targets))
+	pending := make([]pendingDocumentWrite, 0, len(targets))
 	for _, filename := range targets {
 		role := iddDocumentRoles[filename]
 		documentPath := filepath.Join(docsDir, filename)
@@ -174,7 +222,7 @@ func RepairDocuments(path string) ([]string, error) {
 			if marshalErr != nil {
 				return nil, marshalErr
 			}
-			pending = append(pending, pendingWrite{path: documentPath, data: rendered, new: true})
+			pending = append(pending, pendingDocumentWrite{path: documentPath, data: rendered, new: true})
 			continue
 		}
 		if readErr != nil {
@@ -198,12 +246,49 @@ func RepairDocuments(path string) ([]string, error) {
 			return nil, marshalErr
 		}
 		if !bytes.Equal(data, rendered) {
-			pending = append(pending, pendingWrite{path: documentPath, data: rendered})
+			pending = append(pending, pendingDocumentWrite{path: documentPath, data: rendered})
 		}
 	}
+	return pending, nil
+}
 
+func mergePendingDocumentWrites(
+	existing []pendingDocumentWrite,
+	additional []pendingDocumentWrite,
+) ([]pendingDocumentWrite, error) {
+	byPath := make(map[string]pendingDocumentWrite, len(existing)+len(additional))
+	for _, write := range existing {
+		byPath[documentPathIdentity(write.path)] = write
+	}
+	for _, write := range additional {
+		key := documentPathIdentity(write.path)
+		if previous, ok := byPath[key]; ok {
+			if previous.new != write.new || !bytes.Equal(previous.data, write.data) {
+				return nil, fmt.Errorf("conflicting document write plans for %s", write.path)
+			}
+			continue
+		}
+		byPath[key] = write
+	}
+
+	merged := make([]pendingDocumentWrite, 0, len(byPath))
+	for _, write := range byPath {
+		merged = append(merged, write)
+	}
+	sort.Slice(merged, func(i, j int) bool {
+		return merged[i].path < merged[j].path
+	})
+	return merged, nil
+}
+
+func applyPendingDocumentWrites(pending []pendingDocumentWrite) ([]string, error) {
 	changed := make([]string, 0, len(pending))
 	for _, write := range pending {
+		if write.new {
+			if err := os.MkdirAll(filepath.Dir(write.path), 0o755); err != nil {
+				return changed, fmt.Errorf("create documentation directory: %w", err)
+			}
+		}
 		var writeErr error
 		if write.new {
 			writeErr = writeExclusiveFile(write.path, write.data)

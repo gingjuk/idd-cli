@@ -160,38 +160,49 @@ mutate the configuration file.
 
 Loading decodes YAML into the concrete config value and validates annotation
 key consistency. Validation supplies defaults for omitted patterns,
-annotations, version, and similarity threshold, clamps supported threshold
-bounds, and rejects unknown or missing annotation categories that would make
-document and source collection disagree.
+annotations, and version, preserves the deprecated consistency alias without
+using it, emits an actionable warning when that YAML key is explicitly present,
+and rejects unknown or missing annotation categories that would make document
+and source collection disagree. Validation reports retain the warning as
+structured data; evidence-only review-context output sends it to stderr so JSON
+stdout remains parseable.
 
 This SPEC does not select which project file wins; command-level precedence is
 owned by `SPEC-CMD_IDD_CLI-003`. It also does not make `.idd.yaml` a semantic
 catalog: components, contracts, requirements, tests, and coverage remain in
 their Markdown owners.
 
-## SPEC-CMD_IDD_CLI-007: Semantic comparison
+## SPEC-CMD_IDD_CLI-007: Focused SPEC review contexts
 
 - **Design:** `IDDCLIModule`
-- **Contract:** `TFIDF`
+- **Contract:** `CLI`
 
-**Requirement:** Compare meaningful documentation and code descriptions with
-TF-IDF while ignoring declaration-only function locators.
+**Requirement:** Assemble bounded, deterministic evidence bundles for one or
+more SPECs so a human or LLM can judge document quality outside validation
+with one shared repository scan.
 
 **Acceptance:**
 
-TF-IDF comparison runs only when both documentation and code provide meaningful
-descriptions. A string containing only `[function: Name]` is a declaration
-locator, not semantic prose, and is excluded to avoid false warnings when one
-behavioral SPEC annotates multiple declarations.
+`docs review-context <SPEC-ID>...` accepts one to ten unique SPEC identifiers.
+Repeated identifiers are deduplicated in first-request order. `--docs-path`
+selects documentation input and defaults to `.`, while source remains rooted at
+the current working tree. Documentation and source collection each run once.
 
-Tokenization normalizes case and punctuation, removes stop words and
-single-character noise, and compares vectors with cosine similarity. The
-configured threshold produces warnings rather than rewriting either side.
+Each identifier resolves exactly one canonical SPEC and returns its
+Requirement, Acceptance, Design and Contract references, complete bounded
+authored record Markdown including `Details`, the named Contract record, every
+covering TEST record, and every attached
+non-ignored source declaration annotated with that SPEC, plus declarations
+annotated with each covering TEST ID. Declaration excerpts are bounded and
+expose truncation. Output ordering is stable.
 
-Similarity is a review signal, not semantic verification. A high score cannot
-prove behavioral equivalence, and a low score can reflect legitimate
-vocabulary differences; every warning must retain enough source context for a
-human decision.
+A one-SPEC JSON result retains schema `idd.spec_review_context.v1`. Multiple
+SPECs use `idd.spec_review_context_batch.v1` and ordered independent contexts;
+Markdown formats preserve the same separation and neutral review questions.
+The command is read-only, does not invoke an LLM, does not emit a semantic score
+or pass/fail verdict, and does not participate in `run` validity. An empty,
+oversized, missing, malformed, or ambiguously owned request fails atomically as
+an operational error.
 
 ## SPEC-CMD_IDD_CLI-008: Embedded workflow
 
@@ -233,30 +244,33 @@ phase-oriented Cobra workflow.
 
 **Acceptance:**
 
-`docs init <package>` creates or adopts exactly `design.md`, `contract.md`,
-`spec.md`, and `testing.md` only after package, traversal, overwrite,
-central-catalog, and legacy-metadata preflight checks. Each nested source
-sub-package is initialized separately at the matching nested `docs/<package>/`
-path. Frontmatter contains only version/package identity; the exact basename is
-the sole role authority. New fill locations carry stable scaffold markers, and
-the command returns their deterministic work list instead of presenting
-generated guidance as completed documentation.
+`docs init <package>...` creates or adopts exactly `design.md`, `contract.md`,
+`spec.md`, and `testing.md` for each unique package only after the whole batch
+passes package, traversal, overwrite, central-catalog, and legacy-metadata
+preflight checks. Each nested source sub-package maps to the matching nested
+`docs/<package>/` path. Frontmatter contains only version/package identity; the
+exact basename is the sole role authority. New fill locations carry stable
+scaffold markers, and the command returns their deterministic work list instead
+of presenting generated guidance as completed documentation.
 
-`docs status <path>` reads one role file or a document tree and returns schema
-`idd.document_status.v1`, complete/incomplete status, and exact
-file/line/role/slot/reason entries. A slot remains incomplete when its marker is
-present, its required role structure is absent, or its bounded content is empty
-or a known placeholder. Existing records also remain incomplete while any
-role-schema required field is absent or placeholder-filled.
+`docs status <path>...` reads one or more role files or document trees and
+returns schema `idd.document_status.v1`, normalized targets,
+complete/incomplete status, and exact file/line/role/slot/reason entries.
+Repeated or overlapping inputs do not duplicate work items. A slot remains
+incomplete when its marker is present, its required role structure is absent,
+or its bounded content is empty or a known placeholder. Existing records also
+remain incomplete while any role-schema required field is absent or
+placeholder-filled.
 
 If the target file or tree contains a split role document, `docs status`
 returns an operational error containing the same source/target,
 content-preservation, deletion-order, and verification guidance. It does not
 merge or delete the fragment.
 
-`docs fix <path>` normalizes only minimal identity metadata. A file target
+`docs fix <path>...` normalizes only minimal identity metadata. A file target
 modifies only that document; a directory target may create missing skeletons.
-It preserves scaffold markers. Neither mutation mode reformats prose or infers
+Repeated or overlapping targets produce one planned write per file. It
+preserves scaffold markers. Neither mutation mode reformats prose or infers
 requirements, titles, contracts, designs, purposes, kinds, or coverage.
 Neither mode accepts or emits `idd.document`, creates split role files, or
 imposes a document line-count limit.
@@ -270,15 +284,21 @@ design sections.
 
 Initialization may preserve an existing plain Markdown body or merge generic
 frontmatter, but it refuses existing IDD or legacy semantic metadata before any
-write. Repair preserves body bytes and uses atomic replacement. A directory
-repair may create missing structural files; a file repair never writes a
-sibling.
+write. Repair preserves body bytes and uses atomic replacement. Both mutators
+preflight every batch member before applying writes. A directory repair may
+create missing structural files; a file repair never writes a sibling.
+Unexpected filesystem failure during application does not imply a
+cross-filesystem transaction.
 
 After documents, tests, code, and annotations form a coherent checkpoint, the
 agent first uses `docs status`, then `run . --format llm-markdown` as its
-repair loop. Repository tests and `run . --format json` form the final project
-gate. Package-targeted
+repair loop. When semantic review is needed it requests one or more IDs through
+`docs review-context <SPEC-ID>...` and reviews each context without treating
+the batch as another check. Repository tests and `run . --format json` form the
+final project gate. Package-targeted
 documentation validation is not presented as a package-only code check.
+`run` and `lint` therefore retain a single documentation root; callers select
+a common ancestor rather than passing an arbitrary list of package paths.
 
 ## SPEC-CMD_IDD_CLI-010: Engine contract evidence
 

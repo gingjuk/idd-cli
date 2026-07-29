@@ -34,9 +34,10 @@ type IncompleteSlot struct {
 
 // DocumentCompletionStatus is the stable machine-readable work list returned
 // by docs init and docs status.
-// @implement SPEC-INTERNAL_COLLECTOR-001
+// @implement SPEC-INTERNAL_COLLECTOR-001, SPEC-INTERNAL_COLLECTOR-027
 type DocumentCompletionStatus struct {
 	Schema          string           `json:"schema"`
+	Targets         []string         `json:"targets"`
 	Status          string           `json:"status"`
 	IncompleteSlots []IncompleteSlot `json:"incomplete_slots"`
 }
@@ -268,6 +269,55 @@ func writeScaffoldSlot(
 // one or more package document sets.
 // @implement SPEC-INTERNAL_COLLECTOR-001
 func InspectDocumentCompletion(path string) (*DocumentCompletionStatus, error) {
+	return InspectDocumentCompletions([]string{path})
+}
+
+// InspectDocumentCompletions inspects one or more IDD role files or directory
+// trees and returns one deduplicated completion work list.
+// @implement SPEC-INTERNAL_COLLECTOR-027
+func InspectDocumentCompletions(paths []string) (*DocumentCompletionStatus, error) {
+	targetPaths, err := normalizeDocumentTargetPaths(paths)
+	if err != nil {
+		return nil, err
+	}
+
+	slotsByKey := make(map[string]IncompleteSlot)
+	for _, path := range targetPaths {
+		slots, inspectErr := inspectDocumentCompletionTarget(path)
+		if inspectErr != nil {
+			return nil, inspectErr
+		}
+		for _, slot := range slots {
+			key := strings.Join([]string{
+				documentPathIdentity(slot.File),
+				fmt.Sprintf("%d", slot.Line),
+				slot.Role,
+				slot.Slot,
+				slot.Reason,
+			}, "\x00")
+			slotsByKey[key] = slot
+		}
+	}
+
+	slots := make([]IncompleteSlot, 0, len(slotsByKey))
+	for _, slot := range slotsByKey {
+		slots = append(slots, slot)
+	}
+	sortIncompleteSlots(slots)
+
+	status := "complete"
+	if len(slots) > 0 {
+		status = "incomplete"
+	}
+	return &DocumentCompletionStatus{
+		Schema:          documentCompletionSchema,
+		Targets:         targetPaths,
+		Status:          status,
+		IncompleteSlots: slots,
+	}, nil
+}
+
+func inspectDocumentCompletionTarget(path string) ([]IncompleteSlot, error) {
 	targets, missing, err := documentCompletionTargets(path)
 	if err != nil {
 		return nil, err
@@ -290,19 +340,40 @@ func InspectDocumentCompletion(path string) (*DocumentCompletionStatus, error) {
 		slots = append(slots, inspectParsedDocumentCompletion(parsed, role, true)...)
 	}
 	sortIncompleteSlots(slots)
-
-	status := "complete"
-	if len(slots) > 0 {
-		status = "incomplete"
-	}
 	if slots == nil {
 		slots = make([]IncompleteSlot, 0)
 	}
-	return &DocumentCompletionStatus{
-		Schema:          documentCompletionSchema,
-		Status:          status,
-		IncompleteSlots: slots,
-	}, nil
+	return slots, nil
+}
+
+func normalizeDocumentTargetPaths(paths []string) ([]string, error) {
+	if len(paths) == 0 {
+		return nil, fmt.Errorf("at least one document target is required")
+	}
+	seen := make(map[string]bool, len(paths))
+	normalized := make([]string, 0, len(paths))
+	for _, path := range paths {
+		if strings.TrimSpace(path) == "" {
+			return nil, fmt.Errorf("document target must not be empty")
+		}
+		cleanPath := filepath.Clean(path)
+		key := documentPathIdentity(cleanPath)
+		if seen[key] {
+			continue
+		}
+		seen[key] = true
+		normalized = append(normalized, cleanPath)
+	}
+	return normalized, nil
+}
+
+func documentPathIdentity(path string) string {
+	cleanPath := filepath.Clean(path)
+	absolute, err := filepath.Abs(cleanPath)
+	if err != nil {
+		return cleanPath
+	}
+	return absolute
 }
 
 func documentCompletionTargets(path string) ([]string, []IncompleteSlot, error) {

@@ -40,6 +40,8 @@ reporting.
   `design.md`, `contract.md`, `spec.md`, and `testing.md`; a parent package
   cannot satisfy its child.
 - Rule failures accumulate as structured errors or warnings.
+- Explicitly loaded deprecated configuration paths become structured warnings
+  without reactivating their removed behavior.
 - Self-describing collector findings survive engine execution.
 - Legacy-only rules do not reinterpret self-describing records.
 - Validity becomes true only when the final error collection is empty.
@@ -108,8 +110,9 @@ applying language-blind line rules.
 
 **Acceptance:** Lifecycle tests prove collector findings survive `Run`, typed
 edges and metadata reach the graph, source analyses drive declaration rules,
-validity reflects the final error set, output ordering is deterministic, and an
-optional snapshot describes the same completed graph.
+loaded configuration deprecations become non-failing warnings, validity
+reflects the final error set, output ordering is deterministic, and an optional
+snapshot describes the same completed graph.
 
 ### Inputs, output, and context
 

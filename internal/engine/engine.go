@@ -14,7 +14,6 @@ import (
 	"github.com/jingxu9x/idd-cli/internal/config"
 	"github.com/jingxu9x/idd-cli/internal/graph"
 	"github.com/jingxu9x/idd-cli/internal/model"
-	"github.com/jingxu9x/idd-cli/internal/similarity"
 	"github.com/jingxu9x/idd-cli/pkg/pattern"
 )
 
@@ -23,7 +22,7 @@ import (
 // identifiers through the complete validation workflow.
 // The Engine holds the configuration, a linkage graph for tracking relationships
 // between identifiers, and accumulates validation results.
-// @implement SPEC-CMD_IDD_CLI-001, SPEC-CMD_IDD_CLI-002, SPEC-CMD_IDD_CLI-003, SPEC-CMD_IDD_CLI-004, SPEC-CMD_IDD_CLI-005, SPEC-CMD_IDD_CLI-006, SPEC-CMD_IDD_CLI-007, SPEC-INTERNAL_ENGINE-001
+// @implement SPEC-CMD_IDD_CLI-001, SPEC-CMD_IDD_CLI-002, SPEC-CMD_IDD_CLI-003, SPEC-CMD_IDD_CLI-004, SPEC-CMD_IDD_CLI-005, SPEC-CMD_IDD_CLI-006, SPEC-INTERNAL_ENGINE-001
 type Engine struct {
 	cfg               *config.Config
 	graph             *graph.LinkageGraph
@@ -49,6 +48,7 @@ func New(cfg *config.Config) *Engine {
 // based on configuration, and returns the accumulated validation result.
 // @implement SPEC-INTERNAL_ENGINE-004
 func (e *Engine) Run(ctx context.Context, ids *model.IdentifierSet) (*model.ValidationResult, error) {
+	e.addConfigurationWarnings()
 	e.validateDuplicateIDs(ids)
 	e.buildGraph(ids)
 	e.result.Stats = e.graph.Stats()
@@ -57,6 +57,18 @@ func (e *Engine) Run(ctx context.Context, ids *model.IdentifierSet) (*model.Vali
 		e.result.Graph = e.graph.ToSnapshot()
 	}
 	return e.result, nil
+}
+
+func (e *Engine) addConfigurationWarnings() {
+	for _, warning := range e.cfg.DeprecationWarnings() {
+		e.result.AddWarning(
+			"deprecated-config",
+			warning.Message,
+			warning.Source,
+			warning.Path,
+			"",
+		)
+	}
 }
 
 // AddStructuralErrors appends pre-built validation errors to the result.
@@ -235,10 +247,6 @@ func (e *Engine) validate() {
 
 	if e.cfg.Validation.RequireAnnotationOnSameLine {
 		e.validateSourceConsecutiveAnnotations()
-	}
-
-	if e.cfg.Validation.ConsistencyCheck.Enabled {
-		e.validateConsistency()
 	}
 
 	if len(e.result.Errors) == 0 {
@@ -991,43 +999,6 @@ func (e *Engine) validateDocCodeCorrespondence() {
 	}
 }
 
-// validateConsistency checks that the describe fields in documentation and code
-// annotations have sufficient similarity, using configurable threshold. Low
-// similarity indicates the doc and code descriptions may be out of sync.
-func (e *Engine) validateConsistency() {
-	threshold := e.cfg.Validation.ConsistencyCheck.Threshold
-	for _, node := range e.graph.Nodes() {
-		if node.Metadata == nil {
-			continue
-		}
-		hasDoc, _ := node.Metadata[string(model.OriginDoc)].(bool)
-		hasCode, _ := node.Metadata[string(model.OriginCode)].(bool)
-		if !hasDoc || !hasCode {
-			continue
-		}
-		docDescribe, _ := node.Metadata["describe_"+string(model.OriginDoc)].(string)
-		codeDescribe, _ := node.Metadata["describe_"+string(model.OriginCode)].(string)
-		if docDescribe == "" || codeDescribe == "" || isFunctionLocator(codeDescribe) {
-			continue
-		}
-		score := similarity.Score(docDescribe, codeDescribe)
-		if score < threshold {
-			e.result.AddWarning(
-				"consistency-check",
-				fmt.Sprintf("%s has low similarity between doc and code (score: %.2f < threshold: %.2f)", node.ID, score, threshold),
-				nodeSource(node),
-				fmt.Sprintf("doc: %s | code: %s", truncate(docDescribe, 50), truncate(codeDescribe, 50)),
-				fmt.Sprintf("%.3f", score),
-			)
-		}
-	}
-}
-
-func isFunctionLocator(description string) bool {
-	description = strings.TrimSpace(description)
-	return strings.HasPrefix(description, "[function: ") && strings.HasSuffix(description, "]")
-}
-
 // nodeSource returns the source file path for a graph node from metadata,
 // falling back to the node ID when no source was recorded.
 func nodeSource(node *graph.Node) string {
@@ -1049,15 +1020,6 @@ func nodeSourceByOrigin(node *graph.Node, origin model.Origin) string {
 		}
 	}
 	return nodeSource(node)
-}
-
-// truncate truncates a string to the specified maximum length, appending
-// "..." if the string was shortened.
-func truncate(s string, maxLen int) string {
-	if len(s) <= maxLen {
-		return s
-	}
-	return s[:maxLen] + "..."
 }
 
 // validateRelatedFiles checks that documentation files have the required

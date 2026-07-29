@@ -14,14 +14,16 @@ idd:
 
 **Purpose:**
 
-Prove threshold normalization and the complete annotation-role invariant.
-Table-driven cases distinguish accepted maps from missing, partial, unknown,
-empty, non-`@`-prefixed, whitespace-bearing, and duplicate-value maps, while
-post-validation bounds are the numerical oracle.
+Prove preservation of the ignored deprecated consistency alias, detection of
+its explicit YAML presence, and the complete annotation-role invariant.
+Table-driven cases distinguish accepted maps from
+missing, partial, unknown, empty, non-`@`-prefixed, whitespace-bearing, and
+duplicate-value maps.
 
-**Oracle:** Valid maps return nil and retain distinct configured tokens; every
-invalid key or value case returns a configuration error. Threshold cases finish
-inside `[0, 1]`, using `0.3` for non-positive input and `1.0` as the upper cap.
+**Oracle:** Valid maps return nil, retain distinct configured tokens, and leave
+legacy consistency values unchanged; loaded YAML with the alias returns one
+actionable warning even for zero values, YAML without it returns none, and
+every invalid key or value case returns a configuration error.
 
 ## TEST-INTERNAL_CONFIG-002: Built-in profile
 
@@ -33,8 +35,8 @@ inside `[0, 1]`, using `0.3` for non-positive input and `1.0` as the upper cap.
 
 Prove the built-in profile is immediately usable and the maintained example is
 an exact executable representation of it, including seven-language source
-patterns, ignore paths, all validation switches, opt-in consistency with the
-`0.3` threshold, annotations, and output defaults.
+patterns, ignore paths, all deterministic validation switches, a zero-valued
+deprecated consistency alias, annotations, and output defaults.
 
 **Oracle:** The representative field assertions pass and loading
 `examples/idd-config-example.yaml` produces a value deeply equal to a fresh
@@ -44,18 +46,19 @@ default value fails the contract test.
 ## TEST-INTERNAL_CONFIG-003: YAML load success and failures
 
 - **Kind:** `contract`
-- **Covers:** `SPEC-INTERNAL_CONFIG-007`
+- **Covers:** `SPEC-INTERNAL_CONFIG-006`, `SPEC-INTERNAL_CONFIG-007`
 - **Contracts:** `ConfigurationLoading`, `cmd/idd-cli#Config`
 
 **Purpose:**
 
 Prove successful decoding and validation from an isolated temporary YAML file,
-plus errors for a missing path and malformed YAML. The loaded threshold and
-enabled flag are the success oracle; non-nil errors are the failure oracle.
+including source-aware deprecation diagnostics, plus errors for a missing path
+and malformed YAML. Preserved deprecated alias values and its warning are the
+success oracle; non-nil errors are the failure oracle.
 
 **Oracle:** The test passes only when its assertions confirm successful
 decoding and validation from an isolated temporary YAML file, plus errors for a missing
-path and malformed YAML. The loaded threshold and enabled flag are the success oracle;
+path and malformed YAML. Preserved deprecated alias values are the success oracle;
 non-nil errors are the failure oracle.
 
 ## Strategy

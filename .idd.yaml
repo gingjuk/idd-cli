@@ -50,9 +50,6 @@ validation:
   require_test_annotation: true
   require_design_sections: true
   require_pkg_doc_files: true
-  consistency_check:
-    enabled: false
-    threshold: 0.3
 
 output:
   file: "idd-report.json"

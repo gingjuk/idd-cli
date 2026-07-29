@@ -184,7 +184,7 @@ related identifier context.
 Prove top-rule selection, one-based group indexes, expected/actual enrichment,
 graph-related identifiers, warning-severity preservation, repeated-finding
 aggregation, sorted file/identifier summaries, and curated guidance for every
-self-describing document rule. For split-role filenames, prove the detailed
+self-describing document rule plus deprecated configuration. For split-role filenames, prove the detailed
 finding contains a complete agent merge prompt while aggregate rule guidance
 does not select only the first file.
 
@@ -198,6 +198,21 @@ implementation boundaries, prohibit summary-only reduction, delay deletion
 until a no-loss review, and include package `docs status` plus project `run`
 commands. The group-level fix must contain neither one split source path nor
 another.
+
+## TEST-INTERNAL_REPORTER-014: Review-context formats
+
+- **Kind:** `contract`
+- **Covers:** `SPEC-INTERNAL_REPORTER-013`
+- **Contracts:** `ReviewContextReport`
+
+**Purpose:** Verify JSON and Markdown review-context output preserve the same
+single-SPEC evidence, preserve ordered multi-SPEC batch evidence, and never add
+semantic verdict language.
+
+**Oracle:** Table-driven format cases preserve schema, SPEC, TEST, Contract,
+declaration, and record-or-declaration truncation fields. One context retains
+the single schema; multiple contexts use the batch schema and independent
+Markdown sections; unsupported formats return an error.
 
 ## Strategy
 

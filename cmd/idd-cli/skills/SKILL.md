@@ -1,6 +1,6 @@
 ---
 name: intent-driven-development
-description: Use Intent-Driven Development with idd-cli to turn an approved user request into human-readable design, contract, specification, and testing documents; bind those records to source declarations; validate and repair traceability; and carry the work through tests, review, and commit
+description: Use Intent-Driven Development with idd-cli to turn an approved request into canonical design, contract, specification, and testing documents; batch structural document work; bind records to source declarations; assemble focused SPEC review evidence; validate and repair traceability; and carry the change through tests, review, and commit
 license: MIT
 metadata:
   audience: agents
@@ -33,9 +33,12 @@ The agent must:
 
 Use idd-cli to:
 
-- create the canonical four-file scaffold and report unfinished slots;
+- create canonical four-file scaffolds in reviewable batches and report
+  unfinished slots across one or more documentation targets;
 - validate filenames, identity, record fields, references, lifecycle rules,
   package coverage, source annotations, and doc/code correspondence;
+- assemble bounded evidence for focused human or LLM review of one or more
+  SPECs without producing a semantic score or verdict;
 - produce path- and finding-specific repair instructions; and
 - repair only safe structure with `docs fix`.
 
@@ -76,13 +79,14 @@ work, and preserve unrelated user changes.
 For a new source package, run:
 
 ```bash
-idd-cli docs init internal/auth --format json
+idd-cli docs init internal/auth internal/config --format json
 ```
 
-The command creates `docs/internal/auth/{design,contract,spec,testing}.md` and
-returns the initial `incomplete_slots` work list. Generated files are
-intentionally incomplete until their guidance is replaced with
-package-specific content.
+The command creates each requested package's
+`{design,contract,spec,testing}.md` set and returns the aggregate initial
+`incomplete_slots` work list. It deduplicates packages and preflights the whole
+batch before writing. Generated files are intentionally incomplete until their
+guidance is replaced with package-specific content.
 
 Every scanned source package directory, including a nested sub-package, owns
 an equally nested four-file document set. A child package never inherits its
@@ -92,6 +96,9 @@ Do not initialize over an existing self-describing or legacy package. Use
 `docs fix` only when a CLI finding explicitly calls for missing structure or
 path-proven identity repair. It must not invent prose, coverage, or lifecycle
 decisions.
+
+Batch only packages that form one coherent authoring slice. A batch reduces
+tool calls; it does not make unrelated packages one semantic review unit.
 
 ### 4. Author documents in dependency order
 
@@ -134,13 +141,19 @@ headers. idd-cli derives code-to-document ownership from identifiers and the
 owning package documents. Keep ordinary language package or module comments
 when they help human readers.
 
+Annotations and AST declaration binding establish which code and tests claim a
+record. Do not repeat a semantic review for every function or method merely to
+prove that association; review the owning SPEC and inspect all declarations
+collected for it when meaning or evidence changed.
+
 ### 6. Validate each coherent slice
 
 Run focused completion inspection while authoring, followed by the project
 gate:
 
 ```bash
-idd-cli docs status docs/internal/auth --format json
+idd-cli docs status docs/internal/auth docs/internal/config --format json
+idd-cli docs fix docs/internal/auth/testing.md docs/internal/config/testing.md
 idd-cli run . --format llm-markdown
 idd-cli run . --format json
 ```
@@ -148,6 +161,22 @@ idd-cli run . --format json
 Treat `incomplete_slots` and each finding's `suggested_fix` as the
 machine-owned work queue. Fix the earliest causal finding first; missing
 records or declarations can produce several downstream findings.
+Status accepts multiple files or directory trees and deduplicates work reached
+through overlapping targets. Use a common root such as `.` for `run` and
+`lint`; they construct one project relationship graph rather than independent
+per-path checks.
+
+`docs init` and `docs fix` plan and preflight the complete requested batch
+before expected writes, and deduplicate overlapping targets. This protects
+against a known-invalid member causing earlier planned files to be written; it
+is not a filesystem transaction if an unexpected write fails at runtime.
+
+Treat `deprecated-config` as migration work. Remove the complete named YAML
+entry regardless of its configured value instead of changing ignored fields.
+In particular, `validation.consistency_check` has no validation effect. `run`
+and `lint` report its presence as a non-failing warning, while
+`docs review-context` writes the warning to stderr. Remove the entry and use
+focused review-context evidence for human or LLM semantic review.
 
 Then run the repository's relevant focused tests and its complete test, race,
 lint, build, and IDD gates.
@@ -253,7 +282,10 @@ allowed values, and conditional requirements.
 - Component and Contract names are package-local. Use the local name inside
   the package and `<package>#<name>` for a cross-package reference.
 - `Covers` is the single authored TEST-to-SPEC relationship; idd-cli derives
-  the reverse relationship.
+  the reverse relationship. Multiple TEST records may name the same SPEC, so
+  one behavior can have several independent scenarios, boundaries, or oracles.
+  Do not author a reverse TEST list on the SPEC or force one-to-one identifier
+  numbering.
 - A contract TEST's `Contracts` field is the authored evidence link to Contract
   records.
 - Dependencies, lifecycle links, and concern declarations must express real
@@ -295,8 +327,36 @@ The agent must still decide whether:
 - acceptance evidence is meaningful; and
 - tests, fixtures, and assertions provide a sufficient oracle.
 
-Treat optional lexical-consistency warnings only as drift hints, never as
-approval or a replacement for review.
+After changing a SPEC or its evidence, request a focused bundle when semantic
+review is needed. Include several related SPECs in one invocation to reduce
+tool calls, while judging each returned context independently:
+
+```bash
+idd-cli docs review-context \
+  SPEC-MODULE-001 \
+  SPEC-MODULE-002 \
+  --format llm-markdown
+```
+
+The command accepts one to ten unique SPEC IDs, deduplicates repeats in
+first-request order, and scans documentation and source once. Use
+`--docs-path <path>` to narrow document input; run the command from the project
+root because source declarations still come from the current project working
+tree.
+
+Review each returned Requirement, Acceptance, complete authored SPEC record,
+Contract guarantees, covering TEST records, and annotated implementation and
+test declaration excerpts together. Check whether the prose expresses the
+approved behavior, whether every linked implementation declaration fulfills
+it, and whether the combined TEST oracles are sufficient. One SPEC may
+legitimately have several covering TESTs.
+
+Do not manufacture an overall batch verdict or require every function and
+method to receive a separate review. Select changed, ambiguous, high-risk, or
+insufficiently evidenced SPECs; use the annotation graph for declaration
+association and the evidence bundle for one focused judgment per SPEC. The
+helper does not invoke a model, score prose, approve a record, or participate
+in `idd-cli run`.
 
 ## Existing-project upgrade
 
@@ -305,7 +365,10 @@ Upgrade package by package on a dedicated branch:
 1. Build the intended idd-cli version, use its paired Skill, and record the old
    test and validation baseline.
 2. Inventory legacy records, central catalogs, split-role files, repeated
-   source-header paths, annotations, and current findings before editing.
+   source-header paths, annotations, deprecated configuration, and current
+   findings before editing. Remove `validation.consistency_check` when its
+   warning appears; do not carry ignored TF-IDF thresholds into the new
+   workflow.
 3. Preserve rich prose while moving records into the owning canonical files.
    Add filename-derived identity, not role metadata or large YAML registries.
 4. Give every nested source package its own nested four-file set. Merge split

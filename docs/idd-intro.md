@@ -375,17 +375,17 @@ CGO_ENABLED=1 go build -o idd-cli ./cmd/idd-cli
 # Export and install this binary's paired skill
 ./idd-cli generate skill -o idd-skill.md
 
-# Create documents for a new package only
-./idd-cli docs init internal/auth
+# Create documents for new packages only
+./idd-cli docs init internal/auth internal/config
 
-# Inspect the exact generated authoring work
-./idd-cli docs status docs/internal/auth --format json
+# Inspect several packages as one authoring work list
+./idd-cli docs status docs/internal/auth docs/internal/config --format json
 
 # Normalize safe structural identity
-./idd-cli docs fix docs/internal/auth
+./idd-cli docs fix docs/internal/auth docs/internal/config
 
-# Normalize only one independently generated document
-./idd-cli docs fix docs/internal/auth/testing.md
+# Normalize selected independently generated documents
+./idd-cli docs fix docs/internal/auth/testing.md docs/internal/config/testing.md
 
 # Let the skill repair the complete finding report
 ./idd-cli run . --format llm-markdown
@@ -397,3 +397,14 @@ CGO_ENABLED=1 go build -o idd-cli ./cmd/idd-cli
 An invalid graph exits non-zero after writing its report. Use the skill to edit
 semantic records or source annotations; use `docs fix` only for identity and
 missing-document findings.
+
+The three structural document commands accept one or more targets, deduplicate
+repeated or overlapping paths, and return deterministic aggregate output.
+`docs init` and `docs fix` preflight the whole batch before expected writes.
+`run` and `lint` intentionally retain one documentation root because they build
+one cross-package graph; pass a common ancestor such as `.`.
+
+Deprecated configuration is migration-only. Explicitly configuring
+`validation.consistency_check` produces a non-failing `deprecated-config`
+warning even when its values are false or zero. Remove the complete mapping;
+semantic review uses `docs review-context`.

@@ -104,24 +104,23 @@ their declaration-level TEST annotations for association.
 source remains valid while test annotations continue to carry the non-derivable
 TEST relationship.
 
-## TEST-INTERNAL_ENGINE-007: Consistency warnings and missing TEST document links
+## TEST-INTERNAL_ENGINE-007: Validation excludes semantic scoring
 
 - **Kind:** `contract`
 - **Covers:** `SPEC-INTERNAL_ENGINE-001`, `SPEC-INTERNAL_ENGINE-004`
-- **Contracts:** `SemanticConsistencyWarning`
+- **Contracts:** `RepositoryValidation`
 
 **Purpose:**
 
-Prove description-similarity warning behavior across low/high similarity,
-disabled checks, missing descriptions, function-locator descriptions,
-code-only observations, and threshold changes. A separate contract-test fixture
-using this identifier proves that contract tests need no repeated SPEC, TEST,
-or Contract header paths.
+Prove that legacy consistency values cannot add lexical or semantic findings,
+while explicit presence in loaded YAML adds one actionable
+`deprecated-config` warning. A separate contract-test fixture using this
+identifier proves that contract tests need no repeated SPEC, TEST, or Contract
+header paths.
 
-**Oracle:** The test passes only when its assertions prove
-description-similarity warning behavior across low/high similarity, disabled checks,
-missing descriptions, function-locator descriptions, code-only observations,
-and threshold changes. The separate contract-test fixture remains valid
+**Oracle:** In-memory consistency values do not affect findings. YAML-loaded
+presence produces exactly one non-failing warning naming the obsolete path and
+source; absence produces none. The separate contract-test fixture remains valid
 without file-level document paths.
 
 ## TEST-INTERNAL_ENGINE-013: Engine storage contract

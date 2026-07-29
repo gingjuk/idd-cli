@@ -47,7 +47,8 @@ The two parts have a strict responsibility boundary:
 - The IDD skill captures intent and authors meaningful Component, Contract,
   SPEC, TEST, code, and repair changes.
 - idd-cli exports that skill, initializes four-file document sets, repairs only
-  safe structure, and reports graph problems at exact locations.
+  safe structure, reports graph problems at exact locations, and assembles
+  focused per-SPEC evidence for an external semantic reviewer.
 - `.idd.yaml` configures validation; it never owns markers or semantic records.
 
 An approved user request is sufficient intent. Teams may keep an `intent.md`
@@ -73,20 +74,26 @@ same document contract.
 Run commands from the project root:
 
 ```bash
-# New package only; existing self-describing packages skip this command
-idd-cli docs init internal/auth
+# New packages only; all packages are preflighted before the first write
+idd-cli docs init internal/auth internal/config
 
-# Inspect the exact generated locations that still need authored content
-idd-cli docs status docs/internal/auth --format json
+# Inspect several packages in one deterministic work list
+idd-cli docs status docs/internal/auth docs/internal/config --format json
 
 # The IDD skill now authors design, contract, SPEC, TEST, tests, and code.
 
 # Normalize safe identity after independent document generation
-idd-cli docs fix docs/internal/auth
-idd-cli docs fix docs/internal/auth/testing.md
+idd-cli docs fix docs/internal/auth docs/internal/config
+idd-cli docs fix docs/internal/auth/testing.md docs/internal/config/testing.md
 
 # Agent-oriented repair report
 idd-cli run . --format llm-markdown
+
+# After document changes, review several SPECs through one shared scan
+idd-cli docs review-context \
+  SPEC-INTERNAL_AUTH-001 \
+  SPEC-INTERNAL_AUTH-002 \
+  --format llm-markdown
 
 # After the skill repairs each finding and repository tests pass
 idd-cli run . --format json
@@ -97,9 +104,26 @@ use `docs fix`; schema, reference, Markdown, migration, TEST-kind, and
 annotation findings must be repaired by editing their canonical Markdown
 record or source declaration.
 
+`docs init`, `docs status`, and `docs fix` accept one or more targets.
+Duplicates and overlaps are deduplicated. The mutating commands preflight the
+whole batch before expected writes, so an invalid later target does not leave
+an earlier valid target initialized or repaired.
+
 Always use `idd-cli run .` for the validity gate. A documentation subdirectory
 argument narrows documentation collection, but source annotations still come
 from the current project working tree.
+
+`docs review-context` is not another gate. It accepts up to ten unique SPEC IDs,
+deduplicates repeats, and scans documentation and source once. Each returned
+context contains that SPEC's full authored record, Contract, covering TEST
+records, and bounded AST-bound implementation and test declarations. Use
+`--docs-path` when documentation input should be narrower than `.`.
+
+Deprecated configuration remains decodable only for migration. If
+`validation.consistency_check` is still present, `run` and `lint` emit a
+`deprecated-config` warning that names the configuration file and removal
+action; `docs review-context` emits the same notice on stderr. Remove the whole
+mapping rather than changing its ignored values.
 
 ### Example Prompts
 
@@ -314,12 +338,13 @@ links, stale API inventories, and central catalogs.
 `docs init` deliberately writes visible
 `<!-- idd:scaffold slot="..." -->` markers. Generated files remain invalid
 until every marker is removed and its bounded section contains real,
-non-placeholder prose. `docs status` returns a deterministic work list with
-file, line, role, slot, and reason. Once a record exists, the same status
-command also lists any missing or placeholder required record field, such as
-`Acceptance` or `Oracle`; adding only a heading therefore cannot produce a
-false `complete` result. `docs fix` preserves scaffold state and never invents
-requirements to make findings disappear.
+non-placeholder prose. `docs status` accepts multiple paths and returns their
+normalized targets plus one deterministic work list with file, line, role,
+slot, and reason. Overlapping paths do not duplicate a slot. Once a record
+exists, the same status command also lists any missing or placeholder required
+record field, such as `Acceptance` or `Oracle`; adding only a heading therefore
+cannot produce a false `complete` result. `docs fix` preserves scaffold state
+and never invents requirements to make findings disappear.
 
 See
 [`examples/self-describing-module-docs/`](examples/self-describing-module-docs/)

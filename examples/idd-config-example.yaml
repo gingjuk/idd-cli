@@ -113,10 +113,11 @@ validation:
   # Require recognized test declarations to have @test or @test-contract
   require_test_annotation: true
 
-  # Optional lexical drift hint; this is not semantic proof
-  consistency_check:
-    enabled: false
-    threshold: 0.3
+  # Deprecated compatibility key. Remove it; if present, idd-cli ignores its
+  # values and emits a deprecated-config warning:
+  # consistency_check:
+  #   enabled: false
+  #   threshold: 0.3
 
 # Output settings
 output:

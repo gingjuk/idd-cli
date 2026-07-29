@@ -109,15 +109,15 @@ lexical roles would be empty or ambiguous.
 
 Every independently configurable repository gate must have an explicit boolean
 field, including graph consistency, coverage, document structure, doc/code
-correspondence, annotation rules, package document sets, and advisory
-description consistency. Code-to-document association is not a separate
+correspondence, annotation rules, and package document sets. Code-to-document
+association is not a separate
 file-header policy: it is the enabled correspondence rule joining matching
 identifier evidence.
 
 **Acceptance:** Every independently
 configurable repository gate must have an explicit boolean field, including graph
 consistency, coverage, document structure, doc/code correspondence, annotation rules,
-package document sets, and advisory description consistency. Defaults and the
+and package document sets. Defaults and the
 example configuration contain no package-path-comment switch.
 
 `require_pkg_doc_files` means every distinct directory containing a scanned,
@@ -131,25 +131,31 @@ When YAML omits a boolean, loading leaves it false because files are decoded
 into zero values rather than merged with `Default`. Callers wanting the full
 built-in policy must choose `Default` or author the values explicitly.
 
-## SPEC-INTERNAL_CONFIG-006: Consistency warning policy
+## SPEC-INTERNAL_CONFIG-006: Deprecated consistency configuration alias
 
 - **Design:** `ConfigModule`
 - **Contract:** `ConfigurationSchema`
 
 **Requirement:**
 
-Description-consistency configuration must separate whether scoring runs from
-the numeric warning threshold, and validation must normalize that threshold to
-the supported interval.
+Existing YAML containing `validation.consistency_check` must remain decodable
+while the field is deprecated and behaviorally ignored, and its explicit
+presence must produce an actionable deprecation warning.
 
-**Acceptance:** Description-consistency
-configuration must separate whether scoring runs from the numeric warning threshold, and
-validation must normalize that threshold to the supported interval.
+**Acceptance:** Loading legacy `enabled` and `threshold` values succeeds, but
+neither value changes validation behavior or receives default normalization.
+Presence of the key produces exactly one diagnostic naming the source file and
+`validation.consistency_check`, stating that the values are ignored, directing
+the caller to remove the whole key, and naming
+`docs review-context <SPEC-ID>...` as the semantic-review replacement. Presence
+still warns when values are false, zero, or omitted.
 
 ### Edge cases
 
-Thresholds at or below zero become `0.3`; thresholds above one become one.
-Disabling the check requires `enabled: false`, not a zero threshold.
+Unknown nested fields follow the package's existing YAML decoding behavior.
+The alias must not be renamed into another active similarity rule.
+Built-in defaults and loaded YAML without the alias produce no deprecation
+diagnostic, and loading never rewrites the source file.
 
 ## SPEC-INTERNAL_CONFIG-007: Validated YAML loading
 
@@ -172,7 +178,7 @@ currently accepted and ignored.
 
 **Acceptance:**
 
-Temporary-file tests cover successful threshold loading and invalid YAML;
+Temporary-file tests cover successful deprecated-alias loading and invalid YAML;
 separate cases cover missing paths and invalid annotation maps.
 
 ## SPEC-INTERNAL_CONFIG-008: Complete built-in profile
@@ -184,14 +190,14 @@ separate cases cover missing paths and invalid annotation maps.
 
 The default constructor must return a fresh non-nil profile that is immediately
 usable by the CLI, with collection patterns, annotation roles, ignore paths,
-deterministic validation gates, and an explicitly disabled lexical consistency
-hint whose threshold remains populated for opt-in use.
+deterministic validation gates, and no active lexical or semantic scoring
+policy.
 
 **Acceptance:** The default constructor
 must return a fresh non-nil profile that is immediately usable by the CLI, with
-collection patterns, annotation roles, ignore paths, deterministic validation gates,
-and an explicitly disabled lexical consistency hint whose threshold remains populated
-for opt-in use.
+collection patterns, annotation roles, ignore paths, and deterministic
+validation gates without assigning defaults or runtime meaning to the
+deprecated consistency alias.
 
 ### Compatibility boundary
 
@@ -208,8 +214,8 @@ this constructor.
 **Requirement:**
 
 Validation must mutate omitted core collection values to their documented
-defaults, require exactly the three annotation-role keys, normalize the
-similarity threshold, and return an error for a missing or unknown role.
+defaults, require exactly the three annotation-role keys, and return an error
+for a missing or unknown role.
 
 ### Non-goals
 
@@ -221,5 +227,5 @@ is not a supported input.
 
 **Acceptance:**
 
-Table-driven tests cover in-range, below-range, and above-range thresholds and
-complete, missing, partial, and extended annotation maps.
+Table-driven tests cover preservation of deprecated alias values and complete,
+missing, partial, and extended annotation maps.

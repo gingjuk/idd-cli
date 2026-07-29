@@ -18,7 +18,8 @@ tool, version, timestamp, configuration summary, and validation result.
 
 The component does not run validation or repair documents. It must preserve the
 engine's severity and evidence while adding presentation metadata and practical
-rule guidance.
+rule guidance. For a collector-owned review context it renders evidence and
+neutral questions without creating severity or a verdict.
 
 ### Responsibilities
 
@@ -27,10 +28,13 @@ rule guidance.
 - select stdout or a caller-specified file destination;
 - render human Markdown with findings, statistics, and optional graph details;
 - project results into schema `idd.llm_report.v1`;
+- project single-SPEC evidence into schema `idd.spec_review_context.v1`;
 - enrich raw validation errors with titles, explanations, structured
   locations, expected/actual values, fix hints, and related identifiers;
 - rank common rules and group repeated findings deterministically; and
-- render the same finding model as agent-readable Markdown.
+- render the same finding model as agent-readable Markdown; and
+- render complete bounded SPEC, Contract, TEST, implementation declaration,
+  and test declaration evidence without semantic scoring.
 
 ### Boundaries and side effects
 

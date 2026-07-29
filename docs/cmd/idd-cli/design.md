@@ -79,21 +79,23 @@ normal mechanism.
 
 ### Document command path
 
-`docs init <package>` treats the package path as project-relative and delegates
-to `InitDocuments(".", package)`. The collector layer performs path,
-package-existence, legacy-metadata, and central-catalog preflight before any
-write. It creates the four canonical basenames with version/package-only
-frontmatter; a nested package is initialized independently at its matching
-nested path. After creation it runs `InspectDocumentCompletion` and serializes
-both the changed-path list and the exact incomplete-slot work list.
+`docs init <package>...` treats each package path as project-relative and
+delegates to `InitDocumentPackages`. The collector layer performs path,
+package-existence, legacy-metadata, and central-catalog preflight for the whole
+batch before any write. It creates the four canonical basenames with
+version/package-only frontmatter; a nested package is initialized independently
+at its matching nested path. After creation it runs
+`InspectDocumentCompletions` and serializes normalized targets, the changed-path
+list, and the exact incomplete-slot work list.
 
-`docs status <path>` calls the same completion inspector without mutation. JSON
-is the agent-oriented stable wire shape; human output summarizes completion or
-lists each slot with its location and reason. Reusing one inspector prevents
-generation, validation, and status from drifting into different definitions of
-“filled”. The inspector advances from collection and section slots to
-record-field slots as authors add records, so every missing required field
-remains directly actionable.
+`docs status <path>...` calls the same completion inspector without mutation.
+It preserves normalized first-request target order, deduplicates overlapping
+work, and globally sorts the result. JSON is the agent-oriented stable wire
+shape; human output summarizes completion or lists each slot with its location
+and reason. Reusing one inspector prevents generation, validation, and status
+from drifting into different definitions of “filled”. The inspector advances
+from collection and section slots to record-field slots as authors add records,
+so every missing required field remains directly actionable.
 
 When traversal sees a role-derived split filename, completion inspection stops
 because a fragment cannot be assigned an independent completion state. Its
@@ -103,12 +105,31 @@ validation path carries the same source/target evidence into the reporter,
 which emits a per-finding prompt in JSON and LLM Markdown. Group summaries stay
 generic so a multi-package group does not select only its first file.
 
-`docs fix <path>` delegates file-vs-directory semantics to
-`RepairDocuments`. A file target can change only that named document; a
+`docs fix <path>...` delegates file-vs-directory semantics to
+`RepairDocumentTargets`. A file target can change only that named document; a
 directory target owns version/package identity for all four canonical roles
-and may create missing skeletons. Role comes only from the exact basename; the
-command never interprets a validation finding as permission to rewrite prose
-or split a long document.
+and may create missing skeletons. All targets are planned before writes and
+overlapping file plans are deduplicated. Role comes only from the exact
+basename; the command never interprets a validation finding as permission to
+rewrite prose or split a long document.
+
+`run` and `lint` keep one positional documentation root. They build one graph
+whose code side remains project-root scoped, so callers select a common
+ancestor instead of supplying several roots that could overlap or imply
+package-isolated validation.
+
+`docs review-context <SPEC-ID>...` follows the same configuration and
+documentation/source scope as validation, but bypasses the engine.
+`--docs-path` defaults to `.`, and the source root remains the current working
+tree. Moving the path to a flag keeps every positional value unambiguously a
+SPEC identifier.
+
+The collectors run once, then the builder resolves up to ten unique SPEC owners
+in first-request order. Every context gathers complete bounded record Markdown,
+the named Contract, covering TEST records, and AST-bound implementation and
+covering-TEST declaration excerpts. The reporter projects one context using
+the original schema or several using a batch schema, without adding a finding,
+score, or verdict.
 
 Mutation commands report structural changes as JSON by default or as a
 human-readable path list for other formats. An empty change list is a
@@ -142,7 +163,8 @@ validation runs:
 
 - JSON is stable for CI and programmatic repair tooling;
 - Markdown is a concise human readout;
-- LLM Markdown emphasizes ownership, location, problem, and repair guidance.
+- LLM Markdown emphasizes ownership, location, problem, and repair guidance
+  for validation, or neutral review questions for a review-context bundle.
 
 A zero exit proves that enabled structural and traceability checks passed. It
 does not prove that the human-authored design or requirement is semantically
@@ -224,7 +246,7 @@ evidence; the CLI then checks the resulting graph.
 - `internal/graph` - For graph structure
 - `internal/model` - For data types
 - `internal/reporter` - For output
-- `internal/similarity` - For consistency checking
+- `internal/collector` - For bounded single-SPEC review evidence
 - `pkg/pattern` - For IDD patterns
 - `pkg/walk` - For file traversal
 - `gopkg.in/yaml.v3` - For configuration and minimal document identity parsing

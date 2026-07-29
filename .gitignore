@@ -7,7 +7,7 @@ bin/
 *.so
 *.dylib
 idd
-idd-cli
+/idd-cli
 
 # Test binary
 *.test

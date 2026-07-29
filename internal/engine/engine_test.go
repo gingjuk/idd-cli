@@ -13,307 +13,93 @@ import (
 )
 
 // @test-contract TEST-INTERNAL_ENGINE-007
-func TestEngine_ConsistencyCheck_Warning(t *testing.T) {
-	cfg := &config.Config{
-		Version: "1.0",
-		Validation: config.ValidationConfig{
-			ConsistencyCheck: config.ConsistencyCheck{
-				Enabled:   true,
-				Threshold: 0.3,
-			},
-		},
+func TestEngine_DeprecatedConsistencyCheckIsIgnored(t *testing.T) {
+	tests := []struct {
+		name      string
+		enabled   bool
+		threshold float64
+	}{
+		{name: "disabled", enabled: false, threshold: 0.3},
+		{name: "enabled with low threshold", enabled: true, threshold: -2},
+		{name: "enabled with high threshold", enabled: true, threshold: 20},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			cfg := &config.Config{
+				Version: "1.0",
+				Validation: config.ValidationConfig{
+					ConsistencyCheck: config.ConsistencyCheck{
+						Enabled:   test.enabled,
+						Threshold: test.threshold,
+					},
+				},
+			}
+			ids := model.NewIdentifierSet()
+			docID := model.NewIdentifierWithDescribe(
+				"SPEC-001",
+				model.TypeSpec,
+				"Test Spec",
+				"user authentication",
+				"docs/spec.md",
+				1,
+			)
+			ids.Add(docID)
+			codeID := model.NewIdentifierWithDescribe(
+				"SPEC-001",
+				model.TypeSpec,
+				"",
+				"unrelated database settings",
+				"main.go",
+				10,
+			)
+			codeID.SetOrigin(model.OriginCode)
+			ids.Add(codeID)
+
+			result, err := New(cfg).Run(context.Background(), ids)
+			if err != nil {
+				t.Fatalf("Run() error = %v", err)
+			}
+			for _, warning := range result.Warnings {
+				if warning.Rule == "consistency-check" {
+					t.Fatalf("Run() emitted deprecated consistency warning: %v", warning)
+				}
+			}
+		})
 	}
 
-	ids := model.NewIdentifierSet()
-
-	docID := model.NewIdentifierWithDescribe("SPEC-001", model.TypeSpec, "Test Spec", "validates user authentication and JWT token issuance", "docs/spec.md", 1)
-	docID.SetOrigin(model.OriginDoc)
-	ids.Add(docID)
-
-	codeID := model.NewIdentifierWithDescribe("SPEC-001", model.TypeSpec, "", "database connection pooling settings", "main.go", 10)
-	codeID.SetOrigin(model.OriginCode)
-	ids.Add(codeID)
-
-	eng := New(cfg)
-	result, err := eng.Run(context.Background(), ids)
-	if err != nil {
-		t.Fatalf("Run failed: %v", err)
-	}
-
-	if len(result.Warnings) == 0 {
-		t.Error("Expected consistency warning for low similarity")
-	}
-
-	found := false
-	for _, w := range result.Warnings {
-		if w.Rule == "consistency-check" {
-			found = true
-			break
+	t.Run("loaded deprecated key emits cleanup warning", func(t *testing.T) {
+		cfgPath := filepath.Join(t.TempDir(), "idd.yaml")
+		content := `version: "1.0"
+validation:
+  consistency_check:
+    enabled: false
+    threshold: 0
+`
+		if err := os.WriteFile(cfgPath, []byte(content), 0o644); err != nil {
+			t.Fatalf("WriteFile() error = %v", err)
 		}
-	}
-	if !found {
-		t.Error("Expected consistency-check warning")
-	}
-}
-
-// @test-contract TEST-INTERNAL_ENGINE-007
-func TestEngine_ConsistencyCheck_NoWarning(t *testing.T) {
-	cfg := &config.Config{
-		Version: "1.0",
-		Validation: config.ValidationConfig{
-			ConsistencyCheck: config.ConsistencyCheck{
-				Enabled:   true,
-				Threshold: 0.3,
-			},
-		},
-	}
-
-	ids := model.NewIdentifierSet()
-
-	docID := model.NewIdentifierWithDescribe("SPEC-001", model.TypeSpec, "Test Spec", "validates user authentication and JWT token issuance", "docs/spec.md", 1)
-	docID.SetOrigin(model.OriginDoc)
-	ids.Add(docID)
-
-	codeID := model.NewIdentifierWithDescribe("SPEC-001", model.TypeSpec, "", "validates user authentication and JWT token issuance for session", "main.go", 10)
-	codeID.SetOrigin(model.OriginCode)
-	ids.Add(codeID)
-
-	eng := New(cfg)
-	result, err := eng.Run(context.Background(), ids)
-	if err != nil {
-		t.Fatalf("Run failed: %v", err)
-	}
-
-	for _, w := range result.Warnings {
-		if w.Rule == "consistency-check" {
-			t.Error("Expected no consistency warning for similar texts")
+		cfg, err := config.Load(cfgPath)
+		if err != nil {
+			t.Fatalf("config.Load() error = %v", err)
 		}
-	}
-}
-
-// @test-contract TEST-INTERNAL_ENGINE-007
-func TestEngine_ConsistencyCheck_Disabled(t *testing.T) {
-	cfg := &config.Config{
-		Version: "1.0",
-		Validation: config.ValidationConfig{
-			ConsistencyCheck: config.ConsistencyCheck{
-				Enabled:   false,
-				Threshold: 0.3,
-			},
-		},
-	}
-
-	ids := model.NewIdentifierSet()
-
-	docID := model.NewIdentifierWithDescribe("SPEC-001", model.TypeSpec, "Test Spec", "validates user authentication", "docs/spec.md", 1)
-	docID.SetOrigin(model.OriginDoc)
-	ids.Add(docID)
-
-	codeID := model.NewIdentifierWithDescribe("SPEC-001", model.TypeSpec, "", "completely unrelated content here", "main.go", 10)
-	codeID.SetOrigin(model.OriginCode)
-	ids.Add(codeID)
-
-	eng := New(cfg)
-	result, err := eng.Run(context.Background(), ids)
-	if err != nil {
-		t.Fatalf("Run failed: %v", err)
-	}
-
-	for _, w := range result.Warnings {
-		if w.Rule == "consistency-check" {
-			t.Error("Expected no consistency warnings when disabled")
+		result, err := New(cfg).Run(context.Background(), model.NewIdentifierSet())
+		if err != nil {
+			t.Fatalf("Run() error = %v", err)
 		}
-	}
-}
-
-// @test-contract TEST-INTERNAL_ENGINE-007
-func TestEngine_ConsistencyCheck_MissingDescribe(t *testing.T) {
-	cfg := &config.Config{
-		Version: "1.0",
-		Validation: config.ValidationConfig{
-			ConsistencyCheck: config.ConsistencyCheck{
-				Enabled:   true,
-				Threshold: 0.3,
-			},
-		},
-	}
-
-	ids := model.NewIdentifierSet()
-
-	docID := model.NewIdentifierWithDescribe("SPEC-001", model.TypeSpec, "Test Spec", "", "docs/spec.md", 1)
-	docID.SetOrigin(model.OriginDoc)
-	ids.Add(docID)
-
-	codeID := model.NewIdentifierWithDescribe("SPEC-001", model.TypeSpec, "", "validates user authentication", "main.go", 10)
-	codeID.SetOrigin(model.OriginCode)
-	ids.Add(codeID)
-
-	eng := New(cfg)
-	result, err := eng.Run(context.Background(), ids)
-	if err != nil {
-		t.Fatalf("Run failed: %v", err)
-	}
-
-	for _, w := range result.Warnings {
-		if w.Rule == "consistency-check" {
-			t.Error("Expected no consistency warning when doc describe is empty")
+		if !result.Valid {
+			t.Fatalf("deprecated configuration warning made result invalid: %#v", result.Errors)
 		}
-	}
-}
-
-// @test-contract TEST-INTERNAL_ENGINE-007
-func TestEngine_ConsistencyCheck_FunctionLocatorOnly(t *testing.T) {
-	cfg := &config.Config{
-		Version: "1.0",
-		Validation: config.ValidationConfig{
-			ConsistencyCheck: config.ConsistencyCheck{
-				Enabled:   true,
-				Threshold: 0.3,
-			},
-		},
-	}
-
-	ids := model.NewIdentifierSet()
-	docID := model.NewIdentifierWithDescribe(
-		"SPEC-INTERNAL_SAMPLE-001",
-		model.TypeSpec,
-		"Sample behavior",
-		"validate self-describing package document relationships",
-		"docs/internal/sample/spec.md",
-		1,
-	)
-	ids.Add(docID)
-	codeID := model.NewIdentifierWithDescribe(
-		"SPEC-INTERNAL_SAMPLE-001",
-		model.TypeSpec,
-		"",
-		"[function: UnrelatedName]",
-		"internal/sample/sample.go",
-		10,
-	)
-	codeID.SetOrigin(model.OriginCode)
-	ids.Add(codeID)
-
-	result, err := New(cfg).Run(context.Background(), ids)
-	if err != nil {
-		t.Fatalf("Run() error = %v", err)
-	}
-	for _, warning := range result.Warnings {
-		if warning.Rule == "consistency-check" {
-			t.Fatalf("Run() warning = %v, want function locator ignored", warning)
+		if len(result.Warnings) != 1 {
+			t.Fatalf("warnings = %#v, want one", result.Warnings)
 		}
-	}
-}
-
-// @test-contract TEST-INTERNAL_ENGINE-007
-func TestEngine_ConsistencyCheck_CodeOnly(t *testing.T) {
-	cfg := &config.Config{
-		Version: "1.0",
-		Validation: config.ValidationConfig{
-			ConsistencyCheck: config.ConsistencyCheck{
-				Enabled:   true,
-				Threshold: 0.3,
-			},
-		},
-	}
-
-	ids := model.NewIdentifierSet()
-
-	codeID := model.NewIdentifierWithDescribe("SPEC-001", model.TypeSpec, "", "validates user authentication", "main.go", 10)
-	codeID.SetOrigin(model.OriginCode)
-	ids.Add(codeID)
-
-	eng := New(cfg)
-	result, err := eng.Run(context.Background(), ids)
-	if err != nil {
-		t.Fatalf("Run failed: %v", err)
-	}
-
-	for _, w := range result.Warnings {
-		if w.Rule == "consistency-check" {
-			t.Error("Expected no consistency warning when only code exists")
+		warning := result.Warnings[0]
+		if warning.Rule != "deprecated-config" ||
+			warning.Source != cfgPath ||
+			warning.Link != "validation.consistency_check" ||
+			!strings.Contains(warning.Message, "remove it") {
+			t.Errorf("warning = %#v", warning)
 		}
-	}
-}
-
-// @test-contract TEST-INTERNAL_ENGINE-007
-func TestEngine_ConsistencyCheck_HighThreshold(t *testing.T) {
-	cfg := &config.Config{
-		Version: "1.0",
-		Validation: config.ValidationConfig{
-			ConsistencyCheck: config.ConsistencyCheck{
-				Enabled:   true,
-				Threshold: 0.95,
-			},
-		},
-	}
-
-	ids := model.NewIdentifierSet()
-
-	docID := model.NewIdentifierWithDescribe("SPEC-001", model.TypeSpec, "Test Spec", "validates user authentication and JWT tokens", "docs/spec.md", 1)
-	docID.SetOrigin(model.OriginDoc)
-	ids.Add(docID)
-
-	codeID := model.NewIdentifierWithDescribe("SPEC-001", model.TypeSpec, "", "validates user authentication and JWT tokens for sessions", "main.go", 10)
-	codeID.SetOrigin(model.OriginCode)
-	ids.Add(codeID)
-
-	eng := New(cfg)
-	result, err := eng.Run(context.Background(), ids)
-	if err != nil {
-		t.Fatalf("Run failed: %v", err)
-	}
-
-	found := false
-	for _, w := range result.Warnings {
-		if w.Rule == "consistency-check" {
-			found = true
-			break
-		}
-	}
-	if found {
-		t.Error("Expected no consistency warning for very similar texts with high threshold")
-	}
-}
-
-// @test-contract TEST-INTERNAL_ENGINE-007
-func TestEngine_ConsistencyCheck_LowSimilarity(t *testing.T) {
-	cfg := &config.Config{
-		Version: "1.0",
-		Validation: config.ValidationConfig{
-			ConsistencyCheck: config.ConsistencyCheck{
-				Enabled:   true,
-				Threshold: 0.1,
-			},
-		},
-	}
-
-	ids := model.NewIdentifierSet()
-
-	docID := model.NewIdentifierWithDescribe("SPEC-001", model.TypeSpec, "Test Spec", "user login and authentication", "docs/spec.md", 1)
-	docID.SetOrigin(model.OriginDoc)
-	ids.Add(docID)
-
-	codeID := model.NewIdentifierWithDescribe("SPEC-001", model.TypeSpec, "", "database connection pool settings", "main.go", 10)
-	codeID.SetOrigin(model.OriginCode)
-	ids.Add(codeID)
-
-	eng := New(cfg)
-	result, err := eng.Run(context.Background(), ids)
-	if err != nil {
-		t.Fatalf("Run failed: %v", err)
-	}
-
-	found := false
-	for _, w := range result.Warnings {
-		if w.Rule == "consistency-check" {
-			found = true
-			break
-		}
-	}
-	if !found {
-		t.Error("Expected consistency warning for very dissimilar texts")
-	}
+	})
 }
 
 // @test TEST-INTERNAL_ENGINE-004

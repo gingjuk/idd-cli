@@ -56,13 +56,16 @@ Validation reports the exact Markdown record and field line for:
 `MarshalIDDDocument` emits canonical minimal identity frontmatter and preserves
 its Markdown body. `RepairDocuments` normalizes only structural identity. A
 file target writes only that file; a directory target may create missing
-structural documents. Repair never reflows prose or synthesizes semantic
-records.
+structural documents. `RepairDocumentTargets` accepts several such targets,
+deduplicates overlap, and prepares the complete batch before writing. Repair
+never reflows prose or synthesizes semantic records.
 
 Generated skeletons contain stable `idd:scaffold` slot markers and are invalid
 until authored. `InspectDocumentCompletion` applies the same role schema used
-by generation and normal validation. It accepts one role file or a directory
-tree and returns schema `idd.document_status.v1`, status, and a deterministic
+by generation and normal validation. `InspectDocumentCompletions` accepts one
+or more role files or directory trees, returns their normalized `targets`, and
+deduplicates work found through overlapping inputs. Schema
+`idd.document_status.v1` contains status and a deterministic
 `incomplete_slots` list containing file, line, role, slot, and reason. A slot
 is complete only when its marker is absent and its bounded content is
 non-empty and non-placeholder. Once a record exists, the list also contains
@@ -80,17 +83,19 @@ comparison, forbids another split, and ends with `docs status` and full-project
 
 ## Document initialization
 
-`InitDocuments` requires an existing project-relative package directory. Each
-source package, including a nested sub-package, is initialized independently at
-the equally nested `docs/<package>/` path. Initialization creates exactly the
-four canonical self-describing role documents or prepends structural metadata
-to existing plain narratives. Existing non-IDD frontmatter keys are merged
-into the same frontmatter block and preserved.
+`InitDocuments` requires an existing project-relative package directory.
+`InitDocumentPackages` accepts several such packages. Each source package,
+including a nested sub-package, is initialized independently at the equally
+nested `docs/<package>/` path. Initialization creates exactly the four
+canonical self-describing role documents or prepends structural metadata to
+existing plain narratives. Existing non-IDD frontmatter keys are merged into
+the same frontmatter block and preserved.
 
-Initialization performs a complete preflight before writing. If existing
-Markdown contains legacy markers or `related_files`, it returns an error so a
-new document set cannot silently change that package's parsing mode. A
-package-local central `idd.yaml` is also rejected for explicit migration.
+Initialization performs a complete preflight across every requested package
+before writing. If existing Markdown contains legacy markers or
+`related_files`, it returns an error so a new document set cannot silently
+change that package's parsing mode. A package-local central `idd.yaml` is also
+rejected for explicit migration.
 
 ## Contract: DocCollector
 
@@ -163,6 +168,42 @@ a non-public class access section. Java interface methods retain their
 language-defined public default. Recognized test
 declarations follow each ecosystem's filename, name, annotation, decorator, or
 test-call syntax as represented by its grammar.
+
+## Contract: SpecReviewContext
+
+**Guarantees:**
+
+`BuildSpecReviewContexts` accepts one to ten unique SPEC identifiers, a
+documentation search root, and a source search root. Repeated identifiers are
+deduplicated in first-request order. Documentation and source collection each
+run once for the batch. Every requested identifier resolves exactly one
+canonical SPEC owner.
+
+The result uses schema `idd.spec_review_context_batch.v1` and contains one
+ordered `idd.spec_review_context.v1` value per unique identifier. Each context
+contains the SPEC fields, complete
+bounded authored SPEC section, and source location; its named Contract record;
+every TEST record whose `Covers` list names the SPEC; every attached
+non-ignored `@implement` declaration naming the SPEC; and declarations attached
+to `@test` or `@test-contract` annotations naming those covering TEST records.
+Complete record Markdown keeps subordinate `Details` sections visible to the
+reviewer but stops before the next peer H2 section. Contract and TEST evidence
+may come from another collected package; qualified Contract references resolve
+through the same package-scoped identity used by validation.
+
+Declaration evidence contains implementation/test role, annotation references,
+language, kind, name, path, source range, annotation text, and a
+declaration-range excerpt. Excerpts use fixed
+per-declaration and total character budgets and expose truncation. Records and
+declarations are sorted deterministically.
+
+The builder is read-only and evidence-only. It does not score prose, infer
+semantic correctness, emit validation findings, or invoke an LLM. A malformed,
+missing, or multiply owned SPEC, an empty request, or more than ten unique
+identifiers is returned as an atomic operational error.
+
+`BuildSpecReviewContext` remains the single-SPEC wrapper and returns the first
+context without changing schema `idd.spec_review_context.v1`.
 
 ## Contract: LegacyFrontmatter
 

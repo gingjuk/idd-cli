@@ -36,6 +36,13 @@ var (
 	identifierPattern = regexp.MustCompile(`\b(?:SPEC|TEST|CONTRACT|DESIGN)-[A-Z0-9_]+-[0-9]+\b`)
 
 	ruleInfoByName = map[string]ruleInfo{
+		"deprecated-config": {
+			Severity:    "warning",
+			Title:       "Deprecated configuration is still present",
+			Explanation: "Deprecated configuration remains decodable only for migration and does not activate validation behavior.",
+			FixHint:     "Remove the complete deprecated mapping named by the finding and use its documented replacement.",
+			Expected:    "Configuration omits deprecated keys",
+		},
 		"doc-link-consistency": {
 			Severity:    "error",
 			Title:       "Document link field is inconsistent",
@@ -396,6 +403,16 @@ func suggestedFix(
 	location model.LLMLocation,
 	info ruleInfo,
 ) string {
+	if validationErr.Rule == "deprecated-config" {
+		deprecatedPath := strings.TrimSpace(validationErr.Link)
+		if deprecatedPath == "" {
+			return info.FixHint
+		}
+		return fmt.Sprintf(
+			"Remove the complete `%s` mapping. Use `idd-cli docs review-context <SPEC-ID>...` when semantic review is needed.",
+			deprecatedPath,
+		)
+	}
 	if validationErr.Rule != "idd-document-filename" ||
 		validationErr.Code != "split-role" ||
 		location.File == "" {
@@ -479,6 +496,11 @@ func primaryIdentifier(validationErr model.ValidationError) string {
 func expectedActual(validationErr model.ValidationError, info ruleInfo) (string, string) {
 	expected := info.Expected
 	actual := validationErr.Code
+
+	if validationErr.Rule == "deprecated-config" && validationErr.Link != "" {
+		expected = "Configuration omits " + validationErr.Link
+		actual = validationErr.Link
+	}
 
 	if validationErr.Rule == "doc-link-consistency" {
 		switch {

@@ -92,7 +92,8 @@ relationship consistency, duplicate headings, orphan identifiers, doc/code
 correspondence joined by identifier, syntax-tree public declaration and test
 rules, legacy `related_files`, complete package doc sets for every scanned
 source directory, annotation identifier/placement/duplication checks, source
-parse failures, duplicate IDs, and optional advisory description consistency.
+parse failures, and duplicate IDs. Lexical or semantic prose comparison is not
+part of the rule surface.
 File-level `Spec`, `Contract`, and `Test` paths are not an input to this
 contract.
 
@@ -125,18 +126,3 @@ root remains project narrative rather than a package set.
 
 The contract does not promise one unified ignore algorithm across every rule.
 Changing scan or ignore semantics requires rule-specific regression tests.
-
-## Contract: SemanticConsistencyWarning
-
-**Guarantees:**
-
-When enabled, consistency validation compares documentation and code
-descriptions for matching identifiers through TF-IDF scoring. Missing
-descriptions, code-only records, and function-locator-like documentation are
-handled by rule-specific skip logic. Scores below the configured threshold
-produce warnings, not errors.
-
-This is lexical drift detection, not semantic approval. Passing the threshold
-does not establish that the requirement or implementation is correct.
-The default configuration leaves this advisory disabled; repositories may
-enable it explicitly after choosing a useful local threshold.

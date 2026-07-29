@@ -23,7 +23,8 @@ complete value returned by `Default`.
 ### Responsibilities
 
 - model document patterns, identifier patterns, source patterns, annotations,
-  validation flags, consistency settings, and output settings;
+  deterministic validation flags, deprecated compatibility settings, and
+  output settings;
 - return the full built-in profile used when the CLI chooses defaults;
 - read and decode a specific YAML file;
 - normalize selected omitted or out-of-range values;
@@ -41,8 +42,8 @@ overrides; collectors and the engine consume the values.
 `Default` allocates fresh structs, slices, and maps. `Load` allocates and returns
 a new configuration. `Validate` mutates its receiver in place: it fills empty
 version and pattern lists, installs all seven-language source globs and the
-complete annotation map when their values are empty, and normalizes the
-consistency threshold.
+complete annotation map when their values are empty. Deprecated consistency
+values remain untouched and have no runtime effect.
 
 Missing YAML fields that are not explicitly normalized stay at Go zero values.
 In particular, `Load` does not automatically enable every validation boolean,

@@ -614,6 +614,7 @@ func TestLookupRuleInfo_IDDDocumentFindings(t *testing.T) {
 		rule        string
 		wantFixText string
 	}{
+		{rule: "deprecated-config", wantFixText: "deprecated mapping"},
 		{rule: "idd-document-parse", wantFixText: "YAML"},
 		{rule: "idd-document-identity", wantFixText: "docs fix"},
 		{rule: "idd-document-filename", wantFixText: "canonical"},
@@ -638,6 +639,24 @@ func TestLookupRuleInfo_IDDDocumentFindings(t *testing.T) {
 				t.Errorf("lookupRuleInfo(%q).FixHint = %q, want text %q", tt.rule, info.FixHint, tt.wantFixText)
 			}
 		})
+	}
+}
+
+// @test TEST-INTERNAL_REPORTER-013
+func TestReporter_buildFinding_DeprecatedConfigUsesReportedPath(t *testing.T) {
+	r := New(config.Default(), "json")
+	finding := r.buildFinding(model.ValidationError{
+		Rule:    "deprecated-config",
+		Message: "validation.old_key is deprecated and ignored",
+		Source:  ".idd.yaml",
+		Link:    "validation.old_key",
+	}, "warning", nil)
+
+	if finding.Severity != "warning" ||
+		finding.Actual != "validation.old_key" ||
+		!strings.Contains(finding.Expected, "validation.old_key") ||
+		!strings.Contains(finding.SuggestedFix, "`validation.old_key`") {
+		t.Errorf("deprecated config finding = %#v", finding)
 	}
 }
 

@@ -303,7 +303,7 @@ assigns code origin through the method, and observes the new value.
 **Requirement:**
 
 The core identifier value must retain all evidence needed for graph creation,
-diagnostics, similarity checks, TEST-kind validation, derived Component and
+diagnostics, TEST-kind validation, derived Component and
 Contract nodes, typed relationships, and source-location reporting without
 depending on collector-specific types.
 

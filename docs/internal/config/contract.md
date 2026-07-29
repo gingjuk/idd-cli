@@ -17,11 +17,18 @@ reporting. Its nested values have separate ownership:
   ignored document paths;
 - `CodeConfig` selects source globs, semantic annotation prefixes, and ignored
   source paths;
-- `ValidationConfig` enables individual validation policies and embeds the
-  advisory consistency settings;
-- `ConsistencyCheck` provides an enable flag and numeric threshold; and
+- `ValidationConfig` enables deterministic validation policies and retains the
+  deprecated `consistency_check` decode shape;
+- `ConsistencyCheck` is a compatibility-only value whose fields are ignored;
+  and
 - `OutputConfig` provides default output location, graph inclusion, and
   verbosity.
+
+`Config.DeprecationWarnings()` returns a copy of load-time warnings derived
+from explicitly present obsolete YAML paths. The current warning identifies
+`validation.consistency_check`, its source file, ignored behavior, removal
+action, and the review-context replacement. Programmatic defaults have no
+warnings.
 
 Slices and maps are caller-visible mutable values. The package does not clone
 them after construction or loading. Consumers may read them concurrently only
@@ -55,8 +62,8 @@ func Default() *Config
 Each call returns a non-nil, independently allocated built-in profile. It
 contains the version, documentation and source patterns, three annotation
 roles, default ignore paths, enabled deterministic validation gates, a
-disabled-by-default lexical consistency hint with a `0.3` threshold, and
-non-verbose output without graph inclusion.
+zero-valued deprecated consistency alias, and non-verbose output without graph
+inclusion.
 
 The complete values are an operational compatibility surface and must stay
 synchronized with `examples/idd-config-example.yaml` whenever the function
@@ -79,9 +86,12 @@ missing or additional key returns an error. Each value must be a trimmed,
 non-empty, whitespace-free token beginning with `@`, and values must be unique
 case-insensitively so one source comment cannot map to two semantic roles.
 
-A consistency threshold less than or equal to zero becomes `0.3`; a value
-greater than one becomes `1.0`; values in `(0, 1]` are preserved. An explicit
-zero therefore does not disable checking—the `Enabled` field does.
+`validation.consistency_check` remains decodable so existing configuration
+files do not fail during migration. Both `enabled` and `threshold` are ignored:
+validation does not normalize them and the engine does not consume them.
+Explicit YAML presence is retained as a deprecation warning even when the
+decoded values are zero. Semantic review is requested explicitly through
+`docs review-context`.
 
 The method does not validate identifier regex or glob syntax, version support,
 output paths, ignore patterns, or relationships between boolean flags. It does

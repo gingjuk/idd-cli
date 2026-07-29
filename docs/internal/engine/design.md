@@ -58,9 +58,10 @@ methods in `engine.go` and `annotation_validation.go`. A `Rule` interface in
 production extension point.
 
 The engine does not author or repair documents, render final output, load YAML,
-or decide CLI configuration search order. It also does not judge whether rich
-documentation prose is semantically adequate; it validates structural evidence
-and configured lexical similarity only.
+or decide CLI configuration search order. It does not judge whether rich
+documentation prose is semantically adequate and performs no lexical or
+embedding-based comparison. That judgment belongs to an explicit human or LLM
+review using evidence outside the validation result.
 
 ### Lifecycle, state, and concurrency
 
@@ -187,10 +188,9 @@ matches rather than prefix matches.
 
 ## Dependencies
 
-- `internal/config` supplies rule, scan, consistency, and graph-output policy.
+- `internal/config` supplies rule, scan, and graph-output policy.
 - `internal/model` supplies evidence, findings, stats, and reports.
 - `internal/graph` supplies relationship storage and traversal.
-- `internal/similarity` supplies advisory lexical scoring.
 - `pkg/pattern` supplies identifier recognition and type parsing.
 - standard-library filesystem, regex, context, string, path, and time packages
   support repository scans and report metadata.

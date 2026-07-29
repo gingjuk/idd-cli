@@ -53,10 +53,11 @@ a newer validator.
 - initialization creates minimal identity plus stable scaffold markers and
   honest authoring guidance for a new package, or preserves an existing plain
   narrative while adopting it;
-- status applies the same shared role schema and emits exact file, line, role,
-  slot, and reason work items;
+- status accepts one or more targets, applies the same shared role schema, and
+  emits deduplicated file, line, role, slot, and reason work items;
 - repair normalizes document identity and can create missing skeletons for a
   directory target;
+- initialization and repair preflight all requested targets before writes;
 - neither command invents a component, contract, requirement, purpose,
   coverage relationship, architectural decision, or explanatory paragraph;
 - existing Markdown bodies remain byte-preserved during repair.
@@ -78,8 +79,7 @@ idd-cli follows a graph-first validation architecture with two inputs:
    explicit typed relationships, including the SPEC/TEST coverage backlink
    already derived by document collection.
 4. Concrete validation methods check structural findings, graph integrity,
-   document/code correspondence, package conventions, and optional semantic
-   similarity.
+   document/code correspondence, and package conventions.
 5. `Reporter` converts one validation result into human Markdown, repair-focused
    LLM Markdown, or stable JSON.
 
@@ -218,8 +218,7 @@ idd-cli/
 │   ├── engine/         # graph construction and concrete validation rules
 │   ├── graph/          # directed traceability data structure
 │   ├── model/          # cross-stage identifiers, findings, and report values
-│   ├── reporter/       # JSON and Markdown projections of one result
-│   └── similarity/     # optional narrative/code similarity scoring
+│   └── reporter/       # validation reports and review-context projections
 └── pkg/
     ├── pattern/        # identifier and annotation syntax
     └── walk/           # reusable filesystem traversal
@@ -234,10 +233,11 @@ domain rules.
 1. **Skill commands:** `ListEmbeddedSkills` and `ReadEmbeddedSkill` expose the
    binary-owned authoring instructions; `generateSkill` copies them without
    transformation.
-2. **Document commands:** `InitDocuments` creates a new structural set;
-   `InspectDocumentCompletion` exposes remaining scaffold work;
-   `RepairDocuments` normalizes derived identity while preserving bodies and
-   markers.
+2. **Document commands:** `InitDocumentPackages` creates one or more structural
+   sets; `InspectDocumentCompletions` exposes deduplicated remaining scaffold
+   work; `RepairDocumentTargets` normalizes derived identity while preserving
+   bodies and markers; `BuildSpecReviewContexts` gathers ordered evidence-only
+   semantic review bundles through one shared scan.
 3. **Collection:** `DocCollector.Collect` selects self-describing or legacy
    mode per package; `CodeCollector.CollectWithErrors` independently produces
    source evidence and normalized language analyses.
@@ -276,8 +276,7 @@ does not author documents, and document repair does not infer requirements.
 - `internal/engine` - For orchestration
 - `internal/graph` - For graph structure
 - `internal/model` - For data types
-- `internal/reporter` - For output
-- `internal/similarity` - For consistency checking
+- `internal/reporter` - For validation and review-context output
 - `pkg/pattern` - For IDD patterns
 - `pkg/walk` - For file traversal
 - `gopkg.in/yaml.v3` - For config and document identity parsing

@@ -346,6 +346,66 @@ Empty segments are ignored. Splitting does not validate cross-reference
 existence or change identifier case; syntax validation and graph correspondence
 remain with their owning stages.
 
+## SPEC-INTERNAL_COLLECTOR-026: Focused SPEC review evidence
+
+- **Design:** `CollectorModule`
+- **Contract:** `SpecReviewContext`
+
+**Requirement:** Assemble bounded canonical documentation, test, contract, and
+source declaration evidence for one or a bounded batch of requested SPECs
+without judging semantic quality.
+
+**Acceptance:**
+
+Each context uses schema `idd.spec_review_context.v1`, resolves one canonical
+SPEC owner, and includes the complete bounded SPEC, Contract, and covering TEST
+record Markdown plus matching non-ignored implementation and test declarations,
+preserves subordinate authored `Details`, and sorts evidence deterministically.
+Record Markdown ends at the next peer H2 heading, so package-wide strategy or
+guidance sections are not attributed to the preceding record. Qualified
+`<package>#<name>` Contract references and TEST records in another collected
+package remain eligible evidence.
+Test declarations are selected through the covering TEST IDs, including both
+`@test` and `@test-contract`. Records and declaration excerpts expose truncation.
+Malformed, absent, and duplicate SPEC owners return operational errors.
+
+Batch collection accepts at most ten unique IDs, deduplicates repeated inputs
+in first-request order, performs one documentation scan and one source scan,
+and returns schema `idd.spec_review_context_batch.v1`. Any invalid member fails
+the whole request so a reviewer cannot mistake partial evidence for a complete
+batch.
+
+## SPEC-INTERNAL_COLLECTOR-027: Batch document operations
+
+- **Design:** `CollectorModule`
+- **Contract:** `IDDDocumentSet`
+
+**Requirement:** Inspect, initialize, or structurally repair one or more
+document targets with deterministic deduplication and whole-batch preflight.
+
+**Acceptance:**
+
+Completion inspection accepts one or more role files, package directories, or
+documentation trees. It cleans repeated inputs in first-request order,
+aggregates the same role-schema work items used by single-target inspection,
+deduplicates findings produced by overlapping targets, and sorts the resulting
+work list deterministically. Relative and absolute spellings of the same
+filesystem target share one identity. Schema `idd.document_status.v1` includes
+the normalized first-occurrence `targets` that were inspected.
+
+Initialization accepts one or more project-relative source packages. Repair
+accepts one or more canonical role files or package directories. Both mutators
+prepare every selected document result before the first write, merge repeated
+or overlapping file plans, and reject conflicting plans. An invalid package,
+legacy or central-catalog input, malformed document, or unsupported path
+aborts the batch without changing a valid sibling target.
+
+New files still use exclusive creation and existing files still use atomic
+replacement. Whole-batch preflight does not claim a cross-filesystem
+transaction: an unexpected I/O failure while applying an already validated
+plan may leave earlier individually atomic writes in place. Batch operations
+do not author semantic records.
+
 ## Legacy compatibility
 
 The legacy path remains isolated in `frontmatter.go`:
