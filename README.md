@@ -109,9 +109,11 @@ Duplicates and overlaps are deduplicated. The mutating commands preflight the
 whole batch before expected writes, so an invalid later target does not leave
 an earlier valid target initialized or repaired.
 
-Always use `idd-cli run .` for the validity gate. A documentation subdirectory
-argument narrows documentation collection, but source annotations still come
-from the current project working tree.
+The optional `run`/`lint` path is a project root, not a documentation filter.
+Configuration discovery, documents, source annotations, and project-relative
+validation all use that root. `idd-cli run .` remains the normal in-project
+gate; `idd-cli run /path/to/project` safely validates another worktree without
+mixing it with the caller's current directory or changing process cwd.
 
 `docs review-context` is not another gate. It accepts up to ten unique SPEC IDs,
 deduplicates repeats, and scans documentation and source once. Each returned

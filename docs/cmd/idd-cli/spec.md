@@ -25,11 +25,12 @@ structured report output remains parseable on stdout.
 A validation failure produces a report and a non-zero process status. A command
 or I/O failure returns an error without manufacturing validation findings.
 
-Documentation and source scope are intentionally asymmetric: the positional
-path selects documentation, while code collection starts at the project
-working directory. The authoritative gate therefore uses `.` from the project
-root. Validation must not mutate documents, source, configuration, or embedded
-Skill content.
+The positional path denotes one project root. Configuration discovery,
+documentation collection, source collection, and engine filesystem checks must
+all execute against that root, even when the command is launched from another
+worktree. The command must resolve those paths through an invocation-local
+workdir without changing process cwd. Validation must not mutate documents,
+source, configuration, or embedded Skill content.
 
 The command proves configured structural and traceability properties. It does
 not infer missing requirements or treat a green result as proof that the
@@ -70,9 +71,10 @@ IDD configuration with safe defaults.
 
 The command uses this search order:
 
-1. the explicit `--config` path;
-2. `./.idd.yaml`;
-3. `./config/.idd.yaml`;
+1. the explicit `--config` path, resolved from the selected project root when
+   relative;
+2. `<project-root>/.idd.yaml`;
+3. `<project-root>/config/.idd.yaml`;
 4. in-memory defaults when no explicit path was required.
 
 `--no-config` bypasses file loading. CLI output, format, and verbosity flags
@@ -295,10 +297,9 @@ agent first uses `docs status`, then `run . --format llm-markdown` as its
 repair loop. When semantic review is needed it requests one or more IDs through
 `docs review-context <SPEC-ID>...` and reviews each context without treating
 the batch as another check. Repository tests and `run . --format json` form the
-final project gate. Package-targeted
-documentation validation is not presented as a package-only code check.
-`run` and `lint` therefore retain a single documentation root; callers select
-a common ancestor rather than passing an arbitrary list of package paths.
+final project gate. `run` and `lint` retain one complete project root rather
+than an arbitrary list of package paths; package-focused document work uses
+the dedicated `docs` commands.
 
 ## SPEC-CMD_IDD_CLI-010: Engine contract evidence
 

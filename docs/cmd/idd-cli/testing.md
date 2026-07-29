@@ -62,7 +62,13 @@ review-context, embedding, and command collaborators.
 Integration evidence covers configuration discovery/defaults, embedded Skill
 listing and byte-exact export, collector/engine handoff, all report formats,
 stdout/stderr isolation, document initialization/status/repair safety, and the
-project-root validity gate. Fresh scaffold fixtures prove that `docs init`
+project-root validity gate. A two-root regression fixture launches validation
+from one temporary project through a relative path while targeting another. A
+relative explicit config must select the target's configuration, while a
+relative report path remains in the caller. The resulting report requires
+document identifiers, source annotations, and findings to come only from the
+target, keeps target locations project-relative, and verifies that process cwd
+is unchanged. Fresh scaffold fixtures prove that `docs init`
 creates only canonical role filenames with version/package frontmatter and
 returns the initial work list. `docs status` becomes complete only after
 authored content replaces every marker and every required record field is
@@ -79,10 +85,12 @@ operations that must abort before partial writes.
 
 ### Fixtures and oracle
 
-**Oracle:** Tests combine temporary files, concrete packages, and serialized report
-inspection. The final oracle is the built CLI validating this repository with
-zero errors and warnings while an independently exported Skill matches the
-embedded file.
+**Oracle:** Tests combine temporary files, concrete packages, and serialized
+report inspection. Cross-root validation fails only for the target fixture's
+intentional orphan and contains neither the caller's identifier nor a false
+doc/code-correspondence finding. The final oracle is the built CLI validating
+this repository with zero errors and warnings while an independently exported
+Skill matches the embedded file.
 
 ### Exclusions
 

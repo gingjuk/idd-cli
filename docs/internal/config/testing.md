@@ -61,6 +61,23 @@ unchanged and one source-aware removal warning. A fixture without the key has
 no warning, while zero or null alias mappings still warn. Missing paths and
 malformed YAML return non-nil stage-qualified errors and no configuration.
 
+## TEST-INTERNAL_CONFIG-004: Runtime workdir path contract
+
+- **Kind:** `contract`
+- **Covers:** `SPEC-INTERNAL_CONFIG-010`
+- **Contracts:** `RuntimeWorkdir`, `cmd/idd-cli#Config`
+
+**Purpose:**
+
+Prove one explicit runtime root resolves project-relative paths without
+changing process cwd and preserves stable display paths.
+
+**Oracle:** Table-driven cases accept an absolute root, resolve relative paths
+inside it, relativize absolute paths inside it, preserve outside absolute
+paths, retain legacy caller-relative behavior when unset, and reject a relative
+workdir. A loaded deprecation warning is converted from its absolute config
+source to `.idd.yaml` after the containing directory becomes the workdir.
+
 ## Strategy
 
 Tests invoke public behavior without mocks. Temporary directories isolate file

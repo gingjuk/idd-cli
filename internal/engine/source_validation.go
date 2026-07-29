@@ -23,7 +23,7 @@ func (e *Engine) ensureSourceAnalyses() []*collector.SourceAnalysis {
 			return
 		}
 		seen[path] = true
-		content, err := os.ReadFile(path)
+		content, err := os.ReadFile(e.cfg.ResolvePath(path))
 		if err != nil {
 			e.result.AddError("source-parse", err.Error(), path, "", "")
 			return

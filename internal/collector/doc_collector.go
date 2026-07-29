@@ -39,7 +39,8 @@ func (c *DocCollector) Collect(ctx context.Context, targetPath string) (*model.I
 	set := model.NewIdentifierSet()
 	var errors []*model.ValidationError
 
-	info, err := os.Stat(targetPath)
+	resolvedTarget := c.cfg.ResolvePath(targetPath)
+	info, err := os.Stat(resolvedTarget)
 	if err != nil {
 		return set, errors, nil
 	}
@@ -69,20 +70,21 @@ func (c *DocCollector) Collect(ctx context.Context, targetPath string) (*model.I
 	}
 
 	if info.IsDir() {
-		err := filepath.Walk(targetPath, func(path string, info os.FileInfo, err error) error {
+		err := filepath.Walk(resolvedTarget, func(path string, info os.FileInfo, err error) error {
 			if err != nil {
 				return nil
 			}
 			if info.IsDir() {
 				return nil
 			}
-			if c.shouldIgnore(path) {
+			displayPath := c.cfg.DisplayPath(path)
+			if c.shouldIgnore(displayPath) {
 				return nil
 			}
-			if filepath.Base(path) == "idd.yaml" {
-				addCentralCatalog(path)
-			} else if filepath.Ext(path) == ".md" {
-				addMarkdown(path)
+			if filepath.Base(displayPath) == "idd.yaml" {
+				addCentralCatalog(displayPath)
+			} else if filepath.Ext(displayPath) == ".md" {
+				addMarkdown(displayPath)
 			}
 			return nil
 		})
@@ -90,19 +92,19 @@ func (c *DocCollector) Collect(ctx context.Context, targetPath string) (*model.I
 			return set, errors, err
 		}
 	} else {
-		targetPath = filepath.Clean(targetPath)
+		targetPath = c.cfg.DisplayPath(resolvedTarget)
 		if filepath.Base(targetPath) == "idd.yaml" {
 			addCentralCatalog(targetPath)
 		} else if filepath.Ext(targetPath) == ".md" {
 			addMarkdown(targetPath)
 			if _, fixedDocument := iddDocumentRoles[filepath.Base(targetPath)]; fixedDocument {
 				centralCatalogPath := filepath.Join(filepath.Dir(targetPath), "idd.yaml")
-				if centralInfo, statErr := os.Stat(centralCatalogPath); statErr == nil && !centralInfo.IsDir() {
+				if centralInfo, statErr := c.stat(centralCatalogPath); statErr == nil && !centralInfo.IsDir() {
 					addCentralCatalog(centralCatalogPath)
 				}
 				for _, filename := range iddDocumentOrder {
 					siblingPath := filepath.Join(filepath.Dir(targetPath), filename)
-					if siblingInfo, statErr := os.Stat(siblingPath); statErr == nil && !siblingInfo.IsDir() {
+					if siblingInfo, statErr := c.stat(siblingPath); statErr == nil && !siblingInfo.IsDir() {
 						addMarkdown(siblingPath)
 					}
 				}
@@ -145,7 +147,7 @@ func (c *DocCollector) Collect(ctx context.Context, targetPath string) (*model.I
 			invalidIDDPaths[path] = true
 			continue
 		}
-		data, readErr := os.ReadFile(path)
+		data, readErr := c.readFile(path)
 		if readErr == nil && hasIDDDocumentFrontmatter(data) {
 			errors = append(errors, iddDocumentValidationError(
 				"idd-document-filename",
@@ -164,7 +166,7 @@ func (c *DocCollector) Collect(ctx context.Context, targetPath string) (*model.I
 		if _, fixedDocument := iddDocumentRoles[filepath.Base(path)]; !fixedDocument {
 			continue
 		}
-		data, readErr := os.ReadFile(path)
+		data, readErr := c.readFile(path)
 		if readErr == nil && hasIDDDocumentFrontmatter(data) {
 			iddDirectories[filepath.Clean(filepath.Dir(path))] = true
 		}
@@ -205,7 +207,7 @@ func hasLeadingFrontmatter(content string) bool {
 func (c *DocCollector) collectFile(path string, set *model.IdentifierSet) []*model.ValidationError {
 	var errors []*model.ValidationError
 
-	content, err := os.ReadFile(path)
+	content, err := c.readFile(path)
 	if err != nil {
 		return errors
 	}
@@ -546,6 +548,14 @@ func extractImplementsField(section string) []string {
 		}
 	}
 	return specs
+}
+
+func (c *DocCollector) readFile(path string) ([]byte, error) {
+	return os.ReadFile(c.cfg.ResolvePath(path))
+}
+
+func (c *DocCollector) stat(path string) (os.FileInfo, error) {
+	return os.Stat(c.cfg.ResolvePath(path))
 }
 
 // shouldIgnore checks if a path should be ignored based on configured ignore patterns.

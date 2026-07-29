@@ -5,7 +5,6 @@ import (
 	"bytes"
 	"fmt"
 	"io"
-	"os"
 	"path/filepath"
 	"sort"
 	"strings"
@@ -901,7 +900,7 @@ func validateIDDDocumentMarkdown(document *parsedIDDDocument, declared map[strin
 }
 
 func (c *DocCollector) collectIDDPackageNarrative(path string, set *model.IdentifierSet) []*model.ValidationError {
-	content, err := os.ReadFile(path)
+	content, err := c.readFile(path)
 	if err != nil {
 		return nil
 	}

@@ -41,7 +41,8 @@ func (e *Engine) walkGlob(pattern string, visitor func(path string, lines []stri
 	if file == "" {
 		return
 	}
-	_ = filepath.WalkDir(dir, func(path string, d os.DirEntry, err error) error {
+	resolvedDir := e.cfg.ResolvePath(dir)
+	_ = filepath.WalkDir(resolvedDir, func(path string, d os.DirEntry, err error) error {
 		if err != nil {
 			return nil
 		}
@@ -52,16 +53,16 @@ func (e *Engine) walkGlob(pattern string, visitor func(path string, lines []stri
 		if err != nil || !matched {
 			return nil
 		}
-		fullPath := filepath.Join(dir, d.Name())
-		if e.shouldIgnorePath(fullPath) {
+		displayPath := e.cfg.DisplayPath(path)
+		if e.shouldIgnorePath(displayPath) {
 			return nil
 		}
-		content, err := os.ReadFile(fullPath)
+		content, err := os.ReadFile(path)
 		if err != nil {
 			return nil
 		}
 		lines := strings.Split(string(content), "\n")
-		visitor(fullPath, lines)
+		visitor(displayPath, lines)
 		return nil
 	})
 }
@@ -82,7 +83,8 @@ func (e *Engine) walkGlobRecursive(pattern string, visitor func(path string, lin
 	}
 	file = strings.TrimPrefix(file, "**/")
 
-	_ = filepath.WalkDir(dir, func(path string, d os.DirEntry, err error) error {
+	resolvedDir := e.cfg.ResolvePath(dir)
+	_ = filepath.WalkDir(resolvedDir, func(path string, d os.DirEntry, err error) error {
 		if err != nil {
 			return nil
 		}
@@ -93,16 +95,16 @@ func (e *Engine) walkGlobRecursive(pattern string, visitor func(path string, lin
 		if err != nil || !matched {
 			return nil
 		}
-		fullPath := path
-		if e.shouldIgnorePath(fullPath) {
+		displayPath := e.cfg.DisplayPath(path)
+		if e.shouldIgnorePath(displayPath) {
 			return nil
 		}
-		content, err := os.ReadFile(fullPath)
+		content, err := os.ReadFile(path)
 		if err != nil {
 			return nil
 		}
 		lines := strings.Split(string(content), "\n")
-		visitor(fullPath, lines)
+		visitor(displayPath, lines)
 		return nil
 	})
 }

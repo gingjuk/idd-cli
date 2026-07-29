@@ -2,6 +2,10 @@
 package main
 
 import (
+	"errors"
+	"fmt"
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 
@@ -20,6 +24,153 @@ func TestCommandSurfaceBehavior(t *testing.T) {
 		if commandNamed(docs, name) == nil {
 			t.Errorf("docs command missing %q", name)
 		}
+	}
+}
+
+// @test TEST-CMD_IDD_CLI-002
+func TestRunUsesOneProjectRoot(t *testing.T) {
+	invocationRoot, err := os.Getwd()
+	if err != nil {
+		t.Fatalf("Getwd() error = %v", err)
+	}
+
+	workspace := t.TempDir()
+	targetRoot := filepath.Join(workspace, "target")
+	if err := os.MkdirAll(targetRoot, 0o755); err != nil {
+		t.Fatalf("MkdirAll(%s) error = %v", targetRoot, err)
+	}
+	writeRunProjectFixture(t, targetRoot, "TARGET", false)
+	targetArgument, err := filepath.Rel(invocationRoot, targetRoot)
+	if err != nil {
+		t.Fatalf("Rel(%s, %s) error = %v", invocationRoot, targetRoot, err)
+	}
+	reportPath := filepath.Join(t.TempDir(), "report.json")
+	reportArgument, err := filepath.Rel(invocationRoot, reportPath)
+	if err != nil {
+		t.Fatalf("Rel(%s, %s) error = %v", invocationRoot, reportPath, err)
+	}
+
+	savedConfigPath, savedOutputPath := cfgPath, outPath
+	savedFormat, savedVerbose, savedNoConfig := format, verbose, noConfig
+	t.Cleanup(func() {
+		cfgPath, outPath = savedConfigPath, savedOutputPath
+		format, verbose, noConfig = savedFormat, savedVerbose, savedNoConfig
+	})
+	cfgPath = ".idd.yaml"
+	outPath = reportArgument
+	format = "json"
+	verbose = false
+	noConfig = false
+
+	err = run(nil, []string{targetArgument})
+	if !errors.Is(err, errValidationFailed) {
+		t.Fatalf("run(%s) error = %v, want validation failure", targetRoot, err)
+	}
+	currentDirectory, err := os.Getwd()
+	if err != nil {
+		t.Fatalf("Getwd() after run error = %v", err)
+	}
+	if currentDirectory != invocationRoot {
+		t.Errorf("working directory after run = %q, want unchanged %q", currentDirectory, invocationRoot)
+	}
+
+	report, err := os.ReadFile(reportPath)
+	if err != nil {
+		t.Fatalf("ReadFile(%s) error = %v", reportPath, err)
+	}
+	text := string(report)
+	if !strings.Contains(text, "SPEC-TARGET-001") ||
+		!strings.Contains(text, "orphan-detection") {
+		t.Errorf("target project evidence missing from report:\n%s", text)
+	}
+	if strings.Contains(text, "SPEC-CMD_IDD_CLI-001") ||
+		strings.Contains(text, targetRoot) ||
+		strings.Contains(text, "doc-code-correspondence") {
+		t.Errorf("caller or absolute target path leaked into target report:\n%s", text)
+	}
+	if _, err := os.Stat(filepath.Join(targetRoot, filepath.Base(reportPath))); !os.IsNotExist(err) {
+		t.Errorf("relative output leaked into target root: %v", err)
+	}
+}
+
+// @test TEST-CMD_IDD_CLI-001
+func TestResolveRunProjectRoot(t *testing.T) {
+	directory := t.TempDir()
+	file := filepath.Join(directory, "spec.md")
+	if err := os.WriteFile(file, []byte("# test\n"), 0o644); err != nil {
+		t.Fatalf("WriteFile() error = %v", err)
+	}
+
+	tests := []struct {
+		name    string
+		args    []string
+		want    string
+		wantErr bool
+	}{
+		{name: "default current directory", want: mustAbsolutePath(t, ".")},
+		{name: "explicit directory", args: []string{directory}, want: directory},
+		{name: "file is rejected", args: []string{file}, wantErr: true},
+		{name: "missing directory is rejected", args: []string{filepath.Join(directory, "missing")}, wantErr: true},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			got, err := resolveRunProjectRoot(test.args)
+			if (err != nil) != test.wantErr {
+				t.Fatalf("resolveRunProjectRoot() error = %v, wantErr %t", err, test.wantErr)
+			}
+			if !test.wantErr && got != filepath.Clean(test.want) {
+				t.Errorf("resolveRunProjectRoot() = %q, want %q", got, test.want)
+			}
+		})
+	}
+}
+
+// @test TEST-CMD_IDD_CLI-001
+func TestResolveInvocationOutputPath(t *testing.T) {
+	absolute := filepath.Join(t.TempDir(), "report.json")
+	tests := []struct {
+		name string
+		path string
+		want string
+	}{
+		{name: "stdout default"},
+		{name: "explicit stdout", path: "-", want: "-"},
+		{name: "absolute path", path: absolute, want: absolute},
+		{name: "relative path", path: "report.json", want: mustAbsolutePath(t, "report.json")},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			got, err := resolveInvocationOutputPath(test.path)
+			if err != nil {
+				t.Fatalf("resolveInvocationOutputPath() error = %v", err)
+			}
+			if got != test.want {
+				t.Errorf("resolveInvocationOutputPath() = %q, want %q", got, test.want)
+			}
+		})
+	}
+}
+
+// @test TEST-CMD_IDD_CLI-001
+func TestResolveProjectPath(t *testing.T) {
+	root := t.TempDir()
+	absolute := filepath.Join(t.TempDir(), ".idd.yaml")
+	tests := []struct {
+		name string
+		root string
+		path string
+		want string
+	}{
+		{name: "relative config uses project root", root: root, path: ".idd.yaml", want: filepath.Join(root, ".idd.yaml")},
+		{name: "absolute config remains absolute", root: root, path: absolute, want: absolute},
+		{name: "empty root preserves caller path", path: ".idd.yaml", want: ".idd.yaml"},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			if got := resolveProjectPath(test.root, test.path); got != test.want {
+				t.Errorf("resolveProjectPath(%q, %q) = %q, want %q", test.root, test.path, got, test.want)
+			}
+		})
 	}
 }
 
@@ -93,4 +244,60 @@ func commandNamed(parent *cobra.Command, name string) *cobra.Command {
 		}
 	}
 	return nil
+}
+
+func writeRunProjectFixture(t *testing.T, root, module string, allowOrphans bool) {
+	t.Helper()
+	docsRoot := filepath.Join(root, "docs")
+	if err := os.MkdirAll(docsRoot, 0o755); err != nil {
+		t.Fatalf("MkdirAll(%s) error = %v", docsRoot, err)
+	}
+	specID := "SPEC-" + module + "-001"
+	document := fmt.Sprintf(`---
+markers:
+  - id: %s
+    name: %s behavior
+    describe: %s project evidence
+---
+
+## %s: %s behavior
+`, specID, module, module, specID, module)
+	if err := os.WriteFile(filepath.Join(docsRoot, "spec.md"), []byte(document), 0o644); err != nil {
+		t.Fatalf("write project document: %v", err)
+	}
+	source := fmt.Sprintf(`package fixture
+
+// @implement %s
+func Run() {}
+`, specID)
+	if err := os.WriteFile(filepath.Join(root, "fixture.go"), []byte(source), 0o644); err != nil {
+		t.Fatalf("write project source: %v", err)
+	}
+	configuration := fmt.Sprintf(`version: "1.0"
+docs:
+  patterns:
+    - "docs/**/*.md"
+code:
+  patterns:
+    - "**/*.go"
+  annotations:
+    spec: "@implement"
+    test: "@test"
+    test_contract: "@test-contract"
+validation:
+  allow_orphans: %t
+  require_doc_code_correspondence: %t
+`, allowOrphans, !allowOrphans)
+	if err := os.WriteFile(filepath.Join(root, ".idd.yaml"), []byte(configuration), 0o644); err != nil {
+		t.Fatalf("write project configuration: %v", err)
+	}
+}
+
+func mustAbsolutePath(t *testing.T, path string) string {
+	t.Helper()
+	absolute, err := filepath.Abs(path)
+	if err != nil {
+		t.Fatalf("Abs(%s) error = %v", path, err)
+	}
+	return absolute
 }

@@ -23,7 +23,7 @@ func (c *DocCollector) collectIDDDocumentSet(directory string, set *model.Identi
 	for _, filename := range iddDocumentOrder {
 		role := iddDocumentRoles[filename]
 		path := filepath.Join(directory, filename)
-		data, err := os.ReadFile(path)
+		data, err := c.readFile(path)
 		if err != nil {
 			if os.IsNotExist(err) {
 				errors = append(errors, iddDocumentValidationError(
