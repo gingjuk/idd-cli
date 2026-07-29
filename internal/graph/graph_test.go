@@ -1,7 +1,4 @@
 // Package graph provides testing utilities for the graph module.
-
-// Spec: docs/internal/graph/spec.md
-// Test: docs/internal/graph/testing.md
 package graph
 
 import (
@@ -22,7 +19,7 @@ func TestNewLinkageGraph(t *testing.T) {
 	}
 }
 
-// @test TEST-INTERNAL_GRAPH-001
+// @test-contract TEST-INTERNAL_GRAPH-001
 func TestLinkageGraph_AddNode(t *testing.T) {
 	g := NewLinkageGraph()
 
@@ -46,7 +43,7 @@ func TestLinkageGraph_AddNode(t *testing.T) {
 	}
 }
 
-// @test TEST-INTERNAL_GRAPH-002
+// @test-contract TEST-INTERNAL_GRAPH-002
 func TestLinkageGraph_AddEdge(t *testing.T) {
 	g := NewLinkageGraph()
 	g.AddNode("SPEC-001", model.TypeSpec)
@@ -67,7 +64,7 @@ func TestLinkageGraph_AddEdge(t *testing.T) {
 	}
 }
 
-// @test TEST-INTERNAL_GRAPH-003
+// @test-contract TEST-INTERNAL_GRAPH-003
 func TestLinkageGraph_GetNode(t *testing.T) {
 	g := NewLinkageGraph()
 	g.AddNode("SPEC-001", model.TypeSpec)

@@ -20,25 +20,29 @@ import (
 )
 
 var (
-	cfgPath  string
-	outPath  string
-	format   string
-	verbose  bool
-	noConfig bool
-	version  = "1.0.0"
+	cfgPath        string
+	outPath        string
+	format         string
+	verbose        bool
+	noConfig       bool
+	reviewDocsPath string
+	version        = "1.0.0"
 )
 
 var rootCmd = &cobra.Command{
 	Use:   "idd-cli",
-	Short: "idd-cli - validates IDD documentation consistency",
-	Long: `idd-cli scans documentation and source code to build a linkage graph,
-then validates link consistency (SPEC: **Tests:** ↔ TEST: **Spec Coverage:**).
+	Short: "IDD workflow guardrail for skills, documents, and code traceability",
+	Long: `idd-cli embeds the IDD authoring skill and enforces the document model
+that skill describes. The skill authors semantic content; idd-cli exports the
+paired workflow, maintains safe document structure, and validates the complete
+documentation/code graph.
 
 Example usage:
-  idd-cli run ./docs
-  idd-cli run ./docs --config .idd.yaml
-  idd-cli run ./docs --format json
-  idd-cli lint ./docs --format json -o report.json`,
+  idd-cli generate skill -o idd-skill.md
+  idd-cli docs init internal/auth
+  idd-cli docs review-context SPEC-INTERNAL_AUTH-001
+  idd-cli run . --format llm-markdown
+  idd-cli run . --format json`,
 	Version:      version,
 	SilenceUsage: true,
 }
@@ -46,11 +50,18 @@ Example usage:
 var runCmd = &cobra.Command{
 	Use:   "run [path]",
 	Short: "Run IDD linkage validation",
-	Long: `Run IDD linkage validation on the specified path.
+	Long: `Run IDD linkage validation and emit the complete finding report.
+
+Documentation is collected from [path], while source annotations are collected
+from the current project working tree. Run from project root with "." for the
+authoritative project gate. An invalid graph writes its report, then exits
+non-zero. Passing proves enabled structural and traceability rules; the paired
+IDD skill and human review still judge whether the authored explanation is
+complete and correct.
 
 Example:
-  idd-cli run ./docs
-  idd-cli run ./docs --config .idd.yaml`,
+  idd-cli run . --format llm-markdown
+  idd-cli run . --config .idd.yaml --format json`,
 	Args: cobra.MaximumNArgs(1),
 	RunE: run,
 }
@@ -58,11 +69,12 @@ Example:
 var lintCmd = &cobra.Command{
 	Use:   "lint [path]",
 	Short: "Lint IDD linkage (alias for 'run')",
-	Long: `Lint IDD linkage validation. This is an alias for 'run'.
+	Long: `Lint IDD linkage validation. This is an alias for 'run' and uses the
+same project-root validation scope.
 
 Example:
-  idd-cli lint ./docs
-  idd-cli lint ./docs --format json -o report.json`,
+  idd-cli lint . --format llm-markdown
+  idd-cli lint . --format json -o report.json`,
 	Args: cobra.MaximumNArgs(1),
 	RunE: run,
 }
@@ -70,7 +82,8 @@ Example:
 var skillsCmd = &cobra.Command{
 	Use:   "skills",
 	Short: "List IDD skills defined in this project",
-	Long: `List IDD skills from the skills/ directory.
+	Long: `List IDD skills from the local skills/ directory, falling back to the
+workflow embedded in this binary when no local Markdown skill is present.
 
 Parses frontmatter from skill markdown files and outputs skill definitions.
 
@@ -82,18 +95,120 @@ Example:
 
 var generateCmd = &cobra.Command{
 	Use:   "generate [skill|skill --output file]",
-	Short: "Generate IDD skill file",
-	Long: `Generate the IDD skill file to the specified output path.
+	Short: "Export the IDD skill paired with this binary",
+	Long: `Export the IDD workflow embedded in this binary.
 
-The skill file defines the IDD (Intent-Driven Development) workflow.
+Install the result through the agent's skill mechanism. Regenerate it after
+upgrading idd-cli so authoring instructions and validator behavior stay
+aligned.
 
 Example:
   idd-cli generate skill --output idd-skill.md
-  idd-cli generate skill -o ~/.claude/skills/SKILL.md`,
+
+Then install idd-skill.md as SKILL.md through the agent's normal skill
+mechanism.`,
 	RunE: generateSkill,
 }
 
-// @implement SPEC-CMD_IDD_CLI-009, SPEC-CMD_IDD_CLI-010
+var docsCmd = &cobra.Command{
+	Use:   "docs",
+	Short: "Create and repair self-describing IDD package documents",
+	Long: `Create and repair package-local self-describing IDD documents.
+
+Each fixed Markdown file has minimal identity frontmatter and owns its
+human-readable role-specific Markdown records. A SPEC update changes spec.md;
+a TEST update or coverage change changes testing.md. The paired IDD skill
+authors complete semantic content; these commands maintain safe structure only.
+They do not shorten, summarize, or judge the adequacy of human-authored prose.`,
+}
+
+var docsInitCmd = &cobra.Command{
+	Use:   "init <package>...",
+	Short: "Create four self-describing IDD document skeletons",
+	Long: `Create design.md, contract.md, spec.md, and testing.md under
+docs/<package>/. Each file contains minimal identity frontmatter and
+human-readable Markdown guidance for its role. Existing plain narrative bodies
+are preserved. Existing IDD or legacy marker metadata is never overwritten.
+All requested packages pass preflight before the first expected write. Use
+this once for new packages, then let the paired IDD skill author complete
+records with behavior, rationale, boundaries, failures, and evidence. The
+generated guidance is a scaffold, not finished documentation.
+
+Example:
+  idd-cli docs init internal/auth
+  idd-cli docs init internal/auth internal/config`,
+	Args: cobra.MinimumNArgs(1),
+	RunE: initPackageDocs,
+}
+
+var docsFixCmd = &cobra.Command{
+	Use:   "fix <docs-package-or-document>...",
+	Short: "Normalize safe document metadata without inventing semantics",
+	Long: `Normalize version and package identity in self-describing IDD
+frontmatter. The exact filename remains the sole document-role authority. A
+directory target repairs the four-file set and creates missing skeletons. A
+Markdown file target writes only that file. Markdown bodies are preserved
+byte-for-byte. All targets are planned before writes, and overlaps are
+deduplicated. Semantic records are neither rewritten nor invented. Use the
+paired IDD skill to resolve semantic findings reported by run.
+
+Example:
+  idd-cli docs fix docs/internal/auth
+  idd-cli docs fix docs/internal/auth/testing.md
+  idd-cli docs fix docs/internal/auth docs/internal/config`,
+	Args: cobra.MinimumNArgs(1),
+	RunE: repairPackageDocs,
+}
+
+var docsStatusCmd = &cobra.Command{
+	Use:   "status <docs-package-or-document>...",
+	Short: "List IDD document slots that still require authored content",
+	Long: `Inspect one or more self-describing IDD documents, package document
+directories, or docs trees. The command uses the same role schema and
+completion rules as docs init and run. Generated scaffold markers are
+incomplete, and removing a marker does not pass unless the bounded section or
+record contains effective authored content. Once a record exists, every missing
+or placeholder required record field remains an incomplete slot.
+
+JSON output contains normalized targets and a deterministic incomplete_slots
+work list with file, line, role, slot, and reason. Repeated or overlapping
+targets do not duplicate work items.
+
+Example:
+  idd-cli docs status docs/internal/auth --format json
+  idd-cli docs status docs/internal/auth docs/internal/config --format json`,
+	Args: cobra.MinimumNArgs(1),
+	RunE: statusPackageDocs,
+}
+
+var docsReviewContextCmd = &cobra.Command{
+	Use:   "review-context <SPEC-ID>...",
+	Short: "Assemble focused evidence for reviewing one or more SPECs",
+	Long: `Assemble bounded, read-only evidence bundles for one or more
+canonical SPECs with one documentation scan and one source scan.
+
+The --docs-path flag selects the documentation search root and defaults to
+".". Source declarations are collected from the current project working tree,
+matching the scope used by run. Repeated SPEC IDs are deduplicated in
+first-request order, and one batch accepts at most ten unique IDs.
+
+One SPEC retains JSON schema idd.spec_review_context.v1. Multiple SPECs use
+idd.spec_review_context_batch.v1 with an ordered context per SPEC. Markdown
+formats preserve the same independent Requirement, Acceptance, Contract,
+covering TEST, implementation, and test evidence with neutral review questions.
+
+This command does not invoke an LLM, score prose, approve documentation, or
+participate in validation.
+
+Example:
+  idd-cli docs review-context SPEC-INTERNAL_AUTH-001
+  idd-cli docs review-context SPEC-INTERNAL_AUTH-001 SPEC-INTERNAL_AUTH-002
+  idd-cli docs review-context SPEC-INTERNAL_AUTH-001 --docs-path docs/internal/auth --format llm-markdown`,
+	Args: cobra.MinimumNArgs(1),
+	RunE: reviewSpecContext,
+}
+
+// @implement SPEC-CMD_IDD_CLI-009
 type SkillInfo struct {
 	Name          string `json:"name"`
 	Description   string `json:"description"`
@@ -109,7 +224,7 @@ type SkillInfo struct {
 func init() {
 	rootCmd.PersistentFlags().StringVar(&cfgPath, "config", "", "Path to .idd.yaml config file (default: ./.idd.yaml)")
 	rootCmd.PersistentFlags().StringVarP(&outPath, "output", "o", "", "Output file path (default: stdout)")
-	rootCmd.PersistentFlags().StringVar(&format, "format", "json", "Output format (json, markdown)")
+	rootCmd.PersistentFlags().StringVar(&format, "format", "json", "Output format (json, markdown, llm-markdown)")
 	rootCmd.PersistentFlags().BoolVarP(&verbose, "verbose", "v", false, "Verbose output")
 	rootCmd.PersistentFlags().BoolVar(&noConfig, "no-config", false, "Disable config file loading")
 
@@ -117,6 +232,17 @@ func init() {
 	rootCmd.AddCommand(lintCmd)
 	rootCmd.AddCommand(skillsCmd)
 	rootCmd.AddCommand(generateCmd)
+	docsCmd.AddCommand(docsInitCmd)
+	docsCmd.AddCommand(docsFixCmd)
+	docsCmd.AddCommand(docsStatusCmd)
+	docsCmd.AddCommand(docsReviewContextCmd)
+	docsReviewContextCmd.Flags().StringVar(
+		&reviewDocsPath,
+		"docs-path",
+		".",
+		"Documentation search root",
+	)
+	rootCmd.AddCommand(docsCmd)
 
 	_ = viper.BindPFlag("config", rootCmd.PersistentFlags().Lookup("config"))
 	_ = viper.BindPFlag("output", rootCmd.PersistentFlags().Lookup("output"))
@@ -140,44 +266,18 @@ func run(cmd *cobra.Command, args []string) error {
 		targetPath = args[0]
 	}
 
-	var cfg *config.Config
-	var err error
-
-	if !noConfig {
-		configPaths := []string{cfgPath, "./.idd.yaml", "./config/.idd.yaml"}
-		if cfgPath != "" {
-			configPaths = []string{cfgPath}
-		}
-
-		for _, p := range configPaths {
-			cfg, err = config.Load(p)
-			if err == nil {
-				break
-			}
-		}
-		if cfg == nil && cfgPath != "" {
-			return fmt.Errorf("failed to load config from %s: %w", cfgPath, err)
-		}
-	}
-
-	if cfg == nil {
-		cfg = config.Default()
+	cfg, err := loadCLIConfig()
+	if err != nil {
+		return err
 	}
 
 	if verbose {
-		cfg.Output.Verbose = true
-	}
-	if outPath != "" {
-		cfg.Output.File = outPath
-	}
-
-	if verbose {
-		fmt.Printf("idd-cli v%s\n", version)
-		fmt.Printf("Validating: %s\n", targetPath)
+		fmt.Fprintf(os.Stderr, "idd-cli v%s\n", version)
+		fmt.Fprintf(os.Stderr, "Validating: %s\n", targetPath)
 		if !noConfig {
-			fmt.Printf("Config: %s\n", cfgPath)
+			fmt.Fprintf(os.Stderr, "Config: %s\n", cfgPath)
 		}
-		fmt.Println()
+		fmt.Fprintln(os.Stderr)
 	}
 
 	start := time.Now()
@@ -189,7 +289,7 @@ func run(cmd *cobra.Command, args []string) error {
 	}
 
 	codeColl := collector.NewCodeCollector(cfg)
-	codeSet, err := codeColl.Collect(ctx, ".")
+	codeSet, codeErrors, err := codeColl.CollectWithErrors(ctx, ".")
 	if err != nil {
 		return fmt.Errorf("failed to collect code identifiers: %w", err)
 	}
@@ -197,16 +297,17 @@ func run(cmd *cobra.Command, args []string) error {
 	docSet.Merge(codeSet)
 
 	if verbose {
-		fmt.Printf("Collected %d identifiers in %v\n", docSet.Count(), time.Since(start))
-		fmt.Printf("  SPECs: %d\n", len(docSet.Specs))
-		fmt.Printf("  TESTs: %d\n", len(docSet.Tests))
-		fmt.Printf("  CONTRACTS: %d\n", len(docSet.Contracts))
-		fmt.Printf("  DESIGNs: %d\n", len(docSet.Designs))
-		fmt.Println()
+		fmt.Fprintf(os.Stderr, "Collected %d identifiers in %v\n", docSet.Count(), time.Since(start))
+		fmt.Fprintf(os.Stderr, "  SPECs: %d\n", len(docSet.Specs))
+		fmt.Fprintf(os.Stderr, "  TESTs: %d\n", len(docSet.Tests))
+		fmt.Fprintf(os.Stderr, "  CONTRACTS: %d\n", len(docSet.Contracts))
+		fmt.Fprintf(os.Stderr, "  DESIGNs: %d\n", len(docSet.Designs))
+		fmt.Fprintln(os.Stderr)
 	}
 
 	eng := engine.New(cfg)
-	eng.AddStructuralErrors(docErrors)
+	eng.SetSourceAnalyses(codeColl.Analyses())
+	eng.AddStructuralErrors(append(docErrors, codeErrors...))
 	result, err := eng.Run(ctx, docSet)
 	if err != nil {
 		return fmt.Errorf("failed to run validation: %w", err)
@@ -223,11 +324,11 @@ func run(cmd *cobra.Command, args []string) error {
 	}
 
 	if verbose {
-		fmt.Printf("Validation completed in %v\n", time.Since(start))
+		fmt.Fprintf(os.Stderr, "Validation completed in %v\n", time.Since(start))
 		if result.Valid {
-			fmt.Println("✓ Validation passed")
+			fmt.Fprintln(os.Stderr, "✓ Validation passed")
 		} else {
-			fmt.Printf("✗ Validation failed with %d errors\n", len(result.Errors))
+			fmt.Fprintf(os.Stderr, "✗ Validation failed with %d errors\n", len(result.Errors))
 		}
 	}
 
@@ -251,7 +352,7 @@ func listSkills(cmd *cobra.Command, args []string) error {
 
 	if len(skills) == 0 {
 		if verbose {
-			fmt.Println("No skills found")
+			fmt.Fprintln(os.Stderr, "No skills found")
 		}
 		return nil
 	}
@@ -417,9 +518,203 @@ func generateSkill(cmd *cobra.Command, args []string) error {
 			return fmt.Errorf("failed to write skill file: %w", err)
 		}
 		if verbose {
-			fmt.Printf("Skill written to %s\n", outPath)
+			fmt.Fprintf(os.Stderr, "Skill written to %s\n", outPath)
 		}
 	}
 
+	return nil
+}
+
+// @implement SPEC-CMD_IDD_CLI-009
+func initPackageDocs(cmd *cobra.Command, args []string) error {
+	changed, err := collector.InitDocumentPackages(".", args)
+	if err != nil {
+		return err
+	}
+	statusTargets := make([]string, 0, len(args))
+	for _, packagePath := range args {
+		statusTargets = append(
+			statusTargets,
+			filepath.Join("docs", filepath.FromSlash(packagePath)),
+		)
+	}
+	status, err := collector.InspectDocumentCompletions(statusTargets)
+	if err != nil {
+		return err
+	}
+	return writeDocChanges("initialized", status.Targets, changed, status)
+}
+
+// @implement SPEC-CMD_IDD_CLI-009
+func repairPackageDocs(cmd *cobra.Command, args []string) error {
+	changed, err := collector.RepairDocumentTargets(args)
+	if err != nil {
+		return err
+	}
+	return writeDocChanges("repaired", cleanCommandTargets(args), changed, nil)
+}
+
+// @implement SPEC-CMD_IDD_CLI-009
+func statusPackageDocs(cmd *cobra.Command, args []string) error {
+	status, err := collector.InspectDocumentCompletions(args)
+	if err != nil {
+		return err
+	}
+	return writeDocumentStatus(status)
+}
+
+// @implement SPEC-CMD_IDD_CLI-007, SPEC-CMD_IDD_CLI-009
+func reviewSpecContext(cmd *cobra.Command, args []string) error {
+	cfg, err := loadCLIConfig()
+	if err != nil {
+		return err
+	}
+	writeConfigDeprecationWarnings(cfg)
+	contextBatch, err := collector.BuildSpecReviewContexts(
+		context.Background(),
+		cfg,
+		reviewDocsPath,
+		".",
+		args,
+	)
+	if err != nil {
+		return err
+	}
+	rendered, err := reporter.RenderSpecReviewContexts(contextBatch, format)
+	if err != nil {
+		return err
+	}
+	if outPath != "" && outPath != "-" {
+		if err := os.WriteFile(outPath, rendered, 0644); err != nil {
+			return fmt.Errorf("write review context: %w", err)
+		}
+		return nil
+	}
+	_, err = os.Stdout.Write(rendered)
+	return err
+}
+
+func loadCLIConfig() (*config.Config, error) {
+	var cfg *config.Config
+	var err error
+	if !noConfig {
+		configPaths := []string{cfgPath, "./.idd.yaml", "./config/.idd.yaml"}
+		if cfgPath != "" {
+			configPaths = []string{cfgPath}
+		}
+		for _, path := range configPaths {
+			cfg, err = config.Load(path)
+			if err == nil {
+				break
+			}
+		}
+		if cfg == nil && cfgPath != "" {
+			return nil, fmt.Errorf("failed to load config from %s: %w", cfgPath, err)
+		}
+	}
+	if cfg == nil {
+		cfg = config.Default()
+	}
+	if verbose {
+		cfg.Output.Verbose = true
+	}
+	if outPath != "" {
+		cfg.Output.File = outPath
+	}
+	return cfg, nil
+}
+
+func writeConfigDeprecationWarnings(cfg *config.Config) {
+	for _, warning := range cfg.DeprecationWarnings() {
+		fmt.Fprintf(
+			os.Stderr,
+			"warning [deprecated-config] %s: %s\n",
+			warning.Source,
+			warning.Message,
+		)
+	}
+}
+
+func writeDocChanges(
+	action string,
+	targets []string,
+	changed []string,
+	status *collector.DocumentCompletionStatus,
+) error {
+	result := struct {
+		Action          string                     `json:"action"`
+		Targets         []string                   `json:"targets"`
+		Changed         []string                   `json:"changed"`
+		Schema          string                     `json:"schema,omitempty"`
+		Status          string                     `json:"status,omitempty"`
+		IncompleteSlots []collector.IncompleteSlot `json:"incomplete_slots,omitempty"`
+	}{
+		Action:  action,
+		Targets: targets,
+		Changed: changed,
+	}
+	if status != nil {
+		result.Schema = status.Schema
+		result.Status = status.Status
+		result.IncompleteSlots = status.IncompleteSlots
+	}
+
+	if format == "json" {
+		data, err := json.MarshalIndent(result, "", "  ")
+		if err != nil {
+			return fmt.Errorf("marshal document changes: %w", err)
+		}
+		fmt.Println(string(data))
+		return nil
+	}
+
+	if len(changed) == 0 {
+		fmt.Println("No document changes needed.")
+		return nil
+	}
+	for _, path := range changed {
+		fmt.Println(path)
+	}
+	if status != nil && len(status.IncompleteSlots) > 0 {
+		fmt.Printf("%d document slot(s) still require authored content.\n", len(status.IncompleteSlots))
+	}
+	return nil
+}
+
+func cleanCommandTargets(targets []string) []string {
+	seen := make(map[string]bool, len(targets))
+	cleaned := make([]string, 0, len(targets))
+	for _, target := range targets {
+		cleanTarget := filepath.Clean(target)
+		key := cleanTarget
+		if absolute, err := filepath.Abs(cleanTarget); err == nil {
+			key = absolute
+		}
+		if seen[key] {
+			continue
+		}
+		seen[key] = true
+		cleaned = append(cleaned, cleanTarget)
+	}
+	return cleaned
+}
+
+func writeDocumentStatus(status *collector.DocumentCompletionStatus) error {
+	if format == "json" {
+		data, err := json.MarshalIndent(status, "", "  ")
+		if err != nil {
+			return fmt.Errorf("marshal document status: %w", err)
+		}
+		fmt.Println(string(data))
+		return nil
+	}
+
+	if status.Status == "complete" {
+		fmt.Println("All required document slots are complete.")
+		return nil
+	}
+	for _, slot := range status.IncompleteSlots {
+		fmt.Printf("%s:%d [%s] %s\n", slot.File, slot.Line, slot.Slot, slot.Reason)
+	}
 	return nil
 }

@@ -1,125 +1,182 @@
 ---
-markers:
-  - id: SPEC-INTERNAL_REPORTER-001
-    name: Reporter Structure
-  - id: SPEC-INTERNAL_REPORTER-003
-    name: Reporter.New
-  - id: SPEC-INTERNAL_REPORTER-004
-    name: Reporter.Generate
-  - id: SPEC-INTERNAL_REPORTER-005
-    name: Reporter.Write
-
-related_files:
-  spec: docs/internal/reporter/spec.md
-  contract: docs/internal/reporter/contract.md
-  design: docs/internal/reporter/design.md
-  testing: docs/internal/reporter/testing.md
-
+idd:
+  version: "1.0"
+  package: internal/reporter
 ---
 
-# Specification (reporter)
+# Specifications: internal/reporter
 
-## SPEC-INTERNAL_REPORTER-001: Reporter Structure
+## SPEC-INTERNAL_REPORTER-001: Multi-audience report rendering
 
-**Design:** `ReporterModule`
-
-**Contract:** `Reporter`
-
-**Requirement:**
-
-Reporter generates validation reports in JSON and Markdown formats.
-
-**Tests:** `TEST-INTERNAL_REPORTER-001`, `TEST-INTERNAL_REPORTER-002`, `TEST-INTERNAL_REPORTER-003`, `TEST-INTERNAL_REPORTER-004`, `TEST-INTERNAL_REPORTER-005`, `TEST-INTERNAL_REPORTER-006`, `TEST-INTERNAL_REPORTER-007`, `TEST-INTERNAL_REPORTER-008`, `TEST-INTERNAL_REPORTER-009`, `TEST-INTERNAL_REPORTER-010`
-
-**Status:** Done
-
-**Implementation:** `internal/reporter/reporter.go`
-
-**Key Types:**
-
-- `Reporter` — Report generator with config and format
-
-**Acceptance Criteria:**
-
-- [x] Reporter stores config and format
-- [x] Reporter.Generate creates complete report
-- [x] Reporter.Write outputs report to stdout or file
-
-## SPEC-INTERNAL_REPORTER-003: Reporter.New
-
-**Design:** `ReporterModule`
-
-**Contract:** `New`
+- **Design:** `ReportRenderer`
+- **Contract:** `ReporterLifecycle`
 
 **Requirement:**
 
-Create a new Reporter with the given configuration and output format, defaulting to JSON when format is empty.
+One reporter instance must render the same validation evidence for automation,
+human inspection, and agent repair without rerunning or changing validation.
 
-**Tests:** `TEST-INTERNAL_REPORTER-001`
+### Boundaries
 
-**Function Signature:**
-`func New(cfg *config.Config, format string) *Reporter`
+The reporter owns presentation and destination side effects only. It must not
+mutate validation findings, decide validity, or claim that repair guidance is
+itself a fix.
 
-**Purpose:** Creates a new Reporter with the given configuration and output format. Defaults to JSON if format is empty.
+### Acceptance evidence
 
-**Parameters:**
+**Acceptance:**
 
-- `cfg`: Configuration pointer
-- `format`: Output format ("json" or "markdown")
+The suite generates a report once and exercises JSON, human Markdown, LLM
+Markdown, stdout, file output, statistics, graph output, and finding enrichment.
 
-**Returns:** A new Reporter instance
+## SPEC-INTERNAL_REPORTER-003: Format-aware reporter construction
 
-## SPEC-INTERNAL_REPORTER-004: Reporter.Generate
-
-**Design:** `ReporterModule`
-
-**Contract:** `Generate`
-
-**Requirement:**
-
-Generate a complete report from a validation result, including tool metadata, config summary, and the validation result.
-
-**Tests:** `TEST-INTERNAL_REPORTER-002`
-
-**Function Signature:**
-`func (r *Reporter) Generate(result *model.ValidationResult) (*model.Report, error)`
-
-**Purpose:** Generates a complete report from a validation result, including tool metadata, config summary, and the validation result.
-
-**Parameters:**
-
-- `result`: The validation result to include in the report
-
-**Returns:** Complete Report structure or error
-
-## SPEC-INTERNAL_REPORTER-005: Reporter.Write
-
-**Design:** `ReporterModule`
-
-**Contract:** `Write`
+- **Design:** `ReportRenderer`
+- **Contract:** `ReporterLifecycle`
 
 **Requirement:**
 
-Write the report to stdout or the specified output file path.
+Construction must retain the supplied configuration and format, defaulting only
+an empty format to JSON. Case normalization must be deferred to output
+dispatch.
 
-**Tests:** `TEST-INTERNAL_REPORTER-001`, `TEST-INTERNAL_REPORTER-002`, `TEST-INTERNAL_REPORTER-003`, `TEST-INTERNAL_REPORTER-004`, `TEST-INTERNAL_REPORTER-005`, `TEST-INTERNAL_REPORTER-006`, `TEST-INTERNAL_REPORTER-007`, `TEST-INTERNAL_REPORTER-008`, `TEST-INTERNAL_REPORTER-009`, `TEST-INTERNAL_REPORTER-010`
+**Acceptance:** Constructor tests compare the retained configuration pointer
+and format with their inputs, require an empty format to become JSON, and
+preserve mixed-case explicit formats until writing dispatches them
+case-insensitively.
 
-**Function Signature:**
-`func (r *Reporter) Write(report *model.Report, output string) error`
+### Edge cases
 
-**Purpose:** Writes the report to the specified output destination. If output is empty or "-", writes to stdout. Otherwise creates a file at the given path.
+A nil configuration is accepted by construction but will panic when generation
+dereferences it; callers are responsible for supplying the resolved config.
 
-**Parameters:**
+## SPEC-INTERNAL_REPORTER-004: Complete internal report envelope
 
-- `report`: The report to write
-- `output`: File path or "-" for stdout
+- **Design:** `ReportRenderer`
+- **Contract:** `ReporterLifecycle`
 
-**Returns:** Error if writing fails
+**Requirement:**
 
-**Acceptance Criteria:**
+Generation must combine tool identity, hard-coded reporter version, an RFC3339
+timestamp, collection-relevant configuration summary, and the supplied
+validation result into one report.
 
-- [x] Generate creates report with tool info, config, and result
-- [x] Write outputs to stdout for "-" or empty output
-- [x] Write creates file for non-empty non-dash output path
+**Acceptance:** Generating a report from a known configuration and validation
+result yields the expected tool name and fixed reporter version, a parseable
+non-empty RFC3339 timestamp, the selected configuration summary, and the same
+validity, findings, statistics, and optional graph evidence as the input
+result.
 
-**Related:** `SPEC-INTERNAL_REPORTER-001`
+### Ownership
+
+The result is copied by value, but nested reference values are shared. The
+operation does not serialize or write and currently has no expected error path.
+
+## SPEC-INTERNAL_REPORTER-005: Destination and human output behavior
+
+- **Design:** `ReportRenderer`
+- **Contract:** `ReportDestination`
+
+**Requirement:**
+
+Writing must select stdout or create the requested file, dispatch
+case-insensitively among supported formats, return creation/rendering errors,
+and produce a readable human Markdown report with status, findings, statistics,
+and optional graph evidence.
+
+### Failure and side-effect boundary
+
+Unsupported formats return an error. With a file destination, creation and
+truncation happen before that error is detected. Parent directories and atomic
+writes are outside the specification.
+
+### Acceptance evidence
+
+**Acceptance:**
+
+Tests cover stdout success, valid JSON files, human Markdown warnings/errors,
+stats and graph content, pass/fail icons, and unsupported format rejection.
+
+## SPEC-INTERNAL_REPORTER-011: Finding-centered JSON and LLM Markdown
+
+- **Design:** `ReportRenderer`
+- **Contract:** `FindingReport`
+
+**Requirement:**
+
+JSON and LLM Markdown must expose schema status, summary counts and groups, and
+actionable findings from one shared projection. Empty-format output must use
+the same JSON schema.
+
+**Acceptance:** JSON produced through both empty-format and explicit-JSON
+paths decodes as `idd.llm_report.v1` with the expected status, counts,
+locations, identifiers, and repair guidance. The same failing input rendered
+as LLM Markdown contains its group, rule, severity, exact location, problem,
+fix, and related identifiers; a passing input reports no findings.
+
+### Required behavior
+
+JSON must be indented and machine-decodable as `model.LLMReport`. LLM Markdown
+must show status, finding groups, numbered locations, rule, severity, problem,
+optional expected/actual data, fix guidance, and related identifiers. A result
+with no findings must explicitly say so.
+
+## SPEC-INTERNAL_REPORTER-012: Self-contained finding enrichment
+
+- **Design:** `ReportRenderer`
+- **Contract:** `FindingReport`
+
+**Requirement:**
+
+Raw validation errors must be enriched with enough local context for a repair
+agent to act without joining unrelated report sections.
+
+**Acceptance:** Enrichment tests compare the projected finding's structured
+location, expected/actual values, primary and related identifiers, severity,
+curated rule guidance, and graph-adjacent evidence. Repeated-rule tests require
+stable one-based indexes and sorted file/identifier summaries while ensuring
+group guidance contains no finding-specific path.
+
+### Required behavior
+
+- known rules receive curated title, explanation, and fix guidance, including
+  canonical filename guidance that directs split IDD content back into the
+  owning role file;
+- `deprecated-config` names the obsolete configuration path and directs removal
+  rather than suggesting changes to documents or source annotations;
+- every `split-role` finding receives its own `suggested_fix` agent prompt with
+  exact source and canonical target paths, complete semantic-preservation
+  instructions, deletion only after a no-loss review, and deterministic
+  `docs status` plus full-project `run` commands;
+- unknown rules receive deterministic fallback text;
+- `path:line` evidence becomes a structured location;
+- primary and related identifiers are extracted without duplicating the
+  primary;
+- graph-adjacent identifiers are included when a snapshot is available;
+- error and warning severity is preserved;
+- repeated severity/rule findings are grouped with sorted file and identifier
+  summaries, while group guidance stays path-neutral; and
+- top rule ranking is deterministic and capped.
+
+### Boundary
+
+Enrichment is lexical and graph-adjacent, not causal analysis. Suggested fixes
+remain guidance and may require Skill-guided semantic judgment.
+
+## SPEC-INTERNAL_REPORTER-013: Evidence-only review-context rendering
+
+- **Design:** `ReportRenderer`
+- **Contract:** `ReviewContextReport`
+
+**Requirement:** Render one or a bounded ordered batch of collector-owned SPEC
+review contexts as JSON or Markdown without adding a semantic score, warning,
+or approval.
+
+**Acceptance:** JSON preserves schema `idd.spec_review_context.v1`; Markdown
+contains the same authored, implementation, and covering-test source evidence,
+visible record-or-declaration truncation, and neutral review questions.
+Unsupported formats return an operational error.
+
+Multiple contexts use schema `idd.spec_review_context_batch.v1`, preserve
+first-request order, and render independently within one output. A one-context
+call remains byte-compatible with the single-context renderer.

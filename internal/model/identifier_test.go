@@ -1,14 +1,12 @@
 // Package model provides testing utilities for the model module.
-
-// Spec: docs/internal/model/spec.md
-// Test: docs/internal/model/testing.md
 package model
 
 import (
+	"encoding/json"
 	"testing"
 )
 
-// @test TEST-INTERNAL_MODEL-019
+// @test-contract TEST-INTERNAL_MODEL-019
 func TestParseIdentifierType(t *testing.T) {
 	tests := []struct {
 		name    string
@@ -40,7 +38,7 @@ func TestParseIdentifierType(t *testing.T) {
 	}
 }
 
-// @test TEST-INTERNAL_MODEL-020
+// @test-contract TEST-INTERNAL_MODEL-020
 func TestNewIdentifier(t *testing.T) {
 	id := NewIdentifier("SPEC-001", TypeSpec, "Test Spec", "docs/test.md", 10)
 
@@ -143,7 +141,7 @@ func TestIdentifier_AddLink(t *testing.T) {
 	}
 }
 
-// @test TEST-INTERNAL_MODEL-022
+// @test-contract TEST-INTERNAL_MODEL-022
 func TestNewAnnotation(t *testing.T) {
 	ann := NewAnnotation(TypeSpec, "SPEC-001", "test.go", "@implement SPEC-001", "context", 10)
 
@@ -307,7 +305,7 @@ func TestAnnotation_ToIdentifier_WithoutFunctionComment(t *testing.T) {
 	}
 }
 
-// @test TEST-INTERNAL_MODEL-013
+// @test-contract TEST-INTERNAL_MODEL-013
 func TestIdentifierSet_GetAll(t *testing.T) {
 	set := NewIdentifierSet()
 	spec1 := NewIdentifier("SPEC-001", TypeSpec, "", "file1.md", 1)
@@ -324,6 +322,17 @@ func TestIdentifierSet_GetAll(t *testing.T) {
 	none := set.GetAll("NONEXISTENT")
 	if len(none) != 0 {
 		t.Errorf("GetAll(NONEXISTENT) returned %d items, want 0", len(none))
+	}
+}
+
+// @test TEST-INTERNAL_MODEL-030
+func TestIdentifier_AddTypedLink(t *testing.T) {
+	identifier := NewIdentifier("SPEC-001", TypeSpec, "", "spec.md", 1)
+	identifier.AddTypedLink("SPEC-000", LinkSupersedes)
+	if len(identifier.TypedLinks) != 1 ||
+		identifier.TypedLinks[0].Ref != "SPEC-000" ||
+		identifier.TypedLinks[0].Type != LinkSupersedes {
+		t.Errorf("TypedLinks = %#v", identifier.TypedLinks)
 	}
 }
 
@@ -402,7 +411,18 @@ func TestIdentifierSet_Get(t *testing.T) {
 	}
 }
 
-// @test TEST-INTERNAL_MODEL-018
+// @test TEST-INTERNAL_MODEL-032
+func TestIdentifier_SetOrigin(t *testing.T) {
+	id := NewIdentifier("SPEC-001", TypeSpec, "", "docs/spec.md", 1)
+
+	id.SetOrigin(OriginCode)
+
+	if id.Origin != OriginCode {
+		t.Errorf("Origin = %v, want %v", id.Origin, OriginCode)
+	}
+}
+
+// @test-contract TEST-INTERNAL_MODEL-018
 func TestValidationResult_Sort_MultipleRules(t *testing.T) {
 	result := NewValidationResult()
 	result.AddError("zzz", "msg3", "", "", "")
@@ -419,5 +439,71 @@ func TestValidationResult_Sort_MultipleRules(t *testing.T) {
 	}
 	if result.Errors[2].Rule != "zzz" {
 		t.Errorf("Errors[2].Rule = %q, want 'zzz'", result.Errors[2].Rule)
+	}
+}
+
+// @test-contract TEST-INTERNAL_MODEL-031
+func TestLLMReport_JSONSerialization(t *testing.T) {
+	report := LLMReport{
+		Schema: "idd.llm_report.v1",
+		Status: "fail",
+		Summary: LLMSummary{
+			Errors:   1,
+			Warnings: 0,
+			TopRules: []string{
+				"doc-link-consistency",
+			},
+			RuleGroups: []LLMFindingGroup{
+				{
+					Severity:       "error",
+					Rule:           "doc-link-consistency",
+					Title:          "Document link field is inconsistent",
+					Count:          1,
+					Files:          []string{"docs/internal/foo/spec.md"},
+					Identifiers:    []string{"SPEC-INTERNAL_FOO-001", "TEST-INTERNAL_FOO-001"},
+					FindingIndexes: []int{1},
+					SuggestedFix:   "Rename the incorrect relationship field to the expected field.",
+				},
+			},
+		},
+		Findings: []LLMFinding{
+			{
+				Severity:   "error",
+				Rule:       "doc-link-consistency",
+				Title:      "Document link field is inconsistent",
+				Location:   LLMLocation{File: "docs/internal/foo/spec.md", Line: 27},
+				Identifier: "SPEC-INTERNAL_FOO-001",
+				Problem:    "spec.md should use **Tests:** not **Spec Coverage:**",
+				Expected:   "**Tests:** `TEST-...`",
+				Actual:     "**Spec Coverage:** `TEST-INTERNAL_FOO-001`",
+				SuggestedFix: "Rename the incorrect relationship field to the expected field and keep " +
+					"the same identifier references.",
+				RelatedIdentifiers: []LLMRelatedIdentifier{
+					{ID: "TEST-INTERNAL_FOO-001", Relation: "tests"},
+				},
+			},
+		},
+	}
+
+	data, err := json.Marshal(report)
+	if err != nil {
+		t.Fatalf("Marshal failed: %v", err)
+	}
+
+	var decoded LLMReport
+	if err := json.Unmarshal(data, &decoded); err != nil {
+		t.Fatalf("Unmarshal failed: %v", err)
+	}
+	if decoded.Schema != report.Schema {
+		t.Fatalf("Schema = %q, want %q", decoded.Schema, report.Schema)
+	}
+	if len(decoded.Findings) != 1 {
+		t.Fatalf("len(Findings) = %d, want 1", len(decoded.Findings))
+	}
+	if len(decoded.Summary.RuleGroups) != 1 {
+		t.Fatalf("len(RuleGroups) = %d, want 1", len(decoded.Summary.RuleGroups))
+	}
+	if decoded.Findings[0].RelatedIdentifiers[0].ID != "TEST-INTERNAL_FOO-001" {
+		t.Fatalf("Related ID = %q, want TEST-INTERNAL_FOO-001", decoded.Findings[0].RelatedIdentifiers[0].ID)
 	}
 }

@@ -7,7 +7,7 @@ LINT:=golangci-lint
 GOCOVBIN:=$(shell $(GO) env GOPATH)/bin/go-test-coverage
 
 build:
-	$(GO) build -o bin/$(BINARY_NAME) ./cmd/idd-cli
+	CGO_ENABLED=1 $(GO) build -o bin/$(BINARY_NAME) ./cmd/idd-cli
 
 run: build
 	./bin/$(BINARY_NAME) run .
@@ -21,11 +21,11 @@ clean:
 	rm -f coverage.out
 
 install:
-	$(GO) install ./cmd/idd-cli
+	CGO_ENABLED=1 $(GO) install ./cmd/idd-cli
 
 lint:
 	$(LINT) config verify
-	$(LINT) run ./...
+	CGO_ENABLED=1 $(LINT) run ./...
 	markdownlint-cli2
 
 fmt:
@@ -33,7 +33,7 @@ fmt:
 	goimports -w .
 
 coverage:
-	$(GO) test -coverprofile=coverage.out -covermode=atomic -coverpkg=./... ./...
+	CGO_ENABLED=1 $(GO) test -coverprofile=coverage.out -covermode=atomic -coverpkg=./... ./...
 
 install-gocov:
 	$(GO) install github.com/vladopajic/go-test-coverage/v2@latest

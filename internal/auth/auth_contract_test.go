@@ -1,8 +1,4 @@
 // Package auth provides testing utilities for the auth module.
-
-// Spec: docs/internal/auth/spec.md
-// Test: docs/internal/auth/testing.md
-// Contract: docs/internal/auth/contract.md
 package auth
 
 import (
@@ -12,10 +8,7 @@ import (
 
 // CONTRACT-AUTH-001: Authentication Interface Contracts
 
-// LoginRequest invariants:
-// - Email must be a valid email format
-// - Password must be non-empty
-
+// @test-contract TEST-INTERNAL_AUTH-001
 func TestLoginRequest_EmailFormat(t *testing.T) {
 	tests := []struct {
 		name    string
@@ -71,6 +64,7 @@ func TestLoginRequest_EmailFormat(t *testing.T) {
 	}
 }
 
+// @test-contract TEST-INTERNAL_AUTH-001
 func TestLoginRequest_PasswordNonEmpty(t *testing.T) {
 	tests := []struct {
 		name     string
@@ -103,10 +97,7 @@ func TestLoginRequest_PasswordNonEmpty(t *testing.T) {
 	}
 }
 
-// LoginResponse invariants:
-// - Token must be non-empty after successful authentication
-// - Token format must be parseable
-
+// @test-contract TEST-INTERNAL_AUTH-001
 func TestLoginResponse_TokenNonEmpty(t *testing.T) {
 	tests := []struct {
 		name  string
@@ -138,6 +129,7 @@ func TestLoginResponse_TokenNonEmpty(t *testing.T) {
 	}
 }
 
+// @test-contract TEST-INTERNAL_AUTH-001
 func TestLoginResponse_TokenFormat(t *testing.T) {
 	tests := []struct {
 		name    string

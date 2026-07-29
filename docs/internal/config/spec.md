@@ -1,207 +1,234 @@
 ---
-markers:
-  - id: SPEC-INTERNAL_CONFIG-001
-    name: Config Structure
-  - id: SPEC-INTERNAL_CONFIG-002
-    name: Docs Config Structure
-  - id: SPEC-INTERNAL_CONFIG-003
-    name: Identifier Patterns Structure
-  - id: SPEC-INTERNAL_CONFIG-004
-    name: Code Config Structure
-  - id: SPEC-INTERNAL_CONFIG-005
-    name: Validation Config Structure
-  - id: SPEC-INTERNAL_CONFIG-006
-    name: Output Config Structure
-  - id: SPEC-INTERNAL_CONFIG-007
-    name: Load Config Function
-  - id: SPEC-INTERNAL_CONFIG-008
-    name: Default Config Function
-  - id: SPEC-INTERNAL_CONFIG-009
-    name: Validate Config Function
-
-related_files:
-  spec: docs/internal/config/spec.md
-  testing: docs/internal/config/testing.md
-
+idd:
+  version: "1.0"
+  package: internal/config
 ---
 
-# Specification (config)
+# Specifications: internal/config
 
-Configuration module for idd-cli.
+## SPEC-INTERNAL_CONFIG-001: Root configuration ownership
 
-## SPEC-INTERNAL_CONFIG-001: Config Structure
-
-**Design:** `ConfigModule`
-
-**Contract:** `Config`
+- **Design:** `ConfigModule`
+- **Contract:** `ConfigurationSchema`
 
 **Requirement:**
 
-Config is the root configuration structure that holds all settings for the IDD CLI validation tool.
+The configuration root must group document discovery, source discovery,
+validation policy, and output policy into one value that can be passed through
+the CLI without downstream YAML parsing. Output settings are part of this root
+schema rather than a separate mutable global.
 
-**Tests:** `TEST-INTERNAL_CONFIG-001`
+### Implementation boundary
 
-**Status:** Done
+The schema stores configuration; it does not execute patterns, validations, or
+report writes. Nested slices and maps remain caller-owned mutable values and
+are not deep-copied.
 
-**Implementation:** `internal/config/config.go`
+### Acceptance evidence
 
-**Code Annotation:** `@implement SPEC-INTERNAL_CONFIG-001`
+**Acceptance:**
 
----
+Default and load tests observe representative nested values through the root
+object, and repository execution demonstrates that collectors, engine, and
+reporter consume the same structure.
 
-## SPEC-INTERNAL_CONFIG-002: Docs Config Structure
+## SPEC-INTERNAL_CONFIG-002: Documentation discovery settings
 
-**Design:** `ConfigModule`
-
-**Contract:** `DocsConfig`
-
-**Requirement:**
-
-DocsConfig holds documentation-related configuration including patterns and ignore paths.
-
-**Tests:** `TEST-INTERNAL_CONFIG-002`
-
-**Status:** Done
-
-**Implementation:** `internal/config/config.go`
-
-**Code Annotation:** `@implement SPEC-INTERNAL_CONFIG-002`
-
----
-
-## SPEC-INTERNAL_CONFIG-003: Identifier Patterns Structure
-
-**Design:** `ConfigModule`
-
-**Contract:** `IdentifierPatterns`
+- **Design:** `ConfigModule`
+- **Contract:** `ConfigurationSchema`
 
 **Requirement:**
 
-IdentifierPatterns defines regex patterns for matching SPEC, TEST, and other IDD identifiers.
+Documentation configuration must carry file patterns, role-specific identifier
+pattern strings, and ignored path patterns without treating any of those values
+as semantic document records.
 
-**Tests:** `TEST-INTERNAL_CONFIG-003`
+**Acceptance:** The built-in-profile contract test observes the configured
+documentation globs, identifier-pattern roles, and ignored paths through the
+root configuration. Loading `examples/idd-config-example.yaml` must produce a
+value deeply equal to `Default()`, so a missing or stale discovery value fails
+the executable configuration example.
 
-**Status:** Done
+### Boundary
 
-**Implementation:** `internal/config/config.go`
+The package does not compile or execute the patterns. Empty document patterns
+are normalized by `Validate`; identifier patterns and ignore paths are not
+filled when omitted from a loaded file.
 
-**Code Annotation:** `@implement SPEC-INTERNAL_CONFIG-003`
+## SPEC-INTERNAL_CONFIG-003: Identifier pattern roles
 
----
-
-## SPEC-INTERNAL_CONFIG-004: Code Config Structure
-
-**Design:** `ConfigModule`
-
-**Contract:** `CodeConfig`
-
-**Requirement:**
-
-CodeConfig holds code-related configuration including patterns and annotations.
-
-**Tests:** `TEST-INTERNAL_CONFIG-003`
-
-**Status:** Done
-
-**Implementation:** `internal/config/config.go`
-
-**Code Annotation:** `@implement SPEC-INTERNAL_CONFIG-004`
-
----
-
-## SPEC-INTERNAL_CONFIG-005: Validation Config Structure
-
-**Design:** `ConfigModule`
-
-**Contract:** `ValidationConfig`
+- **Design:** `ConfigModule`
+- **Contract:** `ConfigurationSchema`
 
 **Requirement:**
 
-ValidationConfig holds validation rule settings for the IDD CLI, including the `require_spec_fields` toggle that requires each frontmatter-declared SPEC section to include `Design`, `Contract`, `Requirement`, and `Tests` in that order before any optional fields.
+Identifier pattern settings must expose distinct strings for SPEC, TEST, and
+contract-TEST recognition so collectors can preserve annotation kind while
+using a common TEST identifier namespace.
 
-**Tests:** `TEST-INTERNAL_CONFIG-003`
+**Acceptance:** The default/example equality test preserves all three pattern
+roles as distinct configuration fields. Collector tests then demonstrate that
+SPEC annotations and both TEST annotation kinds retain their configured kind
+while contract and ordinary tests share the TEST identifier namespace.
 
-**Status:** Done
+### Non-goals
 
-**Implementation:** `internal/config/config.go`
+This specification does not require regex compilation or guarantee that an
+authored pattern agrees with the built-in lexical grammar. Invalid regex text
+is detected only by the consuming collector or engine path.
 
-**Code Annotation:** `@implement SPEC-INTERNAL_CONFIG-005`
+## SPEC-INTERNAL_CONFIG-004: Source discovery and annotation settings
 
----
-
-## SPEC-INTERNAL_CONFIG-006: Output Config Structure
-
-**Design:** `ConfigModule`
-
-**Contract:** `OutputConfig`
-
-**Requirement:**
-
-OutputConfig holds output-related configuration settings.
-
-**Tests:** `TEST-INTERNAL_CONFIG-003`
-
-**Status:** Done
-
-**Implementation:** `internal/config/config.go`
-
-**Code Annotation:** `@implement SPEC-INTERNAL_CONFIG-006`
-
----
-
-## SPEC-INTERNAL_CONFIG-007: Load Config Function
-
-**Design:** `ConfigModule`
-
-**Contract:** `Load`
+- **Design:** `ConfigModule`
+- **Contract:** `ConfigurationSchema`
 
 **Requirement:**
 
-Load configuration from YAML files with validation.
+Source configuration must carry code globs, ignored paths, and a semantic map
+from `spec`, `test`, and `test_contract` roles to their source annotation
+prefixes. When patterns are omitted, validation must install the complete
+Tree-sitter-supported extension set for Go, TypeScript/TSX,
+JavaScript/JSX, C++, Java, and Python.
 
-**Tests:** `TEST-INTERNAL_CONFIG-002`
+**Acceptance:** Default and normalization tests observe every supported source
+glob and verify that caller-authored non-empty patterns are preserved. Map
+validation accepts exactly `spec`, `test`, and `test_contract` with distinct
+valid tokens and rejects missing, unknown, empty, malformed, or duplicate
+roles before collection.
 
-**Status:** Done
+### Invariants
 
-**Implementation:** `internal/config/config.go`
+The role-key set is closed and validated. Prefix values remain configurable,
+but each must be a distinct, trimmed, whitespace-free `@` token. This package
+does not parse source annotations itself; it prevents configurations whose
+lexical roles would be empty or ambiguous.
 
-**Code Annotation:** `@implement SPEC-INTERNAL_CONFIG-007`
+## SPEC-INTERNAL_CONFIG-005: Validation policy switches
 
----
-
-## SPEC-INTERNAL_CONFIG-008: Default Config Function
-
-**Design:** `ConfigModule`
-
-**Contract:** `Default`
-
-**Requirement:**
-
-Return sensible default configuration.
-
-**Tests:** `TEST-INTERNAL_CONFIG-001`
-
-**Status:** Done
-
-**Implementation:** `internal/config/config.go`
-
-**Code Annotation:** `@implement SPEC-INTERNAL_CONFIG-008`
-
----
-
-## SPEC-INTERNAL_CONFIG-009: Validate Config Function
-
-**Design:** `ConfigModule`
-
-**Contract:** `Validate`
+- **Design:** `ConfigModule`
+- **Contract:** `ConfigurationSchema`
 
 **Requirement:**
 
-Validate configuration values are correct.
+Every independently configurable repository gate must have an explicit boolean
+field, including graph consistency, coverage, document structure, doc/code
+correspondence, annotation rules, and package document sets. Code-to-document
+association is not a separate
+file-header policy: it is the enabled correspondence rule joining matching
+identifier evidence.
 
-**Tests:** `TEST-INTERNAL_CONFIG-003`
-**Status:** Done
+**Acceptance:** `TestDefault` observes an enabled representative gate, and
+`TestDefaultMatchesExampleConfiguration` compares every validation switch in
+the maintained YAML example with `Default()`. Adding, removing, or changing a
+default gate without synchronizing the example makes that contract test fail.
+Neither value contains the removed package-path-comment switch.
 
-**Implementation:** `internal/config/config.go`
+`require_pkg_doc_files` means every distinct directory containing a scanned,
+non-ignored supported source file maps to the same relative path below
+`docs/`, including nested sub-packages, and must contain the four canonical
+role filenames. It is not a line-count or document-splitting policy.
 
-**Code Annotation:** `@implement SPEC-INTERNAL_CONFIG-009`
+### Loaded-file boundary
+
+When YAML omits a boolean, loading leaves it false because files are decoded
+into zero values rather than merged with `Default`. Callers wanting the full
+built-in policy must choose `Default` or author the values explicitly.
+
+## SPEC-INTERNAL_CONFIG-006: Deprecated consistency configuration alias
+
+- **Design:** `ConfigModule`
+- **Contract:** `ConfigurationSchema`
+
+**Requirement:**
+
+Existing YAML containing `validation.consistency_check` must remain decodable
+while the field is deprecated and behaviorally ignored, and its explicit
+presence must produce an actionable deprecation warning.
+
+**Acceptance:** Loading legacy `enabled` and `threshold` values succeeds, but
+neither value changes validation behavior or receives default normalization.
+Presence of the key produces exactly one diagnostic naming the source file and
+`validation.consistency_check`, stating that the values are ignored, directing
+the caller to remove the whole key, and naming
+`docs review-context <SPEC-ID>...` as the semantic-review replacement. Presence
+still warns when values are false, zero, or omitted.
+
+### Edge cases
+
+Unknown nested fields follow the package's existing YAML decoding behavior.
+The alias must not be renamed into another active similarity rule.
+Built-in defaults and loaded YAML without the alias produce no deprecation
+diagnostic, and loading never rewrites the source file.
+
+## SPEC-INTERNAL_CONFIG-007: Validated YAML loading
+
+- **Design:** `ConfigModule`
+- **Contract:** `ConfigurationLoading`
+
+**Requirement:**
+
+Loading must read the requested YAML file, decode it, apply configuration
+validation, and return either a complete pointer or a stage-qualified error
+with no partial value.
+
+### Failure cases
+
+Missing or unreadable files, malformed YAML, and invalid annotation-role keys
+must remain distinguishable through wrapped error text. Unknown YAML fields are
+currently accepted and ignored.
+
+### Acceptance evidence
+
+**Acceptance:**
+
+Temporary-file tests cover successful deprecated-alias loading and invalid YAML;
+separate cases cover missing paths and invalid annotation maps.
+
+## SPEC-INTERNAL_CONFIG-008: Complete built-in profile
+
+- **Design:** `ConfigModule`
+- **Contract:** `ConfigurationDefaults`
+
+**Requirement:**
+
+The default constructor must return a fresh non-nil profile that is immediately
+usable by the CLI, with collection patterns, annotation roles, ignore paths,
+deterministic validation gates, and no active lexical or semantic scoring
+policy.
+
+**Acceptance:** `TestDefault` observes version `1.0`, the complete supported
+source-pattern set, an enabled validation gate, and a zero-valued deprecated
+consistency alias. The example-configuration contract test then loads the
+maintained YAML and requires deep equality with a fresh `Default()` value,
+detecting stale collection, annotation, validation, or output defaults.
+
+### Compatibility boundary
+
+Default values influence every no-config invocation and are mirrored in the
+repository example. Changes require an explicit compatibility decision and
+example synchronization; partial YAML loading is not equivalent to calling
+this constructor.
+
+## SPEC-INTERNAL_CONFIG-009: In-place normalization and role-key validation
+
+- **Design:** `ConfigModule`
+- **Contract:** `ConfigurationValidation`
+
+**Requirement:**
+
+Validation must mutate omitted core collection values to their documented
+defaults, require exactly the three annotation-role keys, and return an error
+for a missing or unknown role.
+
+### Non-goals
+
+Validation does not prove path existence, pattern syntax, output writability,
+version compatibility, or semantic relationships between flags. A nil receiver
+is not a supported input.
+
+### Acceptance evidence
+
+**Acceptance:**
+
+Table-driven tests cover preservation of deprecated alias values and complete,
+missing, partial, and extended annotation maps.

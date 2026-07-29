@@ -18,6 +18,18 @@ docs:
 code:
   patterns:
     - "**/*.go"
+    - "**/*.ts"
+    - "**/*.tsx"
+    - "**/*.js"
+    - "**/*.jsx"
+    - "**/*.cpp"
+    - "**/*.cc"
+    - "**/*.cxx"
+    - "**/*.hpp"
+    - "**/*.hh"
+    - "**/*.hxx"
+    - "**/*.java"
+    - "**/*.py"
   annotations:
     spec: "@implement"
     test: "@test"
@@ -32,16 +44,12 @@ validation:
   require_contract_test_coverage: true
   require_doc_code_correspondence: true
   require_public_func_annotation: true
-  require_package_doc_comment: true
   require_related_files: true
   require_annotation_identifier: true
   require_annotation_on_same_line: true
   require_test_annotation: true
   require_design_sections: true
   require_pkg_doc_files: true
-  consistency_check:
-    enabled: true
-    threshold: 0.3
 
 output:
   file: "idd-report.json"

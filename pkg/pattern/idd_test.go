@@ -1,14 +1,11 @@
 // Package pattern provides testing utilities for the pattern module.
-
-// Spec: docs/pkg/pattern/spec.md
-// Test: docs/pkg/pattern/testing.md
 package pattern
 
 import (
 	"testing"
 )
 
-// @test TEST-PKG_PATTERN-001
+// @test-contract TEST-PKG_PATTERN-001
 func TestValidateIdentifierFormat(t *testing.T) {
 	tests := []struct {
 		name    string
@@ -184,7 +181,7 @@ func TestValidateIDPattern(t *testing.T) {
 	}
 }
 
-// @test TEST-PKG_PATTERN-003
+// @test-contract TEST-PKG_PATTERN-003
 func TestGetIdentifierType(t *testing.T) {
 	tests := []struct {
 		name string
@@ -450,7 +447,7 @@ func TestExtractAnnotations(t *testing.T) {
 	}
 }
 
-// @test TEST-PKG_PATTERN-008
+// @test-contract TEST-PKG_PATTERN-008
 func TestIsQuoted(t *testing.T) {
 	tests := []struct {
 		name    string

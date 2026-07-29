@@ -1,105 +1,204 @@
 ---
-markers:
-  - id: TEST-CMD_IDD_CLI-001
-    name: Core Validation Tests
-  - id: TEST-CMD_IDD_CLI-002
-    name: Module Integration Tests
-
-related_files:
-  spec: docs/cmd/idd-cli/spec.md
-  contract: docs/cmd/idd-cli/contract.md
-  design: docs/cmd/idd-cli/design.md
-  testing: docs/cmd/idd-cli/testing.md
+idd:
+  version: "1.0"
+  package: cmd/idd-cli
 ---
 
-# Test Cases (backend)
+# Testing: cmd/idd-cli
 
-## TEST-CMD_IDD_CLI-001: Core Validation Tests
+## TEST-CMD_IDD_CLI-001: Core validation behavior
 
-**Status:** Done
+- **Kind:** `test`
+- **Covers:** `SPEC-CMD_IDD_CLI-001`, `SPEC-CMD_IDD_CLI-002`,
+  `SPEC-CMD_IDD_CLI-003`, `SPEC-CMD_IDD_CLI-004`,
+  `SPEC-CMD_IDD_CLI-005`, `SPEC-CMD_IDD_CLI-006`,
+  `SPEC-CMD_IDD_CLI-007`, `SPEC-CMD_IDD_CLI-008`,
+  `SPEC-CMD_IDD_CLI-009`, `SPEC-CMD_IDD_CLI-010`
+
+**Purpose:** Engine, collector, model, and graph tests verify the core IDD
+validation workflow.
+
+### Evidence and scenarios
+
+This record proves deterministic identifier merging, directed link
+construction, derived coverage, structural-finding retention, enabled rule
+execution, result sorting, and invalid-result behavior. It also covers
+self-describing and legacy document inputs, code annotation kinds, missing and
+malformed evidence, seven-language syntax-tree binding, scaffold completion,
+named Contract coverage, Component dependencies, lifecycle links, and report
+construction from the final graph.
+
+Positive cases establish a valid graph. Negative cases isolate each rule and
+assert its owner, severity, location, identifier, and field context rather than
+checking only that some error occurred.
+
+### Fixtures and oracle
+
+**Oracle:** Pure graph and model tests construct values directly. Collector and
+file-dependent engine tests use temporary package trees with focused configs.
+The oracle is the resulting node/link metadata and structured validation
+finding, not internal call order.
+
+### Exclusions
+
+Cobra argument parsing and process exit are kept thin; repository-level binary
+smoke checks provide composition evidence instead of duplicating domain cases
+through subprocess-heavy unit tests.
+
+## TEST-CMD_IDD_CLI-002: Module integration behavior
+
+- **Kind:** `test`
+- **Covers:** `SPEC-CMD_IDD_CLI-001`, `SPEC-CMD_IDD_CLI-002`,
+  `SPEC-CMD_IDD_CLI-003`, `SPEC-CMD_IDD_CLI-004`,
+  `SPEC-CMD_IDD_CLI-005`, `SPEC-CMD_IDD_CLI-006`,
+  `SPEC-CMD_IDD_CLI-007`, `SPEC-CMD_IDD_CLI-008`,
+  `SPEC-CMD_IDD_CLI-009`, `SPEC-CMD_IDD_CLI-010`
+
+**Purpose:** Cross-package tests verify configuration, engine, reporting,
+review-context, embedding, and command collaborators.
+
+### Evidence and scenarios
+
+Integration evidence covers configuration discovery/defaults, embedded Skill
+listing and byte-exact export, collector/engine handoff, all report formats,
+stdout/stderr isolation, document initialization/status/repair safety, and the
+project-root validity gate. Fresh scaffold fixtures prove that `docs init`
+creates only canonical role filenames with version/package frontmatter and
+returns the initial work list. `docs status` becomes complete only after
+authored content replaces every marker and every required record field is
+concrete, while old `idd.document` metadata and split role filenames remain
+invalid. Split-role tests verify that detailed reports and direct completion
+inspection name exact source/target paths, require a content-complete merge,
+delay deletion until no-loss review, and return both verification commands;
+aggregated rule guidance must not select only the first split. `docs fix`
+preserves authored state without inventing another role file.
+
+Failure scenarios include invalid config, malformed documents, migration debt,
+unwritable outputs, invalid graphs that still emit reports, and document
+operations that must abort before partial writes.
+
+### Fixtures and oracle
+
+**Oracle:** Tests combine temporary files, concrete packages, and serialized report
+inspection. The final oracle is the built CLI validating this repository with
+zero errors and warnings while an independently exported Skill matches the
+embedded file.
+
+### Exclusions
+
+Agent-specific Skill installation and the semantic quality of authored prose
+cannot be automated by this module. Review verifies those concerns using the
+exported workflow and human-readable documents.
+
+## TEST-CMD_IDD_CLI-003: Test-only Rule fixture success contract
+
+- **Kind:** `contract`
+- **Covers:** `SPEC-CMD_IDD_CLI-010`
+- **Contracts:** `Engine`
 
 **Purpose:**
 
-Test cases for the idd-cli core validation logic.
+Verify that the historical test-only `Rule` fixture exposes the documented
+`Name` and `Validate` shape and can return no findings for a successful
+implementation. This is evidence about a test fixture, not a production engine
+extension point.
 
-### Model Tests (`internal/model/`)
+**Oracle:** Pass when the
+historical test-only `Rule` fixture exposes the documented `Name` and `Validate` shape
+and can return no findings for a successful implementation. This is evidence about a
+test fixture, not a production engine extension point.
 
-| Test | Description |
-| --- | --- |
-| `TestParseIdentifierType` | Validates identifier type parsing |
-| `TestNewIdentifier` | Tests identifier creation |
-| `TestIdentifierSet_Add_Get_Has` | Tests collection operations |
-| `TestIdentifierSet_Count` | Tests counting identifiers |
-| `TestIdentifierSet_All` | Tests retrieval of all identifiers |
-| `TestIdentifierSet_Merge` | Tests merging identifier sets |
-| `TestIdentifier_AddLink` | Tests adding forward references |
-| `TestNewAnnotation` | Tests annotation creation |
-| `TestAnnotation_ToIdentifier` | Tests annotation conversion |
-| `TestValidationError_Error` | Tests error formatting |
-| `TestNewValidationResult` | Tests result initialization |
-| `TestValidationResult_AddError` | Tests error accumulation |
-| `TestValidationResult_AddWarning` | Tests warning accumulation |
-| `TestValidationResult_Sort` | Tests error sorting |
+The fixture uses an in-memory graph and direct method assertions. It performs
+no runtime registration, discovery, configuration, or engine injection.
 
-### Graph Tests (`internal/graph/`)
+## TEST-CMD_IDD_CLI-004: Test-only Rule fixture failure contract
 
-| Test | Description |
-| --- | --- |
-| `TestNewLinkageGraph` | Tests graph initialization |
-| `TestLinkageGraph_AddNode` | Tests node addition |
-| `TestLinkageGraph_AddEdge` | Tests edge addition |
-| `TestLinkageGraph_GetNode` | Tests node lookup |
-| `TestLinkageGraph_NodeInOutEdges` | Tests edge traversal |
-| `TestLinkageGraph_GetOutboundByType` | Tests outbound filtering |
-| `TestLinkageGraph_GetInboundByType` | Tests inbound filtering |
-| `TestLinkageGraph_GetBacklinks` | Tests backlink lookup |
-| `TestLinkageGraph_VerifyBidirectionalLinks` | Tests verification |
-| `TestLinkageGraph_ToSnapshot` | Tests serialization |
-| `TestLinkageGraph_Stats` | Tests statistics |
-| `TestLinkageGraph_ValidateCompleteness` | Tests completeness |
-
-**Spec Coverage:** `SPEC-CMD_IDD_CLI-001`, `SPEC-CMD_IDD_CLI-002`, `SPEC-CMD_IDD_CLI-003`, `SPEC-CMD_IDD_CLI-004`, `SPEC-CMD_IDD_CLI-005`, `SPEC-CMD_IDD_CLI-006`, `SPEC-CMD_IDD_CLI-007`, `SPEC-CMD_IDD_CLI-008`, `SPEC-CMD_IDD_CLI-009`, `SPEC-CMD_IDD_CLI-010`
-
----
-
-## TEST-CMD_IDD_CLI-002: Module Integration Tests
-
-**Status:** Done
+- **Kind:** `contract`
+- **Covers:** `SPEC-CMD_IDD_CLI-010`
+- **Contracts:** `Engine`
 
 **Purpose:**
 
-Integration tests covering the interaction between modules including config loading, engine orchestration, and reporter output.
+Verify that the same test-only fixture can return a structured validation error
+with its own rule name. The oracle is the returned finding count and rule
+value, not interaction with production validation dispatch.
 
-### Config Tests (`internal/config/`)
+**Oracle:** Pass when the
+same test-only fixture can return a structured validation error with its own rule name.
+The oracle is the returned finding count and rule value, not interaction with production
+validation dispatch.
 
-| Test | Description |
-| --- | --- |
-| `TestLoadConfig` | Tests loading config from YAML file |
-| `TestDefaultConfig` | Tests default config values |
-| `TestConfigFileSearch` | Tests config file discovery |
+This evidence deliberately excludes plugin lifecycle, ordering, error
+aggregation, and compatibility guarantees because the production engine does
+not consume the fixture interface.
 
-### Engine Tests (`internal/engine/`)
+## TEST-CMD_IDD_CLI-005: Stable command surface contract
 
-| Test | Description |
-| --- | --- |
-| `TestEngine_Run` | Tests end-to-end validation run |
-| `TestEngine_Collect` | Tests collection orchestration |
-| `TestEngine_BuildGraph` | Tests graph building |
-| `TestEngine_Validate` | Tests validation rule execution |
+- **Kind:** `contract`
+- **Covers:** `SPEC-CMD_IDD_CLI-001`, `SPEC-CMD_IDD_CLI-002`,
+  `SPEC-CMD_IDD_CLI-003`, `SPEC-CMD_IDD_CLI-004`,
+  `SPEC-CMD_IDD_CLI-005`, `SPEC-CMD_IDD_CLI-006`,
+  `SPEC-CMD_IDD_CLI-007`, `SPEC-CMD_IDD_CLI-009`,
+  `SPEC-CMD_IDD_CLI-010`
+- **Contracts:** `CLI`
 
-### Reporter Tests (`internal/reporter/`)
+**Purpose:** Verify the executable exposes the documented validation, Skill,
+and document-management command hierarchy plus its stable persistent and
+review-context options.
 
-| Test | Description |
-| --- | --- |
-| `TestJSONReporter` | Tests JSON output format |
-| `TestMarkdownReporter` | Tests Markdown output format |
+**Oracle:** The Cobra command tree contains `run`, `lint`, `skills`,
+`generate`, and `docs`; `docs` contains `init`, `fix`, `status`, and
+`review-context`; every document subcommand accepts multiple non-empty
+positional targets, `review-context` owns `--docs-path`; and the root exposes
+configuration, output, format, verbosity, and no-config flags.
 
-### Similarity Tests (`internal/similarity/`)
+## TEST-CMD_IDD_CLI-006: Embedded Skill boundary contract
 
-| Test | Description |
-| --- | --- |
-| `TestTFIDF_Vectorize` | Tests TF-IDF vectorization |
-| `TestTFIDF_CosineSimilarity` | Tests cosine similarity computation |
-| `TestTFIDF_FindDuplicates` | Tests duplicate detection |
+- **Kind:** `contract`
+- **Covers:** `SPEC-CMD_IDD_CLI-008`, `SPEC-CMD_IDD_CLI-009`
+- **Contracts:** `SkillInfo`, `SkillsFS`
 
-**Spec Coverage:** `SPEC-CMD_IDD_CLI-001`, `SPEC-CMD_IDD_CLI-002`, `SPEC-CMD_IDD_CLI-003`, `SPEC-CMD_IDD_CLI-004`, `SPEC-CMD_IDD_CLI-005`, `SPEC-CMD_IDD_CLI-006`, `SPEC-CMD_IDD_CLI-007`, `SPEC-CMD_IDD_CLI-008`, `SPEC-CMD_IDD_CLI-009`, `SPEC-CMD_IDD_CLI-010`
+**Purpose:** Verify the binary embeds exactly the paired IDD Skill and exposes
+its frontmatter through the command package's stable Skill information shape.
+
+**Oracle:** The embedded path resolves to `skills/SKILL.md`, its bytes contain
+the IDD workflow, parsed metadata retains name, audience, workflow, and
+protection state, and a missing embedded path returns an error.
+
+## Strategy
+
+The command package stays thin, so the two TEST records aggregate
+evidence from the concrete internal packages instead of duplicating every Go
+test name in this document.
+
+## Core behavior
+
+`TEST-CMD_IDD_CLI-001` covers identifier collection, typed graph construction,
+derived coverage, validation rules, structured findings, document commands,
+and safe failure behavior.
+
+Unit tests use temporary package and documentation trees. Document tests
+exercise filename-owned roles, minimal YAML identity parsing, nested
+package/document paths, CommonMark records, per-file write scope, scaffold
+work-list stability, body preservation, and atomic repair boundaries.
+Tree-sitter fixtures cover Go, TypeScript, TSX, JavaScript/JSX, C++, Java, and
+Python declaration binding and parse failure. Engine tests construct focused
+graphs and file fixtures.
+
+## Integration behavior
+
+`TEST-CMD_IDD_CLI-002` covers collaboration among configuration, collectors,
+the engine, review-context rendering, reporters, and the embedded skill filesystem.
+
+The repository-level acceptance check builds the actual `idd-cli` binary and
+runs it against the repository. JSON output must parse successfully and contain
+zero findings.
+
+The acceptance gate also checks that structural document repair is idempotent
+and that generated skeleton guidance covers semantic depth without claiming
+the resulting empty scaffold is complete.
+
+## Output isolation
+
+Verbose-mode tests and smoke checks keep diagnostics on stderr so JSON stdout
+can be piped directly to tools such as `jq`.

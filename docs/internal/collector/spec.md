@@ -1,518 +1,451 @@
 ---
-markers:
-  - id: SPEC-INTERNAL_COLLECTOR-001
-    name: Document Collector
-  - id: SPEC-INTERNAL_COLLECTOR-002
-    name: NewDocCollector
-  - id: SPEC-INTERNAL_COLLECTOR-003
-    name: Code Collector
-  - id: SPEC-INTERNAL_COLLECTOR-004
-    name: NewCodeCollector
-  - id: SPEC-INTERNAL_COLLECTOR-005
-    name: Frontmatter Parsing
-  - id: SPEC-INTERNAL_COLLECTOR-006
-    name: Frontmatter Validation
-  - id: SPEC-INTERNAL_COLLECTOR-007
-    name: File Path Validation
-  - id: SPEC-INTERNAL_COLLECTOR-008
-    name: Title Extraction
-  - id: SPEC-INTERNAL_COLLECTOR-009
-    name: Module Prefix Validation
-  - id: SPEC-INTERNAL_COLLECTOR-010
-    name: Document Structure Validation
-  - id: SPEC-INTERNAL_COLLECTOR-011
-    name: Annotation Extraction
-  - id: SPEC-INTERNAL_COLLECTOR-012
-    name: Function Context Extraction
-  - id: SPEC-INTERNAL_COLLECTOR-013
-    name: Code Origin Tracking
-
-  - id: SPEC-INTERNAL_COLLECTOR-017
-    name: DocCollector.Collect
-  - id: SPEC-INTERNAL_COLLECTOR-024
-    name: CodeCollector.Collect
-  - id: SPEC-INTERNAL_COLLECTOR-025
-    name: SplitAnnotationRefs
-
-related_files:
-  spec: docs/internal/collector/spec.md
-  contract: docs/internal/collector/contract.md
-  design: docs/internal/collector/design.md
-  testing: docs/internal/collector/testing.md
-
+idd:
+  version: "1.0"
+  package: internal/collector
 ---
 
-# Specification (collector)
+# Specifications: internal/collector
+
+## SPEC-INTERNAL_COLLECTOR-001: Distributed ownership and safety
 
-## SPEC-INTERNAL_COLLECTOR-001: Document Collector
+- **Design:** `CollectorModule`
+- **Contract:** `IDDDocumentSet`
+
+**Requirement:** Parse and validate minimal IDD version/package frontmatter,
+derive the document role only from its canonical filename, and preserve
+human-readable role-specific Markdown records while retaining legacy Markdown
+collection and safe document initialization and repair.
+
+**Acceptance:**
+
+Each source package and nested sub-package maps independently to
+`docs/<package>/` and owns `design.md`, `contract.md`, `spec.md`, and
+`testing.md`. The exact lowercase basename is the only role authority. YAML
+frontmatter contains only `version` and `package`; the former `idd.document`
+field is rejected without a compatibility mode. Level-two Markdown records own
+design components, contracts, SPECs, or TESTs and coverage. The collector
+derives reverse SPEC-to-TEST links from `testing.md` `Covers` fields, so a
+relationship is written once without creating a shared write target.
 
-**Design:** `CollectorModule`
+CommonMark AST parsing keeps normal prose, examples, and subordinate headings
+free-form while providing exact record and field source locations. Syntax
+errors, semantic YAML catalogs, unknown fields, path/package disagreement,
+non-canonical or split role filenames, package-derived module disagreement,
+missing files, placeholders, duplicates, large registry tables, and unresolved
+references become structured findings. A bad document set does not prevent
+unrelated packages from being collected.
 
-**Contract:** `DocCollector`
+Initialization is non-overwriting and refuses legacy metadata before its first
+write. Repair normalizes only version/package identity and atomically replaces
+each selected Markdown file; it never emits role metadata, reformats body
+prose, or invents semantic records.
 
-**Requirement:**
+Generated skeletons prompt authors to explain responsibilities, boundaries,
+rationale, failures, acceptance evidence, scenarios, fixtures, and oracles.
+Those prompts do not become declarations and do not make an empty scaffold
+complete. The collector rejects empty or obvious placeholder content but does
+not use word, line, or file-size counts as a substitute for semantic review.
+Long role documents stay in the canonical file instead of being split into
+feature- or size-suffixed filenames.
 
-The Document Collector (`DocCollector`) must collect IDD identifiers from markdown documentation files, parsing frontmatter markers and extracting identifier references from content.
+A split-role validation finding must retain enough structured evidence for the
+reporter to generate a path-specific agent prompt. Direct completion
+inspection of a split file or a tree containing one must return equivalent
+instructions: read the split and canonical documents, preserve all unique
+still-valid semantics rather than summarize them away, remove the split only
+after a no-loss review, and rerun package status plus full-project validation.
+Neither collection nor status inspection performs the merge or deletion.
 
-**Tests:** `TEST-INTERNAL_COLLECTOR-001`
+## SPEC-INTERNAL_COLLECTOR-002: Document collector construction
 
-**Status:** Done
+- **Design:** `CollectorModule`
+- **Contract:** `DocCollector`
 
-**Implementation:** `internal/collector/doc_collector.go`
+**Requirement:** Construct a `DocCollector` with the supplied IDD
+configuration.
 
-**Key Types:**
+**Acceptance:**
 
-- `DocCollector` — Main collector struct with config reference
-- `Frontmatter` — YAML frontmatter with marker definitions
-- `Marker` — Individual marker with ID, name, and describe fields
+Constructor contract tests require a non-nil collector and compare its retained
+configuration pointer with the supplied value. Collection tests then observe
+that its document patterns and ignore paths select the expected Markdown
+evidence.
 
-**Key Functionality:**
+Construction performs no filesystem access and does not copy or normalize the
+configuration. The caller owns supplying a validated, non-nil configuration
+and may create independent collectors for different repository policies.
 
-- Recursively walk directories to find `.md` files
-- Parse YAML frontmatter to extract defined markers
-- Extract IDD references from markdown content using regex
-- Validate frontmatter markers match actual content headings
-- Validate module prefix matches directory structure
-- Report errors for malformed markers (not wrapped in backticks)
+## SPEC-INTERNAL_COLLECTOR-003: Source annotation collector
 
-**Public Functions:**
+- **Design:** `CollectorModule`
+- **Contract:** `CodeCollector`
 
-## SPEC-INTERNAL_COLLECTOR-016: DocCollector.NewDocCollector
+**Requirement:** Represent collection of IDD annotations from supported source
+files.
 
-**Function Signature:**
-`func NewDocCollector(cfg *config.Config) *DocCollector`
+**Acceptance:**
 
-**Purpose:** Creates a new DocCollector with the given configuration.
+Seven-language table-driven fixtures compare declaration name, kind,
+visibility, source line, attached annotation kind, and resulting code-origin
+identifier. String literals, body comments, detached comments, ignored ranges,
+malformed syntax, and configured-but-unsupported extensions must not produce a
+fallback identifier.
 
-**Parameters:**
+The collector represents source evidence only. It does not resolve whether a
+referenced document identifier exists, build graph relationships, or judge
+behavioral consistency; those decisions require merged document and code
+origins in the engine.
 
-- `cfg`: Configuration pointer
+## SPEC-INTERNAL_COLLECTOR-004: Source collector construction
 
-**Returns:** A new DocCollector instance
+- **Design:** `CollectorModule`
+- **Contract:** `CodeCollector`
 
-## SPEC-INTERNAL_COLLECTOR-017: DocCollector.Collect
+**Requirement:** Construct a `CodeCollector` with the supplied IDD
+configuration.
 
-**Design:** `CollectorModule`
+**Acceptance:**
 
-**Contract:** `Collect`
+Constructor tests require a non-nil collector retaining the supplied
+configuration. Temporary source trees then demonstrate that configured
+extensions and annotation prefixes are collected, configured ignore paths are
+excluded, and unrelated Markdown files contribute no source evidence.
 
-**Requirement:**
+Construction has no traversal side effects and retains the configuration for
+the collector lifetime. Multiple collectors may operate independently, but a
+single validation run should use the same policy for documentation and source
+evidence.
 
-Collect IDD identifiers from markdown files at the target path, returning collected identifiers, structural validation errors, and any traversal error.
+## SPEC-INTERNAL_COLLECTOR-005: Legacy marker values
 
-**Tests:** `TEST-INTERNAL_COLLECTOR-017`
+- **Design:** `CollectorModule`
+- **Contract:** `LegacyFrontmatter`
 
----
+**Requirement:** Represent legacy marker identifiers with meaningful names and
+descriptions.
 
-**Function Signature:**
-`func (c *DocCollector) Collect(ctx context.Context, targetPath string) (*model.IdentifierSet, []*model.ValidationError, error)`
+**Acceptance:**
 
-**Purpose:** Collects IDD identifiers from markdown files at the target path. If targetPath is a directory, recursively walks to find all `.md` files.
+Parsing a legacy marker with an ID, display name, and description preserves
+all three values. The marker-description test compares the exact authored text
+used by human-facing diagnostics.
 
-**Parameters:**
+Each value retains the declared ID, display name, and optional description
+needed by the legacy parser. It is compatibility data, not a canonical record
+for a package that has opted into minimal `idd` identity.
 
-- `ctx`: Context for cancellation
-- `targetPath`: Path to markdown file or directory
+## SPEC-INTERNAL_COLLECTOR-006: Legacy related document set
 
-**Returns:** IdentifierSet with collected identifiers, validation errors, and any error encountered
+- **Design:** `CollectorModule`
+- **Contract:** `LegacyFrontmatter`
 
----
+**Requirement:** Represent the four related narrative document paths in legacy
+frontmatter.
 
-## SPEC-INTERNAL_COLLECTOR-018: DocCollector.ParseFrontmatter
+**Acceptance:**
 
-**Function Signature:**
-`func ParseFrontmatter(content string) (*Frontmatter, error)`
+Decoding frontmatter with explicit design, contract, specification, and
+testing paths must return each authored value in its matching field.
+Collecting that fixture must retain those related-file paths without entering
+self-describing mode.
 
-**Purpose:** Parses YAML frontmatter from markdown content. Looks for content between opening `---` and closing `---` markers, excluding code blocks.
+Paths describe where legacy declarations and backlinks are expected. They are
+validated as metadata but never copied into self-describing frontmatter,
+because fixed filenames already establish those roles.
 
-**Parameters:**
+## SPEC-INTERNAL_COLLECTOR-007: Legacy frontmatter values
 
-- `content`: Raw markdown content
+- **Design:** `CollectorModule`
+- **Contract:** `LegacyFrontmatter`
 
-**Returns:** Parsed Frontmatter pointer or nil if no frontmatter found, error if parsing fails
+**Requirement:** Represent legacy marker and related-file metadata as one
+frontmatter value.
 
-## SPEC-INTERNAL_COLLECTOR-019: DocCollector.ValidateFrontmatterMarkers
+**Acceptance:**
 
-**Function Signature:**
-`func ValidateFrontmatterMarkers(fm *Frontmatter, content string, filePath string) []string`
+Given valid legacy YAML containing markers and related narrative paths, the
+parsed value exposes both groups without losing or reclassifying either. The
+same package remains on the legacy collection path; minimal
+`idd.version`/`idd.package` documents are parsed through the separate
+self-describing representation.
 
-**Purpose:** Validates that frontmatter markers match actual content headings and are properly formatted (wrapped in backticks).
+The value may contain markers, related files, or both. Absence of a leading
+frontmatter block yields no legacy metadata rather than an invented empty
+catalog; malformed YAML returns a parse error with file context.
 
-**Parameters:**
+## SPEC-INTERNAL_COLLECTOR-008: Legacy frontmatter parsing
 
-- `fm`: Parsed frontmatter
-- `content`: Full markdown content
-- `filePath`: Path to the file for error messages
+- **Design:** `CollectorModule`
+- **Contract:** `LegacyFrontmatter`
 
-**Returns:** List of validation error messages (empty if valid)
+**Requirement:** Parse the leading YAML frontmatter document without treating
+fenced-code separators as metadata boundaries.
 
----
+**Acceptance:**
 
----
+Table-driven parsing distinguishes valid leading YAML, no frontmatter, an
+empty marker list, malformed YAML, and `---` delimiters inside fenced examples.
+Only the leading block produces metadata; malformed leading YAML returns an
+error rather than a partial value.
 
-## SPEC-INTERNAL_COLLECTOR-020: DocCollector.ValidateDocumentStructure
+The parser ignores `---` sequences inside the body and fenced examples, returns
+`nil` when no leading block exists, and preserves YAML decode errors so callers
+can report structural debt instead of silently collecting incomplete markers.
 
-**Function Signature:**
-`func ValidateDocumentStructure(filePath string, idType string) error`
+## SPEC-INTERNAL_COLLECTOR-009: Legacy marker validation
 
-**Purpose:** Validates that a document's filename matches its identifier type (e.g., SPEC should be in `spec.md`, TEST in `testing.md`).
+- **Design:** `CollectorModule`
+- **Contract:** `LegacyFrontmatter`
 
-**Parameters:**
+**Requirement:** Verify that frontmatter markers resolve to correctly formed
+Markdown detail headings.
 
-- `filePath`: Path to the document
-- `idType`: Expected identifier type
+**Acceptance:**
 
-**Returns:** Error if filename doesn't match expected pattern
+Validation fixtures distinguish a marker with its matching detail heading from
+a missing heading, a malformed or description-free heading, and an ordinary
+inline mention. The failing cases report the affected identifier instead of
+inventing a definition.
 
-## SPEC-INTERNAL_COLLECTOR-021: DocCollector.ValidateModulePrefix
+Validation distinguishes a heading definition from an inline reference. Every
+declared marker must resolve to an appropriate heading, and every discovered
+definition must agree with frontmatter ownership. Findings identify the file
+and marker so migration can preserve the explanatory section.
 
-**Function Signature:**
-`func ValidateModulePrefix(id string, filePath string) error`
+## SPEC-INTERNAL_COLLECTOR-010: Legacy marker formatting
 
-**Purpose:** Validates that the module part of an identifier matches the directory structure (e.g., an identifier with module "BE" should be in docs/backend/).
+- **Design:** `CollectorModule`
+- **Contract:** `LegacyFrontmatter`
 
-**Parameters:**
+**Requirement:** Report bare IDD markers outside headings, frontmatter, and
+fenced code.
 
-- `id`: The identifier to validate
-- `filePath`: Path to the file containing the identifier
+**Acceptance:**
 
-**Returns:** Error if module prefix doesn't match directory
+Formatting-validation fixtures place the same declared marker in a heading, a
+backtick-delimited reference, and bare body prose. Definitions and explicit
+references are accepted; a bare body occurrence produces a source-located
+formatting finding, while frontmatter and fenced examples remain excluded.
 
----
+The scan excludes frontmatter, headings that define a marker, fenced code, and
+quoted examples. Its purpose is to keep references visibly distinct for human
+readers and deterministic for the legacy extractor, not to ban ordinary prose
+containing coincidental words.
 
----
+## SPEC-INTERNAL_COLLECTOR-011: Legacy heading validation
 
-## SPEC-INTERNAL_COLLECTOR-022: DocCollector.GetExpectedFilename
+- **Design:** `CollectorModule`
+- **Contract:** `LegacyFrontmatter`
 
-**Function Signature:**
-`func GetExpectedFilename(idType string) string`
+**Requirement:** Require IDD detail headings to contain a valid identifier and
+a meaningful description after a colon.
 
-**Purpose:** Returns the expected filename for a given identifier type.
+**Acceptance:**
 
-**Parameters:**
+Heading-validation cases accept an identifier heading only when its ID matches
+the declaration and a colon is followed by meaningful text. Missing, bare,
+mismatched, or malformed headings produce a source-located finding naming the
+declared marker.
 
-- `idType`: Identifier type (SPEC, CONTRACT, TEST, DESIGN)
+The accepted legacy shape is a Markdown identifier heading followed by a colon
+and meaningful title. Identifier syntax remains strict and package-oriented;
+internal section markers or a copied identifier used as its own title do not
+become valid requirements.
 
-**Returns:** Expected filename (spec.md, contract.md, testing.md, design.md) or empty string if unknown
+## SPEC-INTERNAL_COLLECTOR-012: Narrative filename mapping
 
-**Acceptance Criteria:**
+- **Design:** `CollectorModule`
+- **Contract:** `LegacyFrontmatter`
 
-- [x] Collects identifiers from markdown files in directory trees
-- [x] Parses frontmatter markers correctly
-- [x] Detects defined markers vs referenced markers
-- [x] Extracts title from heading containing identifier
-- [x] Validates module prefix consistency
-- [x] Ignores paths configured in `ignore_paths`
-- [x] Reports errors for bare markers (not wrapped in backticks)
+**Requirement:** Map each IDD identifier type to its fixed narrative Markdown
+filename.
 
-**Tests:** `TEST-INTERNAL_COLLECTOR-001`
+**Acceptance:**
 
-**Related:** `CON-INTERNAL_COLLECTOR-001`
+The mapping test compares SPEC, TEST, CONTRACT, and DESIGN identifiers with
+`spec.md`, `testing.md`, `contract.md`, and `design.md` respectively, and
+requires an unknown identifier kind to return an empty filename.
 
----
+SPEC maps to `spec.md`, TEST to `testing.md`, CONTRACT to `contract.md`, and
+DESIGN to `design.md`. Unknown and internal marker types return no narrative
+filename rather than being assigned to an arbitrary document.
 
----
+## SPEC-INTERNAL_COLLECTOR-013: Narrative document placement
 
-## SPEC-INTERNAL_COLLECTOR-002: Code Collector
+- **Design:** `CollectorModule`
+- **Contract:** `LegacyFrontmatter`
 
-**Design:** `CollectorModule`
+**Requirement:** Verify that legacy identifiers are declared in the narrative
+file assigned to their type while allowing root documentation.
 
-**Contract:** `CodeCollector`
+**Acceptance:**
 
-**Requirement:**
+For a package-local legacy declaration, a matching role filename returns no
+placement error and a mismatched role filename reports the expected canonical
+file. Root-document cases return no placement error, allowing explanatory
+Markdown to mention identifiers without becoming a package-local declaration
+owner.
 
-The Code Collector (`CodeCollector`) must collect IDD annotations from source code files (Go, TypeScript, JavaScript), extracting `@implement`, `@test`, and `@test-contract` annotations.
+The check uses the file basename and identifier type. Root documentation may
+quote identifiers for onboarding or architecture discussion, while a
+package-local declaration must live in its owning narrative file so collectors
+and readers share one location convention.
 
-**Tests:** `TEST-INTERNAL_COLLECTOR-002`
+## SPEC-INTERNAL_COLLECTOR-017: Deterministic document collection
 
-**Status:** Done
+- **Design:** `CollectorModule`
+- **Contract:** `DocCollector`
 
-**Implementation:** `internal/collector/code_collector.go`
+**Requirement:** Discover self-describing document sets before Markdown and
+select self-describing or legacy parsing deterministically for each package.
 
-**Key Types:**
+**Acceptance:**
 
-- `CodeCollector` — Main collector struct with config reference
+Directory collection has ordered phases:
 
-**Key Functionality:**
+1. reject IDD metadata on arbitrary filenames and role-derived split files;
+2. discover directories where a canonical document has an `idd` frontmatter
+   block;
+3. parse each four-document set and then parse other permitted Markdown through
+   the legacy frontmatter path.
 
-- Walk directory trees to find source files (`.go`, `.ts`, `.tsx`, `.js`)
-- Extract annotations using configured patterns
-- Extract function context (function name, preceding comments)
-- Build identifiers from annotations with code location
-- Set origin to `model.OriginCode` for code-based identifiers
+When the target is one fixed self-describing document, its three siblings are
+included in the same validation scope. The body may use a declared ID as an
+optional detail heading, but it cannot reintroduce legacy `markers` or
+`related_files`.
 
-**Public Functions:**
+Traversal and parse order are stable so repeated runs produce stable findings.
+Recoverable document defects are returned as structured validation errors while
+unavailable targets or traversal failures follow the documented collector error
+boundary.
 
-## SPEC-INTERNAL_COLLECTOR-023: CodeCollector.NewCodeCollector
+## SPEC-INTERNAL_COLLECTOR-024: Source annotation collection
 
-**Function Signature:**
-`func NewCodeCollector(cfg *config.Config) *CodeCollector`
+- **Design:** `CollectorModule`
+- **Contract:** `CodeCollector`
 
-**Purpose:** Creates a new CodeCollector with the given configuration.
+**Requirement:** Bind `@implement`, `@test`, and `@test-contract` comments to
+real declarations in Go, TypeScript, TSX, JavaScript/JSX, C++, Java, and Python
+source files.
 
-**Parameters:**
+**Acceptance:**
 
-- `cfg`: Configuration pointer
+The source collector walks configured `.go`, `.ts`, `.tsx`, `.js`, `.jsx`,
+`.cpp`, `.cc`, `.cxx`, `.hpp`, `.hh`, `.hxx`, `.java`, and `.py` files. A
+pinned Tree-sitter grammar creates a normalized declaration and comment model
+for each file. The collector honors configured ignore paths and standalone
+`idd:ignore` ranges and creates one code-origin identifier per valid
+declaration-attached annotation reference.
 
-**Returns:** A new CodeCollector instance
+Configuration may rename the three annotation prefixes. Parsing maps those
+lexical values back to the stable semantic kinds `implement`, `test`, and
+`test-contract`, so custom spelling does not change identifier type, TEST kind,
+or engine policy.
 
-## SPEC-INTERNAL_COLLECTOR-024: CodeCollector.Collect
+Declaration context is retained for consistency diagnostics. `@test` produces
+TEST kind `test`; `@test-contract` produces TEST kind `contract`, allowing the
+engine to compare source annotations with `testing.md` records.
 
-**Design:** `CollectorModule`
+Annotations are evidence attached to declarations, not free-form identifier
+mentions. Strings, function-body comments, and detached comments are never
+bound. A configured file with no pinned grammar or a supported file with
+invalid syntax produces an exact `source-parse` finding and no partial
+evidence; line-oriented or regex fallback is forbidden because it would make
+placement and visibility results language-dependent and untrustworthy.
 
-**Contract:** `Collect`
+The normalized model retains declaration name, kind, source range, visibility,
+test classification, annotations, and parse errors. Collection does not
+require a corresponding document ID; the engine reports that mismatch after
+both origins are available.
 
-**Requirement:**
+## SPEC-INTERNAL_COLLECTOR-025: Multiple references
 
-Collect IDD identifiers from code annotations in source files at the target path.
+- **Design:** `CollectorModule`
+- **Contract:** `CodeCollector`
 
-**Tests:** `TEST-INTERNAL_COLLECTOR-024`
+**Requirement:** Split comma-separated annotation references into trimmed
+identifiers without losing their annotation kind.
 
----
+**Acceptance:**
 
-**Function Signature:**
-`func (c *CodeCollector) Collect(ctx context.Context, targetPath string) (*model.IdentifierSet, error)`
+One annotation may contain comma-separated identifiers. Each value is trimmed
+and collected independently while retaining the shared annotation kind and
+source location.
 
-**Purpose:** Collects IDD identifiers from code annotations in source files at the target path. If targetPath is a directory, recursively walks to find all `.go`, `.ts`, `.tsx`, `.js` files.
+Empty segments are ignored. Splitting does not validate cross-reference
+existence or change identifier case; syntax validation and graph correspondence
+remain with their owning stages.
 
-**Parameters:**
+## SPEC-INTERNAL_COLLECTOR-026: Focused SPEC review evidence
 
-- `ctx`: Context for cancellation
-- `targetPath`: Path to source file or directory
+- **Design:** `CollectorModule`
+- **Contract:** `SpecReviewContext`
 
-**Returns:** IdentifierSet with collected identifiers from code, and any error encountered
+**Requirement:** Assemble bounded canonical documentation, test, contract, and
+source declaration evidence for one or a bounded batch of requested SPECs
+without judging semantic quality.
 
----
+**Acceptance:**
 
-## SPEC-INTERNAL_COLLECTOR-025: CodeCollector.SplitAnnotationRefs
+Each context uses schema `idd.spec_review_context.v1`, resolves one canonical
+SPEC owner, and includes the complete bounded SPEC, Contract, and covering TEST
+record Markdown plus matching non-ignored implementation and test declarations,
+preserves subordinate authored `Details`, and sorts evidence deterministically.
+Record Markdown ends at the next peer H2 heading, so package-wide strategy or
+guidance sections are not attributed to the preceding record. Qualified
+`<package>#<name>` Contract references and TEST records in another collected
+package remain eligible evidence.
+Test declarations are selected through the covering TEST IDs, including both
+`@test` and `@test-contract`. Records and declaration excerpts expose truncation.
+Malformed, absent, and duplicate SPEC owners return operational errors.
 
-**Design:** `CollectorModule`
+Batch collection accepts at most ten unique IDs, deduplicates repeated inputs
+in first-request order, performs one documentation scan and one source scan,
+and returns schema `idd.spec_review_context_batch.v1`. Any invalid member fails
+the whole request so a reviewer cannot mistake partial evidence for a complete
+batch.
 
-**Contract:** `SplitAnnotationRefs`
+## SPEC-INTERNAL_COLLECTOR-027: Batch document operations
 
-**Requirement:**
+- **Design:** `CollectorModule`
+- **Contract:** `IDDDocumentSet`
 
-Split comma-separated IDD annotation references into individual trimmed identifiers.
+**Requirement:** Inspect, initialize, or structurally repair one or more
+document targets with deterministic deduplication and whole-batch preflight.
 
-**Tests:** `TEST-INTERNAL_COLLECTOR-001`, `TEST-INTERNAL_COLLECTOR-002`, `TEST-INTERNAL_COLLECTOR-003`, `TEST-INTERNAL_COLLECTOR-004`, `TEST-INTERNAL_COLLECTOR-005`, `TEST-INTERNAL_COLLECTOR-006`, `TEST-INTERNAL_COLLECTOR-007`, `TEST-INTERNAL_COLLECTOR-008`, `TEST-INTERNAL_COLLECTOR-009`, `TEST-INTERNAL_COLLECTOR-010`, `TEST-INTERNAL_COLLECTOR-011`, `TEST-INTERNAL_COLLECTOR-012`, `TEST-INTERNAL_COLLECTOR-013`, `TEST-INTERNAL_COLLECTOR-014`, `TEST-INTERNAL_COLLECTOR-015`, `TEST-INTERNAL_COLLECTOR-016`, `TEST-INTERNAL_COLLECTOR-017`, `TEST-INTERNAL_COLLECTOR-021`, `TEST-INTERNAL_COLLECTOR-022`, `TEST-INTERNAL_COLLECTOR-023`, `TEST-INTERNAL_COLLECTOR-024`, `TEST-INTERNAL_COLLECTOR-025`, `TEST-INTERNAL_COLLECTOR-026`, `TEST-INTERNAL_COLLECTOR-027`
+**Acceptance:**
 
-**Function Signature:**
-`func SplitAnnotationRefs(s string) []string`
+Completion inspection accepts one or more role files, package directories, or
+documentation trees. It cleans repeated inputs in first-request order,
+aggregates the same role-schema work items used by single-target inspection,
+deduplicates findings produced by overlapping targets, and sorts the resulting
+work list deterministically. Relative and absolute spellings of the same
+filesystem target share one identity. Schema `idd.document_status.v1` includes
+the normalized first-occurrence `targets` that were inspected.
 
-**Purpose:** Splits comma-separated IDD references from an annotation and trims whitespace. Used to handle multiple references in a single annotation like `@implement` `SPEC-INTERNAL_COLLECTOR-001`, `SPEC-INTERNAL_COLLECTOR-002`.
+Initialization accepts one or more project-relative source packages. Repair
+accepts one or more canonical role files or package directories. Both mutators
+prepare every selected document result before the first write, merge repeated
+or overlapping file plans, and reject conflicting plans. An invalid package,
+legacy or central-catalog input, malformed document, or unsupported path
+aborts the batch without changing a valid sibling target.
 
-**Parameters:**
+New files still use exclusive creation and existing files still use atomic
+replacement. Whole-batch preflight does not claim a cross-filesystem
+transaction: an unexpected I/O failure while applying an already validated
+plan may leave earlier individually atomic writes in place. Batch operations
+do not author semantic records.
 
-- `s`: Comma-separated identifier references
+## Legacy compatibility
 
-**Returns:** Slice of individual trimmed identifier references
+The legacy path remains isolated in `frontmatter.go`:
 
----
+- `SPEC-INTERNAL_COLLECTOR-005` through
+  `SPEC-INTERNAL_COLLECTOR-007` define marker and frontmatter values;
+- `SPEC-INTERNAL_COLLECTOR-008` through
+  `SPEC-INTERNAL_COLLECTOR-011` parse and validate legacy metadata and headings;
+- `SPEC-INTERNAL_COLLECTOR-012` and
+  `SPEC-INTERNAL_COLLECTOR-013` enforce narrative filename placement.
 
-**Acceptance Criteria:**
-
-- [x] Supports Go, TypeScript, and JavaScript files
-- [x] Extracts `@implement`, `@test`, `@test-contract` annotations
-- [x] Captures function name and preceding comments as context
-- [x] Reports file path and line number for each annotation
-- [x] Ignores paths configured in `ignore_paths`
-- [x] Handles multiple annotations on same line
-
----
-
-## SPEC-INTERNAL_COLLECTOR-003: Frontmatter Parsing
-
-**Design:** `CollectorModule`
-
-**Contract:** `ParseFrontmatter`
-
-**Requirement:**
-
-Frontmatter parsing must handle various YAML structures including markers with id, name, and describe fields.
-
-**Tests:** `TEST-INTERNAL_COLLECTOR-003`, `TEST-INTERNAL_COLLECTOR-004`
-
-**Status:** Done
-
-**Implementation:** `internal/collector/frontmatter.go`
-
----
-
-## SPEC-INTERNAL_COLLECTOR-004: Frontmatter Validation
-
-**Design:** `CollectorModule`
-
-**Contract:** `ValidateFrontmatterMarkers`
-
-**Requirement:**
-
-Frontmatter validation must check that markers in YAML match the actual document headings.
-
-**Tests:** `TEST-INTERNAL_COLLECTOR-005`, `TEST-INTERNAL_COLLECTOR-006`
-
-**Status:** Done
-
-**Implementation:** `internal/collector/frontmatter.go`
-
----
-
-## SPEC-INTERNAL_COLLECTOR-005: File Path Validation
-
-**Design:** `CollectorModule`
-
-**Contract:** `ValidateDocumentStructure`
-
-**Requirement:**
-
-File path validation ensures proper document structure and naming conventions.
-
-**Tests:** `TEST-INTERNAL_COLLECTOR-007`, `TEST-INTERNAL_COLLECTOR-008`
-
-**Status:** Done
-
-**Implementation:** `internal/collector/doc_collector.go`
-
----
-
-## SPEC-INTERNAL_COLLECTOR-006: Title Extraction
-
-**Design:** `CollectorModule`
-
-**Contract:** `ExtractTitle`
-
-**Requirement:**
-
-Extract document titles from markdown headings containing identifiers.
-
-**Tests:** `TEST-INTERNAL_COLLECTOR-009`, `TEST-INTERNAL_COLLECTOR-010`
-
-**Status:** Done
-
-**Implementation:** `internal/collector/doc_collector.go`
-
----
-
-## SPEC-INTERNAL_COLLECTOR-007: Module Prefix Validation
-
-**Design:** `CollectorModule`
-
-**Contract:** `ValidateModulePrefix`
-
-**Requirement:**
-
-Validate that identifier module prefixes match directory structure.
-
-**Tests:** `TEST-INTERNAL_COLLECTOR-011`, `TEST-INTERNAL_COLLECTOR-012`
-
-**Status:** Done
-
-**Implementation:** `internal/collector/doc_collector.go`
-
----
-
-## SPEC-INTERNAL_COLLECTOR-008: Document Structure Validation
-
-**Design:** `CollectorModule`
-
-**Contract:** `GetExpectedFilename`
-
-**Requirement:**
-
-Validate document structure including expected filenames by identifier type.
-
-**Tests:** `TEST-INTERNAL_COLLECTOR-019`, `TEST-INTERNAL_COLLECTOR-014`
-
-**Status:** Done
-
-**Implementation:** `internal/collector/doc_collector.go`
-
----
-
-## SPEC-INTERNAL_COLLECTOR-009: Annotation Extraction
-
-**Design:** `CollectorModule`
-
-**Contract:** `ExtractAnnotations`
-
-**Requirement:**
-
-Extract IDD annotations from code including @implement, @test, @test-contract.
-
-**Tests:** `TEST-INTERNAL_COLLECTOR-015`, `TEST-INTERNAL_COLLECTOR-024`
-
-**Status:** Done
-
-**Implementation:** `internal/collector/code_collector.go`
-
----
-
-## SPEC-INTERNAL_COLLECTOR-010: Function Context Extraction
-
-**Design:** `CollectorModule`
-
-**Contract:** `ExtractFunctionContext`
-
-**Requirement:**
-
-Extract function name and preceding comments as context for code annotations.
-
-**Tests:** `TEST-INTERNAL_COLLECTOR-016`, `TEST-INTERNAL_COLLECTOR-025`
-
-**Status:** Done
-
-**Implementation:** `internal/collector/code_collector.go`
-
----
-
-## SPEC-INTERNAL_COLLECTOR-011: Code Origin Tracking
-
-**Design:** `CollectorModule`
-
-**Contract:** `SetOrigin`
-
-**Requirement:**
-
-Set origin to OriginCode for code-based identifiers to distinguish from doc origins.
-
-**Tests:** `TEST-INTERNAL_COLLECTOR-017`
-
-**Status:** Done
-
-**Implementation:** `internal/collector/code_collector.go`
-
----
-
-## SPEC-INTERNAL_COLLECTOR-012: Multi-Annotation Handling
-
-**Design:** `CollectorModule`
-
-**Contract:** `SplitAnnotationRefs`
-
-**Requirement:**
-
-Handle multiple annotations on the same line or multiple references in single annotation.
-
-**Tests:** `TEST-INTERNAL_COLLECTOR-024`
-
-**Status:** Done
-
-**Implementation:** `internal/collector/code_collector.go`
-
----
-
-## SPEC-INTERNAL_COLLECTOR-013: Path Ignore Patterns
-
-**Design:** `CollectorModule`
-
-**Contract:** `ShouldIgnore`
-
-**Requirement:**
-
-Respect ignore_paths configuration when collecting from directories.
-
-**Tests:** `TEST-INTERNAL_COLLECTOR-013`
-
----
-**Status:** Done
-
-**Implementation:** `internal/collector/doc_collector.go`, `internal/collector/code_collector.go`
+Self-describing packages do not execute these legacy relationship-parsing
+rules.

@@ -1,41 +1,62 @@
 ---
-markers:
-  - id: SPEC-INTERNAL_AUTH-001
-    name: Authentication Module
-
-related_files:
-  spec: docs/internal/auth/spec.md
-  contract: docs/internal/auth/contract.md
-  design: docs/internal/auth/design.md
-  testing: docs/internal/auth/testing.md
-
+idd:
+  version: "1.0"
+  package: internal/auth
 ---
 
-# Specification (auth)
+# Specifications: internal/auth
 
-## SPEC-INTERNAL_AUTH-001: Authentication Module
+## SPEC-INTERNAL_AUTH-001: Authentication value boundaries
 
-**Design:** `AuthModule`
+- **Design:** `AuthTypes`
+- **Contract:** `AuthenticationValues`
 
-**Contract:** `LoginRequest`
+**Requirement:** Define login credential and token response value types without
+implementing authentication behavior.
 
-**Requirement:**
+### Context and required behavior
 
-Authentication module provides user login and token generation functionality for idd-cli. It defines the core types for authentication requests and responses.
+`LoginRequest` carries an email address and password. `LoginResponse` carries a
+token returned by a future authentication service. The package currently
+defines these values only; it does not authenticate credentials, issue tokens,
+or expose login/logout functions.
 
-**Tests:** `TEST-INTERNAL_AUTH-001`
-**Status:** Done
+Both values must remain directly constructible Go structs so future callers can
+exchange them without importing a transport, persistence adapter, or
+cryptographic implementation. Their names and fields provide traceable domain
+vocabulary; they do not confer runtime validity.
 
-**Implementation:** `internal/auth/auth.go`
+### Constraints and sensitive data
 
-**Key Types:**
+- Email and password validity are caller/service concerns until a validating
+  component is explicitly introduced.
+- Plaintext passwords must be treated as request-scoped sensitive values even
+  though the string type cannot enforce that lifecycle.
+- A successful future response is expected to contain a non-empty token, but
+  token syntax and claim validation remain outside this package.
+- IDD annotations on the declarations are documentation evidence only and must
+  not be interpreted as executable validation.
 
-- `LoginRequest` — User login credentials (email, password)
-- `LoginResponse` — Authentication result with token
+### Implementation boundary and non-goals
 
-**Acceptance Criteria:**
+This SPEC constrains the existence, names, field meanings, and value-only
+nature of `LoginRequest` and `LoginResponse`. It does not require login
+services, validation methods, token parsing, session persistence, middleware,
+logout behavior, authorization, or external dependencies.
 
-- [x] LoginRequest struct contains email and password fields
-- [x] LoginResponse struct contains token field
-- [x] Authentication types are annotated with @implement; tests use @test-contract for CONTRACT coverage
-- [x] Test annotations link to `TEST-INTERNAL_AUTH-001`
+If any of those capabilities are added, they require their own Component,
+Contract, behavioral SPEC, TEST evidence, and implementation annotation rather
+than being folded into this record as an undocumented assumption.
+
+### Acceptance evidence
+
+**Acceptance:**
+
+The source must expose both annotated value types without runtime dependencies.
+Contract tests document representative email, password, and token expectations
+while explicitly demonstrating that the tests—not methods on the structs—apply
+those checks.
+
+The source declarations implementing this behavior are
+`internal/auth/auth.go:LoginRequest` and
+`internal/auth/auth.go:LoginResponse`.

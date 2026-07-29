@@ -1,22 +1,21 @@
 ---
-related_files:
-  spec: docs/internal/auth/spec.md
-  contract: docs/internal/auth/contract.md
-  design: docs/internal/auth/design.md
-  testing: docs/internal/auth/testing.md
+idd:
+  version: "1.0"
+  package: internal/auth
 ---
 
-# Contracts (auth)
+# Contracts: internal/auth
 
-## Authentication Interface Contracts
+## Contract: AuthenticationValues
 
-**Status:** Done
+**Guarantees:**
 
-**Overview:**
+`AuthenticationValues` is a data-shape contract for callers that will exchange
+login credentials and token responses. It describes the meaning and handling
+expectations of the fields; the current structs do not enforce those
+expectations at runtime.
 
-Contracts for authentication functionality in idd-cli.
-
-### LoginRequest Contract
+### LoginRequest
 
 ```go
 type LoginRequest struct {
@@ -25,12 +24,28 @@ type LoginRequest struct {
 }
 ```
 
-**Invariant:**
+#### Inputs and validity
 
-- `Email` must be a valid email format
-- `Password` must be non-empty
+`Email` is expected to contain a syntactically valid address and `Password` is
+expected to be non-empty. The contract does not prescribe normalization,
+internationalized-address handling, password strength, or credential
+verification. A future service must define those policies before treating the
+request as authenticated input.
 
-### LoginResponse Contract
+#### Ownership and security
+
+The caller owns both strings and their lifecycle. Consumers may read the
+password only for the operation that needs it and must not log or persist it in
+plaintext. The struct offers no automatic redaction, zeroization, or defensive
+copying.
+
+#### Failure behavior
+
+Constructing `LoginRequest` cannot fail, and an invalid value remains
+representable. Any component that accepts the value must return its own defined
+validation error rather than assuming the struct proves validity.
+
+### LoginResponse
 
 ```go
 type LoginResponse struct {
@@ -38,15 +53,28 @@ type LoginResponse struct {
 }
 ```
 
-**Invariant:**
+#### Output and validity
 
-- `Token` must be non-empty after successful authentication
-- Token format must be parseable
+`Token` is expected to be non-empty after successful authentication. Current
+contract evidence treats a three-segment, dot-separated token as valid, but the
+type itself neither fixes a JWT standard nor validates claims, signature,
+expiry, audience, or issuer.
 
-### Error Handling
+#### Ownership and lifecycle
 
-- Invalid credentials → return error with `ErrInvalidCredentials`
-- Account locked → return error with `ErrAccountLocked`
-- Network failure → return error with `ErrNetworkFailure`
+The recipient owns storage and disclosure decisions for the token. The value
+does not provide expiry, refresh, revocation, or secure-storage behavior.
 
-**Related Specs:** `SPEC-INTERNAL_AUTH-001`
+#### Invariants and compatibility
+
+A successful future authentication result should not expose an empty token.
+Changing the field type or defining a permanent token format is a compatibility
+decision that requires a separate behavioral contract. Until then,
+`LoginResponse` is a transport-neutral container rather than a token service.
+
+### Package-level boundary
+
+This contract intentionally excludes authentication algorithms, credential
+stores, token generation, session management, authorization, transports, and
+error mapping. Those capabilities cannot be inferred from the presence of the
+request and response values.

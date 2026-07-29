@@ -1,9 +1,4 @@
 // Package engine provides testing utilities for the engine module.
-
-// Spec: docs/internal/engine/spec.md
-// Test: docs/internal/engine/testing.md
-
-// @test TEST-CMD_IDD_CLI-001, TEST-CMD_IDD_CLI-002
 package engine
 
 import (
@@ -17,264 +12,94 @@ import (
 	"github.com/jingxu9x/idd-cli/internal/model"
 )
 
-// @test TEST-INTERNAL_ENGINE-007
-func TestEngine_ConsistencyCheck_Warning(t *testing.T) {
-	cfg := &config.Config{
-		Version: "1.0",
-		Validation: config.ValidationConfig{
-			ConsistencyCheck: config.ConsistencyCheck{
-				Enabled:   true,
-				Threshold: 0.3,
-			},
-		},
+// @test-contract TEST-INTERNAL_ENGINE-007
+func TestEngine_DeprecatedConsistencyCheckIsIgnored(t *testing.T) {
+	tests := []struct {
+		name      string
+		enabled   bool
+		threshold float64
+	}{
+		{name: "disabled", enabled: false, threshold: 0.3},
+		{name: "enabled with low threshold", enabled: true, threshold: -2},
+		{name: "enabled with high threshold", enabled: true, threshold: 20},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			cfg := &config.Config{
+				Version: "1.0",
+				Validation: config.ValidationConfig{
+					ConsistencyCheck: config.ConsistencyCheck{
+						Enabled:   test.enabled,
+						Threshold: test.threshold,
+					},
+				},
+			}
+			ids := model.NewIdentifierSet()
+			docID := model.NewIdentifierWithDescribe(
+				"SPEC-001",
+				model.TypeSpec,
+				"Test Spec",
+				"user authentication",
+				"docs/spec.md",
+				1,
+			)
+			ids.Add(docID)
+			codeID := model.NewIdentifierWithDescribe(
+				"SPEC-001",
+				model.TypeSpec,
+				"",
+				"unrelated database settings",
+				"main.go",
+				10,
+			)
+			codeID.SetOrigin(model.OriginCode)
+			ids.Add(codeID)
+
+			result, err := New(cfg).Run(context.Background(), ids)
+			if err != nil {
+				t.Fatalf("Run() error = %v", err)
+			}
+			for _, warning := range result.Warnings {
+				if warning.Rule == "consistency-check" {
+					t.Fatalf("Run() emitted deprecated consistency warning: %v", warning)
+				}
+			}
+		})
 	}
 
-	ids := model.NewIdentifierSet()
-
-	docID := model.NewIdentifierWithDescribe("SPEC-001", model.TypeSpec, "Test Spec", "validates user authentication and JWT token issuance", "docs/spec.md", 1)
-	docID.SetOrigin(model.OriginDoc)
-	ids.Add(docID)
-
-	codeID := model.NewIdentifierWithDescribe("SPEC-001", model.TypeSpec, "", "database connection pooling settings", "main.go", 10)
-	codeID.SetOrigin(model.OriginCode)
-	ids.Add(codeID)
-
-	eng := New(cfg)
-	result, err := eng.Run(context.Background(), ids)
-	if err != nil {
-		t.Fatalf("Run failed: %v", err)
-	}
-
-	if len(result.Warnings) == 0 {
-		t.Error("Expected consistency warning for low similarity")
-	}
-
-	found := false
-	for _, w := range result.Warnings {
-		if w.Rule == "consistency-check" {
-			found = true
-			break
+	t.Run("loaded deprecated key emits cleanup warning", func(t *testing.T) {
+		cfgPath := filepath.Join(t.TempDir(), "idd.yaml")
+		content := `version: "1.0"
+validation:
+  consistency_check:
+    enabled: false
+    threshold: 0
+`
+		if err := os.WriteFile(cfgPath, []byte(content), 0o644); err != nil {
+			t.Fatalf("WriteFile() error = %v", err)
 		}
-	}
-	if !found {
-		t.Error("Expected consistency-check warning")
-	}
-}
-
-// @test TEST-INTERNAL_ENGINE-007
-func TestEngine_ConsistencyCheck_NoWarning(t *testing.T) {
-	cfg := &config.Config{
-		Version: "1.0",
-		Validation: config.ValidationConfig{
-			ConsistencyCheck: config.ConsistencyCheck{
-				Enabled:   true,
-				Threshold: 0.3,
-			},
-		},
-	}
-
-	ids := model.NewIdentifierSet()
-
-	docID := model.NewIdentifierWithDescribe("SPEC-001", model.TypeSpec, "Test Spec", "validates user authentication and JWT token issuance", "docs/spec.md", 1)
-	docID.SetOrigin(model.OriginDoc)
-	ids.Add(docID)
-
-	codeID := model.NewIdentifierWithDescribe("SPEC-001", model.TypeSpec, "", "validates user authentication and JWT token issuance for session", "main.go", 10)
-	codeID.SetOrigin(model.OriginCode)
-	ids.Add(codeID)
-
-	eng := New(cfg)
-	result, err := eng.Run(context.Background(), ids)
-	if err != nil {
-		t.Fatalf("Run failed: %v", err)
-	}
-
-	for _, w := range result.Warnings {
-		if w.Rule == "consistency-check" {
-			t.Error("Expected no consistency warning for similar texts")
+		cfg, err := config.Load(cfgPath)
+		if err != nil {
+			t.Fatalf("config.Load() error = %v", err)
 		}
-	}
-}
-
-// @test TEST-INTERNAL_ENGINE-007
-func TestEngine_ConsistencyCheck_Disabled(t *testing.T) {
-	cfg := &config.Config{
-		Version: "1.0",
-		Validation: config.ValidationConfig{
-			ConsistencyCheck: config.ConsistencyCheck{
-				Enabled:   false,
-				Threshold: 0.3,
-			},
-		},
-	}
-
-	ids := model.NewIdentifierSet()
-
-	docID := model.NewIdentifierWithDescribe("SPEC-001", model.TypeSpec, "Test Spec", "validates user authentication", "docs/spec.md", 1)
-	docID.SetOrigin(model.OriginDoc)
-	ids.Add(docID)
-
-	codeID := model.NewIdentifierWithDescribe("SPEC-001", model.TypeSpec, "", "completely unrelated content here", "main.go", 10)
-	codeID.SetOrigin(model.OriginCode)
-	ids.Add(codeID)
-
-	eng := New(cfg)
-	result, err := eng.Run(context.Background(), ids)
-	if err != nil {
-		t.Fatalf("Run failed: %v", err)
-	}
-
-	for _, w := range result.Warnings {
-		if w.Rule == "consistency-check" {
-			t.Error("Expected no consistency warnings when disabled")
+		result, err := New(cfg).Run(context.Background(), model.NewIdentifierSet())
+		if err != nil {
+			t.Fatalf("Run() error = %v", err)
 		}
-	}
-}
-
-// @test TEST-INTERNAL_ENGINE-007
-func TestEngine_ConsistencyCheck_MissingDescribe(t *testing.T) {
-	cfg := &config.Config{
-		Version: "1.0",
-		Validation: config.ValidationConfig{
-			ConsistencyCheck: config.ConsistencyCheck{
-				Enabled:   true,
-				Threshold: 0.3,
-			},
-		},
-	}
-
-	ids := model.NewIdentifierSet()
-
-	docID := model.NewIdentifierWithDescribe("SPEC-001", model.TypeSpec, "Test Spec", "", "docs/spec.md", 1)
-	docID.SetOrigin(model.OriginDoc)
-	ids.Add(docID)
-
-	codeID := model.NewIdentifierWithDescribe("SPEC-001", model.TypeSpec, "", "validates user authentication", "main.go", 10)
-	codeID.SetOrigin(model.OriginCode)
-	ids.Add(codeID)
-
-	eng := New(cfg)
-	result, err := eng.Run(context.Background(), ids)
-	if err != nil {
-		t.Fatalf("Run failed: %v", err)
-	}
-
-	for _, w := range result.Warnings {
-		if w.Rule == "consistency-check" {
-			t.Error("Expected no consistency warning when doc describe is empty")
+		if !result.Valid {
+			t.Fatalf("deprecated configuration warning made result invalid: %#v", result.Errors)
 		}
-	}
-}
-
-// @test TEST-INTERNAL_ENGINE-007
-func TestEngine_ConsistencyCheck_CodeOnly(t *testing.T) {
-	cfg := &config.Config{
-		Version: "1.0",
-		Validation: config.ValidationConfig{
-			ConsistencyCheck: config.ConsistencyCheck{
-				Enabled:   true,
-				Threshold: 0.3,
-			},
-		},
-	}
-
-	ids := model.NewIdentifierSet()
-
-	codeID := model.NewIdentifierWithDescribe("SPEC-001", model.TypeSpec, "", "validates user authentication", "main.go", 10)
-	codeID.SetOrigin(model.OriginCode)
-	ids.Add(codeID)
-
-	eng := New(cfg)
-	result, err := eng.Run(context.Background(), ids)
-	if err != nil {
-		t.Fatalf("Run failed: %v", err)
-	}
-
-	for _, w := range result.Warnings {
-		if w.Rule == "consistency-check" {
-			t.Error("Expected no consistency warning when only code exists")
+		if len(result.Warnings) != 1 {
+			t.Fatalf("warnings = %#v, want one", result.Warnings)
 		}
-	}
-}
-
-// @test TEST-INTERNAL_ENGINE-007
-func TestEngine_ConsistencyCheck_HighThreshold(t *testing.T) {
-	cfg := &config.Config{
-		Version: "1.0",
-		Validation: config.ValidationConfig{
-			ConsistencyCheck: config.ConsistencyCheck{
-				Enabled:   true,
-				Threshold: 0.95,
-			},
-		},
-	}
-
-	ids := model.NewIdentifierSet()
-
-	docID := model.NewIdentifierWithDescribe("SPEC-001", model.TypeSpec, "Test Spec", "validates user authentication and JWT tokens", "docs/spec.md", 1)
-	docID.SetOrigin(model.OriginDoc)
-	ids.Add(docID)
-
-	codeID := model.NewIdentifierWithDescribe("SPEC-001", model.TypeSpec, "", "validates user authentication and JWT tokens for sessions", "main.go", 10)
-	codeID.SetOrigin(model.OriginCode)
-	ids.Add(codeID)
-
-	eng := New(cfg)
-	result, err := eng.Run(context.Background(), ids)
-	if err != nil {
-		t.Fatalf("Run failed: %v", err)
-	}
-
-	found := false
-	for _, w := range result.Warnings {
-		if w.Rule == "consistency-check" {
-			found = true
-			break
+		warning := result.Warnings[0]
+		if warning.Rule != "deprecated-config" ||
+			warning.Source != cfgPath ||
+			warning.Link != "validation.consistency_check" ||
+			!strings.Contains(warning.Message, "remove it") {
+			t.Errorf("warning = %#v", warning)
 		}
-	}
-	if found {
-		t.Error("Expected no consistency warning for very similar texts with high threshold")
-	}
-}
-
-// @test TEST-INTERNAL_ENGINE-007
-func TestEngine_ConsistencyCheck_LowSimilarity(t *testing.T) {
-	cfg := &config.Config{
-		Version: "1.0",
-		Validation: config.ValidationConfig{
-			ConsistencyCheck: config.ConsistencyCheck{
-				Enabled:   true,
-				Threshold: 0.1,
-			},
-		},
-	}
-
-	ids := model.NewIdentifierSet()
-
-	docID := model.NewIdentifierWithDescribe("SPEC-001", model.TypeSpec, "Test Spec", "user login and authentication", "docs/spec.md", 1)
-	docID.SetOrigin(model.OriginDoc)
-	ids.Add(docID)
-
-	codeID := model.NewIdentifierWithDescribe("SPEC-001", model.TypeSpec, "", "database connection pool settings", "main.go", 10)
-	codeID.SetOrigin(model.OriginCode)
-	ids.Add(codeID)
-
-	eng := New(cfg)
-	result, err := eng.Run(context.Background(), ids)
-	if err != nil {
-		t.Fatalf("Run failed: %v", err)
-	}
-
-	found := false
-	for _, w := range result.Warnings {
-		if w.Rule == "consistency-check" {
-			found = true
-			break
-		}
-	}
-	if !found {
-		t.Error("Expected consistency warning for very dissimilar texts")
-	}
+	})
 }
 
 // @test TEST-INTERNAL_ENGINE-004
@@ -315,6 +140,66 @@ func TestEngine_inferLinkType(t *testing.T) {
 	}
 }
 
+// @test TEST-INTERNAL_ENGINE-004
+func TestEngine_ValidateCompleteness_UsesDocSourceForMissingDocFields(t *testing.T) {
+	tests := []struct {
+		name       string
+		docID      *model.Identifier
+		codeID     *model.Identifier
+		wantRule   string
+		wantSource string
+	}{
+		{
+			name:       "test missing spec coverage",
+			docID:      model.NewIdentifier("TEST-BE-001", model.TypeTest, "Kanban", "docs/backend/testing.md", 12),
+			codeID:     model.NewIdentifier("TEST-BE-001", model.TypeTest, "", "internal/service/flow_workspace_test.go", 34),
+			wantRule:   "test-missing-coverage",
+			wantSource: "docs/backend/testing.md",
+		},
+		{
+			name:       "spec missing tests",
+			docID:      model.NewIdentifier("SPEC-BE-001", model.TypeSpec, "Kanban", "docs/backend/spec.md", 12),
+			codeID:     model.NewIdentifier("SPEC-BE-001", model.TypeSpec, "", "internal/service/flow_workspace.go", 34),
+			wantRule:   "spec-missing-tests",
+			wantSource: "docs/backend/spec.md",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			cfg := &config.Config{
+				Version: "1.0",
+				Validation: config.ValidationConfig{
+					RequireSpecTestCoverage: true,
+				},
+			}
+			eng := New(cfg)
+			ids := model.NewIdentifierSet()
+
+			tt.codeID.SetOrigin(model.OriginCode)
+			ids.Add(tt.codeID)
+			tt.docID.SetOrigin(model.OriginDoc)
+			ids.Add(tt.docID)
+
+			result, err := eng.Run(context.Background(), ids)
+			if err != nil {
+				t.Fatalf("Run failed: %v", err)
+			}
+
+			for _, err := range result.Errors {
+				if err.Rule != tt.wantRule {
+					continue
+				}
+				if err.Source != tt.wantSource {
+					t.Fatalf("Source = %q, want %q", err.Source, tt.wantSource)
+				}
+				return
+			}
+			t.Fatalf("Expected %s error, got %v", tt.wantRule, result.Errors)
+		})
+	}
+}
+
 // @test TEST-INTERNAL_ENGINE-003
 func TestEngine_validateBidirectional(t *testing.T) {
 	cfg := &config.Config{
@@ -340,26 +225,66 @@ func TestEngine_validateBidirectional(t *testing.T) {
 
 // @test TEST-INTERNAL_ENGINE-003
 func TestEngine_validateDocCodeCorrespondence(t *testing.T) {
-	cfg := config.Default()
-	eng := New(cfg)
-
-	ids := model.NewIdentifierSet()
-
-	codeOnlyID := model.NewIdentifier("SPEC-001", model.TypeSpec, "", "main.go", 1)
-	codeOnlyID.SetOrigin(model.OriginCode)
-	ids.Add(codeOnlyID)
-
-	eng.Run(context.Background(), ids)
-
-	found := false
-	for _, e := range eng.result.Errors {
-		if e.Rule == "doc-code-correspondence" {
-			found = true
-			break
-		}
+	tests := []struct {
+		name      string
+		addDoc    bool
+		addCode   bool
+		wantError bool
+	}{
+		{name: "matching identifier joins code to document", addDoc: true, addCode: true},
+		{name: "source annotation without document", addCode: true, wantError: true},
+		{name: "document without source annotation", addDoc: true, wantError: true},
 	}
-	if !found {
-		t.Error("Expected error for code without doc")
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			cfg := &config.Config{
+				Version: "1.0",
+				Validation: config.ValidationConfig{
+					RequireDocCodeCorrespondence: true,
+					AllowOrphans:                 true,
+				},
+			}
+			ids := model.NewIdentifierSet()
+			if tt.addDoc {
+				docID := model.NewIdentifier(
+					"SPEC-INTERNAL_SAMPLE-001",
+					model.TypeSpec,
+					"Sample requirement",
+					"docs/internal/sample/spec.md",
+					10,
+				)
+				docID.SetOrigin(model.OriginDoc)
+				ids.Add(docID)
+			}
+			if tt.addCode {
+				codeID := model.NewIdentifier(
+					"SPEC-INTERNAL_SAMPLE-001",
+					model.TypeSpec,
+					"",
+					"internal/sample/sample.go",
+					12,
+				)
+				codeID.SetOrigin(model.OriginCode)
+				ids.Add(codeID)
+			}
+
+			eng := New(cfg)
+			result, err := eng.Run(context.Background(), ids)
+			if err != nil {
+				t.Fatalf("Run() error = %v", err)
+			}
+
+			hasError := false
+			for _, validationErr := range result.Errors {
+				if validationErr.Rule == "doc-code-correspondence" {
+					hasError = true
+				}
+			}
+			if hasError != tt.wantError {
+				t.Errorf("doc-code-correspondence error = %v, want %v: %v", hasError, tt.wantError, result.Errors)
+			}
+		})
 	}
 }
 
@@ -381,13 +306,9 @@ func TestEngine_BuildReport(t *testing.T) {
 }
 
 // @test TEST-INTERNAL_ENGINE-001
-func TestEngine_PackageDocComment_Valid(t *testing.T) {
-	// Valid format: package doc comment before package declaration
+func TestEngine_SourceFileDoesNotRequireIDDPathHeader(t *testing.T) {
 	tmpDir := t.TempDir()
 	code := `// Package foo provides core functionality for the foo module.
-
-// Spec: docs/foo/spec.md
-// Contract: docs/foo/contract.md
 package foo
 `
 
@@ -401,9 +322,6 @@ package foo
 		Code: config.CodeConfig{
 			Patterns: []string{filepath.Join(tmpDir, "*.go")},
 		},
-		Validation: config.ValidationConfig{
-			RequirePackageDocComment: true,
-		},
 	}
 
 	eng := New(cfg)
@@ -413,22 +331,15 @@ package foo
 		t.Fatalf("Run failed: %v", err)
 	}
 
-	// Should have no package-doc-comment errors
-	for _, e := range result.Errors {
-		if e.Rule == "package-doc-comment" {
-			t.Errorf("Expected no package-doc-comment errors for valid format, got: %s", e.Message)
-		}
+	if !result.Valid {
+		t.Fatalf("headerless source result.Valid = false, errors: %v", result.Errors)
 	}
 }
 
 // @test TEST-INTERNAL_ENGINE-002
-func TestEngine_PackageDocComment_MissingPackageDoc(t *testing.T) {
-	// Missing package doc comment line (has Spec and Contract but no "Package foo provides")
+func TestEngine_SourceFileWithoutPackageCommentHasNoIDDPathRequirement(t *testing.T) {
 	tmpDir := t.TempDir()
-	code := `// Spec: docs/foo/spec.md
-// Contract: docs/foo/contract.md
-package foo
-`
+	code := "package foo\n"
 
 	err := os.WriteFile(filepath.Join(tmpDir, "foo.go"), []byte(code), 0644)
 	if err != nil {
@@ -440,9 +351,6 @@ package foo
 		Code: config.CodeConfig{
 			Patterns: []string{filepath.Join(tmpDir, "*.go")},
 		},
-		Validation: config.ValidationConfig{
-			RequirePackageDocComment: true,
-		},
 	}
 
 	eng := New(cfg)
@@ -452,26 +360,15 @@ package foo
 		t.Fatalf("Run failed: %v", err)
 	}
 
-	found := false
-	for _, e := range result.Errors {
-		if e.Rule == "package-doc-comment" && strings.Contains(e.Message, "missing package doc comment") {
-			found = true
-			break
-		}
-	}
-	if !found {
-		t.Error("Expected error for missing package doc comment")
+	if !result.Valid {
+		t.Fatalf("source without package comment result.Valid = false, errors: %v", result.Errors)
 	}
 }
 
 // @test TEST-INTERNAL_ENGINE-003
-func TestEngine_PackageDocComment_MissingPackageName(t *testing.T) {
-	// Has comment but not a package doc comment (no "Package xxx" pattern)
+func TestEngine_OrdinaryLeadingCommentHasNoIDDPathSemantics(t *testing.T) {
 	tmpDir := t.TempDir()
-	code := `// This is a regular comment, not a package doc comment.
-//
-// Spec: docs/foo/spec.md
-// Contract: docs/foo/contract.md
+	code := `// This is an ordinary source comment.
 package foo
 `
 
@@ -485,9 +382,6 @@ package foo
 		Code: config.CodeConfig{
 			Patterns: []string{filepath.Join(tmpDir, "*.go")},
 		},
-		Validation: config.ValidationConfig{
-			RequirePackageDocComment: true,
-		},
 	}
 
 	eng := New(cfg)
@@ -497,26 +391,15 @@ package foo
 		t.Fatalf("Run failed: %v", err)
 	}
 
-	found := false
-	for _, e := range result.Errors {
-		if e.Rule == "package-doc-comment" && strings.Contains(e.Message, "missing package doc comment") {
-			found = true
-			break
-		}
-	}
-	if !found {
-		t.Error("Expected error for missing package doc comment")
+	if !result.Valid {
+		t.Fatalf("ordinary comment result.Valid = false, errors: %v", result.Errors)
 	}
 }
 
 // @test TEST-INTERNAL_ENGINE-004
-func TestEngine_PackageDocComment_PackageAfterComments(t *testing.T) {
-	// Package declaration AFTER comments (correct order)
+func TestEngine_PackageCommentRemainsLanguageOwned(t *testing.T) {
 	tmpDir := t.TempDir()
 	code := `// Package bar provides core bar functionality.
-
-// Spec: docs/bar/spec.md
-// Contract: docs/bar/contract.md
 package bar
 `
 
@@ -530,9 +413,6 @@ package bar
 		Code: config.CodeConfig{
 			Patterns: []string{filepath.Join(tmpDir, "*.go")},
 		},
-		Validation: config.ValidationConfig{
-			RequirePackageDocComment: true,
-		},
 	}
 
 	eng := New(cfg)
@@ -542,16 +422,13 @@ package bar
 		t.Fatalf("Run failed: %v", err)
 	}
 
-	for _, e := range result.Errors {
-		if e.Rule == "package-doc-comment" {
-			t.Errorf("Expected no package-doc-comment errors for package after comments, got: %s", e.Message)
-		}
+	if !result.Valid {
+		t.Fatalf("ordinary package comment result.Valid = false, errors: %v", result.Errors)
 	}
 }
 
 // @test TEST-INTERNAL_ENGINE-005
-func TestEngine_PackageDocComment_Disabled(t *testing.T) {
-	// When RequirePackageDocComment is false, no errors should be generated
+func TestEngine_LegacyPackagePathRuleIsAbsent(t *testing.T) {
 	tmpDir := t.TempDir()
 	code := `package baz
 `
@@ -566,9 +443,6 @@ func TestEngine_PackageDocComment_Disabled(t *testing.T) {
 		Code: config.CodeConfig{
 			Patterns: []string{filepath.Join(tmpDir, "*.go")},
 		},
-		Validation: config.ValidationConfig{
-			RequirePackageDocComment: false,
-		},
 	}
 
 	eng := New(cfg)
@@ -578,20 +452,15 @@ func TestEngine_PackageDocComment_Disabled(t *testing.T) {
 		t.Fatalf("Run failed: %v", err)
 	}
 
-	for _, e := range result.Errors {
-		if e.Rule == "package-doc-comment" {
-			t.Error("Should not generate package-doc-comment errors when disabled")
-		}
+	if !result.Valid {
+		t.Fatalf("source without legacy path header result.Valid = false, errors: %v", result.Errors)
 	}
 }
 
 // @test TEST-INTERNAL_ENGINE-006
-func TestEngine_PackageDocComment_TestFile_RequiresSpecAndTest(t *testing.T) {
+func TestEngine_TestFileDoesNotRequireIDDPathHeader(t *testing.T) {
 	tmpDir := t.TempDir()
 	code := `// Package foo provides testing utilities for foo module.
-
-// Spec: docs/foo/spec.md
-// Test: docs/foo/testing.md
 package foo
 `
 
@@ -605,9 +474,6 @@ package foo
 		Code: config.CodeConfig{
 			Patterns: []string{filepath.Join(tmpDir, "*.go")},
 		},
-		Validation: config.ValidationConfig{
-			RequirePackageDocComment: true,
-		},
 	}
 
 	eng := New(cfg)
@@ -617,24 +483,19 @@ package foo
 		t.Fatalf("Run failed: %v", err)
 	}
 
-	for _, e := range result.Errors {
-		if e.Rule == "package-doc-comment" {
-			t.Errorf("Expected no errors for test file with Spec and Test, got: %s", e.Message)
-		}
+	if !result.Valid {
+		t.Fatalf("headerless test source result.Valid = false, errors: %v", result.Errors)
 	}
 }
 
-// @test TEST-INTERNAL_ENGINE-007
-func TestEngine_PackageDocComment_TestFile_MissingTest(t *testing.T) {
+// @test-contract TEST-INTERNAL_ENGINE-007
+func TestEngine_ContractTestFileDoesNotRequireIDDPathHeader(t *testing.T) {
 	tmpDir := t.TempDir()
-	code := `// Package foo provides testing utilities for foo module.
-//
-// Spec: docs/foo/spec.md
-// Contract: docs/foo/contract.md
+	code := `// Package foo provides contract tests for the foo module.
 package foo
 `
 
-	err := os.WriteFile(filepath.Join(tmpDir, "foo_test.go"), []byte(code), 0644)
+	err := os.WriteFile(filepath.Join(tmpDir, "foo_contract_test.go"), []byte(code), 0644)
 	if err != nil {
 		t.Fatalf("Failed to write temp file: %v", err)
 	}
@@ -643,9 +504,6 @@ package foo
 		Version: "1.0",
 		Code: config.CodeConfig{
 			Patterns: []string{filepath.Join(tmpDir, "*.go")},
-		},
-		Validation: config.ValidationConfig{
-			RequirePackageDocComment: true,
 		},
 	}
 
@@ -656,15 +514,8 @@ package foo
 		t.Fatalf("Run failed: %v", err)
 	}
 
-	found := false
-	for _, e := range result.Errors {
-		if e.Rule == "package-doc-comment" && strings.Contains(e.Message, "missing Test path") {
-			found = true
-			break
-		}
-	}
-	if !found {
-		t.Error("Expected error for test file missing Test path")
+	if !result.Valid {
+		t.Fatalf("headerless contract test result.Valid = false, errors: %v", result.Errors)
 	}
 }
 
@@ -745,6 +596,7 @@ More content
 	}
 }
 
+// @test TEST-INTERNAL_ENGINE-003
 func TestEngine_validateSpecRequiredFields(t *testing.T) {
 	tests := []struct {
 		name                   string
@@ -963,891 +815,5 @@ markers:
 				}
 			}
 		})
-	}
-}
-
-// @test TEST-INTERNAL_ENGINE-022
-func TestEngine_validateContractDesignMarkers_WithMarkers(t *testing.T) {
-	cfg := config.Default()
-	cfg.Validation.AllowOrphans = true
-	eng := New(cfg)
-
-	// Create temp dir with docs
-	tmpDir := t.TempDir()
-	docsDir := filepath.Join(tmpDir, "docs", "internal", "test")
-	err := os.MkdirAll(docsDir, 0755)
-	if err != nil {
-		t.Fatalf("Failed to create temp dir: %v", err)
-	}
-
-	// Write contract.md with markers (should error)
-	contract := `---
-markers:
-  - id: CONTRACT-BE-001
-    name: Test Contract
----
-# Contracts
-`
-	err = os.WriteFile(filepath.Join(docsDir, "contract.md"), []byte(contract), 0644)
-	if err != nil {
-		t.Fatalf("Failed to write temp file: %v", err)
-	}
-
-	cfg.Docs.Patterns = []string{filepath.Join(docsDir, "**/*.md")}
-	eng = New(cfg)
-
-	eng.validateContractDesignMarkers()
-
-	// Should have exactly one error
-	if len(eng.result.Errors) != 1 {
-		t.Errorf("Expected 1 error, got %d: %v", len(eng.result.Errors), eng.result.Errors)
-	}
-	if eng.result.Errors[0].Rule != "frontmatter-markers" {
-		t.Errorf("Expected frontmatter-markers rule, got %s", eng.result.Errors[0].Rule)
-	}
-}
-
-// @test TEST-INTERNAL_ENGINE-023
-func TestEngine_validateContractDesignMarkers_WithoutMarkers(t *testing.T) {
-	cfg := config.Default()
-	cfg.Validation.AllowOrphans = true
-	eng := New(cfg)
-
-	// Create temp dir with docs
-	tmpDir := t.TempDir()
-	docsDir := filepath.Join(tmpDir, "docs", "internal", "test")
-	err := os.MkdirAll(docsDir, 0755)
-	if err != nil {
-		t.Fatalf("Failed to create temp dir: %v", err)
-	}
-
-	// Write contract.md without markers (should pass)
-	contract := `---
-related_files:
-  spec: spec.md
----
-# Contracts
-`
-	err = os.WriteFile(filepath.Join(docsDir, "contract.md"), []byte(contract), 0644)
-	if err != nil {
-		t.Fatalf("Failed to write temp file: %v", err)
-	}
-
-	cfg.Docs.Patterns = []string{filepath.Join(docsDir, "**/*.md")}
-	eng = New(cfg)
-
-	eng.validateContractDesignMarkers()
-
-	// Should have no errors
-	if len(eng.result.Errors) != 0 {
-		t.Errorf("Expected 0 errors, got %d", len(eng.result.Errors))
-	}
-}
-
-// @test TEST-INTERNAL_ENGINE-024
-func TestEngine_validateContractDesignMarkers_DesignFile(t *testing.T) {
-	cfg := config.Default()
-	cfg.Validation.AllowOrphans = true
-	eng := New(cfg)
-
-	// Create temp dir with docs
-	tmpDir := t.TempDir()
-	docsDir := filepath.Join(tmpDir, "docs", "internal", "test")
-	err := os.MkdirAll(docsDir, 0755)
-	if err != nil {
-		t.Fatalf("Failed to create temp dir: %v", err)
-	}
-
-	// Write design.md with markers (should error)
-	design := `---
-markers:
-  - id: DESIGN-BE-001
-    name: Test Design
----
-# Design
-`
-	err = os.WriteFile(filepath.Join(docsDir, "design.md"), []byte(design), 0644)
-	if err != nil {
-		t.Fatalf("Failed to write temp file: %v", err)
-	}
-
-	cfg.Docs.Patterns = []string{filepath.Join(docsDir, "**/*.md")}
-	eng = New(cfg)
-
-	eng.validateContractDesignMarkers()
-
-	// Should have exactly one error
-	if len(eng.result.Errors) != 1 {
-		t.Errorf("Expected 1 error, got %d: %v", len(eng.result.Errors), eng.result.Errors)
-	}
-}
-
-// @test TEST-INTERNAL_ENGINE-025
-func TestEngine_packageExists(t *testing.T) {
-	cfg := config.Default()
-	eng := New(cfg)
-
-	// Package that exists - use current working directory
-	cwd, _ := os.Getwd()
-	// When run from package dir, cwd is /project/internal/engine, so go up 2 dirs to project root
-	if strings.HasSuffix(cwd, "/internal/engine") {
-		cwd = filepath.Dir(filepath.Dir(cwd))
-	}
-	pkgPath := filepath.Join(cwd, "internal/engine")
-	if !eng.packageExists(pkgPath) {
-		t.Error("internal/engine should exist at:", pkgPath)
-	}
-
-	// Package that doesn't exist
-	if eng.packageExists("nonexistent/package") {
-		t.Error("nonexistent/package should not exist")
-	}
-}
-
-// @test TEST-INTERNAL_ENGINE-026
-func TestEngine_isIgnoredDocPath(t *testing.T) {
-	cfg := config.Default()
-	cfg.Docs.IgnorePaths = []string{"docs/backend/**", "docs/internal/auth"}
-	eng := New(cfg)
-
-	if !eng.isIgnoredDocPath("docs/backend/spec.md") {
-		t.Error("docs/backend/** should be ignored")
-	}
-
-	if !eng.isIgnoredDocPath("docs/internal/auth") {
-		t.Error("docs/internal/auth should be ignored")
-	}
-
-	if eng.isIgnoredDocPath("docs/internal/engine") {
-		t.Error("docs/internal/engine should not be ignored")
-	}
-}
-
-// @test TEST-INTERNAL_ENGINE-027
-func TestEngine_validateDocPathExists_NoWarning(t *testing.T) {
-	cfg := config.Default()
-	cfg.Validation.AllowOrphans = true
-	eng := New(cfg)
-
-	// Use the actual docs directory which should have corresponding packages
-	eng.validateDocPathExists()
-
-	// The test just verifies no panic and some warnings are generated
-	// The actual number of warnings depends on the docs structure
-}
-
-// @test TEST-INTERNAL_ENGINE-028
-func TestEngine_validateRelatedFiles(t *testing.T) {
-	cfg := config.Default()
-	cfg.Validation.AllowOrphans = true
-	eng := New(cfg)
-
-	// Create temp dir with docs
-	tmpDir := t.TempDir()
-	docsDir := filepath.Join(tmpDir, "docs", "test")
-	err := os.MkdirAll(docsDir, 0755)
-	if err != nil {
-		t.Fatalf("Failed to create temp dir: %v", err)
-	}
-
-	// Write spec.md without related_files
-	spec := `# Spec
-Content
-`
-	err = os.WriteFile(filepath.Join(docsDir, "spec.md"), []byte(spec), 0644)
-	if err != nil {
-		t.Fatalf("Failed to write temp file: %v", err)
-	}
-
-	cfg.Docs.Patterns = []string{filepath.Join(docsDir, "**/*.md")}
-	eng = New(cfg)
-
-	eng.validateRelatedFiles()
-
-	// Should have one error for missing related_files
-	found := false
-	for _, err := range eng.result.Errors {
-		if err.Rule == "related-files" {
-			found = true
-			break
-		}
-	}
-	if !found {
-		t.Error("Expected related-files error")
-	}
-}
-
-// @test TEST-INTERNAL_ENGINE-029
-func TestEngine_validateRelatedFiles_Valid(t *testing.T) {
-	cfg := config.Default()
-	cfg.Validation.AllowOrphans = true
-	eng := New(cfg)
-
-	// Create temp dir with docs
-	tmpDir := t.TempDir()
-	docsDir := filepath.Join(tmpDir, "docs", "test")
-	err := os.MkdirAll(docsDir, 0755)
-	if err != nil {
-		t.Fatalf("Failed to create temp dir: %v", err)
-	}
-
-	// Write spec.md with related_files
-	spec := `---
-related_files:
-  spec: spec.md
-  contract: contract.md
----
-# Spec
-Content
-`
-	err = os.WriteFile(filepath.Join(docsDir, "spec.md"), []byte(spec), 0644)
-	if err != nil {
-		t.Fatalf("Failed to write temp file: %v", err)
-	}
-
-	cfg.Docs.Patterns = []string{filepath.Join(docsDir, "**/*.md")}
-	eng = New(cfg)
-
-	eng.validateRelatedFiles()
-
-	// Should have no errors
-	if len(eng.result.Errors) != 0 {
-		t.Errorf("Expected 0 errors, got %d", len(eng.result.Errors))
-	}
-}
-
-// @test TEST-INTERNAL_ENGINE-030
-func TestEngine_PackageDocComment_MainPackageSkipped(t *testing.T) {
-	// main package should be skipped
-	tmpDir := t.TempDir()
-	code := `package main
-
-func main() {}
-`
-	err := os.WriteFile(filepath.Join(tmpDir, "main.go"), []byte(code), 0644)
-	if err != nil {
-		t.Fatalf("Failed to write temp file: %v", err)
-	}
-	cfg := &config.Config{
-		Version: "1.0",
-		Code: config.CodeConfig{
-			Patterns: []string{filepath.Join(tmpDir, "*.go")},
-		},
-		Validation: config.ValidationConfig{
-			RequirePackageDocComment: true,
-		},
-	}
-
-	eng := New(cfg)
-	ids := model.NewIdentifierSet()
-	result, err := eng.Run(context.Background(), ids)
-	if err != nil {
-		t.Fatalf("Run failed: %v", err)
-	}
-
-	for _, e := range result.Errors {
-		if e.Rule == "package-doc-comment" {
-			t.Error("main package should be skipped")
-		}
-	}
-}
-
-// @test TEST-INTERNAL_ENGINE-031
-func TestEngine_PkgDocFiles_MissingFiles(t *testing.T) {
-	tmpDir := t.TempDir()
-	docsDir := filepath.Join(tmpDir, "docs", "backend")
-	if err := os.MkdirAll(docsDir, 0755); err != nil {
-		t.Fatalf("mkdir: %v", err)
-	}
-	// Only spec.md present; contract.md, testing.md, design.md missing.
-	if err := os.WriteFile(filepath.Join(docsDir, "spec.md"), []byte("# SPEC-BE-001\n"), 0644); err != nil {
-		t.Fatalf("write: %v", err)
-	}
-
-	cfg := &config.Config{
-		Version: "1.0",
-		Docs:    config.DocsConfig{Patterns: []string{filepath.Join(tmpDir, "docs/**/*.md")}},
-		Validation: config.ValidationConfig{
-			RequirePkgDocFiles: true,
-		},
-	}
-
-	eng := New(cfg)
-	result, err := eng.Run(context.Background(), model.NewIdentifierSet())
-	if err != nil {
-		t.Fatalf("Run failed: %v", err)
-	}
-
-	missing := map[string]bool{}
-	for _, e := range result.Errors {
-		if e.Rule == "pkg-doc-files" {
-			missing[e.Message] = true
-		}
-	}
-	for _, f := range []string{"contract.md", "testing.md", "design.md"} {
-		found := false
-		for msg := range missing {
-			if strings.Contains(msg, f) {
-				found = true
-				break
-			}
-		}
-		if !found {
-			t.Errorf("expected pkg-doc-files error for missing %s", f)
-		}
-	}
-	// spec.md is present — should not appear in errors.
-	for msg := range missing {
-		if strings.Contains(msg, "spec.md") {
-			t.Errorf("unexpected pkg-doc-files error for spec.md: %s", msg)
-		}
-	}
-}
-
-// @test TEST-INTERNAL_ENGINE-032
-func TestEngine_PkgDocFiles_AllPresent(t *testing.T) {
-	tmpDir := t.TempDir()
-	docsDir := filepath.Join(tmpDir, "docs", "backend")
-	if err := os.MkdirAll(docsDir, 0755); err != nil {
-		t.Fatalf("mkdir: %v", err)
-	}
-	for _, f := range []string{"spec.md", "contract.md", "testing.md", "design.md"} {
-		if err := os.WriteFile(filepath.Join(docsDir, f), []byte("# content\n"), 0644); err != nil {
-			t.Fatalf("write: %v", err)
-		}
-	}
-
-	cfg := &config.Config{
-		Version: "1.0",
-		Docs:    config.DocsConfig{Patterns: []string{filepath.Join(tmpDir, "docs/**/*.md")}},
-		Validation: config.ValidationConfig{
-			RequirePkgDocFiles: true,
-		},
-	}
-
-	eng := New(cfg)
-	result, err := eng.Run(context.Background(), model.NewIdentifierSet())
-	if err != nil {
-		t.Fatalf("Run failed: %v", err)
-	}
-
-	for _, e := range result.Errors {
-		if e.Rule == "pkg-doc-files" {
-			t.Errorf("unexpected pkg-doc-files error: %s", e.Message)
-		}
-	}
-}
-
-// @test TEST-INTERNAL_ENGINE-033
-func TestEngine_PkgDocFiles_RootLevelSkipped(t *testing.T) {
-	tmpDir := t.TempDir()
-	docsDir := filepath.Join(tmpDir, "docs")
-	if err := os.MkdirAll(docsDir, 0755); err != nil {
-		t.Fatalf("mkdir: %v", err)
-	}
-	// Root-level docs/spec.md — should not trigger pkg-doc-files check.
-	if err := os.WriteFile(filepath.Join(docsDir, "spec.md"), []byte("# SPEC-001\n"), 0644); err != nil {
-		t.Fatalf("write: %v", err)
-	}
-
-	cfg := &config.Config{
-		Version: "1.0",
-		Docs:    config.DocsConfig{Patterns: []string{filepath.Join(tmpDir, "docs/**/*.md")}},
-		Validation: config.ValidationConfig{
-			RequirePkgDocFiles: true,
-		},
-	}
-
-	eng := New(cfg)
-	result, err := eng.Run(context.Background(), model.NewIdentifierSet())
-	if err != nil {
-		t.Fatalf("Run failed: %v", err)
-	}
-
-	for _, e := range result.Errors {
-		if e.Rule == "pkg-doc-files" {
-			t.Errorf("root-level docs should be skipped, got: %s", e.Message)
-		}
-	}
-}
-
-// @test TEST-INTERNAL_ENGINE-034
-func TestEngine_DuplicateIDs_DocSide(t *testing.T) {
-	cfg := &config.Config{Version: "1.0"}
-	ids := model.NewIdentifierSet()
-
-	// Same ID in two different doc directories → conflict
-	a := model.NewIdentifier("SPEC-BE-001", model.TypeSpec, "Spec A", "docs/backend/spec.md", 1)
-	a.SetOrigin(model.OriginDoc)
-	b := model.NewIdentifier("SPEC-BE-001", model.TypeSpec, "Spec B", "docs/billing/spec.md", 1)
-	b.SetOrigin(model.OriginDoc)
-	ids.Add(a)
-	ids.Add(b)
-
-	eng := New(cfg)
-	result, err := eng.Run(context.Background(), ids)
-	if err != nil {
-		t.Fatalf("Run failed: %v", err)
-	}
-
-	found := false
-	for _, e := range result.Errors {
-		if e.Rule == "duplicate-id" {
-			found = true
-			break
-		}
-	}
-	if !found {
-		t.Error("expected duplicate-id error for same ID in different doc directories")
-	}
-}
-
-// @test TEST-INTERNAL_ENGINE-035
-func TestEngine_DuplicateIDs_SameDir_NoError(t *testing.T) {
-	cfg := &config.Config{Version: "1.0"}
-	ids := model.NewIdentifierSet()
-
-	// Same ID in two files of the same doc directory → not a conflict
-	a := model.NewIdentifier("SPEC-BE-001", model.TypeSpec, "Spec A", "docs/backend/spec.md", 1)
-	a.SetOrigin(model.OriginDoc)
-	b := model.NewIdentifier("SPEC-BE-001", model.TypeSpec, "Spec B", "docs/backend/testing.md", 1)
-	b.SetOrigin(model.OriginDoc)
-	ids.Add(a)
-	ids.Add(b)
-
-	eng := New(cfg)
-	result, err := eng.Run(context.Background(), ids)
-	if err != nil {
-		t.Fatalf("Run failed: %v", err)
-	}
-
-	for _, e := range result.Errors {
-		if e.Rule == "duplicate-id" {
-			t.Errorf("unexpected duplicate-id error for same directory: %s", e.Message)
-		}
-	}
-}
-
-// @test TEST-INTERNAL_ENGINE-036
-func TestEngine_DuplicateIDs_CodeSide(t *testing.T) {
-	cfg := &config.Config{Version: "1.0"}
-	ids := model.NewIdentifierSet()
-
-	// Same ID @implement in two different code packages → conflict
-	a := model.NewIdentifier("SPEC-BE-001", model.TypeSpec, "", "internal/backend/service.go", 10)
-	a.SetOrigin(model.OriginCode)
-	b := model.NewIdentifier("SPEC-BE-001", model.TypeSpec, "", "internal/billing/service.go", 20)
-	b.SetOrigin(model.OriginCode)
-	ids.Add(a)
-	ids.Add(b)
-
-	eng := New(cfg)
-	result, err := eng.Run(context.Background(), ids)
-	if err != nil {
-		t.Fatalf("Run failed: %v", err)
-	}
-
-	found := false
-	for _, e := range result.Errors {
-		if e.Rule == "duplicate-id" {
-			found = true
-			break
-		}
-	}
-	if !found {
-		t.Error("expected duplicate-id error for same ID in different code packages")
-	}
-}
-
-// @test TEST-INTERNAL_ENGINE-037
-func TestEngine_DuplicateIDs_RenameSuggestion(t *testing.T) {
-	cfg := &config.Config{Version: "1.0"}
-	ids := model.NewIdentifierSet()
-
-	a := model.NewIdentifier("SPEC-BE-001", model.TypeSpec, "Spec A", "docs/backend/spec.md", 1)
-	a.SetOrigin(model.OriginDoc)
-	b := model.NewIdentifier("SPEC-BE-001", model.TypeSpec, "Spec B", "docs/billing/spec.md", 1)
-	b.SetOrigin(model.OriginDoc)
-	ids.Add(a)
-	ids.Add(b)
-
-	eng := New(cfg)
-	result, _ := eng.Run(context.Background(), ids)
-
-	for _, e := range result.Errors {
-		if e.Rule == "duplicate-id" && strings.Contains(e.Message, "consider renaming") {
-			return
-		}
-	}
-	t.Error("expected rename suggestion in duplicate-id error message")
-}
-
-// TestEngine_PublicFuncAnnotation_PrivateFuncAllowed verifies that @implement
-// annotations above private functions are allowed (no annotation-placement error).
-// @test TEST-INTERNAL_ENGINE-038
-func TestEngine_PublicFuncAnnotation_PrivateFuncAllowed(t *testing.T) {
-	tmpDir := t.TempDir()
-	// idd:ignore start
-	code := `package foo
-
-// helper does internal work.
-// @implement SPEC-FOO-001
-func helper() {}
-`
-	// idd:ignore end
-	if err := os.WriteFile(filepath.Join(tmpDir, "foo.go"), []byte(code), 0644); err != nil {
-		t.Fatalf("write: %v", err)
-	}
-
-	cfg := &config.Config{
-		Version: "1.0",
-		Code: config.CodeConfig{
-			Patterns: []string{filepath.Join(tmpDir, "*.go")},
-		},
-		Validation: config.ValidationConfig{
-			RequirePublicFuncAnnotation: true,
-		},
-	}
-
-	eng := New(cfg)
-	result, err := eng.Run(context.Background(), model.NewIdentifierSet())
-	if err != nil {
-		t.Fatalf("Run failed: %v", err)
-	}
-
-	for _, e := range result.Errors {
-		if e.Rule == "annotation-placement" {
-			t.Errorf("unexpected annotation-placement error above private func: %s", e.Message)
-		}
-	}
-}
-
-// TestEngine_PublicFuncAnnotation_PrivateMethodAllowed verifies that @implement
-// annotations above private methods are allowed (no annotation-placement error).
-// @test TEST-INTERNAL_ENGINE-039
-func TestEngine_PublicFuncAnnotation_PrivateMethodAllowed(t *testing.T) {
-	tmpDir := t.TempDir()
-	// idd:ignore start
-	code := `package foo
-
-type bar struct{}
-
-// process is an internal helper method.
-// @implement SPEC-FOO-002
-func (b *bar) process() {}
-`
-	// idd:ignore end
-	if err := os.WriteFile(filepath.Join(tmpDir, "foo.go"), []byte(code), 0644); err != nil {
-		t.Fatalf("write: %v", err)
-	}
-
-	cfg := &config.Config{
-		Version: "1.0",
-		Code: config.CodeConfig{
-			Patterns: []string{filepath.Join(tmpDir, "*.go")},
-		},
-		Validation: config.ValidationConfig{
-			RequirePublicFuncAnnotation: true,
-		},
-	}
-
-	eng := New(cfg)
-	result, err := eng.Run(context.Background(), model.NewIdentifierSet())
-	if err != nil {
-		t.Fatalf("Run failed: %v", err)
-	}
-
-	for _, e := range result.Errors {
-		if e.Rule == "annotation-placement" {
-			t.Errorf("unexpected annotation-placement error above private method: %s", e.Message)
-		}
-	}
-}
-
-// TestEngine_PublicFuncAnnotation_PrivateTypeAllowed verifies that @implement
-// annotations above private types are allowed (no annotation-placement error).
-// @test TEST-INTERNAL_ENGINE-040
-func TestEngine_PublicFuncAnnotation_PrivateTypeAllowed(t *testing.T) {
-	tmpDir := t.TempDir()
-	// idd:ignore start
-	code := `package foo
-
-// internalState holds private state.
-// @implement SPEC-FOO-003
-type internalState struct {
-	value int
-}
-`
-	// idd:ignore end
-	if err := os.WriteFile(filepath.Join(tmpDir, "foo.go"), []byte(code), 0644); err != nil {
-		t.Fatalf("write: %v", err)
-	}
-
-	cfg := &config.Config{
-		Version: "1.0",
-		Code: config.CodeConfig{
-			Patterns: []string{filepath.Join(tmpDir, "*.go")},
-		},
-		Validation: config.ValidationConfig{
-			RequirePublicFuncAnnotation: true,
-		},
-	}
-
-	eng := New(cfg)
-	result, err := eng.Run(context.Background(), model.NewIdentifierSet())
-	if err != nil {
-		t.Fatalf("Run failed: %v", err)
-	}
-
-	for _, e := range result.Errors {
-		if e.Rule == "annotation-placement" {
-			t.Errorf("unexpected annotation-placement error above private type: %s", e.Message)
-		}
-	}
-}
-
-// idd:ignore end
-
-// TestEngine_PublicFuncAnnotation_PublicStillRequired confirms that public
-// functions without @implement still produce a public-func-annotation error.
-// @test TEST-INTERNAL_ENGINE-041
-func TestEngine_PublicFuncAnnotation_PublicStillRequired(t *testing.T) {
-	tmpDir := t.TempDir()
-	// idd:ignore start
-	code := `package foo
-
-// Bar is a public function missing @implement.
-func Bar() {}
-`
-	// idd:ignore end
-	if err := os.WriteFile(filepath.Join(tmpDir, "foo.go"), []byte(code), 0644); err != nil {
-		t.Fatalf("write: %v", err)
-	}
-
-	cfg := &config.Config{
-		Version: "1.0",
-		Code: config.CodeConfig{
-			Patterns: []string{filepath.Join(tmpDir, "*.go")},
-		},
-		Validation: config.ValidationConfig{
-			RequirePublicFuncAnnotation: true,
-		},
-	}
-
-	eng := New(cfg)
-	result, err := eng.Run(context.Background(), model.NewIdentifierSet())
-	if err != nil {
-		t.Fatalf("Run failed: %v", err)
-	}
-
-	found := false
-	for _, e := range result.Errors {
-		if e.Rule == "public-func-annotation" && strings.Contains(e.Message, "Bar") {
-			found = true
-			break
-		}
-	}
-	if !found {
-		t.Error("expected public-func-annotation error for public function missing @implement")
-	}
-}
-
-// idd:ignore end
-
-// TestEngine_PublicFuncAnnotation_GarbageAfterImplementStillErrors confirms that
-// an @implement followed by something that is not a function/type (e.g. a
-// variable or arbitrary code) still triggers annotation-placement.
-// @test TEST-INTERNAL_ENGINE-042
-func TestEngine_PublicFuncAnnotation_GarbageAfterImplementStillErrors(t *testing.T) {
-	tmpDir := t.TempDir()
-	// idd:ignore start
-	code := `package foo
-
-// @implement SPEC-FOO-004
-var x = 5
-`
-	// idd:ignore end
-	if err := os.WriteFile(filepath.Join(tmpDir, "foo.go"), []byte(code), 0644); err != nil {
-		t.Fatalf("write: %v", err)
-	}
-
-	cfg := &config.Config{
-		Version: "1.0",
-		Code: config.CodeConfig{
-			Patterns: []string{filepath.Join(tmpDir, "*.go")},
-		},
-		Validation: config.ValidationConfig{
-			RequirePublicFuncAnnotation: true,
-		},
-	}
-
-	eng := New(cfg)
-	result, err := eng.Run(context.Background(), model.NewIdentifierSet())
-	if err != nil {
-		t.Fatalf("Run failed: %v", err)
-	}
-
-	found := false
-	for _, e := range result.Errors {
-		if e.Rule == "annotation-placement" {
-			found = true
-			break
-		}
-	}
-	if !found {
-		t.Error("expected annotation-placement error when @implement is above a non-func/type declaration")
-	}
-}
-
-// TestEngine_PrivateImplement_RequiresDoc verifies the third rule: any
-// implement annotation (even on a private function) must have a corresponding
-// doc entry. This is enforced by doc-code-correspondence, not by
-// validatePublicFuncAnnotations.
-// @test TEST-INTERNAL_ENGINE-043
-func TestEngine_PrivateImplement_RequiresDoc(t *testing.T) {
-	cfg := config.Default()
-	eng := New(cfg)
-
-	// Simulate the collector having parsed an @implement annotation from a
-	// private function. The identifier exists on the code side with no
-	// matching doc-side identifier.
-	ids := model.NewIdentifierSet()
-	codeOnly := model.NewIdentifier("SPEC-FOO-099", model.TypeSpec, "", "internal/foo/foo.go", 5)
-	codeOnly.SetOrigin(model.OriginCode)
-	ids.Add(codeOnly)
-
-	eng.Run(context.Background(), ids)
-
-	found := false
-	for _, e := range eng.result.Errors {
-		if e.Rule == "doc-code-correspondence" && strings.Contains(e.Message, "SPEC-FOO-099") {
-			found = true
-			break
-		}
-	}
-	if !found {
-		t.Error("expected doc-code-correspondence error for @implement without matching doc")
-	}
-}
-
-// TestEngine_AnnotationIdentifier_HonorsIgnoreScope verifies that
-// validateAnnotationIdentifiers honors the idd-ignore scope markers so
-// fixtures embedded in the test source are not reported as real violations.
-// @test TEST-INTERNAL_ENGINE-044
-func TestEngine_AnnotationIdentifier_HonorsIgnoreScope(t *testing.T) {
-	tmpDir := t.TempDir()
-	// This block contains two comments that would normally trip the validator:
-	//   1. an @implement with no identifier
-	//   2. an @implement above a non-function declaration (placement)
-	// The // idd:ignore start/end scope should silence both.
-	code := "package foo\n\n" +
-		"// idd:ignore start\n" +
-		"// @implement\n" +
-		"var ignored1 = 1\n" +
-		"// idd:ignore end\n"
-	if err := os.WriteFile(filepath.Join(tmpDir, "foo.go"), []byte(code), 0644); err != nil {
-		t.Fatalf("write: %v", err)
-	}
-
-	cfg := &config.Config{
-		Version: "1.0",
-		Code: config.CodeConfig{
-			Patterns: []string{filepath.Join(tmpDir, "*.go")},
-		},
-		Validation: config.ValidationConfig{
-			RequireAnnotationIdentifier: true,
-		},
-	}
-
-	eng := New(cfg)
-	result, err := eng.Run(context.Background(), model.NewIdentifierSet())
-	if err != nil {
-		t.Fatalf("Run failed: %v", err)
-	}
-
-	for _, e := range result.Errors {
-		if e.Rule == "annotation-missing-identifier" {
-			t.Errorf("expected no annotation-missing-identifier errors inside idd:ignore scope, got: %s @ %s", e.Message, e.Source)
-		}
-	}
-}
-
-// TestEngine_AnnotationPlacement_HonorsIgnoreScope verifies that the placement
-// pass of validatePublicFuncAnnotations skips content inside an // idd:ignore
-// start/end block — not just the first and third passes.
-// @test TEST-INTERNAL_ENGINE-045
-func TestEngine_AnnotationPlacement_HonorsIgnoreScope(t *testing.T) {
-	tmpDir := t.TempDir()
-	// An @implement followed by a `var` is normally a placement error. The
-	// ignore scope should silence it.
-	code := "package foo\n\n" +
-		"// idd:ignore start\n" +
-		"// @implement SPEC-IGNORE-001\n" +
-		"var ignored = 1\n" +
-		"// idd:ignore end\n"
-	if err := os.WriteFile(filepath.Join(tmpDir, "foo.go"), []byte(code), 0644); err != nil {
-		t.Fatalf("write: %v", err)
-	}
-
-	cfg := &config.Config{
-		Version: "1.0",
-		Code: config.CodeConfig{
-			Patterns: []string{filepath.Join(tmpDir, "*.go")},
-		},
-		Validation: config.ValidationConfig{
-			RequirePublicFuncAnnotation: true,
-		},
-	}
-
-	eng := New(cfg)
-	result, err := eng.Run(context.Background(), model.NewIdentifierSet())
-	if err != nil {
-		t.Fatalf("Run failed: %v", err)
-	}
-
-	for _, e := range result.Errors {
-		if e.Rule == "annotation-placement" {
-			t.Errorf("expected no annotation-placement errors inside idd:ignore scope, got: %s @ %s", e.Message, e.Source)
-		}
-	}
-}
-
-// TestEngine_ConsecutiveAnnotations_HonorsIgnoreScope verifies that
-// validateConsecutiveAnnotations skips content inside an // idd:ignore
-// start/end block.
-// @test TEST-INTERNAL_ENGINE-046
-func TestEngine_ConsecutiveAnnotations_HonorsIgnoreScope(t *testing.T) {
-	tmpDir := t.TempDir()
-	// Two consecutive @implement comments would normally trip
-	// annotation-consecutive-line. The ignore scope should silence it.
-	code := "package foo\n\n" +
-		"// idd:ignore start\n" +
-		"// @implement SPEC-A-001\n" +
-		"// @implement SPEC-B-001\n" +
-		"// idd:ignore end\n"
-	if err := os.WriteFile(filepath.Join(tmpDir, "foo.go"), []byte(code), 0644); err != nil {
-		t.Fatalf("write: %v", err)
-	}
-
-	cfg := &config.Config{
-		Version: "1.0",
-		Code: config.CodeConfig{
-			Patterns: []string{filepath.Join(tmpDir, "*.go")},
-		},
-		Validation: config.ValidationConfig{
-			RequireAnnotationOnSameLine: true,
-		},
-	}
-
-	eng := New(cfg)
-	result, err := eng.Run(context.Background(), model.NewIdentifierSet())
-	if err != nil {
-		t.Fatalf("Run failed: %v", err)
-	}
-
-	for _, e := range result.Errors {
-		if e.Rule == "annotation-consecutive-line" {
-			t.Errorf("expected no annotation-consecutive-line errors inside idd:ignore scope, got: %s @ %s", e.Message, e.Source)
-		}
 	}
 }

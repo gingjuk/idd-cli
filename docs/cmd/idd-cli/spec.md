@@ -1,1362 +1,329 @@
 ---
-markers:
-  - id: SPEC-CMD_IDD_CLI-001
-    name: IDD CLI Overview
-  - id: SPEC-CMD_IDD_CLI-002
-    name: Graph Linkage Structure
-  - id: SPEC-CMD_IDD_CLI-003
-    name: Engine Validation Rules
-  - id: SPEC-CMD_IDD_CLI-004
-    name: Reporter Output
-  - id: SPEC-CMD_IDD_CLI-005
-    name: Identifier Model
-  - id: SPEC-CMD_IDD_CLI-006
-    name: Config Loading
-  - id: SPEC-CMD_IDD_CLI-007
-    name: Similarity Analysis
-  - id: SPEC-CMD_IDD_CLI-008
-    name: Embed Files
-  - id: SPEC-CMD_IDD_CLI-009
-    name: CLI Main Entry
-  - id: SPEC-CMD_IDD_CLI-010
-    name: Engine Contract Tests
-
-related_files:
-  spec: docs/cmd/idd-cli/spec.md
-  contract: docs/cmd/idd-cli/contract.md
-  design: docs/cmd/idd-cli/design.md
-  testing: docs/cmd/idd-cli/testing.md
-
----
-
-# Specification (backend)
-
-## SPEC-CMD_IDD_CLI-001: IDD CLI Overview
-
-**Design:** `IDDCLIModule`
-
-**Contract:** `CLI`
-
-**Requirement:**
-
-idd-cli is a CLI tool that validates bidirectional linkage consistency between IDD (Intent-Driven Development) identifiers across documentation and source code.
-
-**Tests:** `TEST-CMD_IDD_CLI-001`, `TEST-CMD_IDD_CLI-002`
-
-**Status:** Done
-
-**Implementation:** `cmd/idd-cli/main.go`, `internal/engine/engine.go`
-
-**Key Modules:**
-
-- `internal/collector/` — Document and code collection
-- `internal/graph/` — Linkage graph structure
-- `internal/validator/` — Validation rules
-- `internal/reporter/` — Report generation
-
-**Acceptance Criteria:**
-
-- [x] CLI tool accepts `--config` flag for configuration
-- [x] Scans documentation files matching configured patterns
-- [x] Extracts IDD identifiers using configurable regex
-- [x] Builds linkage graph from collected identifiers
-- [x] Validates bidirectional links exist
-- [x] Detects orphan identifiers (unless `allow_orphans: true`)
-- [x] Generates JSON report with validation results
-- [x] Exits with non-zero code when validation fails
-
-**Related:** [`SPEC-CMD_IDD_CLI-002`](#spec-cmd_idd_cli-002-graph-linkage-structure)
-
-## SPEC-CMD_IDD_CLI-002: Graph Linkage Structure
-
-**Design:** `IDDCLIModule`
-
-**Contract:** `LinkageGraph`
-
-**Requirement:**
-
-The LinkageGraph must efficiently represent bidirectional relationships between IDD identifiers, supporting fast lookup by ID, type, and link direction.
-
-**Tests:** `TEST-CMD_IDD_CLI-001`, `TEST-CMD_IDD_CLI-002`
-
-**Status:** Done
-
-**Implementation:** `internal/graph/graph.go`
-
-**Key Structures:**
-
-- `Node` — Identifier with incoming/outgoing edges
-- `Edge` — Directed relationship with verification status
-- `Index` — Fast lookup indexes by ID, type, backlinks
-
-**Public Functions:**
-
-### LinkageGraph.NewLinkageGraph
-
-**Function Signature:**
-`func NewLinkageGraph() *LinkageGraph`
-
-**Purpose:** Creates a new empty linkage graph with initialized node map, edge slice, and index structures.
-
-**Returns:** A new LinkageGraph pointer ready to accept nodes and edges
-
----
-
-### LinkageGraph.AddNode
-
-**Function Signature:**
-`func (g *LinkageGraph) AddNode(id string, idType model.IdentifierType) *Node`
-
-**Purpose:** Adds a node to the graph if it doesn't already exist. If the node already exists, returns the existing node. Creates the node with empty edge lists and initializes metadata map.
-
-**Parameters:**
-
-- `id`: The identifier ID for the node
-- `idType`: The type of identifier (SPEC, CONTRACT, TEST, DESIGN)
-
-**Returns:** The newly created or existing Node
-
----
-
-### LinkageGraph.AddEdge
-
-### LinkageGraph.AddEdge
-
-**Function Signature:**
-`func (g *LinkageGraph) AddEdge(from, to string, edgeType model.LinkType, source string, line int)`
-
-**Purpose:** Adds a directed edge between two nodes. Creates the edge with source location information and appends it to the graph's edge list. Also updates the from node's outEdges and to node's inEdges.
-
-**Parameters:**
-
-- `from`: Source node ID
-- `to`: Target node ID
-- `edgeType`: Type of link (LinkTests, LinkImplements, LinkReferences)
-- `source`: File path where the link was found
-- `line`: Line number where the link was found
-
----
-
-### LinkageGraph.GetNode
-
-### LinkageGraph.GetNode
-
-**Function Signature:**
-`func (g *LinkageGraph) GetNode(id string) (*Node, bool)`
-
-**Purpose:** Retrieves a node by its ID using O(1) map lookup.
-
-**Parameters:**
-
-- `id`: The node ID to look up
-
-**Returns:** The Node and true if found, or nil and false if not found
-
----
-
-### LinkageGraph.Nodes
-
-**Function Signature:**
-`func (g *LinkageGraph) Nodes() map[string]*Node`
-
-**Purpose:** Returns the underlying node map for iteration. Use for traversing all nodes in the graph.
-
-**Returns:** Map of node ID to Node pointer
-
----
-
-### LinkageGraph.Edges
-
-**Function Signature:**
-`func (g *LinkageGraph) Edges() []*Edge`
-
-**Purpose:** Returns all edges in the graph.
-
-**Returns:** Slice of all Edge pointers
-
----
-
-### LinkageGraph.GetOutboundByType
-
-### LinkageGraph.GetOutboundByType
-
-**Function Signature:**
-`func (g *LinkageGraph) GetOutboundByType(nodeID string, linkType model.LinkType) []*Edge`
-
-**Purpose:** Returns all outbound edges from a node that match the specified link type.
-
-**Parameters:**
-
-- `nodeID`: The source node ID
-- `linkType`: The type of links to retrieve
-
-**Returns:** Slice of matching edges (empty if node not found)
-
----
-
-### LinkageGraph.GetInboundByType
-
-### LinkageGraph.GetInboundByType
-
-**Function Signature:**
-`func (g *LinkageGraph) GetInboundByType(nodeID string, linkType model.LinkType) []*Edge`
-
-**Purpose:** Returns all inbound edges to a node that match the specified link type.
-
-**Parameters:**
-
-- `nodeID`: The target node ID
-- `linkType`: The type of links to retrieve
-
-**Returns:** Slice of matching edges (empty if node not found)
-
----
-
-### LinkageGraph.GetBacklinks
-
-### LinkageGraph.GetBacklinks
-
-**Function Signature:**
-`func (g *LinkageGraph) GetBacklinks(nodeID string) []string`
-
-**Purpose:** Returns all node IDs that have edges pointing TO the specified node. Uses the pre-built index for fast lookup.
-
-**Parameters:**
-
-- `nodeID`: The node ID to get backlinks for
-
-**Returns:** Slice of source node IDs that link to this node
-
----
-
-### LinkageGraph.NodeCount
-
-### LinkageGraph.NodeCount
-
-**Function Signature:**
-`func (g *LinkageGraph) NodeCount() int`
-
-**Purpose:** Returns the total number of nodes in the graph.
-
-**Returns:** Node count
-
----
-
-### LinkageGraph.EdgeCount
-
-### LinkageGraph.EdgeCount
-
-**Function Signature:**
-`func (g *LinkageGraph) EdgeCount() int`
-
-**Purpose:** Returns the total number of edges in the graph.
-
-**Returns:** Edge count
-
----
-
-### LinkageGraph.VerifyBidirectionalLinks
-
-**Function Signature:**
-`func (g *LinkageGraph) VerifyBidirectionalLinks()`
-
-**Purpose:** Verifies that for every edge, there exists a corresponding reverse edge. Sets the Verified flag on each edge based on whether a matching reverse edge exists. For example, if A→B exists with LinkTests, then B→A should exist with reverse link type.
-
----
-
-### LinkageGraph.ToSnapshot
-
-**Function Signature:**
-`func (g *LinkageGraph) ToSnapshot() *model.GraphSnapshot`
-
-**Purpose:** Creates a serializable snapshot of the graph for inclusion in validation reports. Converts all nodes and edges to summary structures.
-
-**Returns:** GraphSnapshot containing node and edge summaries
-
----
-
-### LinkageGraph.Stats
-
-**Function Signature:**
-`func (g *LinkageGraph) Stats() model.ValidationStats`
-
-**Purpose:** Computes validation statistics from the graph, including counts of total identifiers, links, and breakdowns by type (SPEC, TEST, CONTRACT, DESIGN).
-
-**Returns:** ValidationStats with computed counts
-
----
-
-### LinkageGraph.ValidateCompleteness
-
-**Function Signature:**
-`func (g *LinkageGraph) ValidateCompleteness() []model.ValidationError`
-
-**Purpose:** Validates that SPEC nodes have at least one test link and TEST nodes are linked from at least one SPEC. Returns validation errors for any completeness violations.
-
-**Returns:** Slice of ValidationError for completeness violations
-
----
-
-### Node.InEdges
-
-**Function Signature:**
-`func (n *Node) InEdges() []*Edge`
-
-**Purpose:** Returns all edges pointing TO this node (inbound edges).
-
-**Returns:** Slice of inbound edges
-
----
-
-### Node.OutEdges
-
-**Function Signature:**
-`func (n *Node) OutEdges() []*Edge`
-
-**Purpose:** Returns all edges originating from this node (outbound edges).
-
-**Returns:** Slice of outbound edges
-
----
-
-**Acceptance Criteria:**
-
-- [x] Nodes store identifier ID, type, and edge lists
-- [x] Edges store direction, type, source location, and verification status
-- [x] Fast O(1) lookup by node ID
-- [x] Fast lookup of backlinks (nodes linking TO a node)
-- [x] Bidirectional link verification marks edges as verified/unverified
-
-**Tests:** `TEST-CMD_IDD_CLI-001`, `TEST-CMD_IDD_CLI-002`
-
-**Related:** [`SPEC-CMD_IDD_CLI-001`](#spec-cmd_idd_cli-001-idd-cli-overview)
-
----
-
----
-
-## SPEC-CMD_IDD_CLI-003: Configuration Module
-
-**Design:** `IDDCLIModule`
-
-**Contract:** `Config`
-
-**Requirement:**
-
-The configuration module must load IDD settings from YAML configuration files, supporting CLI flag overrides, sensible defaults, and pattern-based file discovery.
-
-**Tests:** `TEST-CMD_IDD_CLI-001`, `TEST-CMD_IDD_CLI-002`
-
-**Status:** Done
-
-**Implementation:** `internal/config/config.go`
-
-**Key Functionality:**
-
-- Load config from `.idd.yaml` file (or path specified via `--config` flag)
-- Support `ignore_paths` with glob patterns (including `**` for recursive)
-- Define identifier patterns for documentation markers and code annotations
-- Configure reporter output format (JSON/Markdown)
-
-**Public Functions:**
-
-### Config.Load
-
-**Function Signature:**
-`func Load(path string) (*Config, error)`
-
-**Purpose:** Loads configuration from a YAML file at the specified path. Validates the configuration after loading and returns an error if validation fails.
-
-**Parameters:**
-
-- `path`: Path to the YAML configuration file
-
-**Returns:** Parsed Config pointer or error if file cannot be read or validation fails
-
-### Config.Default
-
-**Function Signature:**
-`func Default() *Config`
-
-**Purpose:** Returns a Config with sensible default values. Used when no config file is provided or as a baseline to override.
-
-**Returns:** Config with default values for all settings
-
----
-
-### Config.Validate
-
-**Function Signature:**
-`func (c *Config) Validate() error`
-
-**Purpose:** Validates and normalizes the configuration. Sets default values for empty fields and ensures consistency (e.g., threshold bounds).
-
-**Returns:** Error if validation fails, nil otherwise
-
----
-
-**Acceptance Criteria:**
-
-- [x] Config file is optional; defaults are applied if not found
-- [x] CLI `--config` flag overrides default config paths
-- [x] `ignore_paths` correctly excludes files/directories from validation
-- [x] Identifier patterns are configurable via config file
-- [x] Reporter format can be set to JSON or Markdown
-
-**Related:** [`SPEC-CMD_IDD_CLI-001`](#spec-cmd_idd_cli-001-idd-cli-overview)
-
----
-
----
-
-## SPEC-CMD_IDD_CLI-004: Validation Engine
-
-**Design:** `IDDCLIModule`
-
-**Contract:** `Engine`
-
-**Requirement:**
-
-The validation engine orchestrates the collection of identifiers, building the linkage graph, and running validation rules to detect orphaned or improperly linked identifiers.
-
-**Tests:** `TEST-CMD_IDD_CLI-001`, `TEST-CMD_IDD_CLI-002`
-
-**Status:** Done
-
-**Implementation:** `internal/engine/engine.go`
-
-**Key Functionality:**
-
-- Coordinate doc and code collectors
-- Build linkage graph from collected identifiers
-- Run validation rules (bidirectional links, orphan detection)
-- Aggregate results and errors
-
-**Public Functions:**
-
-### Engine.New
-
-**Function Signature:**
-`func New(cfg *config.Config) *Engine`
-
-**Purpose:** Creates a new validation engine with the given configuration. Initializes an empty linkage graph and validation result.
-
-**Parameters:**
-
-- `cfg`: Configuration pointer with validation rules and settings
-
-**Returns:** A new Engine ready to run validation
-
-### Engine.Run
-
-**Function Signature:**
-`func (e *Engine) Run(ctx context.Context, ids *model.IdentifierSet) (*model.ValidationResult, error)`
-
-**Purpose:** Runs the complete validation pipeline: builds the graph from identifiers, runs all validation rules, and returns the result. If IncludeGraph is enabled in config, includes graph snapshot in result.
-
-**Parameters:**
-
-- `ctx`: Context for cancellation
-- `ids`: Collected identifier set to validate
-
-**Returns:** ValidationResult with errors, warnings, and stats, or error
-
----
-
-### Engine.AddStructuralErrors
-
-**Function Signature:**
-`func (e *Engine) AddStructuralErrors(errors []*model.ValidationError)`
-
-**Purpose:** Adds pre-collected structural errors (e.g., from collectors) to the engine's result. These are errors that were found during identifier collection phase.
-
-**Parameters:**
-
-- `errors`: Slice of validation errors to add
-
----
-
-### Engine.BuildReport
-
-**Function Signature:**
-`func (e *Engine) BuildReport() *model.Report`
-
-**Purpose:** Builds a complete report structure from the engine's current state, including tool info, config summary, and validation result.
-
-**Returns:** Complete Report ready for output
-
----
-
-**Acceptance Criteria:**
-
-- [x] Engine collects identifiers from all configured sources
-- [x] Graph is built with all nodes and edges
-- [x] Bidirectional link validation detects unverified links
-- [x] Orphan validation detects unreferenced identifiers
-- [x] Validation results include errors and warnings
-
-**Related:** [`SPEC-CMD_IDD_CLI-001`](#spec-cmd_idd_cli-001-idd-cli-overview), [`SPEC-CMD_IDD_CLI-002`](#spec-cmd_idd_cli-002-graph-linkage-structure)
-
----
-
----
-
-## SPEC-CMD_IDD_CLI-005: Identifier Model
-
-**Design:** `IDDCLIModule`
-
-**Contract:** `Identifier`
-
-**Requirement:**
-
-The identifier model defines data structures for representing IDD identifiers, annotations, and the identifier set collection with support for links and merging.
-
-**Tests:** `TEST-CMD_IDD_CLI-001`, `TEST-CMD_IDD_CLI-002`
-
-**Status:** Done
-
-**Implementation:** `internal/model/identifier.go`
-
-**Key Structures:**
-
-- `Identifier` — IDD identifier with type, module, number, and links
-- `Annotation` — Code annotation linking to spec/contract/test/design
-- `IdentifierSet` — Collection of identifiers with add/get/has operations
-- `IdentifierType` — Enum for SPEC, CONTRACT, TEST, DESIGN, BACKLINK
-
-**Public Functions:**
-
-### Identifier.ParseIdentifierType
-
-**Function Signature:**
-`func ParseIdentifierType(s string) (IdentifierType, error)`
-
-**Purpose:** Converts a string to IdentifierType. Used to parse identifier type from string representations (e.g., "SPEC", "TEST").
-
-**Parameters:**
-
-- `s`: The string to parse
-
-**Returns:** The corresponding IdentifierType or an error if the string is not a valid type.
-
-### Identifier.NewIdentifier
-
-**Function Signature:**
-`func NewIdentifier(id string, idType IdentifierType, title, source string, line int) *Identifier`
-
-**Purpose:** Creates a new identifier with the given fields. Initializes an empty Links slice and sets Origin to OriginDoc.
-
-**Parameters:**
-
-- `id`: The identifier ID (e.g., `SPEC-CMD_IDD_CLI-001`)
-- `idType`: The type of identifier (TypeSpec, TypeContract, etc.)
-- `title`: The title/name of the identifier
-- `source`: The file path where the identifier was found
-- `line`: The line number where the identifier was found
-
-**Returns:** A new Identifier pointer
-
----
-
-### Identifier.NewIdentifierWithDescribe
-
-**Function Signature:**
-`func NewIdentifierWithDescribe(id string, idType IdentifierType, title, describe, source string, line int) *Identifier`
-
-**Purpose:** Creates a new identifier with an additional describe field for extended description text.
-
-**Parameters:**
-
-- `id`: The identifier ID
-- `idType`: The type of identifier
-- `title`: The title/name of the identifier
-- `describe`: Extended description text
-- `source`: The file path where the identifier was found
-- `line`: The line number
-
-**Returns:** A new Identifier pointer
-
----
-
-### IdentifierSet.NewIdentifierSet
-
-**Function Signature:**
-`func NewIdentifierSet() *IdentifierSet`
-
-**Purpose:** Creates a new empty identifier set with initialized slices for each identifier type and an empty byID map.
-
-**Returns:** A new IdentifierSet pointer ready to accept identifiers
-
----
-
-### IdentifierSet.Add
-
-**Function Signature:**
-`func (s *IdentifierSet) Add(id *Identifier)`
-
-**Purpose:** Adds an identifier to the set. Registers the identifier in the byID map for fast lookup and appends to the appropriate type slice (Specs, Contracts, Tests, or Designs).
-
-**Parameters:**
-
-- `id`: The identifier to add
-
----
-
-### IdentifierSet.Get
-
-**Function Signature:**
-`func (s *IdentifierSet) Get(id string) (*Identifier, bool)`
-
-**Purpose:** Returns the first identifier with the given ID for backward compatibility. Use GetAll to retrieve all identifiers with the same ID from different origins.
-
-**Parameters:**
-
-- `id`: The identifier ID to look up
-
-**Returns:** The first matching identifier and true, or nil and false if not found
-
----
-
-### IdentifierSet.GetAll
-
-**Function Signature:**
-`func (s *IdentifierSet) GetAll(id string) []*Identifier`
-
-**Purpose:** Returns all identifiers with the given ID, including those from different origins (doc vs code).
-
-**Parameters:**
-
-- `id`: The identifier ID to look up
-
-**Returns:** A slice of all identifiers with the ID (may be empty)
-
----
-
-### IdentifierSet.Has
-
-**Function Signature:**
-`func (s *IdentifierSet) Has(id string) bool`
-
-**Purpose:** Returns true if at least one identifier with the given ID exists in the set.
-
-**Parameters:**
-
-- `id`: The identifier ID to check
-
-**Returns:** True if identifier exists, false otherwise
-
----
-
-### IdentifierSet.All
-
-**Function Signature:**
-`func (s *IdentifierSet) All() []*Identifier`
-
-**Purpose:** Returns all unique identifiers as a slice (one per ID). When multiple identifiers exist with the same ID (from different origins), only the first one is returned.
-
-**Returns:** A slice of unique identifiers
-
----
-
-### IdentifierSet.AllIdentifiers
-
-**Function Signature:**
-`func (s *IdentifierSet) AllIdentifiers() []*Identifier`
-
-**Purpose:** Returns all identifiers including duplicates (multiple origins). Unlike All, this includes every identifier even if they share the same ID.
-
-**Returns:** A slice of all identifiers
-
----
-
-### IdentifierSet.ByOrigin
-
-**Function Signature:**
-`func (s *IdentifierSet) ByOrigin(origin Origin) []*Identifier`
-
-**Purpose:** Returns all identifiers that have the specified origin (OriginDoc or OriginCode).
-
-**Parameters:**
-
-- `origin`: The origin to filter by
-
-**Returns:** A slice of identifiers with the specified origin
-
----
-
-### IdentifierSet.HasOrigin
-
-**Function Signature:**
-`func (s *IdentifierSet) HasOrigin(id string, origin Origin) bool`
-
-**Purpose:** Returns true if at least one identifier with the given ID has the specified origin.
-
-**Parameters:**
-
-- `id`: The identifier ID to check
-- `origin`: The origin to check for
-
-**Returns:** True if at least one matching identifier has the origin
-
----
-
-### IdentifierSet.Count
-
-**Function Signature:**
-`func (s *IdentifierSet) Count() int`
-
-**Purpose:** Returns the total number of unique identifier IDs in the set.
-
-**Returns:** The count of unique IDs
-
----
-
-### IdentifierSet.Merge
-
-**Function Signature:**
-`func (s *IdentifierSet) Merge(other *IdentifierSet)`
-
-**Purpose:** Combines another identifier set into this one by adding all identifiers from the other set.
-
-**Parameters:**
-
-- `other`: The identifier set to merge in
-
----
-
-### Annotation.NewAnnotation
-
-**Function Signature:**
-`func NewAnnotation(typ IdentifierType, ref, source, raw, context string, line int) *Annotation`
-
-**Purpose:** Creates a new annotation with the given fields. Used for code annotations extracted from source files.
-
-**Parameters:**
-
-- `typ`: The annotation type (SPEC, CONTRACT, TEST, DESIGN)
-- `ref`: The identifier reference
-- `source`: The file path
-- `raw`: The raw annotation text
-- `context`: Surrounding code context
-- `line`: Line number
-
-**Returns:** A new Annotation pointer
-
----
-
-### Annotation.NewAnnotationWithComment
-
-**Function Signature:**
-`func NewAnnotationWithComment(typ IdentifierType, ref, source, raw, context, funcComment string, line int) *Annotation`
-
-**Purpose:** Creates a new annotation that includes the associated function comment. Use when the annotation is attached to a function with documentation.
-
-**Parameters:**
-
-- `typ`: The annotation type
-- `ref`: The identifier reference
-- `source`: The file path
-- `raw`: The raw annotation text
-- `context`: Surrounding code context
-- `funcComment`: The function's documentation comment
-- `line`: Line number
-
-**Returns:** A new Annotation pointer
-
----
-
-### Annotation.ToIdentifier
-
-**Function Signature:**
-`func (a *Annotation) ToIdentifier() *Identifier`
-
-**Purpose:** Converts an annotation to an identifier. The describe field is populated from FunctionComment if present.
-
-**Returns:** A new Identifier representing the annotation
-
----
-
-### ValidationResult.NewValidationResult
-
-**Function Signature:**
-`func NewValidationResult() *ValidationResult`
-
-**Purpose:** Creates a new validation result with initialized empty slices for errors and warnings.
-
-**Returns:** A new ValidationResult pointer
-
----
-
-### ValidationResult.AddError
-
-**Function Signature:**
-`func (r *ValidationResult) AddError(rule, msg, source, link, code string)`
-
-**Purpose:** Adds a validation error to the result and sets Valid to false.
-
-**Parameters:**
-
-- `rule`: The validation rule that failed
-- `msg`: Human-readable error message
-- `source`: File path where error was found
-- `link`: The identifier/link involved
-- `code`: Specific code or line involved
-
----
-
-### ValidationResult.AddWarning
-
-**Function Signature:**
-`func (r *ValidationResult) AddWarning(rule, msg, source, link, code string)`
-
-**Purpose:** Adds a validation warning to the result. Does not affect the Valid flag.
-
-**Parameters:**
-
-- `rule`: The validation rule that triggered the warning
-- `msg`: Human-readable warning message
-- `source`: File path where warning was found
-- `link`: The identifier/link involved
-- `code`: Specific code or line involved
-
----
-
-### ValidationResult.Sort
-
-**Function Signature:**
-`func (r *ValidationResult) Sort()`
-
-**Purpose:** Sorts errors and warnings by rule name, then by message. Ensures consistent output ordering.
-
----
-
-**Acceptance Criteria:**
-
-- [x] Identifiers store type, module, number, and local ID
-- [x] Forward links connect identifiers to their dependencies
-- [x] Backlinks are computed from forward links
-- [x] IdentifierSet supports add, get, has, count, all, merge operations
-- [x] Annotations can be converted to identifiers
-
-**Related:** [`SPEC-CMD_IDD_CLI-002`](#spec-cmd_idd_cli-002-graph-linkage-structure)
-
----
-
----
-
-## SPEC-CMD_IDD_CLI-006: Reporter Module
-
-**Design:** `IDDCLIModule`
-
-**Contract:** `Reporter`
-
-**Requirement:**
-
-The reporter module generates validation reports in multiple formats (JSON, Markdown), presenting errors, warnings, and statistics clearly.
-
-**Tests:** `TEST-CMD_IDD_CLI-001`, `TEST-CMD_IDD_CLI-002`
-
-### Reporter.Generate
-
-**Status:** Done
-
-**Implementation:** `internal/reporter/reporter.go`
-
-**Key Functionality:**
-
-- Generate JSON report with validation summary
-- Generate Markdown report with formatted output
-- Include statistics: total identifiers, total links, error count
-- List validation errors with file locations
-
-**Public Functions:**
-
-### New
-
-**Function Signature:**
-`func New(cfg *config.Config, format string) *Reporter`
-
-**Purpose:** Creates a new Reporter with the given configuration and output format. Defaults to JSON if format is empty.
-
-**Parameters:**
-
-- `cfg`: Configuration pointer
-- `format`: Output format ("json" or "markdown")
-
-**Returns:** A new Reporter instance
-
-**Function Signature:**
-`func (r *Reporter) Generate(result *model.ValidationResult) (*model.Report, error)`
-
-**Purpose:** Generates a complete report from a validation result, including tool metadata, config summary, and the validation result.
-
-**Parameters:**
-
-- `result`: The validation result to include in the report
-
-**Returns:** Complete Report structure or error
-
----
-
-### Reporter.Write
-
-**Function Signature:**
-`func (r *Reporter) Write(report *model.Report, output string) error`
-
-**Purpose:** Writes the report to the specified output destination. If output is empty or "-", writes to stdout. Otherwise creates a file at the given path.
-
-**Parameters:**
-
-- `report`: The report to write
-- `output`: File path or "-" for stdout
-
-**Returns:** Error if writing fails
-
----
-
-**Acceptance Criteria:**
-
-- [x] JSON output includes all validation results
-- [x] Markdown output is human-readable
-- [x] Errors include identifier ID and source location
-- [x] Statistics are accurate
-
-**Tests:** `TEST-CMD_IDD_CLI-001`, `TEST-CMD_IDD_CLI-002`
-
-**Related:** [`SPEC-CMD_IDD_CLI-001`](#spec-cmd_idd_cli-001-idd-cli-overview)
-
----
-
----
-
-## SPEC-CMD_IDD_CLI-007: Similarity Analysis
-
-**Design:** `IDDCLIModule`
-
-**Contract:** `TFIDF`
-
-**Requirement:**
-
-The similarity module provides TF-IDF based document similarity analysis to help detect duplicate or very similar documentation files.
-
-**Tests:** `TEST-CMD_IDD_CLI-001`, `TEST-CMD_IDD_CLI-002`
-
-### TFIDF.Tokenize
-
-**Status:** Done
-
-**Implementation:** `internal/similarity/tfidf.go`
-
-**Key Functionality:**
-
-- TF-IDF vectorization of document content
-- Cosine similarity computation between documents
-- Threshold-based duplicate detection
-
-**Public Functions:**
-
-### TFIDF.NewTFIDF
-
-**Function Signature:**
-`func NewTFIDF() *TFIDF`
-
-**Purpose:** Creates a new TFIDF indexer with an empty IDF cache.
-
-**Returns:** A new TFIDF pointer
-
-**Function Signature:**
-`func (t *TFIDF) Tokenize(text string) []string`
-
-**Purpose:** Tokenizes text into lowercase alphanumeric tokens, filtering out stop words and single-character tokens.
-
-**Parameters:**
-
-- `text`: The text to tokenize
-
-**Returns:** Slice of filtered tokens
-
----
-
-### TFIDF.ComputeTF
-
-**Function Signature:**
-`func (t *TFIDF) ComputeTF(tokens []string) map[string]float64`
-
-**Purpose:** Computes Term Frequency (TF) for each token in the document. TF = (count of token) / (total tokens).
-
-**Parameters:**
-
-- `tokens`: Slice of tokens from Tokenize
-
-**Returns:** Map of token to TF value
-
----
-
-### TFIDF.ComputeIDF
-
-**Function Signature:**
-`func (t *TFIDF) ComputeIDF(documents [][]string)`
-
-**Purpose:** Computes Inverse Document Frequency (IDF) across a corpus of documents. IDF = log((N - df + 0.5) / (df + 0.5)) where N is total docs and df is document frequency.
-
-**Parameters:**
-
-- `documents`: Slice of token slices representing documents
-
----
-
-### TFIDF.ComputeTFIDF
-
-**Function Signature:**
-`func (t *TFIDF) ComputeTFIDF(tf map[string]float64) map[string]float64`
-
-**Purpose:** Computes TF-IDF vector by multiplying TF values with pre-computed IDF values.
-
-**Parameters:**
-
-- `tf`: Term frequency map from ComputeTF
-
-**Returns:** TF-IDF vector map
-
----
-
-### CosineSimilarity
-
-**Function Signature:**
-`func CosineSimilarity(vec1, vec2 map[string]float64) float64`
-
-**Purpose:** Computes cosine similarity between two TF-IDF vectors. Returns value between 0.0 and 1.0.
-
-**Parameters:**
-
-- `vec1`: First TF-IDF vector
-- `vec2`: Second TF-IDF vector
-
-**Returns:** Cosine similarity score (0.0 to 1.0)
-
----
-
-### TFIDF.Score
-
-**Function Signature:**
-`func (t *TFIDF) Score(docText, codeText string) float64`
-
-**Purpose:** Computes similarity score between document text and code text using TF-IDF and cosine similarity.
-
-**Parameters:**
-
-- `docText`: Documentation text
-- `codeText`: Code comment text
-
-**Returns:** Similarity score (0.0 to 1.0)
-
----
-
-### Score
-
-**Function Signature:**
-`func Score(docText, codeText string) float64`
-
-**Purpose:** Convenience function that creates a temporary TFIDF instance and computes similarity in one call.
-
-**Parameters:**
-
-- `docText`: Documentation text
-- `codeText`: Code comment text
-
-**Returns:** Similarity score (0.0 to 1.0)
-
----
-
-### NormalizeText
-
-**Function Signature:**
-`func NormalizeText(text string) string`
-
-**Purpose:** Normalizes text by converting to lowercase, removing non-alphanumeric characters (except spaces), and collapsing whitespace.
-
-**Parameters:**
-
-- `text`: Text to normalize
-
-**Returns:** Normalized text
-
----
-
-**Acceptance Criteria:**
-
-- [x] Documents are vectorized using TF-IDF
-- [x] Similarity scores range from 0.0 to 1.0
-- [x] Configurable similarity threshold
-- [x] Similar files are flagged for review
-
-**Tests:** `TEST-CMD_IDD_CLI-001`, `TEST-CMD_IDD_CLI-002`
-
-**Related:** [`SPEC-CMD_IDD_CLI-001`](#spec-cmd_idd_cli-001-idd-cli-overview)
-
----
-
-## Pattern Package
-
-**Implementation:** `pkg/pattern/idd.go`
-
-**Purpose:**
-
-The pattern package provides IDD identifier pattern matching and extraction utilities. It defines regex patterns for IDD identifiers and code annotations.
-
-**Public Functions:**
-
-### ExtractIDDReferences
-
-**Function Signature:**
-`func ExtractIDDReferences(content string) []string`
-
-**Purpose:** Extracts all IDD identifier references from content using configured patterns. Filters out identifiers that are quoted (wrapped in backticks or double quotes).
-
-**Parameters:**
-
-- `content`: Text content to search for IDD references
-
-**Returns:** Slice of unique IDD identifier strings found
-
----
-
-### ExtractAnnotations
-
-**Function Signature:**
-`func ExtractAnnotations(content string) []string`
-
-**Purpose:** Extracts all IDD references from code annotations (e.g., `@implement`, `@test`, `@test-contract`) in source code.
-
-**Parameters:**
-
-- `content`: Source code content to search
-
-**Returns:** Slice of identifier references found in annotations
-
----
-
-### SplitAnnotationRefs
-
-**Function Signature:**
-`func SplitAnnotationRefs(s string) []string`
-
-**Purpose:** Splits comma-separated IDD references and trims whitespace. Used to handle multiple references in a single annotation.
-
-**Parameters:**
-
-- `s`: Comma-separated string of references
-
-**Returns:** Slice of individual trimmed references
-
----
-
-### GetIdentifierType
-
-**Function Signature:**
-`func GetIdentifierType(ref string) string`
-
-**Purpose:** Determines the type of an IDD identifier by matching against known patterns.
-
-**Parameters:**
-**Parameters:**
-
-- `ref`: The identifier reference string
-
-**Returns:** Type name ("SPEC", "CONTRACT", "TEST", "DESIGN") or empty string if no match
-
----
-
-### GetAnnotationType
-
-**Function Signature:**
-`func GetAnnotationType(prefix string) string`
-
-**Purpose:** Maps an annotation prefix to its corresponding identifier type.
-
-**Parameters:**
-
-- `prefix`: Annotation prefix (e.g., "@implement", "@test", "@test-contract")
-
-**Returns:** Corresponding identifier type or empty string if unknown
-
----
-
-### ValidateIDPattern
-
-**Function Signature:**
-`func ValidateIDPattern(id string) error`
-
-**Purpose:** Validates that an identifier string matches one of the known IDD patterns.
-
-**Parameters:**
-
-- `id`: The identifier to validate
-
-**Returns:** Error if identifier doesn't match any known pattern
-
----
-
-## Walk Package
-
-**Implementation:** `pkg/walk/files.go`
-
-**Purpose:**
-
-The walk package provides file traversal utilities with pattern matching support.
-
-**Public Functions:**
-
-### Walk
-
-**Function Signature:**
-`func Walk(patterns []string, visitor FileVisitor) error`
-
-**Purpose:** Walks the filesystem matching files against the given glob patterns. Avoids duplicate visits using a visited map. Directories are walked recursively.
-
-**Parameters:**
-
-- `patterns`: Slice of glob patterns to match
-- `visitor`: Callback function called for each matched file/directory
-
-**Returns:** Error if visitation fails, nil otherwise
-
----
-
-### MatchAnyExtensions
-
-**Function Signature:**
-`func MatchAnyExtensions(path string, extensions []string) bool`
-
-**Purpose:** Checks if a file path has any of the specified extensions.
-
-**Parameters:**
-
-**Parameters:**
-
-- `path`: File path to check
-- `extensions`: Slice of extensions to match (e.g., ".go", ".ts")
-
-**Returns:** True if path has one of the extensions
-
----
-
+idd:
+  version: "1.0"
+  package: cmd/idd-cli
 ---
-
-## SPEC-CMD_IDD_CLI-008: Embed Files
 
-**Design:** `IDDCLIModule`
+# Specifications: cmd/idd-cli
 
-**Contract:** `Embed`
+## SPEC-CMD_IDD_CLI-001: Validation execution
 
-**Requirement:**
+- **Design:** `IDDCLIModule`
+- **Contract:** `CLI`
 
-The CLI must be able to embed skill files for distribution as a single binary.
+**Requirement:** Collect documentation and source identifiers, build and
+validate the linkage graph, and report actionable findings through a
+command-line workflow.
 
-**Tests:** `TEST-CMD_IDD_CLI-001`, `TEST-CMD_IDD_CLI-002`
+**Acceptance:**
 
-**Status:** Done
+`run` and `lint` resolve a target, load configuration, collect documentation
+and source identifiers, merge them into one graph, execute the concrete engine
+checks, and write a finding-centered report. Verbose diagnostics use stderr;
+structured report output remains parseable on stdout.
 
-**Implementation:** `cmd/idd-cli/embed.go`
+A validation failure produces a report and a non-zero process status. A command
+or I/O failure returns an error without manufacturing validation findings.
 
-**Public Functions:**
+Documentation and source scope are intentionally asymmetric: the positional
+path selects documentation, while code collection starts at the project
+working directory. The authoritative gate therefore uses `.` from the project
+root. Validation must not mutate documents, source, configuration, or embedded
+Skill content.
 
-### ListEmbeddedSkills
+The command proves configured structural and traceability properties. It does
+not infer missing requirements or treat a green result as proof that the
+human-readable design is semantically complete.
 
-**Function Signature:**
-`func ListEmbeddedSkills() []string`
+## SPEC-CMD_IDD_CLI-002: Linkage graph
 
-**Purpose:** Lists all embedded skill files available in the binary.
+- **Design:** `IDDCLIModule`
+- **Contract:** `LinkageGraph`
 
-**Returns:** Slice of skill file paths
+**Requirement:** Represent identifiers and directed traceability relationships
+with deterministic lookup, verification, statistics, and snapshots.
 
----
-
-### ReadEmbeddedSkill
-
-**Function Signature:**
-`func ReadEmbeddedSkill(path string) ([]byte, error)`
-
-**Purpose:** Reads an embedded skill file by path.
+**Acceptance:**
 
-**Parameters:**
+The graph is the common traceability model used by validation and reporting.
+It retains every collected identifier while keeping edge direction explicit.
 
-- `path`: Path to the skill file within the embedded filesystem
+Document and code occurrences of one ID contribute distinct origin evidence to
+one logical node. Node metadata must retain both descriptions, sources, and
+TEST kinds needed by later checks. Adding a duplicate logical edge must not
+erase source context or make lookup nondeterministic.
 
-**Returns:** File contents and error if not found
+Typed inbound and outbound queries support validation without exposing callers
+to index implementation. Verification marks whether a relationship has its
+expected reverse evidence, while snapshots copy stable summaries for reports
+without allowing mutation of the live graph.
 
----
-
-## SPEC-CMD_IDD_CLI-009: CLI Main Entry
+## SPEC-CMD_IDD_CLI-003: Configuration precedence
 
-**Design:** `IDDCLIModule`
+- **Design:** `IDDCLIModule`
+- **Contract:** `Config`
 
-**Contract:** `SkillInfo`
+**Requirement:** Execute validation behavior from an explicit or discovered
+IDD configuration with safe defaults.
 
-**Requirement:**
+**Acceptance:**
 
-The CLI must provide a main entry point that parses flags and runs the validation engine.
+The command uses this search order:
 
-**Tests:** `TEST-CMD_IDD_CLI-001`, `TEST-CMD_IDD_CLI-002`
+1. the explicit `--config` path;
+2. `./.idd.yaml`;
+3. `./config/.idd.yaml`;
+4. in-memory defaults when no explicit path was required.
 
-**Status:** Done
+`--no-config` bypasses file loading. CLI output, format, and verbosity flags
+override loaded values for the current invocation.
 
-**Implementation:** `cmd/idd-cli/main.go`
+An explicitly requested configuration that cannot be read or validated is a
+command error; the CLI must not silently fall back to defaults. When discovery
+finds no configured file and no explicit path was required, in-memory defaults
+provide a deterministic baseline.
 
-**Public Types:**
+This SPEC owns command-level selection and precedence. The parsing and
+normalization behavior of an individual configuration file is owned by
+`SPEC-CMD_IDD_CLI-006`.
 
-### SkillInfo
+## SPEC-CMD_IDD_CLI-004: Report boundaries
 
-**Type Definition:**
-`type SkillInfo struct { ... }`
+- **Design:** `IDDCLIModule`
+- **Contract:** `Reporter`
 
-**Purpose:** Represents metadata about an available skill.
+**Requirement:** Convert validation results into stable JSON, Markdown, or
+LLM-oriented findings without contaminating structured stdout.
 
-**Fields:**
-
-- `Name` — Skill name
-- `Description` — Skill description
-- `License` — License identifier
-- `Compatibility` — Compatibility tag
-- `Audience` — Target audience
-- `Workflow` — Workflow type
-- `Protected` — Whether skill is protected
-- `Module` — Module path
-- `Path` — File path
-
----
+**Acceptance:**
 
-## SPEC-CMD_IDD_CLI-010: Engine Contract Tests
+JSON output uses `idd.llm_report.v1` and groups repeated findings without
+dropping their individual locations. Markdown remains available for people and
+LLM-oriented Markdown for repair workflows.
+
+Every document finding identifies its rule, severity, file and line when known,
+affected identifier or field, and a repair hint. Graph statistics and optional
+snapshots are derived from the same validation result.
+
+Repeated findings may be summarized by rule and severity for navigation, but
+the report must retain each concrete location. LLM Markdown emphasizes the
+canonical owner and safe next action; it must not recommend `docs fix` for
+semantic prose that only an author can repair.
 
-**Design:** `IDDCLIModule`
+For each `split-role` filename finding, JSON `suggested_fix` and LLM Markdown
+`Fix` must name the exact split source and canonical target. The prompt must
+require all unique still-valid semantic content to survive, prohibit
+summary-only reduction and another role fragment, allow source removal only
+after no-loss verification, and end with package `docs status` and project
+`run` commands. A group that aggregates these findings must remain
+path-neutral.
 
-**Contract:** `Rule`
+Report serialization errors or an unwritable destination are command failures.
+Verbose diagnostics stay on stderr so stdout JSON remains a single parseable
+document even when validation fails.
 
-**Requirement:**
+## SPEC-CMD_IDD_CLI-005: Identifier model
 
-The engine package must define a Rule interface that all validation rules implement.
+- **Design:** `IDDCLIModule`
+- **Contract:** `Identifier`
 
-**Tests:** `TEST-CMD_IDD_CLI-001`, `TEST-CMD_IDD_CLI-002`
-**Status:** Done
+**Requirement:** Preserve each identifier's type, origin, source, description,
+links, and TEST kind through collection, graph construction, and reporting.
 
-**Implementation:** `internal/engine/engine_contract_test.go`
+**Acceptance:**
 
-**Public Interfaces:**
+Documentation and code collectors produce the same identifier model so later
+stages do not need origin-specific traceability rules.
 
-### Rule
+The model distinguishes a logical identifier from its occurrences. Origin,
+source, line, description, links, and semantic TEST kind must survive set
+merge and graph construction. Lookups that return one occurrence exist for
+compatibility; correspondence validation must still be able to inspect every
+origin.
 
-**Interface Definition:**
+The model does not own Markdown syntax, source-language parsing, validation
+policy, or output formatting. Those stages exchange model values rather than
+reaching into each other's internal representations.
 
-```go
-type Rule interface {
-    Name() string
-    Validate(g *graph.LinkageGraph) []model.ValidationError
-}
-```
+## SPEC-CMD_IDD_CLI-006: Configuration loading
 
-**Purpose:** Interface for all validation rules.
+- **Design:** `IDDCLIModule`
+- **Contract:** `Config`
 
-**Methods:**
+**Requirement:** Load configuration by explicit flag and then project defaults,
+while applying command-line output and verbosity overrides.
+
+**Acceptance:**
 
-- `Name()` — Returns the rule name
-- `Validate(g *LinkageGraph)` — Validates the graph and returns errors
+Configuration discovery is deterministic, and invocation-only overrides do not
+mutate the configuration file.
+
+Loading decodes YAML into the concrete config value and validates annotation
+key consistency. Validation supplies defaults for omitted patterns,
+annotations, and version, preserves the deprecated consistency alias without
+using it, emits an actionable warning when that YAML key is explicitly present,
+and rejects unknown or missing annotation categories that would make document
+and source collection disagree. Validation reports retain the warning as
+structured data; evidence-only review-context output sends it to stderr so JSON
+stdout remains parseable.
+
+This SPEC does not select which project file wins; command-level precedence is
+owned by `SPEC-CMD_IDD_CLI-003`. It also does not make `.idd.yaml` a semantic
+catalog: components, contracts, requirements, tests, and coverage remain in
+their Markdown owners.
+
+## SPEC-CMD_IDD_CLI-007: Focused SPEC review contexts
+
+- **Design:** `IDDCLIModule`
+- **Contract:** `CLI`
+
+**Requirement:** Assemble bounded, deterministic evidence bundles for one or
+more SPECs so a human or LLM can judge document quality outside validation
+with one shared repository scan.
+
+**Acceptance:**
+
+`docs review-context <SPEC-ID>...` accepts one to ten unique SPEC identifiers.
+Repeated identifiers are deduplicated in first-request order. `--docs-path`
+selects documentation input and defaults to `.`, while source remains rooted at
+the current working tree. Documentation and source collection each run once.
+
+Each identifier resolves exactly one canonical SPEC and returns its
+Requirement, Acceptance, Design and Contract references, complete bounded
+authored record Markdown including `Details`, the named Contract record, every
+covering TEST record, and every attached
+non-ignored source declaration annotated with that SPEC, plus declarations
+annotated with each covering TEST ID. Declaration excerpts are bounded and
+expose truncation. Output ordering is stable.
+
+A one-SPEC JSON result retains schema `idd.spec_review_context.v1`. Multiple
+SPECs use `idd.spec_review_context_batch.v1` and ordered independent contexts;
+Markdown formats preserve the same separation and neutral review questions.
+The command is read-only, does not invoke an LLM, does not emit a semantic score
+or pass/fail verdict, and does not participate in `run` validity. An empty,
+oversized, missing, malformed, or ambiguously owned request fails atomically as
+an operational error.
+
+## SPEC-CMD_IDD_CLI-008: Embedded workflow
+
+- **Design:** `IDDCLIModule`
+- **Contract:** `SkillsFS`
+
+**Requirement:** Embed, list, and export the IDD authoring workflow so one
+binary distributes instructions aligned with its validation behavior.
+
+**Acceptance:**
+
+The binary embeds the current IDD skill under `skills/*.md`.
+`ListEmbeddedSkills` returns stable embedded paths and `ReadEmbeddedSkill`
+returns one requested file. `skills` and `generate skill` use this fallback when
+no external skill directory is available.
+
+After an idd-cli upgrade, users regenerate the installed skill. The skill owns
+semantic authoring and repair decisions; the binary owns structural document
+operations and graph validation.
+
+`skills` may list project-local Markdown Skills when present, falling back to
+embedded files when no local Markdown is available. `generate skill` always
+exports the binary-owned IDD workflow so its bytes are version-aligned with the
+validator.
+
+Export does not choose an agent installation directory, create missing parent
+directories, or activate the Skill. Those actions remain with the user's agent
+environment. An unknown generation target or embedded path returns an explicit
+error.
+
+## SPEC-CMD_IDD_CLI-009: Document commands
+
+- **Design:** `IDDCLIModule`
+- **Contract:** `CLI`
+
+**Requirement:** Expose validation, skill generation, self-describing document
+initialization, explicit completion status, and safe structural repair as one
+phase-oriented Cobra workflow.
+
+**Acceptance:**
+
+`docs init <package>...` creates or adopts exactly `design.md`, `contract.md`,
+`spec.md`, and `testing.md` for each unique package only after the whole batch
+passes package, traversal, overwrite, central-catalog, and legacy-metadata
+preflight checks. Each nested source sub-package maps to the matching nested
+`docs/<package>/` path. Frontmatter contains only version/package identity; the
+exact basename is the sole role authority. New fill locations carry stable
+scaffold markers, and the command returns their deterministic work list instead
+of presenting generated guidance as completed documentation.
+
+`docs status <path>...` reads one or more role files or document trees and
+returns schema `idd.document_status.v1`, normalized targets,
+complete/incomplete status, and exact file/line/role/slot/reason entries.
+Repeated or overlapping inputs do not duplicate work items. A slot remains
+incomplete when its marker is present, its required role structure is absent,
+or its bounded content is empty or a known placeholder. Existing records also
+remain incomplete while any role-schema required field is absent or
+placeholder-filled.
+
+If the target file or tree contains a split role document, `docs status`
+returns an operational error containing the same source/target,
+content-preservation, deletion-order, and verification guidance. It does not
+merge or delete the fragment.
+
+`docs fix <path>...` normalizes only minimal identity metadata. A file target
+modifies only that document; a directory target may create missing skeletons.
+Repeated or overlapping targets produce one planned write per file. It
+preserves scaffold markers. Neither mutation mode reformats prose or infers
+requirements, titles, contracts, designs, purposes, kinds, or coverage.
+Neither mode accepts or emits `idd.document`, creates split role files, or
+imposes a document line-count limit.
+
+Generated skeleton guidance must ask authors for purpose, responsibilities,
+boundaries, rationale, failure cases, acceptance evidence, scenarios,
+fixtures, and oracles. The command still leaves those sections unauthored:
+helpful prompts are not semantic completion, and validation must continue to
+report `idd-document-incomplete`, missing declarations, or empty required
+design sections.
+
+Initialization may preserve an existing plain Markdown body or merge generic
+frontmatter, but it refuses existing IDD or legacy semantic metadata before any
+write. Repair preserves body bytes and uses atomic replacement. Both mutators
+preflight every batch member before applying writes. A directory repair may
+create missing structural files; a file repair never writes a sibling.
+Unexpected filesystem failure during application does not imply a
+cross-filesystem transaction.
+
+After documents, tests, code, and annotations form a coherent checkpoint, the
+agent first uses `docs status`, then `run . --format llm-markdown` as its
+repair loop. When semantic review is needed it requests one or more IDs through
+`docs review-context <SPEC-ID>...` and reviews each context without treating
+the batch as another check. Repository tests and `run . --format json` form the
+final project gate. Package-targeted
+documentation validation is not presented as a package-only code check.
+`run` and `lint` therefore retain a single documentation root; callers select
+a common ancestor rather than passing an arbitrary list of package paths.
+
+## SPEC-CMD_IDD_CLI-010: Engine contract evidence
+
+- **Design:** `IDDCLIModule`
+- **Contract:** `Engine`
+
+**Requirement:** Keep `Rule` as a test-only fixture that verifies concrete
+engine and graph behavior without advertising a production rule extension
+interface.
+
+**Acceptance:**
+
+Production validation remains implemented by concrete engine methods. The
+fixture records expected behavior without creating a false public abstraction.
+
+The test-only interface exists to express a narrow contract assertion in
+`engine_contract_test.go`. It is not accepted by `Engine`, discovered at
+runtime, configured by users, or promised as a plugin extension point.
+Documentation and architecture diagrams must continue to name the concrete
+engine ownership until a real extension lifecycle is designed and implemented.
+
+## Concrete implementation notes
+
+`SPEC-CMD_IDD_CLI-002`, `SPEC-CMD_IDD_CLI-005`, and
+`SPEC-CMD_IDD_CLI-006` are realized by the concrete graph, model, and config
+packages. `SPEC-CMD_IDD_CLI-010` describes the test-only `Rule` fixture; the
+production engine exposes validation methods rather than a pluggable Rule
+interface.

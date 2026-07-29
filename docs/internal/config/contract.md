@@ -1,58 +1,99 @@
 ---
-related_files:
-  spec: docs/internal/config/spec.md
-  contract: docs/internal/config/contract.md
-  design: docs/internal/config/design.md
-  testing: docs/internal/config/testing.md
+idd:
+  version: "1.0"
+  package: internal/config
 ---
 
-# Contracts (config)
+# Contracts: internal/config
 
-**Status:** Done
+## Contract: ConfigurationSchema
 
-**Overview:**
+**Guarantees:**
 
-Contracts for the configuration loading and validation module.
+`Config` is the complete in-memory input to collection, validation, and
+reporting. Its nested values have separate ownership:
 
-## Config Interface
+- `DocsConfig` selects documentation globs, identifier regex strings, and
+  ignored document paths;
+- `CodeConfig` selects source globs, semantic annotation prefixes, and ignored
+  source paths;
+- `ValidationConfig` enables deterministic validation policies and retains the
+  deprecated `consistency_check` decode shape;
+- `ConsistencyCheck` is a compatibility-only value whose fields are ignored;
+  and
+- `OutputConfig` provides default output location, graph inclusion, and
+  verbosity.
 
-```go
-type Config struct {
-    Version    string
-    Docs       DocsConfig
-    Code       CodeConfig
-    Validation ValidationConfig
-    Output     OutputConfig
-}
-```
+`Config.DeprecationWarnings()` returns a copy of load-time warnings derived
+from explicitly present obsolete YAML paths. The current warning identifies
+`validation.consistency_check`, its source file, ignored behavior, removal
+action, and the review-context replacement. Programmatic defaults have no
+warnings.
 
-**Invariants:**
+Slices and maps are caller-visible mutable values. The package does not clone
+them after construction or loading. Consumers may read them concurrently only
+if no caller mutates the configuration.
 
-- `Version` defaults to `"1.0"` when empty
-- `Docs.Patterns` defaults to `["docs/**/*.md"]` when empty
-- `Code.Patterns` defaults to `["**/*.go"]` when empty
-- `ConsistencyCheck.Threshold` is clamped to `[0.0, 1.0]`
+## Contract: ConfigurationLoading
 
-## Load Contract
-
-`Load(path string) (*Config, error)` reads and parses a YAML config file, validates it, and returns the result. Returns an error if the file cannot be read, parsed, or fails validation.
-
-## Default Contract
-
-`Default() *Config` returns a fully populated Config with sensible defaults. Never returns nil.
-
-## IdentifierPatterns
+**Guarantees:**
 
 ```go
-type IdentifierPatterns struct {
-    Spec         string
-    Test         string
-    TestContract string
-}
+func Load(path string) (*Config, error)
 ```
 
-Defines regex patterns for extracting SPEC, TEST, and TEST-CONTRACT identifiers from documentation files.
+The function reads exactly the supplied path, decodes YAML into a zero-valued
+`Config`, calls `Validate`, and returns the resulting pointer. It does not
+search fallback paths or merge with `Default`.
 
-## Validate
+Read failures are wrapped as `failed to read config file`; YAML failures as
+`failed to parse config`; validation failures as `invalid config`. On any
+failure the returned configuration is nil. Unknown YAML fields are currently
+ignored by the decoder.
 
-`Validate() error` checks configuration values and applies defaults where fields are missing or out of range. Returns nil on success. Mutates the Config in-place (sets defaults).
+## Contract: ConfigurationDefaults
+
+**Guarantees:**
+
+```go
+func Default() *Config
+```
+
+Each call returns a non-nil, independently allocated built-in profile. It
+contains the version, documentation and source patterns, three annotation
+roles, default ignore paths, enabled deterministic validation gates, a
+zero-valued deprecated consistency alias, and non-verbose output without graph
+inclusion.
+
+The complete values are an operational compatibility surface and must stay
+synchronized with `examples/idd-config-example.yaml` whenever the function
+changes.
+
+## Contract: ConfigurationValidation
+
+**Guarantees:**
+
+```go
+func (c *Config) Validate() error
+```
+
+Validation mutates a non-nil receiver. It supplies version `1.0`, default
+document patterns, the complete supported source-pattern set, and the complete
+annotation map when the respective values are empty. Source defaults cover Go,
+TypeScript/TSX, JavaScript/JSX, C++, Java, and Python extensions. The
+annotation map must contain exactly `spec`, `test`, and `test_contract`; any
+missing or additional key returns an error. Each value must be a trimmed,
+non-empty, whitespace-free token beginning with `@`, and values must be unique
+case-insensitively so one source comment cannot map to two semantic roles.
+
+`validation.consistency_check` remains decodable so existing configuration
+files do not fail during migration. Both `enabled` and `threshold` are ignored:
+validation does not normalize them and the engine does not consume them.
+Explicit YAML presence is retained as a deprecation warning even when the
+decoded values are zero. Semantic review is requested explicitly through
+`docs review-context`.
+
+The method does not validate identifier regex or glob syntax, version support,
+output paths, ignore patterns, or relationships between boolean flags. It does
+not fill omitted identifier patterns, ignore paths, output values, or
+validation booleans in a partially loaded YAML file.

@@ -1,8 +1,4 @@
 // Package collector provides testing utilities for the collector module.
-
-// Spec: docs/internal/collector/spec.md
-// Test: docs/internal/collector/testing.md
-// Contract: docs/internal/collector/contract.md
 package collector
 
 import (
@@ -23,6 +19,7 @@ import (
 // Frontmatter Parsing Contract Tests
 // -----------------------------------------------------------------------------
 
+// @test-contract TEST-INTERNAL_COLLECTOR-030
 func TestContract_Frontmatter_ValidYAML(t *testing.T) {
 	content := `---
 markers:
@@ -56,6 +53,7 @@ This document describes SPEC-BE-001.
 	}
 }
 
+// @test-contract TEST-INTERNAL_COLLECTOR-030
 func TestContract_Frontmatter_NoFrontmatter(t *testing.T) {
 	content := `# Document
 
@@ -71,6 +69,7 @@ This document has no frontmatter.
 	}
 }
 
+// @test-contract TEST-INTERNAL_COLLECTOR-030
 func TestContract_Frontmatter_EmptyMarkers(t *testing.T) {
 	content := `---
 markers: []
@@ -91,6 +90,7 @@ markers: []
 	}
 }
 
+// @test-contract TEST-INTERNAL_COLLECTOR-030
 func TestContract_Frontmatter_MultipleMarkers(t *testing.T) {
 	content := `---
 markers:
@@ -122,6 +122,7 @@ Content referencing TEST-BE-001.
 	}
 }
 
+// @test-contract TEST-INTERNAL_COLLECTOR-030
 func TestContract_Frontmatter_InvalidYAML(t *testing.T) {
 	content := `---
 markers:
@@ -140,6 +141,7 @@ markers:
 	}
 }
 
+// @test-contract TEST-INTERNAL_COLLECTOR-030
 func TestContract_ValidateMarkers_ValidMarkers(t *testing.T) {
 	content := `---
 markers:
@@ -164,6 +166,7 @@ This document describes ` + "`SPEC-BE-001`" + `.
 	}
 }
 
+// @test-contract TEST-INTERNAL_COLLECTOR-030
 func TestContract_ValidateMarkers_MarkerNotInContent(t *testing.T) {
 	content := `---
 markers:
@@ -188,6 +191,7 @@ This document does NOT contain SPEC-BE-001 in content.
 	}
 }
 
+// @test-contract TEST-INTERNAL_COLLECTOR-030
 func TestContract_ValidateMarkers_BareMarkerNoBackticks(t *testing.T) {
 	content := `---
 markers:
@@ -212,6 +216,7 @@ The identifier SPEC-BE-001 should be wrapped in backticks.
 	}
 }
 
+// @test-contract TEST-INTERNAL_COLLECTOR-030
 func TestContract_ValidateMarkers_NilFrontmatter(t *testing.T) {
 	errors := ValidateFrontmatterMarkers(nil, "some content", "test.md")
 	if len(errors) != 0 {
@@ -223,6 +228,7 @@ func TestContract_ValidateMarkers_NilFrontmatter(t *testing.T) {
 // DocCollector Interface Contract Tests
 // -----------------------------------------------------------------------------
 
+// @test-contract TEST-INTERNAL_COLLECTOR-030
 func TestContract_NewDocCollector_ReturnsNonNil(t *testing.T) {
 	cfg := config.Default()
 	collector := NewDocCollector(cfg)
@@ -231,6 +237,7 @@ func TestContract_NewDocCollector_ReturnsNonNil(t *testing.T) {
 	}
 }
 
+// @test-contract TEST-INTERNAL_COLLECTOR-030
 func TestContract_NewDocCollector_SetsConfig(t *testing.T) {
 	cfg := config.Default()
 	collector := NewDocCollector(cfg)
@@ -239,6 +246,7 @@ func TestContract_NewDocCollector_SetsConfig(t *testing.T) {
 	}
 }
 
+// @test-contract TEST-INTERNAL_COLLECTOR-030
 func TestContract_DocCollector_Collect_Signature(t *testing.T) {
 	cfg := config.Default()
 	collector := NewDocCollector(cfg)
@@ -253,6 +261,7 @@ func TestContract_DocCollector_Collect_Signature(t *testing.T) {
 	_ = collector.Collect
 }
 
+// @test-contract TEST-INTERNAL_COLLECTOR-030
 func TestContract_DocCollector_Collect_FileNotFound(t *testing.T) {
 	cfg := config.Default()
 	collector := NewDocCollector(cfg)
@@ -272,6 +281,7 @@ func TestContract_DocCollector_Collect_FileNotFound(t *testing.T) {
 	}
 }
 
+// @test-contract TEST-INTERNAL_COLLECTOR-030
 func TestContract_DocCollector_Collect_ValidMarkdownFile(t *testing.T) {
 	tmpDir := t.TempDir()
 	tmpFile := filepath.Join(tmpDir, "spec.md")
@@ -306,6 +316,7 @@ This document describes ` + "`SPEC-BE-001`" + `.
 	}
 }
 
+// @test-contract TEST-INTERNAL_COLLECTOR-030
 func TestContract_DocCollector_Collect_Directory(t *testing.T) {
 	tmpDir := t.TempDir()
 	subDir := filepath.Join(tmpDir, "docs")
@@ -344,13 +355,16 @@ Content for ` + "`SPEC-BE-001`" + `.
 	}
 }
 
+// @test-contract TEST-INTERNAL_COLLECTOR-030
 func TestContract_DocCollector_Collect_IgnoresNonMarkdownFiles(t *testing.T) {
 	tmpDir := t.TempDir()
 	tmpFile := filepath.Join(tmpDir, "test.go")
 
 	// idd:ignore start
-	code := `// @implement SPEC-BE-001
-package main
+	code := `package main
+
+// @implement SPEC-BE-001
+func Run() {}
 `
 	// idd:ignore end
 	if err := os.WriteFile(tmpFile, []byte(code), 0644); err != nil {
@@ -369,6 +383,7 @@ package main
 	}
 }
 
+// @test-contract TEST-INTERNAL_COLLECTOR-030
 func TestContract_DocCollector_Collect_ExtractsReferencesInContent(t *testing.T) {
 	tmpDir := t.TempDir()
 	tmpFile := filepath.Join(tmpDir, "spec.md")
@@ -403,6 +418,7 @@ func TestContract_DocCollector_Collect_ExtractsReferencesInContent(t *testing.T)
 // CodeCollector Interface Contract Tests
 // -----------------------------------------------------------------------------
 
+// @test-contract TEST-INTERNAL_COLLECTOR-030
 func TestContract_NewCodeCollector_ReturnsNonNil(t *testing.T) {
 	cfg := config.Default()
 	collector := NewCodeCollector(cfg)
@@ -411,6 +427,7 @@ func TestContract_NewCodeCollector_ReturnsNonNil(t *testing.T) {
 	}
 }
 
+// @test-contract TEST-INTERNAL_COLLECTOR-030
 func TestContract_NewCodeCollector_SetsConfig(t *testing.T) {
 	cfg := config.Default()
 	collector := NewCodeCollector(cfg)
@@ -419,6 +436,7 @@ func TestContract_NewCodeCollector_SetsConfig(t *testing.T) {
 	}
 }
 
+// @test-contract TEST-INTERNAL_COLLECTOR-030
 func TestContract_CodeCollector_Collect_Signature(t *testing.T) {
 	cfg := config.Default()
 	collector := NewCodeCollector(cfg)
@@ -431,6 +449,7 @@ func TestContract_CodeCollector_Collect_Signature(t *testing.T) {
 	_ = collector.Collect
 }
 
+// @test-contract TEST-INTERNAL_COLLECTOR-030
 func TestContract_CodeCollector_Collect_FileNotFound(t *testing.T) {
 	cfg := config.Default()
 	collector := NewCodeCollector(cfg)
@@ -447,6 +466,7 @@ func TestContract_CodeCollector_Collect_FileNotFound(t *testing.T) {
 	}
 }
 
+// @test-contract TEST-INTERNAL_COLLECTOR-030
 func TestContract_CodeCollector_Collect_GoSourceFile(t *testing.T) {
 	tmpDir := t.TempDir()
 	tmpFile := filepath.Join(tmpDir, "test.go")
@@ -478,6 +498,7 @@ func Authenticate() {
 	}
 }
 
+// @test-contract TEST-INTERNAL_COLLECTOR-030
 func TestContract_CodeCollector_Collect_TypeScriptFile(t *testing.T) {
 	tmpDir := t.TempDir()
 	tmpFile := filepath.Join(tmpDir, "test.ts")
@@ -507,6 +528,7 @@ function test() {
 	}
 }
 
+// @test-contract TEST-INTERNAL_COLLECTOR-030
 func TestContract_CodeCollector_Collect_JavaScriptFile(t *testing.T) {
 	tmpDir := t.TempDir()
 	tmpFile := filepath.Join(tmpDir, "test.js")
@@ -536,6 +558,7 @@ function implement() {
 	}
 }
 
+// @test-contract TEST-INTERNAL_COLLECTOR-030
 func TestContract_CodeCollector_Collect_Directory(t *testing.T) {
 	tmpDir := t.TempDir()
 	subDir := filepath.Join(tmpDir, "src")
@@ -544,8 +567,10 @@ func TestContract_CodeCollector_Collect_Directory(t *testing.T) {
 	}
 
 	// idd:ignore start
-	code := `// @implement SPEC-BE-001
-package main
+	code := `package main
+
+// @implement SPEC-BE-001
+func Run() {}
 `
 	// idd:ignore end
 	if err := os.WriteFile(filepath.Join(subDir, "main.go"), []byte(code), 0644); err != nil {
@@ -567,6 +592,7 @@ package main
 	}
 }
 
+// @test-contract TEST-INTERNAL_COLLECTOR-030
 func TestContract_CodeCollector_Collect_IgnoresMarkdownFiles(t *testing.T) {
 	tmpDir := t.TempDir()
 	tmpFile := filepath.Join(tmpDir, "readme.md")
@@ -599,6 +625,7 @@ Content.
 	}
 }
 
+// @test-contract TEST-INTERNAL_COLLECTOR-030
 func TestContract_CodeCollector_Collect_MultipleAnnotations(t *testing.T) {
 	tmpDir := t.TempDir()
 	tmpFile := filepath.Join(tmpDir, "test.go")
@@ -632,13 +659,16 @@ func TestAuthenticate() {
 	}
 }
 
+// @test-contract TEST-INTERNAL_COLLECTOR-030
 func TestContract_CodeCollector_Collect_OriginSet(t *testing.T) {
 	tmpDir := t.TempDir()
 	tmpFile := filepath.Join(tmpDir, "test.go")
 
 	// idd:ignore start
-	code := `// @implement SPEC-BE-001
-package main
+	code := `package main
+
+// @implement SPEC-BE-001
+func Run() {}
 `
 	// idd:ignore end
 	if err := os.WriteFile(tmpFile, []byte(code), 0644); err != nil {
@@ -662,6 +692,7 @@ package main
 // Error Handling Rules Contract Tests
 // -----------------------------------------------------------------------------
 
+// @test-contract TEST-INTERNAL_COLLECTOR-030
 func TestContract_ErrorHandling_FileNotFound_ReturnsEmptySet(t *testing.T) {
 	cfg := config.Default()
 
@@ -687,6 +718,7 @@ func TestContract_ErrorHandling_FileNotFound_ReturnsEmptySet(t *testing.T) {
 	}
 }
 
+// @test-contract TEST-INTERNAL_COLLECTOR-030
 func TestContract_ErrorHandling_InvalidFrontmatter_AddsValidationError(t *testing.T) {
 	tmpDir := t.TempDir()
 	tmpFile := filepath.Join(tmpDir, "spec.md")
@@ -718,6 +750,7 @@ markers:
 	}
 }
 
+// @test-contract TEST-INTERNAL_COLLECTOR-030
 func TestContract_ErrorHandling_BareMarker_AddsValidationError(t *testing.T) {
 	tmpDir := t.TempDir()
 	tmpFile := filepath.Join(tmpDir, "spec.md")

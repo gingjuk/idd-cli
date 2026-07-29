@@ -1,648 +1,705 @@
 ---
-markers:
-  - id: TEST-INTERNAL_ENGINE-001
-    name: Engine Run Basic
-  - id: TEST-INTERNAL_ENGINE-002
-    name: Engine BuildGraph
-  - id: TEST-INTERNAL_ENGINE-003
-    name: Engine Validation
-  - id: TEST-INTERNAL_ENGINE-004
-    name: Engine Structural Errors
-  - id: TEST-INTERNAL_ENGINE-005
-    name: Engine Report Generation
-  - id: TEST-INTERNAL_ENGINE-006
-    name: Engine Context Cancellation
-  - id: TEST-INTERNAL_ENGINE-007
-    name: Engine Consistency Check
-  - id: TEST-INTERNAL_ENGINE-008
-    name: Engine Validation Rules
-  - id: TEST-INTERNAL_ENGINE-009
-    name: Engine Config Validation
-  - id: TEST-INTERNAL_ENGINE-010
-    name: Engine Pattern Matching
-  - id: TEST-INTERNAL_ENGINE-011
-    name: Engine Annotation Validation
-  - id: TEST-INTERNAL_ENGINE-012
-    name: Engine File Collection
-  - id: TEST-INTERNAL_ENGINE-020
-    name: Engine Duplicate Heading Validation
-  - id: TEST-INTERNAL_ENGINE-021
-    name: Engine Duplicate Heading No Duplicates
-  - id: TEST-INTERNAL_ENGINE-022
-    name: Engine Contract Design Markers With Markers
-  - id: TEST-INTERNAL_ENGINE-023
-    name: Engine Contract Design Markers Without Markers
-  - id: TEST-INTERNAL_ENGINE-024
-    name: Engine Contract Design Markers Design File
-  - id: TEST-INTERNAL_ENGINE-025
-    name: Engine Package Exists
-  - id: TEST-INTERNAL_ENGINE-026
-    name: Engine Ignored Doc Path
-  - id: TEST-INTERNAL_ENGINE-027
-    name: Engine Validate Doc Path Exists
-  - id: TEST-INTERNAL_ENGINE-028
-    name: Engine Validate Related Files
-  - id: TEST-INTERNAL_ENGINE-029
-    name: Engine Validate Related Files Valid
-  - id: TEST-INTERNAL_ENGINE-030
-    name: Engine Package Doc Comment Main Package Skipped
-  - id: TEST-INTERNAL_ENGINE-031
-    name: Engine Package Doc Files Missing Files
-  - id: TEST-INTERNAL_ENGINE-032
-    name: Engine Package Doc Files All Present
-  - id: TEST-INTERNAL_ENGINE-033
-    name: Engine Package Doc Files Root Level Skipped
-  - id: TEST-INTERNAL_ENGINE-034
-    name: Engine Duplicate IDs Doc Side
-  - id: TEST-INTERNAL_ENGINE-035
-    name: Engine Duplicate IDs Same Dir No Error
-  - id: TEST-INTERNAL_ENGINE-036
-    name: Engine Duplicate IDs Code Side
-  - id: TEST-INTERNAL_ENGINE-037
-    name: Engine Duplicate IDs Rename Suggestion
-  - id: TEST-INTERNAL_ENGINE-038
-    name: Engine Public Func Annotation Private Func Allowed
-  - id: TEST-INTERNAL_ENGINE-039
-    name: Engine Public Func Annotation Private Method Allowed
-  - id: TEST-INTERNAL_ENGINE-040
-    name: Engine Public Func Annotation Private Type Allowed
-  - id: TEST-INTERNAL_ENGINE-041
-    name: Engine Public Func Annotation Public Still Required
-  - id: TEST-INTERNAL_ENGINE-042
-    name: Engine Public Func Annotation Garbage After Implement Still Errors
-  - id: TEST-INTERNAL_ENGINE-043
-    name: Engine Private Implement Requires Doc
-  - id: TEST-INTERNAL_ENGINE-044
-    name: Engine Annotation Identifier Honors Ignore Scope
-  - id: TEST-INTERNAL_ENGINE-045
-    name: Engine Annotation Placement Honors Ignore Scope
-  - id: TEST-INTERNAL_ENGINE-046
-    name: Engine Consecutive Annotations Honors Ignore Scope
-
-related_files:
-  spec: docs/internal/engine/spec.md
-  contract: docs/internal/engine/contract.md
-  design: docs/internal/engine/design.md
-  testing: docs/internal/engine/testing.md
+idd:
+  version: "1.0"
+  package: internal/engine
 ---
 
-# Test Cases (engine)
+# Testing: internal/engine
 
-## Test
+## TEST-INTERNAL_ENGINE-001: Headerless source and engine state
 
-## TEST-INTERNAL_ENGINE-001: Engine Run Basic
-
-**Status:** Done
+- **Kind:** `test`
+- **Covers:** `SPEC-INTERNAL_ENGINE-001`, `SPEC-INTERNAL_ENGINE-004`
 
 **Purpose:**
 
-Test basic Engine.Run functionality.
+Prove that production, behavior-test, and contract-test declarations join their
+matching document records through syntax-tree-bound identifiers without
+repeated IDD document-path headers, and that the engine returns structured
+state rather than an operational error.
 
-**Spec Coverage:** `SPEC-INTERNAL_ENGINE-001`, `SPEC-INTERNAL_ENGINE-002`
+**Oracle:** Table-driven source collection returns the expected SPEC or TEST
+evidence for `@implement`, `@test`, and `@test-contract`; adding the matching
+document observation makes every engine result valid without `Spec`,
+`Contract`, or `Test` header paths. The smaller production-source fixture also
+passes with only its useful language package description.
 
----
+## TEST-INTERNAL_ENGINE-002: Link inference and path-header independence
 
-## TEST-INTERNAL_ENGINE-002: Engine BuildGraph
-
-**Status:** Done
-
-**Purpose:**
-
-Test that Engine correctly builds the linkage graph from identifiers.
-
-**Spec Coverage:** `SPEC-INTERNAL_ENGINE-001`, `SPEC-INTERNAL_ENGINE-002`
-
----
-
-## TEST-INTERNAL_ENGINE-003: Engine Validation
-
-**Status:** Done
+- **Kind:** `test`
+- **Covers:** `SPEC-INTERNAL_ENGINE-001`, `SPEC-INTERNAL_ENGINE-004`
 
 **Purpose:**
 
-Test that Engine runs all validation rules correctly.
+Prove the source/target identifier-type mapping used during graph construction
+and prove that a source file without a package comment or IDD path header does
+not acquire a second code-to-document association mechanism.
 
-**Spec Coverage:** `SPEC-INTERNAL_ENGINE-001`, `SPEC-INTERNAL_ENGINE-002`
+**Oracle:** The test passes only when its assertions confirm the
+source/target identifier-type mapping and confirm the headerless fixture
+remains valid because correspondence is joined by identifier evidence.
 
----
+## TEST-INTERNAL_ENGINE-003: Relationship, correspondence, design, and annotation-kind rules
 
-## TEST-INTERNAL_ENGINE-004: Engine Structural Errors
-
-**Status:** Done
-
-**Purpose:**
-
-Test that Engine.AddStructuralErrors correctly appends errors.
-
-**Spec Coverage:** `SPEC-INTERNAL_ENGINE-001`, `SPEC-INTERNAL_ENGINE-002`
-
----
-
-## TEST-INTERNAL_ENGINE-005: Engine Report Generation
-
-**Status:** Done
+- **Kind:** `test`
+- **Covers:** `SPEC-INTERNAL_ENGINE-001`, `SPEC-INTERNAL_ENGINE-004`
 
 **Purpose:**
 
-Test that Engine.BuildReport returns correct report structure.
+Exercise several focused rule tests sharing one historical TEST identifier:
+legacy relationship consistency, identifier-derived doc/code correspondence,
+ordinary leading comments without IDD semantics, non-empty self-describing
+design sections, and agreement between documented TEST kind and source
+annotation kind. Each function isolates one fixture and asserts its exact rule
+rather than treating the combined identifier as one scenario.
 
-**Spec Coverage:** `SPEC-INTERNAL_ENGINE-001`, `SPEC-INTERNAL_ENGINE-002`
+**Oracle:** The test passes only when its assertions exercise several
+focused rule tests sharing one historical TEST identifier: legacy relationship
+consistency, paired and unpaired identifier evidence, ordinary leading
+comments, non-empty self-describing design sections, and documented/source
+TEST-kind agreement. Each fixture asserts its exact rule independently.
 
----
+## TEST-INTERNAL_ENGINE-004: Structural errors, source locations, and language comments
 
-## TEST-INTERNAL_ENGINE-006: Engine Context Cancellation
-
-**Status:** Done
-
-**Purpose:**
-
-Test that Engine properly handles context cancellation.
-
-**Spec Coverage:** `SPEC-INTERNAL_ENGINE-001`, `SPEC-INTERNAL_ENGINE-002`
-
----
-
-## TEST-INTERNAL_ENGINE-007: Engine Consistency Check
-
-**Status:** Done
+- **Kind:** `test`
+- **Covers:** `SPEC-INTERNAL_ENGINE-001`, `SPEC-INTERNAL_ENGINE-004`
 
 **Purpose:**
 
-Test that Engine performs consistency checks between doc and code identifiers.
+Prove collector structural findings survive injection, graph completeness uses
+document evidence for missing fields, and an ordinary language package comment
+remains outside IDD association policy.
 
-**Spec Coverage:** `SPEC-INTERNAL_ENGINE-001`, `SPEC-INTERNAL_ENGINE-002`
+**Oracle:** The test passes only when its assertions confirm collector
+structural findings survive injection, graph completeness uses document
+evidence for missing fields, and the package-comment fixture passes without
+repeated document paths.
 
----
+## TEST-INTERNAL_ENGINE-005: Report construction and removed path-header policy
 
-## Contract Test
-
-## TEST-INTERNAL_ENGINE-013: Engine Struct Contract Test
-
-**Status:** Done
-
-**Purpose:**
-
-Test Engine struct initialization and field validation.
-
----
-
-## TEST-INTERNAL_ENGINE-014: Engine Run Contract Test
-
-**Status:** Done
+- **Kind:** `test`
+- **Covers:** `SPEC-INTERNAL_ENGINE-001`, `SPEC-INTERNAL_ENGINE-004`
 
 **Purpose:**
 
-Test Engine.Run execution and result generation.
+Prove the engine report envelope contains accumulated state and that source
+files without legacy path headers remain valid without a package-comment policy
+switch.
 
----
+**Oracle:** The test passes only when its assertions confirm the engine
+report envelope contains accumulated state and the headerless fixture produces
+no obsolete path-header finding.
 
-## TEST-INTERNAL_ENGINE-015: Engine Validation Contract Test
+## TEST-INTERNAL_ENGINE-006: Headerless test source
 
-**Status:** Done
-
-**Purpose:**
-
-Test Engine validation logic.
-
----
-
-## TEST-INTERNAL_ENGINE-016: Engine AddStructuralErrors Contract Test
-
-**Status:** Done
+- **Kind:** `test`
+- **Covers:** `SPEC-INTERNAL_ENGINE-001`, `SPEC-INTERNAL_ENGINE-004`
 
 **Purpose:**
 
-Test Engine.AddStructuralErrors functionality.
+Prove that test files do not repeat SPEC and TEST document paths and rely on
+their declaration-level TEST annotations for association.
 
----
+**Oracle:** The test passes only when its assertions confirm the headerless test
+source remains valid while test annotations continue to carry the non-derivable
+TEST relationship.
 
-## TEST-INTERNAL_ENGINE-017: Engine BuildReport Contract Test
+## TEST-INTERNAL_ENGINE-007: Validation excludes semantic scoring
 
-**Status:** Done
-
-**Purpose:**
-
-Test Engine.BuildReport generation.
-
----
-
-## TEST-INTERNAL_ENGINE-018: Engine Context Contract Test
-
-**Status:** Done
+- **Kind:** `contract`
+- **Covers:** `SPEC-INTERNAL_ENGINE-001`, `SPEC-INTERNAL_ENGINE-004`
+- **Contracts:** `RepositoryValidation`
 
 **Purpose:**
 
-Test Engine context handling.
+Prove that legacy consistency values cannot add lexical or semantic findings,
+while explicit presence in loaded YAML adds one actionable
+`deprecated-config` warning. A separate contract-test fixture using this
+identifier proves that contract tests need no repeated SPEC, TEST, or Contract
+header paths.
 
----
+**Oracle:** In-memory consistency values do not affect findings. YAML-loaded
+presence produces exactly one non-failing warning naming the obsolete path and
+source; absence produces none. The separate contract-test fixture remains valid
+without file-level document paths.
 
-## TEST-INTERNAL_ENGINE-019: Engine Consistency Contract Test
+## TEST-INTERNAL_ENGINE-013: Engine storage contract
 
-**Status:** Done
-
-**Purpose:**
-
-Test Engine consistency check.
-
----
-
-## TEST-INTERNAL_ENGINE-008: Engine Validation Rules
-
-**Status:** Done
-
-**Purpose:**
-
-Test Engine validation rules including orphan detection.
-
-**Spec Coverage:** `SPEC-INTERNAL_ENGINE-001`, `SPEC-INTERNAL_ENGINE-002`
-
----
-
-## TEST-INTERNAL_ENGINE-009: Engine Config Validation
-
-**Status:** Done
+- **Kind:** `contract`
+- **Covers:** `SPEC-INTERNAL_ENGINE-002`
+- **Contracts:** `EngineLifecycle`
 
 **Purpose:**
 
-Test Engine configuration validation.
+Verify that construction returns a non-nil engine with non-nil retained config,
+graph, and result fields. Same-package inspection is the oracle.
 
-**Spec Coverage:** `SPEC-INTERNAL_ENGINE-001`, `SPEC-INTERNAL_ENGINE-002`
+**Oracle:** The test passes only when its assertions confirm
+construction returns a non-nil engine with non-nil retained config, graph, and result
+fields. Same-package inspection is the oracle.
 
----
+## TEST-INTERNAL_ENGINE-014: Initial engine result contract
 
-## TEST-INTERNAL_ENGINE-010: Engine Pattern Matching
-
-**Status:** Done
-
-**Purpose:**
-
-Test Engine pattern matching for identifiers.
-
-**Spec Coverage:** `SPEC-INTERNAL_ENGINE-001`, `SPEC-INTERNAL_ENGINE-002`
-
----
-
-## TEST-INTERNAL_ENGINE-011: Engine Annotation Validation
-
-**Status:** Done
+- **Kind:** `contract`
+- **Covers:** `SPEC-INTERNAL_ENGINE-002`
+- **Contracts:** `EngineLifecycle`
 
 **Purpose:**
 
-Test Engine annotation validation.
+Verify the constructor's single-run starting state: invalid result and no
+errors before validation executes.
 
-**Spec Coverage:** `SPEC-INTERNAL_ENGINE-001`, `SPEC-INTERNAL_ENGINE-002`
+**Oracle:** The test passes only when its assertions confirm the
+constructor's single-run starting state: invalid result and no errors before validation
+executes.
 
----
+## TEST-INTERNAL_ENGINE-015: Run builds graph statistics
 
-## TEST-INTERNAL_ENGINE-012: Engine File Collection
-
-**Status:** Done
-
-**Purpose:**
-
-Test Engine file collection from configured paths.
-
-**Spec Coverage:** `SPEC-INTERNAL_ENGINE-001`, `SPEC-INTERNAL_ENGINE-002`
-
----
-
-## TEST-INTERNAL_ENGINE-020: Engine Duplicate Heading Validation
-
-**Status:** Done
+- **Kind:** `contract`
+- **Covers:** `SPEC-INTERNAL_ENGINE-001`, `SPEC-INTERNAL_ENGINE-004`
+- **Contracts:** `EngineLifecycle`, `RepositoryValidation`
 
 **Purpose:**
 
-Test that Engine validates duplicate heading identifiers in documentation.
+Verify that a reciprocal SPEC/TEST identifier set produces a non-nil result and
+the expected node and link statistics through `Run`.
 
-**Spec Coverage:** `SPEC-INTERNAL_ENGINE-001`
+**Oracle:** The test passes only when its assertions confirm a
+reciprocal SPEC/TEST identifier set produces a non-nil result and the expected node and
+link statistics through `Run`.
 
----
+## TEST-INTERNAL_ENGINE-016: Unidirectional links remain processable
 
-## TEST-INTERNAL_ENGINE-021: Engine Duplicate Heading No Duplicates
-
-**Status:** Done
-
-**Purpose:**
-
-Test that Engine passes when headings have unique identifiers.
-
-**Spec Coverage:** `SPEC-INTERNAL_ENGINE-001`
-
----
-
-## TEST-INTERNAL_ENGINE-022: Engine Contract Design Markers With Markers
-
-**Status:** Done
+- **Kind:** `contract`
+- **Covers:** `SPEC-INTERNAL_ENGINE-001`, `SPEC-INTERNAL_ENGINE-004`
+- **Contracts:** `EngineLifecycle`, `RepositoryValidation`
 
 **Purpose:**
 
-Test that Engine reports error when contract.md has markers.
+Verify that one forward link is retained and no obsolete
+`missing-backlink` warning is introduced merely because the reverse edge is
+absent.
 
-**Spec Coverage:** `SPEC-INTERNAL_ENGINE-001`
+**Oracle:** The test passes only when its assertions confirm one
+forward link is retained and no obsolete `missing-backlink` warning is introduced merely
+because the reverse edge is absent.
 
----
+## TEST-INTERNAL_ENGINE-017: Orphan validation participates in run
 
-## TEST-INTERNAL_ENGINE-023: Engine Contract Design Markers Without Markers
-
-**Status:** Done
-
-**Purpose:**
-
-Test that Engine passes when contract.md has no markers.
-
-**Spec Coverage:** `SPEC-INTERNAL_ENGINE-001`
-
----
-
-## TEST-INTERNAL_ENGINE-024: Engine Contract Design Markers Design File
-
-**Status:** Done
+- **Kind:** `contract`
+- **Covers:** `SPEC-INTERNAL_ENGINE-001`, `SPEC-INTERNAL_ENGINE-004`
+- **Contracts:** `EngineLifecycle`, `RepositoryValidation`
 
 **Purpose:**
 
-Test that Engine reports error when design.md has markers.
+Verify that an unlinked SPEC produces the named orphan error when orphan
+validation is enabled.
 
-**Spec Coverage:** `SPEC-INTERNAL_ENGINE-001`
+**Oracle:** The test passes only when its assertions confirm an
+unlinked SPEC produces the named orphan error when orphan validation is enabled.
 
----
+## TEST-INTERNAL_ENGINE-020: Duplicate SPEC heading rejection
 
-## TEST-INTERNAL_ENGINE-025: Engine Package Exists
-
-**Status:** Done
-
-**Purpose:**
-
-Test Engine.packageExists method.
-
-**Spec Coverage:** `SPEC-INTERNAL_ENGINE-001`
-
----
-
-## TEST-INTERNAL_ENGINE-026: Engine Ignored Doc Path
-
-**Status:** Done
+- **Kind:** `test`
+- **Covers:** `SPEC-INTERNAL_ENGINE-001`
 
 **Purpose:**
 
-Test Engine.isIgnoredDocPath method.
+Prove two level-two declarations with the same identifier in one legacy
+document produce a duplicate-heading finding at a useful source location.
 
-**Spec Coverage:** `SPEC-INTERNAL_ENGINE-001`
+**Oracle:** The test passes only when its assertions confirm two
+level-two declarations with the same identifier in one legacy document produce a
+duplicate-heading finding at a useful source location.
 
----
+## TEST-INTERNAL_ENGINE-021: Unique headings remain valid
 
-## TEST-INTERNAL_ENGINE-027: Engine Validate Doc Path Exists
-
-**Status:** Done
-
-**Purpose:**
-
-Test Engine.validateDocPathExists method.
-
-**Spec Coverage:** `SPEC-INTERNAL_ENGINE-001`
-
----
-
-## TEST-INTERNAL_ENGINE-028: Engine Validate Related Files
-
-**Status:** Done
+- **Kind:** `test`
+- **Covers:** `SPEC-INTERNAL_ENGINE-001`
 
 **Purpose:**
 
-Test Engine.validateRelatedFiles when related_files is missing.
+Prove distinct level-two identifier headings do not trigger the duplicate rule.
 
-**Spec Coverage:** `SPEC-INTERNAL_ENGINE-001`
+**Oracle:** The test passes only when its assertions confirm distinct
+level-two identifier headings do not trigger the duplicate rule.
 
----
+## TEST-INTERNAL_ENGINE-022: Legacy contract markers are accepted
 
-## TEST-INTERNAL_ENGINE-029: Engine Validate Related Files Valid
-
-**Status:** Done
-
-**Purpose:**
-
-Test Engine.validateRelatedFiles when related_files is present.
-
-**Spec Coverage:** `SPEC-INTERNAL_ENGINE-001`
-
----
-
-## TEST-INTERNAL_ENGINE-030: Engine Package Doc Comment Main Package Skipped
-
-**Status:** Done
+- **Kind:** `test`
+- **Covers:** `SPEC-INTERNAL_ENGINE-001`
 
 **Purpose:**
 
-Test that the package-doc-comment check skips the main package (which has no
-hosted package, only a `main` function).
+Prove a legacy contract document with frontmatter markers satisfies the
+contract/design marker compatibility check.
 
-**Spec Coverage:** `SPEC-INTERNAL_ENGINE-001`
+**Oracle:** The test passes only when its assertions confirm a legacy
+contract document with frontmatter markers satisfies the contract/design marker
+compatibility check.
 
----
+## TEST-INTERNAL_ENGINE-023: Missing legacy contract markers are reported
 
-## TEST-INTERNAL_ENGINE-031: Engine Package Doc Files Missing Files
-
-**Status:** Done
-
-**Purpose:**
-
-Test that Engine reports an error when a package's `pkgDocFiles` declares files
-that do not exist on disk.
-
-**Spec Coverage:** `SPEC-INTERNAL_ENGINE-001`
-
----
-
-## TEST-INTERNAL_ENGINE-032: Engine Package Doc Files All Present
-
-**Status:** Done
+- **Kind:** `test`
+- **Covers:** `SPEC-INTERNAL_ENGINE-001`
 
 **Purpose:**
 
-Test that Engine passes when all files declared in `pkgDocFiles` exist on disk.
+Prove a legacy contract document lacking marker declarations produces the
+expected marker finding while self-describing packages use collector-owned
+records instead.
 
-**Spec Coverage:** `SPEC-INTERNAL_ENGINE-001`
+**Oracle:** The test passes only when its assertions confirm a legacy
+contract document lacking marker declarations produces the expected marker finding while
+self-describing packages use collector-owned records instead.
 
----
+## TEST-INTERNAL_ENGINE-024: Design files are excluded from contract-marker requirement
 
-## TEST-INTERNAL_ENGINE-033: Engine Package Doc Files Root Level Skipped
-
-**Status:** Done
-
-**Purpose:**
-
-Test that the `pkgDocFiles` check is skipped for root-level packages
-(single-segment import paths).
-
-**Spec Coverage:** `SPEC-INTERNAL_ENGINE-001`
-
----
-
-## TEST-INTERNAL_ENGINE-034: Engine Duplicate IDs Doc Side
-
-**Status:** Done
+- **Kind:** `test`
+- **Covers:** `SPEC-INTERNAL_ENGINE-001`
 
 **Purpose:**
 
-Test that Engine reports an error when the same identifier appears twice in
-documentation headings.
+Prove the legacy marker rule does not incorrectly require contract-style
+markers in a design document.
 
-**Spec Coverage:** `SPEC-INTERNAL_ENGINE-001`
+**Oracle:** The test passes only when its assertions confirm the legacy
+marker rule does not incorrectly require contract-style markers in a design document.
 
----
+## TEST-INTERNAL_ENGINE-025: Documented package path existence
 
-## TEST-INTERNAL_ENGINE-035: Engine Duplicate IDs Same Dir No Error
-
-**Status:** Done
-
-**Purpose:**
-
-Test that Engine does not flag duplicate identifiers that are intentionally
-co-located in the same source file (test/cont variants).
-
-**Spec Coverage:** `SPEC-INTERNAL_ENGINE-001`
-
----
-
-## TEST-INTERNAL_ENGINE-036: Engine Duplicate IDs Code Side
-
-**Status:** Done
+- **Kind:** `test`
+- **Covers:** `SPEC-INTERNAL_ENGINE-001`
 
 **Purpose:**
 
-Test that Engine reports an error when the same identifier is declared in
-multiple Go source files.
+Prove package-path checks distinguish existing implementation directories from
+missing ones in temporary repository fixtures.
 
-**Spec Coverage:** `SPEC-INTERNAL_ENGINE-001`
+**Oracle:** The test passes only when its assertions confirm package-path
+checks distinguish existing implementation directories from missing ones in temporary
+repository fixtures.
 
----
+## TEST-INTERNAL_ENGINE-026: Ignored documentation paths
 
-## TEST-INTERNAL_ENGINE-037: Engine Duplicate IDs Rename Suggestion
-
-**Status:** Done
-
-**Purpose:**
-
-Test that Engine's duplicate-ID error message includes a rename suggestion to
-help the user resolve the conflict.
-
-**Spec Coverage:** `SPEC-INTERNAL_ENGINE-001`
-
----
-
-## TEST-INTERNAL_ENGINE-038: Engine Public Func Annotation Private Func Allowed
-
-**Status:** Done
+- **Kind:** `test`
+- **Covers:** `SPEC-INTERNAL_ENGINE-001`
 
 **Purpose:**
 
-Test that `validatePublicFuncAnnotations` does not require an `@implement`
-annotation on private (lowercase) functions.
+Prove configured document ignore patterns suppress implementation-path checks
+for matching documentation.
 
-**Spec Coverage:** `SPEC-INTERNAL_ENGINE-001`
+**Oracle:** The test passes only when its assertions confirm configured
+document ignore patterns suppress implementation-path checks for matching documentation.
 
----
+## TEST-INTERNAL_ENGINE-027: Existing documented paths produce no warning
 
-## TEST-INTERNAL_ENGINE-039: Engine Public Func Annotation Private Method Allowed
-
-**Status:** Done
-
-**Purpose:**
-
-Test that `validatePublicFuncAnnotations` does not require an `@implement`
-annotation on private methods (methods of public types with lowercase names).
-
-**Spec Coverage:** `SPEC-INTERNAL_ENGINE-001`
-
----
-
-## TEST-INTERNAL_ENGINE-040: Engine Public Func Annotation Private Type Allowed
-
-**Status:** Done
+- **Kind:** `test`
+- **Covers:** `SPEC-INTERNAL_ENGINE-001`
 
 **Purpose:**
 
-Test that `validatePublicFuncAnnotations` does not require `@implement` on
-methods of a private type even when the method itself is exported.
+Prove a valid documented implementation path does not produce a false
+path-existence finding.
 
-**Spec Coverage:** `SPEC-INTERNAL_ENGINE-001`
+**Oracle:** The test passes only when its assertions confirm a valid
+documented implementation path does not produce a false path-existence finding.
 
----
+## TEST-INTERNAL_ENGINE-028: Missing legacy related files
 
-## TEST-INTERNAL_ENGINE-041: Engine Public Func Annotation Public Still Required
-
-**Status:** Done
-
-**Purpose:**
-
-Test that `validatePublicFuncAnnotations` still flags an exported function
-with no `@implement` annotation.
-
-**Spec Coverage:** `SPEC-INTERNAL_ENGINE-001`
-
----
-
-## TEST-INTERNAL_ENGINE-042: Engine Public Func Annotation Garbage After Implement Still Errors
-
-**Status:** Done
+- **Kind:** `test`
+- **Covers:** `SPEC-INTERNAL_ENGINE-001`
 
 **Purpose:**
 
-Test that garbage tokens following `@implement` (which make the annotation
-unparseable) still surface as a validation error, not silently pass.
+Prove a nested legacy document without `related_files` frontmatter is rejected
+by the compatibility rule.
 
-**Spec Coverage:** `SPEC-INTERNAL_ENGINE-001`
+**Oracle:** The test passes only when its assertions confirm a nested
+legacy document without `related_files` frontmatter is rejected by the compatibility
+rule.
 
----
+## TEST-INTERNAL_ENGINE-029: Related files and IDD metadata detection
 
-## TEST-INTERNAL_ENGINE-043: Engine Private Implement Requires Doc
-
-**Status:** Done
-
-**Purpose:**
-
-Test that an `@implement` on a private function still requires a matching doc
-entry — the doc-code-correspondence check applies regardless of visibility.
-
-**Spec Coverage:** `SPEC-INTERNAL_ENGINE-001`
-
----
-
-## TEST-INTERNAL_ENGINE-044: Engine Annotation Identifier Honors Ignore Scope
-
-**Status:** Done
+- **Kind:** `test`
+- **Covers:** `SPEC-INTERNAL_ENGINE-001`
 
 **Purpose:**
 
-Test that `validateAnnotationIdentifiers` skips content inside an
-`// idd:ignore start/end` block. Without scope honoring, the validator would
-report every annotation inside a fixture that looks like a real `@implement`
-statement.
+Prove valid legacy `related_files` passes and leading self-describing `idd`
+metadata is detected so legacy-only rules can skip the package. Table-driven
+metadata cases cover valid placement and misleading body text.
 
-**Spec Coverage:** `SPEC-INTERNAL_ENGINE-001`
+**Oracle:** The test passes only when its assertions confirm valid legacy
+`related_files` passes and leading self-describing `idd` metadata is detected so
+legacy-only rules can skip the package. Table-driven metadata cases cover valid
+placement and misleading body text.
 
----
+## TEST-INTERNAL_ENGINE-030: Main package path-header independence
 
-## TEST-INTERNAL_ENGINE-045: Engine Annotation Placement Honors Ignore Scope
-
-**Status:** Done
-
-**Purpose:**
-
-Test that the placement pass of `validatePublicFuncAnnotations` skips content
-inside an `// idd:ignore start/end` block — not just the first and third
-passes.
-
-**Spec Coverage:** `SPEC-INTERNAL_ENGINE-001`
-
----
-
-## TEST-INTERNAL_ENGINE-046: Engine Consecutive Annotations Honors Ignore Scope
-
-**Status:** Done
+- **Kind:** `test`
+- **Covers:** `SPEC-INTERNAL_ENGINE-001`
 
 **Purpose:**
 
-Test that `validateConsecutiveAnnotations` skips content inside an
-`// idd:ignore start/end` block.
+Prove command `main` source also has no IDD document-path header requirement.
 
-**Spec Coverage:** `SPEC-INTERNAL_ENGINE-001`
+**Oracle:** The test passes only when its assertions confirm the headerless
+`main` fixture returns a valid result without special-case path-comment
+handling.
+
+## TEST-INTERNAL_ENGINE-031: Incomplete package document set
+
+- **Kind:** `test`
+- **Covers:** `SPEC-INTERNAL_ENGINE-001`
+
+**Purpose:**
+
+Prove both a partially documented package and a nested source sub-package with
+no documentation directory produce findings for their missing canonical role
+files.
+
+**Oracle:** The test passes only when its assertions confirm the partial
+package reports only its absent files, while the nested source package reports
+all four paths under its exact nested `docs/<package>/` directory. The complete
+parent package must produce no finding and must not satisfy the child by prefix
+matching.
+
+## TEST-INTERNAL_ENGINE-032: Complete package document set
+
+- **Kind:** `test`
+- **Covers:** `SPEC-INTERNAL_ENGINE-001`
+
+**Purpose:**
+
+Prove a directory containing design, contract, spec, and testing documents
+passes the package-set rule.
+
+**Oracle:** The test passes only when its assertions confirm a directory
+containing design, contract, spec, and testing documents passes the package-set rule.
+
+## TEST-INTERNAL_ENGINE-033: Docs-root files do not form package sets
+
+- **Kind:** `test`
+- **Covers:** `SPEC-INTERNAL_ENGINE-001`
+
+**Purpose:**
+
+Prove narrative files directly under the configured docs root are not mistaken
+for package directories requiring four role files.
+
+**Oracle:** The test passes only when its assertions confirm narrative
+files directly under the configured docs root are not mistaken for package directories
+requiring four role files.
+
+## TEST-INTERNAL_ENGINE-034: Duplicate documentation IDs across packages
+
+- **Kind:** `test`
+- **Covers:** `SPEC-INTERNAL_ENGINE-001`, `SPEC-INTERNAL_ENGINE-004`
+
+**Purpose:**
+
+Prove same-origin documentation observations with one ID in different package
+directories produce duplicate-ID findings for each conflicting location.
+
+**Oracle:** The test passes only when its assertions confirm same-origin
+documentation observations with one ID in different package directories produce
+duplicate-ID findings for each conflicting location.
+
+## TEST-INTERNAL_ENGINE-035: Same-package ID observations are not package conflicts
+
+- **Kind:** `test`
+- **Covers:** `SPEC-INTERNAL_ENGINE-001`, `SPEC-INTERNAL_ENGINE-004`
+
+**Purpose:**
+
+Prove multiple observations of one ID inside the same directory remain valid
+doc/code evidence rather than cross-package duplicate errors.
+
+**Oracle:** The test passes only when its assertions confirm multiple
+observations of one ID inside the same directory remain valid doc/code evidence rather
+than cross-package duplicate errors.
+
+## TEST-INTERNAL_ENGINE-036: Duplicate code IDs across packages
+
+- **Kind:** `test`
+- **Covers:** `SPEC-INTERNAL_ENGINE-001`, `SPEC-INTERNAL_ENGINE-004`
+
+**Purpose:**
+
+Prove source annotations with one ID in different code package directories
+produce code-side duplicate findings.
+
+**Oracle:** The test passes only when its assertions confirm source
+annotations with one ID in different code package directories produce code-side
+duplicate findings.
+
+## TEST-INTERNAL_ENGINE-037: Package-derived duplicate rename guidance
+
+- **Kind:** `test`
+- **Covers:** `SPEC-INTERNAL_ENGINE-001`
+
+**Purpose:**
+
+Prove duplicate diagnostics suggest a replacement module segment derived from
+the conflicting source path when that suggestion differs from the current ID.
+
+**Oracle:** The test passes only when its assertions confirm duplicate
+diagnostics suggest a replacement module segment derived from the conflicting source
+path when that suggestion differs from the current ID.
+
+## TEST-INTERNAL_ENGINE-038: Annotated private functions are allowed
+
+- **Kind:** `test`
+- **Covers:** `SPEC-INTERNAL_ENGINE-001`
+
+**Purpose:**
+
+Prove a private function may carry a valid implementation annotation without
+triggering the public-declaration rule.
+
+**Oracle:** The test passes only when its assertions confirm a private
+function may carry a valid implementation annotation without triggering the
+public-declaration rule.
+
+## TEST-INTERNAL_ENGINE-039: Annotated private methods are allowed
+
+- **Kind:** `test`
+- **Covers:** `SPEC-INTERNAL_ENGINE-001`
+
+**Purpose:**
+
+Prove the same optional annotation policy applies to unexported receiver
+methods.
+
+**Oracle:** The test passes only when its assertions confirm the same
+optional annotation policy applies to unexported receiver methods.
+
+## TEST-INTERNAL_ENGINE-040: Annotated private types are allowed
+
+- **Kind:** `test`
+- **Covers:** `SPEC-INTERNAL_ENGINE-001`
+
+**Purpose:**
+
+Prove an unexported type may be traced to a SPEC without being treated as an
+invalid placement.
+
+**Oracle:** The test passes only when its assertions confirm an
+unexported type may be traced to a SPEC without being treated as an invalid placement.
+
+## TEST-INTERNAL_ENGINE-041: Public declarations still require annotations
+
+- **Kind:** `test`
+- **Covers:** `SPEC-INTERNAL_ENGINE-001`
+
+**Purpose:**
+
+Prove an exported function without `@implement` produces the named
+public-declaration finding.
+
+**Oracle:** The test passes only when its assertions confirm an exported
+function without `@implement` produces the named public-declaration finding.
+
+## TEST-INTERNAL_ENGINE-042: Annotation must precede a supported declaration
+
+- **Kind:** `test`
+- **Covers:** `SPEC-INTERNAL_ENGINE-001`
+
+**Purpose:**
+
+Prove an implementation annotation followed by an unrelated declaration is
+reported as invalid placement rather than satisfying a later public function.
+
+**Oracle:** The test passes only when its assertions confirm an
+implementation annotation followed by an unrelated declaration is reported as invalid
+placement rather than satisfying a later public function.
+
+## TEST-INTERNAL_ENGINE-043: Private annotations still require documented SPECs
+
+- **Kind:** `test`
+- **Covers:** `SPEC-INTERNAL_ENGINE-001`
+
+**Purpose:**
+
+Prove optional annotations on private declarations remain subject to doc/code
+correspondence and cannot reference an undocumented SPEC.
+
+**Oracle:** The test passes only when its assertions confirm optional
+annotations on private declarations remain subject to doc/code correspondence and cannot
+reference an undocumented SPEC.
+
+## TEST-INTERNAL_ENGINE-044: Ignore scope suppresses missing annotation identifiers
+
+- **Kind:** `test`
+- **Covers:** `SPEC-INTERNAL_ENGINE-001`
+
+**Purpose:**
+
+Prove annotation syntax inside an `idd:ignore` range does not create a missing
+identifier finding, while scanning resumes after the range.
+
+**Oracle:** The test passes only when its assertions confirm annotation
+syntax inside an `idd:ignore` range does not create a missing identifier finding, while
+scanning resumes after the range.
+
+## TEST-INTERNAL_ENGINE-045: Ignore scope suppresses placement checks
+
+- **Kind:** `test`
+- **Covers:** `SPEC-INTERNAL_ENGINE-001`
+
+**Purpose:**
+
+Prove an otherwise invalid annotation placement inside an ignore range is not
+reported.
+
+**Oracle:** The test passes only when its assertions confirm an otherwise
+invalid annotation placement inside an ignore range is not reported.
+
+## TEST-INTERNAL_ENGINE-046: Ignore scope suppresses consecutive annotation checks
+
+- **Kind:** `test`
+- **Covers:** `SPEC-INTERNAL_ENGINE-001`
+
+**Purpose:**
+
+Prove consecutive same-kind annotations inside an ignore range do not trigger
+the one-line comma-list rule.
+
+**Oracle:** The test passes only when its assertions confirm consecutive
+same-kind annotations inside an ignore range do not trigger the one-line comma-list
+rule.
+
+## TEST-INTERNAL_ENGINE-047: Reciprocal graph construction contract
+
+- **Kind:** `contract`
+- **Covers:** `SPEC-INTERNAL_ENGINE-001`, `SPEC-INTERNAL_ENGINE-004`
+- **Contracts:** `EngineLifecycle`, `RepositoryValidation`
+
+**Purpose:**
+
+Verify two reciprocal identifier references are both retained in graph
+statistics without depending on the removed general backlink-warning feature.
+
+**Oracle:** The test passes only when its assertions confirm two
+reciprocal identifier references are both retained in graph statistics without depending
+on the removed general backlink-warning feature.
+
+## TEST-INTERNAL_ENGINE-048: Orphan rule contract
+
+- **Kind:** `contract`
+- **Covers:** `SPEC-INTERNAL_ENGINE-001`, `SPEC-INTERNAL_ENGINE-004`
+- **Contracts:** `EngineLifecycle`, `RepositoryValidation`
+
+**Purpose:**
+
+Verify repository validation exposes the documented orphan rule for an
+unlinked SPEC.
+
+**Oracle:** The test passes only when its assertions confirm repository
+validation exposes the documented orphan rule for an unlinked SPEC.
+
+## TEST-INTERNAL_ENGINE-049: Preexisting errors survive validation
+
+- **Kind:** `contract`
+- **Covers:** `SPEC-INTERNAL_ENGINE-001`, `SPEC-INTERNAL_ENGINE-004`
+- **Contracts:** `EngineLifecycle`, `RepositoryValidation`
+
+**Purpose:**
+
+Verify a structural error injected before validation keeps the result invalid
+and remains present after the rule suite executes.
+
+**Oracle:** The test passes only when its assertions confirm a
+structural error injected before validation keeps the result invalid and remains present
+after the rule suite executes.
+
+## TEST-INTERNAL_ENGINE-050: Engine report envelope contract
+
+- **Kind:** `contract`
+- **Covers:** `SPEC-INTERNAL_ENGINE-004`
+- **Contracts:** `EngineLifecycle`
+
+**Purpose:**
+
+Verify `BuildReport` returns non-nil output with stable tool/version identity
+and a non-empty timestamp after an engine run.
+
+**Oracle:** The test passes only when its assertions verify
+`BuildReport` returns non-nil output with stable tool/version identity and a non-empty
+timestamp after an engine run.
+
+## TEST-INTERNAL_ENGINE-051: Link inference contract
+
+- **Kind:** `contract`
+- **Covers:** `SPEC-INTERNAL_ENGINE-001`
+- **Contracts:** `GraphInterpretation`, `RepositoryValidation`
+
+**Purpose:**
+
+Verify SPEC, TEST, CONTRACT, and DESIGN source types map representative target
+references to the documented relationship kinds.
+
+**Oracle:** The test passes only when its assertions confirm SPEC, TEST,
+CONTRACT, and DESIGN source types map representative target references to the documented
+relationship kinds.
+
+## TEST-INTERNAL_ENGINE-052: Public declarations across source languages
+
+- **Kind:** `test`
+- **Covers:** `SPEC-INTERNAL_ENGINE-001`
+
+**Purpose:** Verify the public-declaration annotation rule consumes normalized
+syntax-tree declarations for Go, TypeScript, TSX, JavaScript, C++, Java, and
+Python.
+
+**Oracle:** An annotated public declaration in every supported language
+produces no public-annotation finding, while the corresponding unannotated
+declaration produces that exact finding at its declaration line.
+
+## TEST-INTERNAL_ENGINE-053: Test declarations across source languages
+
+- **Kind:** `test`
+- **Covers:** `SPEC-INTERNAL_ENGINE-001`
+
+**Purpose:** Verify behavior and contract TEST annotations bind to real test
+declarations across all supported language profiles.
+
+**Oracle:** Every correctly bound language fixture passes the test-annotation
+rule, while a contract-test path using only `@test` is rejected for missing
+`@test-contract`.
+
+## TEST-INTERNAL_ENGINE-054: Derived Contract and Component graph policy
+
+- **Kind:** `test`
+- **Covers:** `SPEC-INTERNAL_ENGINE-001`, `SPEC-INTERNAL_ENGINE-004`
+
+**Purpose:** Verify named Contract coverage and typed Component dependency
+edges participate in graph-wide validation without conflating lifecycle links
+with architecture dependencies.
+
+**Oracle:** A named Contract edge satisfies coverage, an absent edge does not,
+and only reciprocal `depends_on` edges—not `supersedes` edges—produce a
+Component dependency-cycle finding.
+
+## Strategy
+
+Engine tests use two evidence styles. Pure graph tests construct
+`IdentifierSet` values and tune configuration flags to isolate a rule.
+Filesystem rules create temporary Go and Markdown trees with absolute patterns,
+then assert exact rule names, source paths, severities, and selected messages.
+Contract tests verify lifecycle and externally meaningful orchestration without
+claiming a production rule-plugin interface.
+
+The suite intentionally aggregates several related test functions under
+historical TEST identifiers `001` through `007`; each function remains focused
+even when the record summarizes a rule family. Contract TEST identifiers are
+separate from behavioral identifiers so `@test` and `@test-contract` never
+compete for one declared kind.
+
+Known exclusions are context cancellation, reuse of one engine for multiple
+runs, concurrent access, unreadable-file propagation, recursive glob corner
+cases, every combination of validation flags, graph aliasing, and semantic
+adequacy of human prose. Repository-level validation and reporter tests cover
+the full composition after these focused cases.

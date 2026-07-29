@@ -1,34 +1,68 @@
 ---
-related_files:
-  spec: docs/internal/graph/spec.md
-  contract: docs/internal/graph/contract.md
-  design: docs/internal/graph/design.md
-  testing: docs/internal/graph/testing.md
+idd:
+  version: "1.0"
+  package: internal/graph
 ---
 
-# Contract (graph)
+# Contracts: internal/graph
 
-**Status:** Done
+## Contract: GraphMutation
 
-**Requirement:**
+**Guarantees:**
 
-The graph must provide efficient storage and traversal of identifier relationships with doc-link-consistency support.
+`NewLinkageGraph` returns a non-nil empty graph with initialized node, edge, ID,
+type, and backlink collections.
 
-**Key Contracts:**
+`AddNode(id, type)` creates a node only when the ID is absent. Repeating the ID
+returns the existing pointer; the original type and metadata remain unchanged.
+New nodes start with non-nil metadata and empty adjacency.
 
-- AddNode returns existing node if already present
-- AddEdge creates edge and updates node edge lists
-- GetNode returns node and true if found, nil and false if not found
-- GetBacklinks uses pre-built index for O(1) lookup
-- VerifyBidirectionalLinks sets Verified flag based on reverse edge existence
+`AddEdge(from, to, type, source, line)` appends a directed edge and target
+backlink without deduplication. Existing source and target nodes receive
+outgoing and incoming adjacency respectively. Missing endpoints do not produce
+an error and later node insertion does not repair adjacency.
 
-**Implementation:** `internal/graph/graph.go`
+All mutation is synchronous and in-memory. No method is safe for concurrent
+writers.
 
-**Acceptance Criteria:**
+## Contract: GraphQuery
 
-- [x] Nodes are created or returned when adding
-- [x] Edges update both nodes' edge lists
-- [x] Index maintains backlinks for fast lookup
-- [x] Bidirectional verification marks edges as verified/unverified
+**Guarantees:**
 
-**Related:** `SPEC-INTERNAL_GRAPH-001`, `SPEC-INTERNAL_GRAPH-002`, `SPEC-INTERNAL_GRAPH-003`
+Node lookup returns a node pointer and presence boolean. Type-filtered inbound
+and outbound queries return nil for a missing node and a newly built slice for
+an existing node's matches. Backlink lookup returns the stored slice when
+present and a non-nil empty slice otherwise.
+
+`Nodes`, `Edges`, `Node.InEdges`, `Node.OutEdges`, and successful backlink
+queries expose underlying mutable collections. Callers must treat them as
+borrowed read-only views unless they intentionally accept invariant risk.
+
+No query sorts its result. Node-map and snapshot-node order are unspecified;
+global and adjacency edge order follows insertion.
+
+## Contract: RelationshipVerification
+
+**Guarantees:**
+
+`VerifyBidirectionalLinks` recalculates every edge's `Verified` flag. An edge is
+verified when an opposite-direction edge exists whose type is
+`model.ReverseLinkType` of the original. The method does not add missing reverse
+edges or emit validation errors.
+
+`ValidateCompleteness` reports a `spec-missing-tests` error for each SPEC node
+without an outbound `tests` edge and a `test-missing-coverage` error for each
+TEST node without an outbound `implements` edge. It does not require
+verification, inspect other node types, or validate endpoint existence.
+
+## Contract: GraphProjection
+
+**Guarantees:**
+
+`Stats` reports total nodes and edges plus counts by the four identifier types.
+Unknown identifier types contribute only to the total.
+
+`ToSnapshot` allocates serializable node and edge summary slices. It copies
+counts and scalar edge evidence, not metadata or adjacency. Node order is
+unspecified; edge order matches insertion. Snapshot mutation does not mutate the
+graph.

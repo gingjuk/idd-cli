@@ -1,7 +1,4 @@
 // Package model defines the core data structures for IDD link validation.
-
-// Spec: docs/internal/model/spec.md
-// Contract: docs/internal/model/contract.md
 package model
 
 import (
@@ -51,29 +48,36 @@ const (
 // Identifier represents a single IDD identifier found in docs or code.
 // @implement SPEC-INTERNAL_MODEL-018
 type Identifier struct {
-	ID       string
-	Type     IdentifierType
-	Title    string
-	Describe string
-	Source   string
-	Line     int
-	RawRef   string
-	Links    []string
-	Origin   Origin
+	ID         string
+	Type       IdentifierType
+	Title      string
+	Describe   string
+	Source     string
+	Line       int
+	RawRef     string
+	Links      []string
+	TypedLinks []IdentifierLink
+	Origin     Origin
+	// Kind distinguishes behavior and contract TEST definitions/annotations.
+	Kind string
+	// Derived marks package-scoped Component and Contract graph nodes that are
+	// computed from self-describing Markdown rather than public IDD identifiers.
+	Derived bool
 }
 
 // NewIdentifier creates a new identifier with given fields.
 // @implement SPEC-INTERNAL_MODEL-002
 func NewIdentifier(id string, idType IdentifierType, title, source string, line int) *Identifier {
 	return &Identifier{
-		ID:     id,
-		Type:   idType,
-		Title:  title,
-		Source: source,
-		Line:   line,
-		RawRef: id,
-		Links:  make([]string, 0),
-		Origin: OriginDoc,
+		ID:         id,
+		Type:       idType,
+		Title:      title,
+		Source:     source,
+		Line:       line,
+		RawRef:     id,
+		Links:      make([]string, 0),
+		TypedLinks: make([]IdentifierLink, 0),
+		Origin:     OriginDoc,
 	}
 }
 
@@ -81,15 +85,16 @@ func NewIdentifier(id string, idType IdentifierType, title, source string, line 
 // @implement SPEC-INTERNAL_MODEL-002
 func NewIdentifierWithDescribe(id string, idType IdentifierType, title, describe, source string, line int) *Identifier {
 	return &Identifier{
-		ID:       id,
-		Type:     idType,
-		Title:    title,
-		Describe: describe,
-		Source:   source,
-		Line:     line,
-		RawRef:   id,
-		Links:    make([]string, 0),
-		Origin:   OriginDoc,
+		ID:         id,
+		Type:       idType,
+		Title:      title,
+		Describe:   describe,
+		Source:     source,
+		Line:       line,
+		RawRef:     id,
+		Links:      make([]string, 0),
+		TypedLinks: make([]IdentifierLink, 0),
+		Origin:     OriginDoc,
 	}
 }
 
@@ -97,6 +102,13 @@ func NewIdentifierWithDescribe(id string, idType IdentifierType, title, describe
 // @implement SPEC-INTERNAL_MODEL-003
 func (i *Identifier) AddLink(ref string) {
 	i.Links = append(i.Links, ref)
+}
+
+// AddTypedLink adds a relationship whose semantics cannot be inferred from
+// identifier types alone.
+// @implement SPEC-INTERNAL_MODEL-003
+func (i *Identifier) AddTypedLink(ref string, linkType LinkType) {
+	i.TypedLinks = append(i.TypedLinks, IdentifierLink{Ref: ref, Type: linkType})
 }
 
 // SetOrigin sets the origin of this identifier.
@@ -230,12 +242,14 @@ func (s *IdentifierSet) Count() int {
 // DuplicateDocGroups returns groups of doc-origin identifiers that share the same ID
 // across multiple source directories (packages), indicating a naming conflict.
 // Multiple files in the same directory referencing the same ID are not a conflict.
+// @implement SPEC-INTERNAL_MODEL-004
 func (s *IdentifierSet) DuplicateDocGroups() [][]*Identifier {
 	return s.duplicatesAcrossDirectories(OriginDoc)
 }
 
 // DuplicateCodeGroups returns groups of code-origin identifiers that share the same ID
 // across multiple source packages, indicating a naming conflict.
+// @implement SPEC-INTERNAL_MODEL-004
 func (s *IdentifierSet) DuplicateCodeGroups() [][]*Identifier {
 	return s.duplicatesAcrossDirectories(OriginCode)
 }
@@ -347,6 +361,7 @@ type ValidationError struct {
 }
 
 // Error implements error interface.
+// @implement SPEC-INTERNAL_MODEL-010
 func (e ValidationError) Error() string {
 	return fmt.Sprintf("[%s] %s", e.Rule, e.Message)
 }
@@ -466,4 +481,64 @@ type EdgeSummary struct {
 	Verified bool   `json:"verified"`
 	Source   string `json:"source,omitempty"`
 	Line     int    `json:"line,omitempty"`
+}
+
+// LLMReport is a finding-centered report shape for LLM analysis and repair.
+// @implement SPEC-INTERNAL_MODEL-037
+type LLMReport struct {
+	Schema   string       `json:"schema"`
+	Status   string       `json:"status"`
+	Summary  LLMSummary   `json:"summary"`
+	Findings []LLMFinding `json:"findings"`
+}
+
+// LLMSummary summarizes validation failures for the LLM report.
+// @implement SPEC-INTERNAL_MODEL-037
+type LLMSummary struct {
+	Errors     int               `json:"errors"`
+	Warnings   int               `json:"warnings"`
+	TopRules   []string          `json:"top_rules,omitempty"`
+	RuleGroups []LLMFindingGroup `json:"rule_groups,omitempty"`
+}
+
+// LLMFindingGroup summarizes repeated findings that share the same rule and severity.
+// @implement SPEC-INTERNAL_MODEL-037
+type LLMFindingGroup struct {
+	Severity       string   `json:"severity"`
+	Rule           string   `json:"rule"`
+	Title          string   `json:"title"`
+	Count          int      `json:"count"`
+	Files          []string `json:"files,omitempty"`
+	Identifiers    []string `json:"identifiers,omitempty"`
+	FindingIndexes []int    `json:"finding_indexes"`
+	SuggestedFix   string   `json:"suggested_fix"`
+}
+
+// LLMFinding is a self-contained validation issue for LLM consumption.
+// @implement SPEC-INTERNAL_MODEL-037
+type LLMFinding struct {
+	Severity           string                 `json:"severity"`
+	Rule               string                 `json:"rule"`
+	Title              string                 `json:"title"`
+	Location           LLMLocation            `json:"location,omitempty"`
+	Identifier         string                 `json:"identifier,omitempty"`
+	Problem            string                 `json:"problem"`
+	Expected           string                 `json:"expected,omitempty"`
+	Actual             string                 `json:"actual,omitempty"`
+	SuggestedFix       string                 `json:"suggested_fix"`
+	RelatedIdentifiers []LLMRelatedIdentifier `json:"related_identifiers,omitempty"`
+}
+
+// LLMLocation identifies the file and line associated with a finding.
+// @implement SPEC-INTERNAL_MODEL-037
+type LLMLocation struct {
+	File string `json:"file,omitempty"`
+	Line int    `json:"line,omitempty"`
+}
+
+// LLMRelatedIdentifier describes an identifier related to a finding.
+// @implement SPEC-INTERNAL_MODEL-037
+type LLMRelatedIdentifier struct {
+	ID       string `json:"id"`
+	Relation string `json:"relation"`
 }

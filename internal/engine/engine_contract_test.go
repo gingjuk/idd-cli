@@ -1,9 +1,4 @@
 // Package engine provides testing utilities for the engine module.
-
-// Spec: docs/internal/engine/spec.md
-// Test: docs/internal/engine/testing.md
-// Contract: docs/internal/engine/contract.md
-
 package engine
 
 import (
@@ -30,7 +25,7 @@ import (
 //   3. Verify — Check doc-link-consistency
 //   4. Report — Aggregate errors and generate output
 
-// @test-contract TEST-INTERNAL_ENGINE-001
+// @test-contract TEST-INTERNAL_ENGINE-013
 func TestEngineStruct(t *testing.T) {
 	cfg := config.Default()
 	e := New(cfg)
@@ -52,7 +47,7 @@ func TestEngineStruct(t *testing.T) {
 	}
 }
 
-// @test-contract TEST-INTERNAL_ENGINE-002
+// @test-contract TEST-INTERNAL_ENGINE-014
 func TestEngineNewConstructor(t *testing.T) {
 	cfg := config.Default()
 	e := New(cfg)
@@ -72,7 +67,7 @@ func TestEngineNewConstructor(t *testing.T) {
 	}
 }
 
-// @test-contract TEST-INTERNAL_ENGINE-003
+// @test-contract TEST-INTERNAL_ENGINE-015
 func TestEngineRunPerformsValidationProcess(t *testing.T) {
 	cfg := config.Default()
 	cfg.Validation.AllowOrphans = true // Allow orphans for this test
@@ -116,7 +111,7 @@ func TestEngineRunPerformsValidationProcess(t *testing.T) {
 	}
 }
 
-// @test-contract TEST-INTERNAL_ENGINE-004
+// @test-contract TEST-INTERNAL_ENGINE-016
 func TestEngineRunWithUnidirectionalLink(t *testing.T) {
 	// NOTE: Bidirectional link checking was removed per user request.
 	// Unidirectional links are now allowed without warnings.
@@ -158,7 +153,7 @@ func TestEngineRunWithUnidirectionalLink(t *testing.T) {
 	}
 }
 
-// @test-contract TEST-INTERNAL_ENGINE-005
+// @test-contract TEST-INTERNAL_ENGINE-017
 func TestEngineValidationProcessSteps(t *testing.T) {
 	cfg := config.Default()
 	cfg.Validation.AllowOrphans = false // Orphans should generate errors
@@ -191,7 +186,7 @@ func TestEngineValidationProcessSteps(t *testing.T) {
 	}
 }
 
-// @test-contract TEST-INTERNAL_ENGINE-006
+// @test-contract TEST-CMD_IDD_CLI-003
 func TestRuleInterface(t *testing.T) {
 	// CONTRACT-BE-002 defines Rule interface:
 	// type Rule interface {
@@ -216,7 +211,7 @@ func TestRuleInterface(t *testing.T) {
 	}
 }
 
-// @test-contract TEST-INTERNAL_ENGINE-007
+// @test-contract TEST-CMD_IDD_CLI-004
 func TestRuleInterfaceWithErrors(t *testing.T) {
 	rule := &testRule{name: "failing-rule", shouldError: true}
 
@@ -232,7 +227,7 @@ func TestRuleInterfaceWithErrors(t *testing.T) {
 	}
 }
 
-// @test-contract TEST-INTERNAL_ENGINE-008
+// @test-contract TEST-INTERNAL_ENGINE-047
 func TestBidirectionalLinkRuleContract(t *testing.T) {
 	// NOTE: Bidirectional link checking was removed per user request.
 	// This test verifies the engine still processes links correctly.
@@ -261,7 +256,7 @@ func TestBidirectionalLinkRuleContract(t *testing.T) {
 	}
 }
 
-// @test-contract TEST-INTERNAL_ENGINE-009
+// @test-contract TEST-INTERNAL_ENGINE-048
 func TestOrphanRuleContract(t *testing.T) {
 	// According to CONTRACT-BE-002, OrphanRule should detect unreferenced identifiers
 
@@ -292,7 +287,7 @@ func TestOrphanRuleContract(t *testing.T) {
 	}
 }
 
-// @test-contract TEST-INTERNAL_ENGINE-010
+// @test-contract TEST-INTERNAL_ENGINE-049
 func TestEngineValidateMethod(t *testing.T) {
 	cfg := config.Default()
 	cfg.Validation.AllowOrphans = true
@@ -330,7 +325,7 @@ func TestEngineValidateMethod(t *testing.T) {
 	}
 }
 
-// @test-contract TEST-INTERNAL_ENGINE-011
+// @test-contract TEST-INTERNAL_ENGINE-050
 func TestEngineBuildReport(t *testing.T) {
 	cfg := config.Default()
 	e := New(cfg)
@@ -361,7 +356,7 @@ func TestEngineBuildReport(t *testing.T) {
 	}
 }
 
-// @test-contract TEST-INTERNAL_ENGINE-012
+// @test-contract TEST-INTERNAL_ENGINE-051
 func TestEngineInferLinkType(t *testing.T) {
 	cfg := config.Default()
 	e := New(cfg)
@@ -416,10 +411,8 @@ func (r *testRule) Validate(g *graph.LinkageGraph) []model.ValidationError {
 var _ Rule = (*testRule)(nil)
 
 // Rule interface as defined in CONTRACT-BE-002
-// idd:ignore start
 // @implement SPEC-CMD_IDD_CLI-010
 type Rule interface {
-	// idd:ignore end
 	Name() string
 	Validate(g *graph.LinkageGraph) []model.ValidationError
 }

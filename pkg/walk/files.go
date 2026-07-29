@@ -1,7 +1,4 @@
 // Package walk provides file traversal utilities.
-
-// Spec: docs/pkg/walk/spec.md
-// Contract: docs/pkg/walk/contract.md
 package walk
 
 import (
