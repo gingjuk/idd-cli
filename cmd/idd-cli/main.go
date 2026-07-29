@@ -258,13 +258,14 @@ func init() {
 
 func main() {
 	if err := rootCmd.Execute(); err != nil {
-		if !errors.Is(err, errValidationFailed) {
+		if err != errValidationFailed {
 			fmt.Fprintln(os.Stderr, err)
 		}
 		os.Exit(1)
 	}
 }
 
+// @implement SPEC-CMD_IDD_CLI-001, SPEC-CMD_IDD_CLI-003
 func run(cmd *cobra.Command, args []string) error {
 	projectRoot, err := resolveRunProjectRoot(args)
 	if err != nil {
@@ -274,13 +275,11 @@ func run(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return err
 	}
-	return withWorkingDirectory(projectRoot, func() error {
-		return runProject(context.Background(), projectRoot, reportPath)
-	})
+	return runProject(context.Background(), projectRoot, reportPath)
 }
 
 func runProject(ctx context.Context, projectRoot, reportPath string) error {
-	cfg, err := loadCLIConfig()
+	cfg, err := loadCLIConfig(projectRoot)
 	if err != nil {
 		return err
 	}
@@ -381,22 +380,6 @@ func resolveInvocationOutputPath(path string) (string, error) {
 		return "", fmt.Errorf("resolve output path %q: %w", path, err)
 	}
 	return absolute, nil
-}
-
-func withWorkingDirectory(directory string, operation func() error) (err error) {
-	original, err := os.Getwd()
-	if err != nil {
-		return fmt.Errorf("resolve current working directory: %w", err)
-	}
-	if err := os.Chdir(directory); err != nil {
-		return fmt.Errorf("enter project root %q: %w", directory, err)
-	}
-	defer func() {
-		if restoreErr := os.Chdir(original); restoreErr != nil && err == nil {
-			err = fmt.Errorf("restore working directory %q: %w", original, restoreErr)
-		}
-	}()
-	return operation()
 }
 
 func listSkills(cmd *cobra.Command, args []string) error {
@@ -625,7 +608,7 @@ func statusPackageDocs(cmd *cobra.Command, args []string) error {
 
 // @implement SPEC-CMD_IDD_CLI-007, SPEC-CMD_IDD_CLI-009
 func reviewSpecContext(cmd *cobra.Command, args []string) error {
-	cfg, err := loadCLIConfig()
+	cfg, err := loadCLIConfig("")
 	if err != nil {
 		return err
 	}
@@ -654,13 +637,16 @@ func reviewSpecContext(cmd *cobra.Command, args []string) error {
 	return err
 }
 
-func loadCLIConfig() (*config.Config, error) {
+func loadCLIConfig(projectRoot string) (*config.Config, error) {
 	var cfg *config.Config
 	var err error
 	if !noConfig {
-		configPaths := []string{cfgPath, "./.idd.yaml", "./config/.idd.yaml"}
+		configPaths := []string{
+			resolveProjectPath(projectRoot, ".idd.yaml"),
+			resolveProjectPath(projectRoot, filepath.Join("config", ".idd.yaml")),
+		}
 		if cfgPath != "" {
-			configPaths = []string{cfgPath}
+			configPaths = []string{resolveProjectPath(projectRoot, cfgPath)}
 		}
 		for _, path := range configPaths {
 			cfg, err = config.Load(path)
@@ -675,6 +661,9 @@ func loadCLIConfig() (*config.Config, error) {
 	if cfg == nil {
 		cfg = config.Default()
 	}
+	if err := cfg.SetWorkdir(projectRoot); err != nil {
+		return nil, fmt.Errorf("configure project workdir: %w", err)
+	}
 	if verbose {
 		cfg.Output.Verbose = true
 	}
@@ -682,6 +671,13 @@ func loadCLIConfig() (*config.Config, error) {
 		cfg.Output.File = outPath
 	}
 	return cfg, nil
+}
+
+func resolveProjectPath(projectRoot, path string) string {
+	if projectRoot == "" || filepath.IsAbs(path) {
+		return filepath.Clean(path)
+	}
+	return filepath.Clean(filepath.Join(projectRoot, path))
 }
 
 func writeConfigDeprecationWarnings(cfg *config.Config) {

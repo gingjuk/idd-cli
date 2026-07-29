@@ -34,6 +34,94 @@ func TestDefault(t *testing.T) {
 	}
 }
 
+// @test-contract TEST-INTERNAL_CONFIG-004
+func TestConfig_WorkdirPaths(t *testing.T) {
+	root := t.TempDir()
+	outside := filepath.Join(t.TempDir(), "external.go")
+	cfg := Default()
+
+	tests := []struct {
+		name        string
+		root        string
+		path        string
+		wantResolve string
+		wantDisplay string
+		wantErr     bool
+	}{
+		{
+			name:        "absolute workdir resolves project path",
+			root:        root,
+			path:        filepath.Join("internal", "config", "config.go"),
+			wantResolve: filepath.Join(root, "internal", "config", "config.go"),
+			wantDisplay: filepath.Join("internal", "config", "config.go"),
+		},
+		{
+			name:        "absolute path inside root becomes relative",
+			root:        root,
+			path:        filepath.Join(root, "docs", "spec.md"),
+			wantResolve: filepath.Join(root, "docs", "spec.md"),
+			wantDisplay: filepath.Join("docs", "spec.md"),
+		},
+		{
+			name:        "absolute path outside root stays absolute",
+			root:        root,
+			path:        outside,
+			wantResolve: outside,
+			wantDisplay: outside,
+		},
+		{
+			name:        "empty workdir preserves caller paths",
+			path:        filepath.Join("docs", "spec.md"),
+			wantResolve: filepath.Join("docs", "spec.md"),
+			wantDisplay: filepath.Join("docs", "spec.md"),
+		},
+		{
+			name:    "relative workdir is rejected",
+			root:    "relative/project",
+			path:    "spec.md",
+			wantErr: true,
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			if err := cfg.SetWorkdir(test.root); (err != nil) != test.wantErr {
+				t.Fatalf("SetWorkdir(%q) error = %v, wantErr %t", test.root, err, test.wantErr)
+			}
+			if test.wantErr {
+				return
+			}
+			if got := cfg.ResolvePath(test.path); got != test.wantResolve {
+				t.Errorf("ResolvePath(%q) = %q, want %q", test.path, got, test.wantResolve)
+			}
+			if got := cfg.DisplayPath(test.path); got != test.wantDisplay {
+				t.Errorf("DisplayPath(%q) = %q, want %q", test.path, got, test.wantDisplay)
+			}
+		})
+	}
+}
+
+// @test-contract TEST-INTERNAL_CONFIG-004
+func TestConfig_WorkdirNormalizesConfigurationWarnings(t *testing.T) {
+	root := t.TempDir()
+	configPath := filepath.Join(root, ".idd.yaml")
+	data := []byte("validation:\n  consistency_check: {}\n")
+	if err := os.WriteFile(configPath, data, 0o644); err != nil {
+		t.Fatalf("WriteFile() error = %v", err)
+	}
+	cfg, err := Load(configPath)
+	if err != nil {
+		t.Fatalf("Load() error = %v", err)
+	}
+	if err := cfg.SetWorkdir(root); err != nil {
+		t.Fatalf("SetWorkdir() error = %v", err)
+	}
+	warnings := cfg.DeprecationWarnings()
+	if len(warnings) != 1 || warnings[0].Source != ".idd.yaml" {
+		t.Errorf("DeprecationWarnings() = %#v, want project-relative source", warnings)
+	}
+}
+
 // @test-contract TEST-INTERNAL_CONFIG-002
 func TestDefaultMatchesExampleConfiguration(t *testing.T) {
 	examplePath := filepath.Join("..", "..", "examples", "idd-config-example.yaml")

@@ -17,14 +17,14 @@ as these behaviors remain stable.
 
 `run [project-root]` and `lint [project-root]` use the same concrete workflow:
 
-1. Resolve the optional path as one project root and enter it.
+1. Resolve the optional path as one absolute project workdir.
 2. Load configuration from the explicit flag, `<root>/.idd.yaml`, or
    `<root>/config/.idd.yaml`.
-3. Collect documentation identifiers and code annotations from that root.
+3. Resolve documentation, source, and engine filesystem paths against that
+   workdir without changing process cwd.
 4. Merge identifiers and execute `Engine.Run`.
 5. Write a finding-centered report.
-6. Restore the caller's working directory.
-7. Exit non-zero when the validation result is invalid.
+6. Exit non-zero when the validation result is invalid.
 
 Verbose diagnostics go to stderr so JSON stdout remains parseable.
 The normal in-project gate is `run .`. Passing an absolute or relative path to
@@ -44,6 +44,11 @@ configuration paths resolve inside that root. Global flags select config,
 format, output, verbosity, or config bypass. Invocation flags override loaded
 output values without modifying configuration files. A relative report output
 path remains relative to the invoking working directory.
+
+The selected root is stored as invocation-local runtime configuration.
+Collectors and Engine resolve every relative input through it; the command
+never calls `os.Chdir`, and finding locations inside the root remain
+project-relative.
 
 ### Outputs and errors
 

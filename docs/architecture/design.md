@@ -111,8 +111,9 @@ docs init/status/fix ── work list + safe structure ─┤
 The final validity check normally runs as `idd-cli run .` from project root.
 The optional positional path denotes another complete project root:
 configuration discovery, `DocCollector`, `CodeCollector`, and engine filesystem
-checks all execute against that same tree. Focused documentation inspection
-belongs to `docs status` or `docs review-context --docs-path`, not `run`.
+checks all resolve through the same explicit runtime workdir. The process cwd is
+never changed. Focused documentation inspection belongs to `docs status` or
+`docs review-context --docs-path`, not `run`.
 
 Passing this plane proves that the declared graph is structurally coherent. It
 does not prove that the prose is sufficient or the architectural decision is

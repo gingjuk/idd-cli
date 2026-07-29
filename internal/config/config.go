@@ -4,6 +4,7 @@ package config
 import (
 	"fmt"
 	"os"
+	"path/filepath"
 	"strings"
 
 	"gopkg.in/yaml.v3"
@@ -37,7 +38,57 @@ type Config struct {
 	Code                CodeConfig       `yaml:"code"`
 	Validation          ValidationConfig `yaml:"validation"`
 	Output              OutputConfig     `yaml:"output"`
+	workdir             string
 	deprecationWarnings []DeprecationWarning
+}
+
+// SetWorkdir installs the absolute project root used to resolve runtime paths.
+// It is process-local state and is never decoded from or written to YAML.
+// @implement SPEC-INTERNAL_CONFIG-010
+func (c *Config) SetWorkdir(root string) error {
+	if root == "" {
+		c.workdir = ""
+		return nil
+	}
+	if !filepath.IsAbs(root) {
+		return fmt.Errorf("workdir must be absolute: %s", root)
+	}
+	c.workdir = filepath.Clean(root)
+	for index := range c.deprecationWarnings {
+		c.deprecationWarnings[index].Source = c.DisplayPath(c.deprecationWarnings[index].Source)
+	}
+	return nil
+}
+
+// ResolvePath resolves a project-relative runtime path without changing the
+// process working directory.
+// @implement SPEC-INTERNAL_CONFIG-010
+func (c *Config) ResolvePath(path string) string {
+	if c == nil || c.workdir == "" || filepath.IsAbs(path) {
+		return filepath.Clean(path)
+	}
+	return filepath.Clean(filepath.Join(c.workdir, path))
+}
+
+// DisplayPath converts a runtime path inside the configured project root back
+// to a stable project-relative path for identifiers and findings.
+// @implement SPEC-INTERNAL_CONFIG-010
+func (c *Config) DisplayPath(path string) string {
+	clean := filepath.Clean(path)
+	if c == nil || c.workdir == "" {
+		return clean
+	}
+	absolute := clean
+	if !filepath.IsAbs(absolute) {
+		absolute = filepath.Join(c.workdir, absolute)
+	}
+	relative, err := filepath.Rel(c.workdir, absolute)
+	if err != nil ||
+		relative == ".." ||
+		strings.HasPrefix(relative, ".."+string(filepath.Separator)) {
+		return clean
+	}
+	return filepath.Clean(relative)
 }
 
 // DeprecationWarning describes one explicitly configured obsolete YAML path.

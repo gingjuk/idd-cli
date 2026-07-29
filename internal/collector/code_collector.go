@@ -50,30 +50,32 @@ func (c *CodeCollector) CollectWithErrors(
 	c.analyses = nil
 	var validationErrors []*model.ValidationError
 
-	info, err := os.Stat(targetPath)
+	resolvedTarget := c.cfg.ResolvePath(targetPath)
+	info, err := os.Stat(resolvedTarget)
 	if err != nil {
 		return set, validationErrors, nil
 	}
 
 	if info.IsDir() {
-		err := filepath.Walk(targetPath, func(path string, info os.FileInfo, err error) error {
+		err := filepath.Walk(resolvedTarget, func(path string, info os.FileInfo, err error) error {
 			if err != nil {
 				return nil
 			}
 			if info.IsDir() {
 				return nil
 			}
-			if c.shouldIgnore(path) {
+			displayPath := c.cfg.DisplayPath(path)
+			if c.shouldIgnore(displayPath) {
 				return nil
 			}
-			if !c.matchesConfiguredSource(path) {
+			if !c.matchesConfiguredSource(displayPath) {
 				return nil
 			}
-			if !SupportedSourcePath(path) {
-				validationErrors = append(validationErrors, unsupportedSourceFinding(path))
+			if !SupportedSourcePath(displayPath) {
+				validationErrors = append(validationErrors, unsupportedSourceFinding(displayPath))
 				return nil
 			}
-			fileErrors, collectErr := c.collectFile(path, set)
+			fileErrors, collectErr := c.collectFile(displayPath, set)
 			if collectErr != nil {
 				return collectErr
 			}
@@ -83,10 +85,13 @@ func (c *CodeCollector) CollectWithErrors(
 		if err != nil {
 			return set, validationErrors, err
 		}
-	} else if !SupportedSourcePath(targetPath) {
-		validationErrors = append(validationErrors, unsupportedSourceFinding(targetPath))
 	} else {
-		fileErrors, collectErr := c.collectFile(targetPath, set)
+		displayPath := c.cfg.DisplayPath(resolvedTarget)
+		if !SupportedSourcePath(displayPath) {
+			validationErrors = append(validationErrors, unsupportedSourceFinding(displayPath))
+			return set, validationErrors, nil
+		}
+		fileErrors, collectErr := c.collectFile(displayPath, set)
 		if collectErr != nil {
 			return set, validationErrors, collectErr
 		}
@@ -125,7 +130,7 @@ func (c *CodeCollector) collectFile(
 	path string,
 	set *model.IdentifierSet,
 ) ([]*model.ValidationError, error) {
-	content, err := os.ReadFile(path)
+	content, err := os.ReadFile(c.cfg.ResolvePath(path))
 	if err != nil {
 		return nil, err
 	}

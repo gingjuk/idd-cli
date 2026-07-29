@@ -97,3 +97,17 @@ The method does not validate identifier regex or glob syntax, version support,
 output paths, ignore patterns, or relationships between boolean flags. It does
 not fill omitted identifier patterns, ignore paths, output values, or
 validation booleans in a partially loaded YAML file.
+
+## Contract: RuntimeWorkdir
+
+**Guarantees:**
+
+`SetWorkdir` accepts an absolute project root or an empty value that disables
+rooted resolution. `ResolvePath` joins relative runtime paths to that root
+without calling `os.Chdir`. `DisplayPath` converts paths inside the root back to
+project-relative form for stable findings and leaves outside paths absolute.
+
+The workdir is in-memory invocation state, not part of the YAML schema.
+Collectors and the validation engine share the same configured value, so
+configuration discovery, filesystem reads, and reported locations cannot mix
+two project trees.

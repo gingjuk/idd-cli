@@ -22,7 +22,7 @@ import (
 // identifiers through the complete validation workflow.
 // The Engine holds the configuration, a linkage graph for tracking relationships
 // between identifiers, and accumulates validation results.
-// @implement SPEC-CMD_IDD_CLI-001, SPEC-CMD_IDD_CLI-002, SPEC-CMD_IDD_CLI-003, SPEC-CMD_IDD_CLI-004, SPEC-CMD_IDD_CLI-005, SPEC-CMD_IDD_CLI-006, SPEC-INTERNAL_ENGINE-001
+// @implement SPEC-CMD_IDD_CLI-002, SPEC-CMD_IDD_CLI-004, SPEC-CMD_IDD_CLI-005, SPEC-CMD_IDD_CLI-006, SPEC-INTERNAL_ENGINE-001
 type Engine struct {
 	cfg               *config.Config
 	graph             *graph.LinkageGraph
@@ -407,7 +407,7 @@ func (e *Engine) validateDesignSections() {
 				continue
 			}
 
-			if !hasIDDDocumentMetadata(lines) && !directoryHasIDDDocumentMetadata(filepath.Dir(path)) {
+			if !hasIDDDocumentMetadata(lines) && !e.directoryHasIDDDocumentMetadata(filepath.Dir(path)) {
 				continue
 			}
 			hasContent := false
@@ -516,7 +516,7 @@ func (e *Engine) validateContractInterfaceConsistency() {
 		if !strings.HasSuffix(path, "spec.md") {
 			return
 		}
-		if hasIDDDocumentMetadata(lines) || directoryHasIDDDocumentMetadata(filepath.Dir(path)) {
+		if hasIDDDocumentMetadata(lines) || e.directoryHasIDDDocumentMetadata(filepath.Dir(path)) {
 			return
 		}
 
@@ -554,7 +554,7 @@ func (e *Engine) validateContractInterfaceConsistency() {
 					if !contractIdents[interfaceName] {
 						// Fallback: check if interfaceName appears anywhere as capitalized identifier in contract.md
 						found := false
-						if contractContent, err := os.ReadFile(contractPath); err == nil {
+						if contractContent, err := os.ReadFile(e.cfg.ResolvePath(contractPath)); err == nil {
 							fallbackRegex := regexp.MustCompile(`\b([A-Z][a-zA-Z0-9_]*)\b`)
 							for _, m := range fallbackRegex.FindAllStringSubmatch(string(contractContent), -1) {
 								if len(m) > 1 && m[1] == interfaceName {
@@ -620,7 +620,7 @@ func (e *Engine) validateSpecRequiredFields() {
 		if !strings.HasSuffix(path, "spec.md") {
 			return
 		}
-		if hasIDDDocumentMetadata(lines) || directoryHasIDDDocumentMetadata(filepath.Dir(path)) {
+		if hasIDDDocumentMetadata(lines) || e.directoryHasIDDDocumentMetadata(filepath.Dir(path)) {
 			return
 		}
 
@@ -868,7 +868,7 @@ func (e *Engine) validateContractDesignMarkers() {
 func (e *Engine) validateDocPathExists() {
 	docsRoot := "docs"
 
-	entries, err := os.ReadDir(docsRoot)
+	entries, err := os.ReadDir(e.cfg.ResolvePath(docsRoot))
 	if err != nil {
 		return
 	}
@@ -893,7 +893,7 @@ func (e *Engine) validateDocPathExists() {
 		fullPkgPath := pkgPath
 		if entry.Name() == "internal" || entry.Name() == "pkg" {
 			// For internal/ and pkg/, check subdirectories
-			subEntries, _ := os.ReadDir(docDir)
+			subEntries, _ := os.ReadDir(e.cfg.ResolvePath(docDir))
 			for _, subEntry := range subEntries {
 				if !subEntry.IsDir() {
 					continue
@@ -933,7 +933,7 @@ func (e *Engine) validateDocPathExists() {
 // packageExists checks whether a package directory exists at the given path.
 func (e *Engine) packageExists(pkgPath string) bool {
 	// Check if the package path exists
-	info, err := os.Stat(pkgPath)
+	info, err := os.Stat(e.cfg.ResolvePath(pkgPath))
 	if err != nil {
 		return false
 	}
@@ -1031,7 +1031,7 @@ func (e *Engine) validateRelatedFiles() {
 		if filepath.Base(filepath.Dir(filepath.Clean(path))) == "docs" {
 			return
 		}
-		if hasIDDDocumentMetadata(lines) || directoryHasIDDDocumentMetadata(filepath.Dir(path)) {
+		if hasIDDDocumentMetadata(lines) || e.directoryHasIDDDocumentMetadata(filepath.Dir(path)) {
 			return
 		}
 
@@ -1101,9 +1101,9 @@ func hasIDDDocumentMetadata(lines []string) bool {
 	return false
 }
 
-func directoryHasIDDDocumentMetadata(directory string) bool {
+func (e *Engine) directoryHasIDDDocumentMetadata(directory string) bool {
 	for _, filename := range []string{"design.md", "contract.md", "spec.md", "testing.md"} {
-		data, err := os.ReadFile(filepath.Join(directory, filename))
+		data, err := os.ReadFile(e.cfg.ResolvePath(filepath.Join(directory, filename)))
 		if err != nil {
 			continue
 		}
@@ -1140,7 +1140,7 @@ func (e *Engine) validatePkgDocFiles() {
 	})
 
 	for _, analysis := range e.ensureSourceAnalyses() {
-		docsDir, ok := docsDirectoryForSource(analysis.Path, docsRoots)
+		docsDir, ok := docsDirectoryForSource(e.cfg, analysis.Path, docsRoots)
 		if !ok || e.isIgnoredDocPath(docsDir) {
 			continue
 		}
@@ -1203,19 +1203,17 @@ func configuredDocsRoots(patterns []string) []string {
 	return result
 }
 
-func docsDirectoryForSource(sourcePath string, docsRoots []string) (string, bool) {
-	sourceAbsolute, err := filepath.Abs(sourcePath)
-	if err != nil {
-		return "", false
-	}
+func docsDirectoryForSource(
+	cfg *config.Config,
+	sourcePath string,
+	docsRoots []string,
+) (string, bool) {
+	sourceAbsolute := cfg.ResolvePath(sourcePath)
 
 	var selected string
 	selectedRootLength := -1
 	for _, docsRoot := range docsRoots {
-		docsAbsolute, absErr := filepath.Abs(docsRoot)
-		if absErr != nil {
-			continue
-		}
+		docsAbsolute := cfg.ResolvePath(docsRoot)
 		projectRoot := filepath.Dir(docsAbsolute)
 		relativeSource, relErr := filepath.Rel(projectRoot, sourceAbsolute)
 		if relErr != nil ||

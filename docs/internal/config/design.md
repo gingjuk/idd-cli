@@ -20,6 +20,10 @@ file starts from Go zero values, unmarshals the file, and then applies only the
 defaults implemented by `Validate`; it does not overlay the document on the
 complete value returned by `Default`.
 
+After CLI loading, the same value may receive one absolute runtime workdir.
+This non-YAML state gives collectors and Engine a shared filesystem base
+without changing process cwd.
+
 ### Responsibilities
 
 - model document patterns, identifier patterns, source patterns, annotations,
@@ -28,6 +32,8 @@ complete value returned by `Default`.
 - return the full built-in profile used when the CLI chooses defaults;
 - read and decode a specific YAML file;
 - normalize selected omitted collection values;
+- resolve runtime paths through an invocation-local absolute workdir and
+  produce stable project-relative display paths;
 - reject missing or unknown annotation-map keys and ambiguous or unusable
   prefix values; and
 - wrap read, parse, and validation failures with stage context.
@@ -81,6 +87,14 @@ CLI config selection
 Configuration is read before validation execution. The package has no global
 mutable configuration, cache, watcher, reload lifecycle, or concurrency.
 
+```text
+absolute project root -> SetWorkdir
+                            |
+                +-----------+-----------+
+                v                       v
+          ResolvePath for I/O     DisplayPath for findings
+```
+
 ## Package Layout
 
 `config.go` contains schema and lifecycle operations together. This keeps the
@@ -97,13 +111,14 @@ ensures annotation keys are exactly `spec`, `test`, and `test_contract`,
 and validates their lexical values. It deliberately leaves the deprecated
 consistency fields unchanged; no similarity threshold is normalized or used.
 `Default` does not call `Validate`; it constructs the intended profile
-directly.
+directly. `SetWorkdir`, `ResolvePath`, and `DisplayPath` operate only on
+post-load invocation state and never participate in YAML decoding.
 
 ## Dependencies
 
 The package uses `os` for file reads and `gopkg.in/yaml.v3` for decoding.
-Filesystem search, glob expansion, regex compilation, and report output remain
-outside the package.
+`filepath` normalizes runtime roots and paths. Filesystem search, glob
+expansion, regex compilation, and report output remain outside the package.
 
 ## Testability Hooks
 
@@ -112,6 +127,8 @@ to exercise successful decoding and parse failures, while missing paths test
 read errors without mocks. Table-driven annotation-key cases expose
 normalization and rejection behavior, while deprecated-threshold cases prove
 that compatibility values are preserved without affecting validation.
+Runtime-path cases use isolated absolute roots and require both I/O resolution
+and project-relative display normalization without process cwd changes.
 
 The current tests compare the complete example profile with `Default` but do
 not cover unknown YAML fields, partial-file zero-value booleans, regex

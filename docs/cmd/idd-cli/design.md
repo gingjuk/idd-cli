@@ -63,7 +63,8 @@ slots, inspect completion, or normalize safe structure.
 `run .` is the normal complete validity gate. When another directory is
 supplied, `run` resolves it as one project root and executes configuration
 discovery, document/source collection, and engine filesystem checks inside that
-root. The caller's working directory is restored before command completion.
+root. The absolute root is stored in runtime configuration; filesystem access
+resolves through it without changing process cwd.
 
 ### Skill discovery and export
 
@@ -141,17 +142,18 @@ successful idempotent result, not an error.
 
 `run` and `lint` share the same handler. The handler:
 
-1. resolves the positional directory as a project root, defaulting to `.`;
-2. enters that root and loads configuration in documented precedence order
-   unless `--no-config` is set;
+1. resolves the positional directory as an absolute project root, defaulting
+   to `.`;
+2. loads configuration from paths resolved against that root unless
+   `--no-config` is set, then stores the root as the runtime workdir;
 3. applies invocation-only format, output, and verbosity flags;
 4. collects documentation and parses supported source files from that same
-   root into normalized Tree-sitter declarations and attached annotations;
+   root into normalized Tree-sitter declarations and attached annotations
+   without changing process cwd;
 5. adds structural and source-parse findings and supplies source analyses to
    the engine before graph validation;
 6. builds a report from the completed result and writes it once;
-7. restores the caller's working directory; and
-8. returns a validation error after report emission when the result is invalid.
+7. returns a validation error after report emission when the result is invalid.
 
 Collection or I/O failures stop the path because the report would be based on
 incomplete evidence. Validation failures do not prevent report generation,

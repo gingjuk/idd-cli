@@ -28,9 +28,9 @@ or I/O failure returns an error without manufacturing validation findings.
 The positional path denotes one project root. Configuration discovery,
 documentation collection, source collection, and engine filesystem checks must
 all execute against that root, even when the command is launched from another
-worktree. The caller's working directory is restored before the command
-returns. Validation must not mutate documents, source, configuration, or
-embedded Skill content.
+worktree. The command must resolve those paths through an invocation-local
+workdir without changing process cwd. Validation must not mutate documents,
+source, configuration, or embedded Skill content.
 
 The command proves configured structural and traceability properties. It does
 not infer missing requirements or treat a green result as proof that the

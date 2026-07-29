@@ -29,22 +29,25 @@ func TestCommandSurfaceBehavior(t *testing.T) {
 
 // @test TEST-CMD_IDD_CLI-002
 func TestRunUsesOneProjectRoot(t *testing.T) {
-	originalDirectory, err := os.Getwd()
+	invocationRoot, err := os.Getwd()
 	if err != nil {
 		t.Fatalf("Getwd() error = %v", err)
 	}
-	t.Cleanup(func() {
-		if err := os.Chdir(originalDirectory); err != nil {
-			t.Errorf("restore working directory: %v", err)
-		}
-	})
 
-	callerRoot := t.TempDir()
-	targetRoot := t.TempDir()
-	writeRunProjectFixture(t, callerRoot, "CALLER", true)
+	workspace := t.TempDir()
+	targetRoot := filepath.Join(workspace, "target")
+	if err := os.MkdirAll(targetRoot, 0o755); err != nil {
+		t.Fatalf("MkdirAll(%s) error = %v", targetRoot, err)
+	}
 	writeRunProjectFixture(t, targetRoot, "TARGET", false)
-	if err := os.Chdir(callerRoot); err != nil {
-		t.Fatalf("Chdir(%s) error = %v", callerRoot, err)
+	targetArgument, err := filepath.Rel(invocationRoot, targetRoot)
+	if err != nil {
+		t.Fatalf("Rel(%s, %s) error = %v", invocationRoot, targetRoot, err)
+	}
+	reportPath := filepath.Join(t.TempDir(), "report.json")
+	reportArgument, err := filepath.Rel(invocationRoot, reportPath)
+	if err != nil {
+		t.Fatalf("Rel(%s, %s) error = %v", invocationRoot, reportPath, err)
 	}
 
 	savedConfigPath, savedOutputPath := cfgPath, outPath
@@ -53,13 +56,13 @@ func TestRunUsesOneProjectRoot(t *testing.T) {
 		cfgPath, outPath = savedConfigPath, savedOutputPath
 		format, verbose, noConfig = savedFormat, savedVerbose, savedNoConfig
 	})
-	cfgPath = ""
-	outPath = filepath.Join(t.TempDir(), "report.json")
+	cfgPath = ".idd.yaml"
+	outPath = reportArgument
 	format = "json"
 	verbose = false
 	noConfig = false
 
-	err = run(nil, []string{targetRoot})
+	err = run(nil, []string{targetArgument})
 	if !errors.Is(err, errValidationFailed) {
 		t.Fatalf("run(%s) error = %v, want validation failure", targetRoot, err)
 	}
@@ -67,22 +70,26 @@ func TestRunUsesOneProjectRoot(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Getwd() after run error = %v", err)
 	}
-	if currentDirectory != callerRoot {
-		t.Errorf("working directory after run = %q, want %q", currentDirectory, callerRoot)
+	if currentDirectory != invocationRoot {
+		t.Errorf("working directory after run = %q, want unchanged %q", currentDirectory, invocationRoot)
 	}
 
-	report, err := os.ReadFile(outPath)
+	report, err := os.ReadFile(reportPath)
 	if err != nil {
-		t.Fatalf("ReadFile(%s) error = %v", outPath, err)
+		t.Fatalf("ReadFile(%s) error = %v", reportPath, err)
 	}
 	text := string(report)
 	if !strings.Contains(text, "SPEC-TARGET-001") ||
 		!strings.Contains(text, "orphan-detection") {
 		t.Errorf("target project evidence missing from report:\n%s", text)
 	}
-	if strings.Contains(text, "SPEC-CALLER-001") ||
+	if strings.Contains(text, "SPEC-CMD_IDD_CLI-001") ||
+		strings.Contains(text, targetRoot) ||
 		strings.Contains(text, "doc-code-correspondence") {
-		t.Errorf("caller project leaked into target report:\n%s", text)
+		t.Errorf("caller or absolute target path leaked into target report:\n%s", text)
+	}
+	if _, err := os.Stat(filepath.Join(targetRoot, filepath.Base(reportPath))); !os.IsNotExist(err) {
+		t.Errorf("relative output leaked into target root: %v", err)
 	}
 }
 
@@ -139,6 +146,29 @@ func TestResolveInvocationOutputPath(t *testing.T) {
 			}
 			if got != test.want {
 				t.Errorf("resolveInvocationOutputPath() = %q, want %q", got, test.want)
+			}
+		})
+	}
+}
+
+// @test TEST-CMD_IDD_CLI-001
+func TestResolveProjectPath(t *testing.T) {
+	root := t.TempDir()
+	absolute := filepath.Join(t.TempDir(), ".idd.yaml")
+	tests := []struct {
+		name string
+		root string
+		path string
+		want string
+	}{
+		{name: "relative config uses project root", root: root, path: ".idd.yaml", want: filepath.Join(root, ".idd.yaml")},
+		{name: "absolute config remains absolute", root: root, path: absolute, want: absolute},
+		{name: "empty root preserves caller path", path: ".idd.yaml", want: ".idd.yaml"},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			if got := resolveProjectPath(test.root, test.path); got != test.want {
+				t.Errorf("resolveProjectPath(%q, %q) = %q, want %q", test.root, test.path, got, test.want)
 			}
 		})
 	}

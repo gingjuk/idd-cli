@@ -232,3 +232,22 @@ is not a supported input.
 
 Table-driven tests cover preservation of deprecated alias values and complete,
 missing, partial, and extended annotation maps.
+
+## SPEC-INTERNAL_CONFIG-010: Runtime workdir path resolution
+
+- **Design:** `ConfigModule`
+- **Contract:** `RuntimeWorkdir`
+
+**Requirement:**
+
+One absolute, process-local workdir must resolve all validation filesystem
+inputs without changing the process working directory.
+
+**Acceptance:**
+
+An absolute project root resolves relative document, source, configuration, and
+engine paths into that tree. Paths reported from inside the root are converted
+back to stable project-relative locations, while absolute paths outside the
+root remain absolute. Configuration deprecation diagnostics loaded before the
+workdir is installed are normalized by the same rule. Relative workdirs are
+rejected and the runtime value is never decoded from or written to YAML.
