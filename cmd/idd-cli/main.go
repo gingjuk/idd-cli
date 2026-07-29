@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -29,6 +30,8 @@ var (
 	version        = "1.0.0"
 )
 
+var errValidationFailed = errors.New("IDD validation failed")
+
 var rootCmd = &cobra.Command{
 	Use:   "idd-cli",
 	Short: "IDD workflow guardrail for skills, documents, and code traceability",
@@ -43,31 +46,32 @@ Example usage:
   idd-cli docs review-context SPEC-INTERNAL_AUTH-001
   idd-cli run . --format llm-markdown
   idd-cli run . --format json`,
-	Version:      version,
-	SilenceUsage: true,
+	Version:       version,
+	SilenceErrors: true,
+	SilenceUsage:  true,
 }
 
 var runCmd = &cobra.Command{
-	Use:   "run [path]",
+	Use:   "run [project-root]",
 	Short: "Run IDD linkage validation",
 	Long: `Run IDD linkage validation and emit the complete finding report.
 
-Documentation is collected from [path], while source annotations are collected
-from the current project working tree. Run from project root with "." for the
-authoritative project gate. An invalid graph writes its report, then exits
-non-zero. Passing proves enabled structural and traceability rules; the paired
-IDD skill and human review still judge whether the authored explanation is
-complete and correct.
+The optional positional path is the project root and defaults to the current
+directory. Configuration discovery, documentation collection, source
+collection, and project-relative validation all use that same root. An invalid
+graph writes its report, then exits non-zero. Passing proves enabled structural
+and traceability rules; the paired IDD skill and human review still judge
+whether the authored explanation is complete and correct.
 
 Example:
   idd-cli run . --format llm-markdown
-  idd-cli run . --config .idd.yaml --format json`,
+  idd-cli run /path/to/project --config .idd.yaml --format json`,
 	Args: cobra.MaximumNArgs(1),
 	RunE: run,
 }
 
 var lintCmd = &cobra.Command{
-	Use:   "lint [path]",
+	Use:   "lint [project-root]",
 	Short: "Lint IDD linkage (alias for 'run')",
 	Long: `Lint IDD linkage validation. This is an alias for 'run' and uses the
 same project-root validation scope.
@@ -189,8 +193,9 @@ canonical SPECs with one documentation scan and one source scan.
 
 The --docs-path flag selects the documentation search root and defaults to
 ".". Source declarations are collected from the current project working tree,
-matching the scope used by run. Repeated SPEC IDs are deduplicated in
-first-request order, and one batch accepts at most ten unique IDs.
+while the run command treats its positional path as a complete project root.
+Repeated SPEC IDs are deduplicated in first-request order, and one batch
+accepts at most ten unique IDs.
 
 One SPEC retains JSON schema idd.spec_review_context.v1. Multiple SPECs use
 idd.spec_review_context_batch.v1 with an ordered context per SPEC. Markdown
@@ -253,19 +258,28 @@ func init() {
 
 func main() {
 	if err := rootCmd.Execute(); err != nil {
-		fmt.Fprintln(os.Stderr, err)
+		if !errors.Is(err, errValidationFailed) {
+			fmt.Fprintln(os.Stderr, err)
+		}
 		os.Exit(1)
 	}
 }
 
 func run(cmd *cobra.Command, args []string) error {
-	ctx := context.Background()
-
-	targetPath := "."
-	if len(args) > 0 {
-		targetPath = args[0]
+	projectRoot, err := resolveRunProjectRoot(args)
+	if err != nil {
+		return err
 	}
+	reportPath, err := resolveInvocationOutputPath(outPath)
+	if err != nil {
+		return err
+	}
+	return withWorkingDirectory(projectRoot, func() error {
+		return runProject(context.Background(), projectRoot, reportPath)
+	})
+}
 
+func runProject(ctx context.Context, projectRoot, reportPath string) error {
 	cfg, err := loadCLIConfig()
 	if err != nil {
 		return err
@@ -273,7 +287,7 @@ func run(cmd *cobra.Command, args []string) error {
 
 	if verbose {
 		fmt.Fprintf(os.Stderr, "idd-cli v%s\n", version)
-		fmt.Fprintf(os.Stderr, "Validating: %s\n", targetPath)
+		fmt.Fprintf(os.Stderr, "Project root: %s\n", projectRoot)
 		if !noConfig {
 			fmt.Fprintf(os.Stderr, "Config: %s\n", cfgPath)
 		}
@@ -283,7 +297,7 @@ func run(cmd *cobra.Command, args []string) error {
 	start := time.Now()
 
 	docColl := collector.NewDocCollector(cfg)
-	docSet, docErrors, err := docColl.Collect(ctx, targetPath)
+	docSet, docErrors, err := docColl.Collect(ctx, ".")
 	if err != nil {
 		return fmt.Errorf("failed to collect doc identifiers: %w", err)
 	}
@@ -319,7 +333,7 @@ func run(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("failed to generate report: %w", err)
 	}
 
-	if err := rep.Write(report, outPath); err != nil {
+	if err := rep.Write(report, reportPath); err != nil {
 		return fmt.Errorf("failed to write report: %w", err)
 	}
 
@@ -333,10 +347,56 @@ func run(cmd *cobra.Command, args []string) error {
 	}
 
 	if !result.Valid {
-		os.Exit(1)
+		return errValidationFailed
 	}
 
 	return nil
+}
+
+func resolveRunProjectRoot(args []string) (string, error) {
+	root := "."
+	if len(args) > 0 {
+		root = args[0]
+	}
+	absolute, err := filepath.Abs(root)
+	if err != nil {
+		return "", fmt.Errorf("resolve project root %q: %w", root, err)
+	}
+	info, err := os.Stat(absolute)
+	if err != nil {
+		return "", fmt.Errorf("resolve project root %q: %w", root, err)
+	}
+	if !info.IsDir() {
+		return "", fmt.Errorf("project root %q is not a directory", root)
+	}
+	return filepath.Clean(absolute), nil
+}
+
+func resolveInvocationOutputPath(path string) (string, error) {
+	if path == "" || path == "-" || filepath.IsAbs(path) {
+		return path, nil
+	}
+	absolute, err := filepath.Abs(path)
+	if err != nil {
+		return "", fmt.Errorf("resolve output path %q: %w", path, err)
+	}
+	return absolute, nil
+}
+
+func withWorkingDirectory(directory string, operation func() error) (err error) {
+	original, err := os.Getwd()
+	if err != nil {
+		return fmt.Errorf("resolve current working directory: %w", err)
+	}
+	if err := os.Chdir(directory); err != nil {
+		return fmt.Errorf("enter project root %q: %w", directory, err)
+	}
+	defer func() {
+		if restoreErr := os.Chdir(original); restoreErr != nil && err == nil {
+			err = fmt.Errorf("restore working directory %q: %w", original, restoreErr)
+		}
+	}()
+	return operation()
 }
 
 func listSkills(cmd *cobra.Command, args []string) error {

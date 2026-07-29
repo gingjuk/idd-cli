@@ -15,19 +15,21 @@ flags, filesystem scope, report destinations, stderr/stdout separation, and
 exit status. Internal package types may change without affecting users as long
 as these behaviors remain stable.
 
-`run [path]` and `lint [path]` use the same concrete workflow:
+`run [project-root]` and `lint [project-root]` use the same concrete workflow:
 
-1. Load configuration from the explicit flag, `./.idd.yaml`, or
-   `./config/.idd.yaml`.
-2. Collect documentation identifiers from the target path.
-3. Collect code annotations from the project working directory.
+1. Resolve the optional path as one project root and enter it.
+2. Load configuration from the explicit flag, `<root>/.idd.yaml`, or
+   `<root>/config/.idd.yaml`.
+3. Collect documentation identifiers and code annotations from that root.
 4. Merge identifiers and execute `Engine.Run`.
 5. Write a finding-centered report.
-6. Exit non-zero when the validation result is invalid.
+6. Restore the caller's working directory.
+7. Exit non-zero when the validation result is invalid.
 
 Verbose diagnostics go to stderr so JSON stdout remains parseable.
-The complete project gate is `run .`: a narrower documentation target does not
-narrow source collection from the current working directory.
+The normal in-project gate is `run .`. Passing an absolute or relative path to
+another project validates that tree without mixing it with source or
+configuration from the caller's working directory.
 
 `llm-markdown` is the agent repair format, Markdown is the human readout, and
 JSON is the automation-facing result. JSON and LLM Markdown expose
@@ -37,10 +39,11 @@ still writes its full report before exiting non-zero.
 
 ### Inputs and scope
 
-The optional path selects documentation input. It does not change the source
-root, which is the current working directory. Global flags select config,
+The optional path selects the complete project root. Relative explicit
+configuration paths resolve inside that root. Global flags select config,
 format, output, verbosity, or config bypass. Invocation flags override loaded
-output values without modifying configuration files.
+output values without modifying configuration files. A relative report output
+path remains relative to the invoking working directory.
 
 ### Outputs and errors
 

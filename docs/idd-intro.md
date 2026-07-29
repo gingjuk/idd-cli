@@ -69,9 +69,11 @@ The approved request is the source of truth. An `intent.md` may be kept as
 project history, but it is not required, SPEC has no Intent-source field, and
 idd-cli creates no Intent-to-SPEC graph.
 
-Run the final validation from the project root. Supplying
-`docs/<single-package>` narrows documentation collection but not source
-annotation collection, so it is not a package-only validity check.
+The final validation normally runs as `idd-cli run .` from the project root.
+The optional positional path is itself a project root, so
+`idd-cli run /path/to/another-worktree` discovers configuration and collects
+both documents and source annotations there. Use `docs status` or
+`docs review-context --docs-path` when documentation input should be narrowed.
 
 ## IDD Identifier Format
 
@@ -401,8 +403,9 @@ missing-document findings.
 The three structural document commands accept one or more targets, deduplicate
 repeated or overlapping paths, and return deterministic aggregate output.
 `docs init` and `docs fix` preflight the whole batch before expected writes.
-`run` and `lint` intentionally retain one documentation root because they build
-one cross-package graph; pass a common ancestor such as `.`.
+`run` and `lint` intentionally retain one project root because they build one
+cross-package graph. Relative configuration paths resolve inside that root;
+relative report output paths remain anchored to the invoking directory.
 
 Deprecated configuration is migration-only. Explicitly configuring
 `validation.consistency_check` produces a non-failing `deprecated-config`

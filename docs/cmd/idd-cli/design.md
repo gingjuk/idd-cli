@@ -60,8 +60,10 @@ final run . --format json ── project gate
 The binary-embedded skill defines semantic authoring behavior.
 `docs init/status/fix` never replace that behavior: they create visible work
 slots, inspect completion, or normalize safe structure.
-`run .` is the complete validity gate because source collection always starts
-from the current project working directory.
+`run .` is the normal complete validity gate. When another directory is
+supplied, `run` resolves it as one project root and executes configuration
+discovery, document/source collection, and engine filesystem checks inside that
+root. The caller's working directory is restored before command completion.
 
 ### Skill discovery and export
 
@@ -113,16 +115,16 @@ overlapping file plans are deduplicated. Role comes only from the exact
 basename; the command never interprets a validation finding as permission to
 rewrite prose or split a long document.
 
-`run` and `lint` keep one positional documentation root. They build one graph
-whose code side remains project-root scoped, so callers select a common
-ancestor instead of supplying several roots that could overlap or imply
-package-isolated validation.
+`run` and `lint` keep one positional project root. They build one graph from
+documents and source in that same tree, preventing a caller in one worktree
+from combining its source with documents selected from another. Focused
+document inspection remains the responsibility of `docs status` and
+`docs review-context --docs-path`.
 
-`docs review-context <SPEC-ID>...` follows the same configuration and
-documentation/source scope as validation, but bypasses the engine.
-`--docs-path` defaults to `.`, and the source root remains the current working
-tree. Moving the path to a flag keeps every positional value unambiguously a
-SPEC identifier.
+`docs review-context <SPEC-ID>...` retains a distinct evidence-gathering scope
+and bypasses the engine. `--docs-path` defaults to `.`, and the source root
+remains the current working tree. Moving the path to a flag keeps every
+positional value unambiguously a SPEC identifier.
 
 The collectors run once, then the builder resolves up to ten unique SPEC owners
 in first-request order. Every context gathers complete bounded record Markdown,
@@ -139,16 +141,17 @@ successful idempotent result, not an error.
 
 `run` and `lint` share the same handler. The handler:
 
-1. resolves the documentation target, defaulting to `.`;
-2. loads configuration in documented precedence order unless `--no-config` is
-   set;
+1. resolves the positional directory as a project root, defaulting to `.`;
+2. enters that root and loads configuration in documented precedence order
+   unless `--no-config` is set;
 3. applies invocation-only format, output, and verbosity flags;
-4. collects documentation from the target and parses supported project source
-   files into normalized Tree-sitter declarations and attached annotations;
+4. collects documentation and parses supported source files from that same
+   root into normalized Tree-sitter declarations and attached annotations;
 5. adds structural and source-parse findings and supplies source analyses to
    the engine before graph validation;
 6. builds a report from the completed result and writes it once;
-7. returns a validation error after report emission when the result is invalid.
+7. restores the caller's working directory; and
+8. returns a validation error after report emission when the result is invalid.
 
 Collection or I/O failures stop the path because the report would be based on
 incomplete evidence. Validation failures do not prevent report generation,
