@@ -1,7 +1,8 @@
 ---
 idd:
-  version: "1.0"
+  version: "1.1"
   package: internal/engine
+  namespace: INTERNAL_ENGINE
 ---
 
 # Testing: internal/engine
@@ -407,33 +408,31 @@ directories produce duplicate-ID findings for each conflicting location.
 documentation observations with one ID in different package directories produce
 duplicate-ID findings for each conflicting location.
 
-## TEST-INTERNAL_ENGINE-035: Same-package ID observations are not package conflicts
+## TEST-INTERNAL_ENGINE-035: Same-directory canonical owners conflict
 
 - **Kind:** `test`
 - **Covers:** `SPEC-INTERNAL_ENGINE-001`, `SPEC-INTERNAL_ENGINE-004`
 
 **Purpose:**
 
-Prove multiple observations of one ID inside the same directory remain valid
-doc/code evidence rather than cross-package duplicate errors.
+Prove two doc-origin declarations of one ID remain competing canonical owners
+even when both files are in the same documentation directory.
 
-**Oracle:** The test passes only when its assertions confirm multiple
-observations of one ID inside the same directory remain valid doc/code evidence rather
-than cross-package duplicate errors.
+**Oracle:** The test passes only when `duplicate-id` is emitted for the two
+same-directory documentation declarations.
 
-## TEST-INTERNAL_ENGINE-036: Duplicate code IDs across packages
+## TEST-INTERNAL_ENGINE-036: Multiple source evidence occurrences
 
 - **Kind:** `test`
 - **Covers:** `SPEC-INTERNAL_ENGINE-001`, `SPEC-INTERNAL_ENGINE-004`
 
 **Purpose:**
 
-Prove source annotations with one ID in different code package directories
-produce code-side duplicate findings.
+Prove source annotations for one canonical ID may appear in different source
+package directories as independent implementation or test evidence.
 
-**Oracle:** The test passes only when its assertions confirm source
-annotations with one ID in different code package directories produce code-side
-duplicate findings.
+**Oracle:** The test passes only when the engine emits no `duplicate-id`
+finding for repeated code-origin observations.
 
 ## TEST-INTERNAL_ENGINE-037: Package-derived duplicate rename guidance
 

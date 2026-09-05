@@ -1,15 +1,16 @@
 ---
 idd:
-  version: "1.0"
+  version: "1.1"
   package: internal/config
+  namespace: INTERNAL_CONFIG
 ---
 
 # Specifications: internal/config
 
 ## SPEC-INTERNAL_CONFIG-001: Root configuration ownership
 
-- **Design:** `ConfigModule`
-- **Contract:** `ConfigurationSchema`
+- **Components:** `ConfigModule`
+- **Contracts:** `ConfigurationSchema`
 
 **Requirement:**
 
@@ -34,53 +35,55 @@ reporter consume the same structure.
 
 ## SPEC-INTERNAL_CONFIG-002: Documentation discovery settings
 
-- **Design:** `ConfigModule`
-- **Contract:** `ConfigurationSchema`
+- **Components:** `ConfigModule`
+- **Contracts:** `ConfigurationSchema`
 
 **Requirement:**
 
-Documentation configuration must carry file patterns, role-specific identifier
-pattern strings, and ignored path patterns without treating any of those values
-as semantic document records.
+Documentation configuration must carry file patterns, optional documentation
+units with one or more project-relative source globs, and ignored paths without
+treating any of those values as semantic document records.
 
 **Acceptance:** The built-in-profile contract test observes the configured
-documentation globs, identifier-pattern roles, and ignored paths through the
+documentation globs, unit mappings, and ignored paths through the
 root configuration. Loading `examples/idd-config-example.yaml` must produce a
 value deeply equal to `Default()`, so a missing or stale discovery value fails
 the executable configuration example.
 
 ### Boundary
 
-The package does not compile or execute the patterns. Empty document patterns
-are normalized by `Validate`; identifier patterns and ignore paths are not
-filled when omitted from a loaded file.
+The package validates unit package paths and source globs, rejecting missing,
+escaping, repeated, or malformed values. Empty document patterns are normalized
+by `Validate`; units and ignore paths are not filled when omitted.
 
-## SPEC-INTERNAL_CONFIG-003: Identifier pattern roles
+## SPEC-INTERNAL_CONFIG-003: Deprecated identifier pattern roles
 
-- **Design:** `ConfigModule`
-- **Contract:** `ConfigurationSchema`
+- **Components:** `ConfigModule`
+- **Contracts:** `ConfigurationSchema`
+- **Status:** `deprecated`
 
 **Requirement:**
 
-Identifier pattern settings must expose distinct strings for SPEC, TEST, and
-contract-TEST recognition so collectors can preserve annotation kind while
-using a common TEST identifier namespace.
+Legacy `docs.identifier_patterns` input must remain recognizable only as
+migration debt; it must not compete with the versioned IDD protocol as a second
+authority for identifier syntax.
 
-**Acceptance:** The default/example equality test preserves all three pattern
-roles as distinct configuration fields. Collector tests then demonstrate that
-SPEC annotations and both TEST annotation kinds retain their configured kind
-while contract and ordinary tests share the TEST identifier namespace.
+**Acceptance:** The public configuration model and built-in defaults expose no
+identifier-pattern fields. Loading YAML that still contains the obsolete key
+emits an actionable deprecation warning stating that the value is ignored and
+should be removed. SPEC and TEST syntax remains consistent across document,
+annotation, trace, and validation paths because `pkg/pattern` owns one grammar.
 
 ### Non-goals
 
-This specification does not require regex compilation or guarantee that an
-authored pattern agrees with the built-in lexical grammar. Invalid regex text
-is detected only by the consuming collector or engine path.
+This record preserves why the old configuration was removed. It does not make
+legacy regex values effective or require current declarations to implement
+the former API.
 
 ## SPEC-INTERNAL_CONFIG-004: Source discovery and annotation settings
 
-- **Design:** `ConfigModule`
-- **Contract:** `ConfigurationSchema`
+- **Components:** `ConfigModule`
+- **Contracts:** `ConfigurationSchema`
 
 **Requirement:**
 
@@ -105,8 +108,8 @@ lexical roles would be empty or ambiguous.
 
 ## SPEC-INTERNAL_CONFIG-005: Validation policy switches
 
-- **Design:** `ConfigModule`
-- **Contract:** `ConfigurationSchema`
+- **Components:** `ConfigModule`
+- **Contracts:** `ConfigurationSchema`
 
 **Requirement:**
 
@@ -136,8 +139,8 @@ built-in policy must choose `Default` or author the values explicitly.
 
 ## SPEC-INTERNAL_CONFIG-006: Deprecated consistency configuration alias
 
-- **Design:** `ConfigModule`
-- **Contract:** `ConfigurationSchema`
+- **Components:** `ConfigModule`
+- **Contracts:** `ConfigurationSchema`
 
 **Requirement:**
 
@@ -162,8 +165,8 @@ diagnostic, and loading never rewrites the source file.
 
 ## SPEC-INTERNAL_CONFIG-007: Validated YAML loading
 
-- **Design:** `ConfigModule`
-- **Contract:** `ConfigurationLoading`
+- **Components:** `ConfigModule`
+- **Contracts:** `ConfigurationLoading`
 
 **Requirement:**
 
@@ -186,8 +189,8 @@ separate cases cover missing paths and invalid annotation maps.
 
 ## SPEC-INTERNAL_CONFIG-008: Complete built-in profile
 
-- **Design:** `ConfigModule`
-- **Contract:** `ConfigurationDefaults`
+- **Components:** `ConfigModule`
+- **Contracts:** `ConfigurationDefaults`
 
 **Requirement:**
 
@@ -211,8 +214,8 @@ this constructor.
 
 ## SPEC-INTERNAL_CONFIG-009: In-place normalization and role-key validation
 
-- **Design:** `ConfigModule`
-- **Contract:** `ConfigurationValidation`
+- **Components:** `ConfigModule`
+- **Contracts:** `ConfigurationValidation`
 
 **Requirement:**
 
@@ -235,8 +238,8 @@ missing, partial, and extended annotation maps.
 
 ## SPEC-INTERNAL_CONFIG-010: Runtime workdir path resolution
 
-- **Design:** `ConfigModule`
-- **Contract:** `RuntimeWorkdir`
+- **Components:** `ConfigModule`
+- **Contracts:** `RuntimeWorkdir`
 
 **Requirement:**
 

@@ -1,7 +1,8 @@
 ---
 idd:
-  version: "1.0"
+  version: "1.1"
   package: pkg/walk
+  namespace: PKG_WALK
 ---
 
 # Design: pkg/walk
@@ -19,6 +20,24 @@ is a document, source file, directory, or irrelevant path.
 Keeping traversal independent from IDD parsing lets collectors reuse one
 ordering and deduplication policy without coupling this package to identifiers,
 configuration structures, or validation results.
+
+**Ownership:**
+
+The component owns synchronous glob expansion, recursive descent, duplicate
+path suppression, callback sequencing, and exact extension matching for
+callers that need a small general filesystem walker.
+
+**Boundary:**
+
+It does not interpret IDD files, apply ignore or documentation-unit policy,
+follow semantic relationships, or decide whether an I/O failure is tolerable.
+Validation-facing scans enforce fail-closed behavior at their owning boundary.
+
+**Decisions:**
+
+Standard-library path operations and a per-call visited set keep this utility
+dependency-free and deterministic for returned path strings. Synchronous
+callbacks expose ordering and failure behavior without background state.
 
 ### Responsibilities
 

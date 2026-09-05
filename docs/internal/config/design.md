@@ -1,7 +1,8 @@
 ---
 idd:
-  version: "1.0"
+  version: "1.1"
   package: internal/config
+  namespace: INTERNAL_CONFIG
 ---
 
 # Design: internal/config
@@ -24,9 +25,28 @@ After CLI loading, the same value may receive one absolute runtime workdir.
 This non-YAML state gives collectors and Engine a shared filesystem base
 without changing process cwd.
 
+**Ownership:**
+
+The component owns the YAML-facing configuration types, built-in defaults,
+file decoding and validation, deprecated-key diagnostics, documentation-unit
+source mappings, and the invocation-local runtime workdir.
+
+**Boundary:**
+
+CLI search precedence and flag overrides remain outside the package, as do
+filesystem traversal, IDD record ownership, graph policy, environment
+expansion, multi-file merging, and semantic interpretation of configured paths.
+
+**Decisions:**
+
+Plain typed structs and explicit validation keep the effective configuration
+inspectable. Stable ID syntax belongs to the versioned IDD protocol rather than
+configurable regexes, while an optional docs.units mapping separates behavior
+ownership from physical source-package layout.
+
 ### Responsibilities
 
-- model document patterns, identifier patterns, source patterns, annotations,
+- model document patterns, documentation units, source patterns, annotations,
   deterministic validation flags, deprecated compatibility settings, and
   output settings;
 - return the full built-in profile used when the CLI chooses defaults;
@@ -53,7 +73,7 @@ values remain untouched and have no runtime effect.
 
 Missing YAML fields that are not explicitly normalized stay at Go zero values.
 In particular, `Load` does not automatically enable every validation boolean,
-populate identifier regexes, or install default ignore paths. This distinction
+populate documentation units, or install default ignore paths. This distinction
 between “use `Default`” and “load a partial file” is observable and must remain
 clear to callers.
 
@@ -64,8 +84,8 @@ serialize. In-place validation avoids a second copy, but callers must not
 assume their input remains unchanged. Unknown top-level YAML fields are not
 rejected because `yaml.Unmarshal` is used without strict known-field mode.
 
-Annotation keys are validated as a closed set because collectors and
-identifier patterns depend on the three semantic roles. Values remain
+Annotation keys are validated as a closed set because collectors depend on the
+three semantic roles. Values remain
 configurable, but validation requires distinct `@`-prefixed tokens without
 whitespace. This prevents two roles from competing for the same syntax-tree
 comment and lets findings quote the actual configured spelling.

@@ -18,6 +18,9 @@ The architecture is shaped by four goals that must hold together:
    stable Markdown or source line and produce a complete repair report.
 4. **Safe adoption:** existing legacy packages continue to validate until they
    are deliberately migrated, and structural repair never guesses semantics.
+5. **ID-centered review:** one canonical declaration, every typed occurrence,
+   and every relation's field provenance remain queryable independently of the
+   current implementation layout.
 
 These goals distinguish structural economy from textual brevity. Minimal
 identity YAML and derived backlinks remove coordination overhead; detailed
@@ -75,13 +78,13 @@ idd-cli follows a graph-first validation architecture with two inputs:
    legacy Markdown metadata.
 2. `CodeCollector` uses pinned Tree-sitter grammars to bind annotations to real
    Go, TypeScript/TSX, JavaScript/JSX, C++, Java, and Python declarations.
-3. `Engine.buildGraph` merges the two origins into a `LinkageGraph`, preserves
-   explicit typed relationships, including the SPEC/TEST coverage backlink
-   already derived by document collection.
+3. The merged stream builds both validation's `LinkageGraph` and a shared
+   `TraceIndex` with separate Entity/Occurrence and Relation/Provenance layers.
 4. Concrete validation methods check structural findings, graph integrity,
    document/code correspondence, and package conventions.
-5. `Reporter` converts one validation result into human Markdown, repair-focused
-   LLM Markdown, or stable JSON.
+5. `Reporter` converts validation or bounded trace projections into human
+   Markdown, repair-focused LLM Markdown, or stable JSON. `trace`,
+   `review-context`, and `docs impacted` reuse the same TraceProject index.
 
 There is no separate Linker or Validator interface in the current
 implementation. Graph construction and rules live in `internal/engine`; the
@@ -99,8 +102,11 @@ docs init/status/fix ── work list + safe structure ─┤
                             DocCollector       CodeCollector
                                   └─────────┬────────┘
                                             ▼
-                                        Engine.Run
-                                            │
+                           LinkageGraph + TraceIndex
+                              ┌─────────────┼──────────────┐
+                              ▼             ▼              ▼
+                          Engine.Run       trace     review/impacted
+                              └─────────────┴──────────────┘
                                             ▼
                                          Reporter
                                   llm-markdown │ JSON
@@ -121,33 +127,41 @@ sound; that remains an explicit authoring/review responsibility.
 
 ## Document ownership model
 
-Each scanned source package directory, including every nested sub-package,
-maps to an equally nested `docs/<package>/` directory and uses four fixed
-Markdown files because their concerns evolve at different rates:
+Each documentation unit maps to `docs/<package>/` and uses four fixed Markdown
+files because their concerns evolve at different rates. When `docs.units` is
+absent, each source package remains its own unit; explicit units may cover
+several source-package globs and every source must map exactly once:
 
 - `design.md` owns named components and the reasons responsibilities are
   divided as they are;
 - `contract.md` owns observable boundaries, errors, invariants, side effects,
   ownership rules, and compatibility promises;
-- `spec.md` owns cohesive behavioral requirements and their selected design
-  and contract;
+- `spec.md` owns cohesive behavioral requirements and their selected Components
+  plus optional Contracts;
 - `testing.md` owns TEST evidence and the TEST-to-SPEC `Covers` relationship.
 
 The exact lowercase basename is the sole role authority and eliminates both
 repeated `related_files` and a duplicate `idd.document` value. Minimal
-frontmatter identifies only version and package; the former role field is
-invalid without a compatibility period. TEST coverage is authored once in
+frontmatter identifies version, current package, and stable namespace; the
+former role field is invalid. Namespace survives path moves and owns the ID
+prefix. TEST coverage is authored once in
 `testing.md`; the engine derives the reverse edge rather than requiring a
 second backlink in `spec.md`.
 
 Small required prose anchors make generated omissions mechanically visible:
-Component `Purpose`, Contract `Guarantees`, SPEC `Requirement` and
+Component `Purpose`, `Ownership`, `Boundary`, and `Decisions`; Contract `Guarantees`; SPEC `Requirement` and
 `Acceptance`, and TEST `Purpose` and `Oracle`. Contract TEST records own
 `Contracts`, the evidence relationship to named Contract guarantees.
 Components may own `Depends on`; optional lifecycle and concern fields remain
 inside the record they describe. The collector normalizes these facts into
 typed graph links and checks local structure before the engine performs
 cross-package target, coverage, and dependency-cycle policy.
+
+Contracts are optional because an internal behavior need not invent a stable
+caller boundary. Contract narrative separates Guarantees from non-guarantees,
+known limitations, and compatibility commitments. Design is concern-driven:
+only declared security, concurrency, persistence, performance, compatibility,
+or other relevant concerns require dedicated narrative.
 
 The design deliberately permits unrestricted Markdown within each record.
 Subordinate headings, diagrams, examples, rationale, edge cases, and operational
@@ -175,14 +189,17 @@ One `run` invocation has the following lifecycle:
    `@test`, and `@test-contract` only from real comments adjacent to normalized
    declarations. Syntax errors become findings and never trigger regex
    fallback.
-5. Merge identifiers by ID and origin. Matching document and source
-   observations establish code-to-document correspondence directly; source
+5. Merge identifiers by ID and origin into logical entities while retaining
+   each declaration, reference, implementation, test-evidence, and mention
+   occurrence. Matching document and source observations establish correspondence; source
    files do not repeat `Spec`, `Contract`, or `Test` paths.
-6. Construct the explicitly typed or legacy directed links supplied by
-   collection, and verify reciprocal types where both directions are present.
+6. Construct explicitly typed links with the exact authoring file, line, field,
+   and record provenance, then expose stable inbound and outbound queries.
 7. Add collector findings, run graph and repository validation rules, sort the
    result deterministically, and build optional graph statistics.
-8. Write the complete selected report. Validation failure produces a non-zero
+8. Apply lifecycle policy: planned intent need not be delivered, while every
+   active SPEC requires implementation and TEST evidence.
+9. Write the complete selected report. Validation failure produces a non-zero
    exit only after the report is available; traversal or I/O failure returns an
    operational error.
 
@@ -219,6 +236,7 @@ idd-cli/
 │   ├── config/         # configuration loading and normalization
 │   ├── engine/         # graph construction and concrete validation rules
 │   ├── graph/          # directed traceability data structure
+│   ├── impact/         # Git change extraction and impacted queue projection
 │   ├── model/          # cross-stage identifiers, findings, and report values
 │   └── reporter/       # validation reports and review-context projections
 └── pkg/
@@ -238,13 +256,13 @@ domain rules.
 2. **Document commands:** `InitDocumentPackages` creates one or more structural
    sets; `InspectDocumentCompletions` exposes deduplicated remaining scaffold
    work; `RepairDocumentTargets` normalizes derived identity while preserving
-   bodies and markers; `BuildSpecReviewContexts` gathers ordered evidence-only
-   semantic review bundles through one shared scan.
+   bodies and markers; `BuildSpecReviewContexts` and impacted projections reuse
+   one TraceProject for ordered evidence-only review bundles.
 3. **Collection:** `DocCollector.Collect` selects self-describing or legacy
    mode per package; `CodeCollector.CollectWithErrors` independently produces
    source evidence and normalized language analyses.
-4. **Graph and validation:** `Engine.SetSourceAnalyses` and `Engine.Run` merge
-   origins, derive typed links, apply concrete checks, and retain structural
+4. **Graph and validation:** TraceIndex preserves entities, occurrences, and
+   provenance; `Engine.Run` applies concrete checks and retains structural
    findings collected earlier.
 5. **Reporting:** `Reporter.Write` projects the result for people, agents, or
    automation and selects stdout or an explicit output file.

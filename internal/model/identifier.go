@@ -58,6 +58,13 @@ type Identifier struct {
 	Links      []string
 	TypedLinks []IdentifierLink
 	Origin     Origin
+	// Namespace is the stable logical ID namespace declared by an IDD unit.
+	// It intentionally does not change when the owning documents or sources move.
+	Namespace string
+	// Status is the authored lifecycle state of the canonical declaration.
+	Status string
+	// DocumentRole records the canonical Markdown role that owns a declaration.
+	DocumentRole string
 	// Kind distinguishes behavior and contract TEST definitions/annotations.
 	Kind string
 	// Derived marks package-scoped Component and Contract graph nodes that are
@@ -109,6 +116,22 @@ func (i *Identifier) AddLink(ref string) {
 // @implement SPEC-INTERNAL_MODEL-003
 func (i *Identifier) AddTypedLink(ref string, linkType LinkType) {
 	i.TypedLinks = append(i.TypedLinks, IdentifierLink{Ref: ref, Type: linkType})
+}
+
+// AddTypedLinkAt adds a typed relationship with field-level provenance.
+func (i *Identifier) AddTypedLinkAt(ref string, linkType LinkType, source string, line int, field string, recordIDs ...string) {
+	recordID := i.ID
+	if len(recordIDs) > 0 && recordIDs[0] != "" {
+		recordID = recordIDs[0]
+	}
+	i.TypedLinks = append(i.TypedLinks, IdentifierLink{
+		Ref:      ref,
+		Type:     linkType,
+		Source:   source,
+		Line:     line,
+		Field:    field,
+		RecordID: recordID,
+	})
 }
 
 // SetOrigin sets the origin of this identifier.
@@ -239,12 +262,36 @@ func (s *IdentifierSet) Count() int {
 	return len(s.byID)
 }
 
-// DuplicateDocGroups returns groups of doc-origin identifiers that share the same ID
-// across multiple source directories (packages), indicating a naming conflict.
-// Multiple files in the same directory referencing the same ID are not a conflict.
+// DuplicateDocGroups returns every group with more than one doc-origin
+// declaration for the same logical ID. References and mentions are represented
+// as occurrences/typed links, so every Identifier here is a competing owner.
 // @implement SPEC-INTERNAL_MODEL-004
 func (s *IdentifierSet) DuplicateDocGroups() [][]*Identifier {
-	return s.duplicatesAcrossDirectories(OriginDoc)
+	keys := make([]string, 0, len(s.byID))
+	for id := range s.byID {
+		keys = append(keys, id)
+	}
+	sort.Strings(keys)
+	var groups [][]*Identifier
+	for _, id := range keys {
+		group := make([]*Identifier, 0, len(s.byID[id]))
+		for _, identifier := range s.byID[id] {
+			if identifier.Origin == OriginDoc {
+				group = append(group, identifier)
+			}
+		}
+		if len(group) <= 1 {
+			continue
+		}
+		sort.Slice(group, func(i, j int) bool {
+			if group[i].Source != group[j].Source {
+				return group[i].Source < group[j].Source
+			}
+			return group[i].Line < group[j].Line
+		})
+		groups = append(groups, group)
+	}
+	return groups
 }
 
 // DuplicateCodeGroups returns groups of code-origin identifiers that share the same ID

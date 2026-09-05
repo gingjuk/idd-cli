@@ -1,7 +1,8 @@
 ---
 idd:
-  version: "1.0"
+  version: "1.1"
   package: cmd/idd-cli
+  namespace: CMD_IDD_CLI
 ---
 
 # Contracts: cmd/idd-cli
@@ -78,10 +79,10 @@ requirements and architecture.
 - deduplicates repeated packages and preflights the whole batch before writing;
 - creates or adopts exactly `design.md`, `contract.md`, `spec.md`, and
   `testing.md` under `docs/<package>/`;
-- treats each nested source sub-package as an independent invocation and
-  equally nested documentation set;
-- writes only version/package identity because the exact basename is the sole
-  role authority;
+- without explicit `docs.units`, treats each nested source sub-package as an
+  independent invocation and equally nested documentation set;
+- writes version, current package, and stable namespace identity because the
+  exact basename is the sole role authority;
 - never overwrites existing IDD or legacy metadata;
 - refuses legacy marker or `related_files` metadata before writing anything;
 - creates structural headings with stable `idd:scaffold` markers, never fake
@@ -273,8 +274,8 @@ compared directly with the binary-owned version.
 
 `docs review-context <SPEC-ID>...` emits deterministic evidence after one
 documentation scan and one source scan. One SPEC uses schema
-`idd.spec_review_context.v1`; multiple SPECs use
-`idd.spec_review_context_batch.v1` with first-request ordering. `--docs-path`
+`idd.spec_review_context.v2`; multiple SPECs use
+`idd.spec_review_context_batch.v2` with first-request ordering. `--docs-path`
 selects documentation input without conflicting with positional SPEC IDs.
 
 Each context includes the selected canonical SPEC, named Contract guarantees,

@@ -306,15 +306,19 @@ func applyPendingDocumentWrites(pending []pendingDocumentWrite) ([]string, error
 
 func newIDDDocument(packagePath, role string) *IDDDocument {
 	return &IDDDocument{
-		Version:  iddDocumentVersion,
-		Package:  filepath.ToSlash(packagePath),
-		Document: role,
+		Version:   iddDocumentVersion,
+		Package:   filepath.ToSlash(packagePath),
+		Namespace: moduleFromPackage(packagePath),
+		Document:  role,
 	}
 }
 
 func normalizeIDDDocument(document *IDDDocument, packagePath, role string) {
 	document.Version = iddDocumentVersion
 	document.Package = filepath.ToSlash(packagePath)
+	if document.Namespace == "" {
+		document.Namespace = moduleFromPackage(packagePath)
+	}
 	document.Document = role
 }
 

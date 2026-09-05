@@ -4,13 +4,13 @@ import (
 	"context"
 	"fmt"
 	"os"
-	"path/filepath"
 	"sort"
 	"strconv"
 	"strings"
 	"unicode/utf8"
 
 	"github.com/jingxu9x/idd-cli/internal/config"
+	"github.com/jingxu9x/idd-cli/internal/graph"
 	"github.com/jingxu9x/idd-cli/internal/model"
 	"github.com/jingxu9x/idd-cli/pkg/pattern"
 	"github.com/yuin/goldmark"
@@ -19,8 +19,8 @@ import (
 )
 
 const (
-	reviewContextSchema            = "idd.spec_review_context.v1"
-	reviewContextBatchSchema       = "idd.spec_review_context_batch.v1"
+	reviewContextSchema            = "idd.spec_review_context.v2"
+	reviewContextBatchSchema       = "idd.spec_review_context_batch.v2"
 	reviewContextMaxSpecs          = 10
 	reviewRecordCharacters         = 20000
 	reviewExcerptCharacters        = 8000
@@ -41,7 +41,8 @@ type SpecReviewContextBatch struct {
 type SpecReviewContext struct {
 	Schema       string                     `json:"schema"`
 	Spec         ReviewContextSpec          `json:"spec"`
-	Contract     *ReviewContextContract     `json:"contract,omitempty"`
+	Components   []ReviewContextComponent   `json:"components"`
+	Contracts    []ReviewContextContract    `json:"contracts"`
 	Tests        []ReviewContextTest        `json:"tests"`
 	Declarations []ReviewContextDeclaration `json:"declarations"`
 	Issues       []ReviewContextIssue       `json:"issues,omitempty"`
@@ -51,22 +52,38 @@ type SpecReviewContext struct {
 // ReviewContextSpec preserves the selected authored SPEC and its location.
 // @implement SPEC-INTERNAL_COLLECTOR-026
 type ReviewContextSpec struct {
-	ID          string `json:"id"`
-	Title       string `json:"title"`
-	Package     string `json:"package"`
-	File        string `json:"file"`
-	Line        int    `json:"line"`
-	Design      string `json:"design"`
-	Contract    string `json:"contract"`
-	Requirement string `json:"requirement"`
-	Acceptance  string `json:"acceptance"`
-	Markdown    string `json:"markdown"`
-	Truncated   bool   `json:"truncated"`
+	ID          string   `json:"id"`
+	Title       string   `json:"title"`
+	Package     string   `json:"package"`
+	File        string   `json:"file"`
+	Line        int      `json:"line"`
+	Components  []string `json:"components"`
+	Contracts   []string `json:"contracts"`
+	Requirement string   `json:"requirement"`
+	Acceptance  string   `json:"acceptance"`
+	Markdown    string   `json:"markdown"`
+	Truncated   bool     `json:"truncated"`
+}
+
+// ReviewContextComponent preserves the Component and its authored design
+// boundary selected through the shared trace index.
+type ReviewContextComponent struct {
+	ID        string `json:"id"`
+	Name      string `json:"name"`
+	Purpose   string `json:"purpose"`
+	Ownership string `json:"ownership,omitempty"`
+	Boundary  string `json:"boundary,omitempty"`
+	Decisions string `json:"decisions,omitempty"`
+	File      string `json:"file"`
+	Line      int    `json:"line"`
+	Markdown  string `json:"markdown"`
+	Truncated bool   `json:"truncated"`
 }
 
 // ReviewContextContract preserves the guarantees referenced by the SPEC.
 // @implement SPEC-INTERNAL_COLLECTOR-026
 type ReviewContextContract struct {
+	ID         string `json:"id"`
 	Name       string `json:"name"`
 	Guarantees string `json:"guarantees"`
 	File       string `json:"file"`
@@ -116,7 +133,7 @@ type ReviewContextIssue struct {
 
 // BuildSpecReviewContext assembles bounded evidence for an external semantic
 // review. It does not score or approve the selected documentation.
-// @implement SPEC-INTERNAL_COLLECTOR-026
+// @implement SPEC-INTERNAL_COLLECTOR-026, SPEC-INTERNAL_COLLECTOR-028
 func BuildSpecReviewContext(
 	ctx context.Context,
 	cfg *config.Config,
@@ -133,7 +150,7 @@ func BuildSpecReviewContext(
 
 // BuildSpecReviewContexts assembles an ordered bounded batch while sharing one
 // documentation collection and one source collection across all requested IDs.
-// @implement SPEC-INTERNAL_COLLECTOR-026
+// @implement SPEC-INTERNAL_COLLECTOR-026, SPEC-INTERNAL_COLLECTOR-028
 func BuildSpecReviewContexts(
 	ctx context.Context,
 	cfg *config.Config,
@@ -145,50 +162,105 @@ func BuildSpecReviewContexts(
 	if err != nil {
 		return nil, err
 	}
-	docCollector := NewDocCollector(cfg)
-	docSet, docErrors, err := docCollector.Collect(ctx, docsPath)
+	project, err := BuildTraceProject(ctx, cfg, docsPath, sourcePath)
 	if err != nil {
-		return nil, fmt.Errorf("collect documentation: %w", err)
+		return nil, err
 	}
-
 	batch := &SpecReviewContextBatch{
 		Schema:           reviewContextBatchSchema,
 		RequestedSpecIDs: requested,
 		Contexts:         make([]*SpecReviewContext, 0, len(requested)),
 	}
 	for _, specID := range requested {
-		contextValue, buildErr := buildReviewDocumentContext(docSet, docErrors, specID)
-		if buildErr != nil {
-			return nil, buildErr
+		dossier, traceErr := project.Trace(specID, TraceOptions{Depth: 2})
+		if traceErr != nil {
+			return nil, traceErr
 		}
+		if dossier.Entity == nil || dossier.Entity.Resolution == string(graph.ResolutionUnresolved) {
+			return nil, fmt.Errorf("SPEC %s was not found in a canonical spec.md record", specID)
+		}
+		if dossier.Entity.Resolution == string(graph.ResolutionAmbiguous) {
+			locations := make([]string, 0, len(dossier.Owners))
+			for _, owner := range dossier.Owners {
+				locations = append(locations, fmt.Sprintf("%s:%d", owner.Path, owner.Line))
+			}
+			return nil, fmt.Errorf("SPEC %s has multiple document owners: %s", specID, strings.Join(locations, ", "))
+		}
+		contextValue := projectTraceReviewContext(dossier)
+		sortReviewContext(contextValue)
 		batch.Contexts = append(batch.Contexts, contextValue)
 	}
-
-	codeCollector := NewCodeCollector(cfg)
-	_, codeErrors, err := codeCollector.CollectWithErrors(ctx, sourcePath)
-	if err != nil {
-		return nil, fmt.Errorf("collect source: %w", err)
-	}
-	analyses := codeCollector.Analyses()
-	sort.Slice(analyses, func(i, j int) bool { return analyses[i].Path < analyses[j].Path })
-	sourceLines := make(map[string][]string)
-	for _, contextValue := range batch.Contexts {
-		specID := contextValue.Spec.ID
-		contextValue.Issues = append(
-			contextValue.Issues,
-			reviewIssuesForSpecSource(codeErrors, specID)...,
-		)
-		if err := addReviewDeclarationEvidence(
-			contextValue,
-			analyses,
-			sourceLines,
-			specID,
-		); err != nil {
-			return nil, err
-		}
-		sortReviewContext(contextValue)
-	}
 	return batch, nil
+}
+
+func projectTraceReviewContext(dossier *TraceDossier) *SpecReviewContext {
+	canonical := dossier.Canonical
+	result := &SpecReviewContext{
+		Schema:       reviewContextSchema,
+		Components:   make([]ReviewContextComponent, 0, len(dossier.Components)),
+		Contracts:    make([]ReviewContextContract, 0, len(dossier.Contracts)),
+		Tests:        make([]ReviewContextTest, 0, len(dossier.Tests)),
+		Declarations: make([]ReviewContextDeclaration, 0, len(dossier.Implementations)),
+		Issues:       append([]ReviewContextIssue(nil), dossier.Findings...),
+		Truncated:    dossier.Truncated,
+	}
+	if canonical != nil {
+		result.Spec = ReviewContextSpec{
+			ID: dossier.Query.ID, Title: canonical.Title, Package: canonical.Package,
+			File: canonical.Path, Line: canonical.Line, Requirement: canonical.Requirement,
+			Acceptance: canonical.Acceptance, Markdown: canonical.Markdown, Truncated: canonical.Truncated,
+		}
+	}
+	for _, declaration := range dossier.Implementations {
+		if containsString(declaration.References, dossier.Query.ID) {
+			result.Declarations = append(result.Declarations, declaration)
+		}
+	}
+	for _, relation := range dossier.OutboundRelations {
+		switch relation.Type {
+		case string(model.LinkDesignedBy), string(model.LinkReferences):
+			if strings.HasPrefix(relation.To, "component:") {
+				result.Spec.Components = append(result.Spec.Components, relation.To)
+			}
+		case string(model.LinkConstrainedBy), string(model.LinkContract):
+			if strings.HasPrefix(relation.To, "contract:") {
+				result.Spec.Contracts = append(result.Spec.Contracts, relation.To)
+			}
+		}
+	}
+	result.Spec.Components = uniqueSortedStrings(result.Spec.Components)
+	result.Spec.Contracts = uniqueSortedStrings(result.Spec.Contracts)
+	for _, component := range dossier.Components {
+		result.Components = append(result.Components, ReviewContextComponent(component))
+	}
+	for _, contract := range dossier.Contracts {
+		result.Contracts = append(result.Contracts, ReviewContextContract(contract))
+	}
+	for _, test := range dossier.Tests {
+		if !containsString(test.Covers, dossier.Query.ID) {
+			continue
+		}
+		result.Tests = append(result.Tests, ReviewContextTest{
+			ID: test.ID, Title: test.Title, Kind: test.Kind, Purpose: test.Purpose,
+			Oracle: test.Oracle, Contracts: append([]string(nil), test.Contracts...),
+			File: test.File, Line: test.Line, Markdown: test.Markdown, Truncated: test.Truncated,
+		})
+		result.Declarations = append(result.Declarations, test.Declarations...)
+	}
+	return result
+}
+
+func uniqueSortedStrings(values []string) []string {
+	seen := make(map[string]bool, len(values))
+	result := make([]string, 0, len(values))
+	for _, value := range values {
+		if value != "" && !seen[value] {
+			seen[value] = true
+			result = append(result, value)
+		}
+	}
+	sort.Strings(result)
+	return result
 }
 
 func normalizeReviewSpecIDs(specIDs []string) ([]string, error) {
@@ -216,212 +288,12 @@ func normalizeReviewSpecIDs(specIDs []string) ([]string, error) {
 	return requested, nil
 }
 
-func buildReviewDocumentContext(
-	docSet *model.IdentifierSet,
-	docErrors []*model.ValidationError,
-	specID string,
-) (*SpecReviewContext, error) {
-	specDocument, specRecord, specIndex, err := resolveReviewSpec(docSet, specID)
-	if err != nil {
-		return nil, err
-	}
-
-	specMarkdown, specTruncated := boundedReviewRecordMarkdown(specDocument, "specs", specIndex)
-	result := &SpecReviewContext{
-		Schema: reviewContextSchema,
-		Spec: ReviewContextSpec{
-			ID:          specRecord.ID,
-			Title:       specRecord.Title,
-			Package:     specDocument.Metadata.Package,
-			File:        specDocument.Path,
-			Line:        specDocument.Index.recordLine("specs", specIndex),
-			Design:      specRecord.Design,
-			Contract:    specRecord.Contract,
-			Requirement: specRecord.Requirement,
-			Acceptance:  specRecord.Acceptance,
-			Markdown:    specMarkdown,
-			Truncated:   specTruncated,
-		},
-		Tests:        make([]ReviewContextTest, 0),
-		Declarations: make([]ReviewContextDeclaration, 0),
-		Issues:       reviewIssuesForDocumentPackage(docErrors, filepath.Dir(specDocument.Path)),
-		Truncated:    specTruncated,
-	}
-
-	if err := addReviewDocumentEvidence(result, docSet, specDocument, specRecord); err != nil {
-		return nil, err
-	}
-	return result, nil
-}
-
-func resolveReviewSpec(
-	set *model.IdentifierSet,
-	specID string,
-) (*parsedIDDDocument, IDDDocumentSpec, int, error) {
-	var owners []*model.Identifier
-	for _, identifier := range set.GetAll(specID) {
-		if identifier.Origin == model.OriginDoc && filepath.Base(identifier.Source) == "spec.md" {
-			owners = append(owners, identifier)
-		}
-	}
-	if len(owners) == 0 {
-		return nil, IDDDocumentSpec{}, 0, fmt.Errorf("SPEC %s was not found in canonical spec.md records", specID)
-	}
-	if len(owners) > 1 {
-		locations := make([]string, 0, len(owners))
-		for _, owner := range owners {
-			locations = append(locations, fmt.Sprintf("%s:%d", owner.Source, owner.Line))
-		}
-		sort.Strings(locations)
-		return nil, IDDDocumentSpec{}, 0, fmt.Errorf(
-			"SPEC %s has multiple document owners: %s",
-			specID,
-			strings.Join(locations, ", "),
-		)
-	}
-
-	path := owners[0].Source
-	parsed, err := readParsedIDDDocument(path)
-	if err != nil {
-		return nil, IDDDocumentSpec{}, 0, err
-	}
-	for index, spec := range parsed.Metadata.Specs {
-		if spec.ID == specID {
-			return parsed, spec, index, nil
-		}
-	}
-	return nil, IDDDocumentSpec{}, 0, fmt.Errorf("SPEC %s was not found in %s", specID, path)
-}
-
-func addReviewDocumentEvidence(
-	result *SpecReviewContext,
-	docSet *model.IdentifierSet,
-	specDocument *parsedIDDDocument,
-	spec IDDDocumentSpec,
-) error {
-	if err := addReviewContractEvidence(result, docSet, specDocument, spec); err != nil {
-		return err
-	}
-	return addReviewTestEvidence(result, docSet, spec.ID)
-}
-
-func addReviewContractEvidence(
-	result *SpecReviewContext,
-	docSet *model.IdentifierSet,
-	specDocument *parsedIDDDocument,
-	spec IDDDocumentSpec,
-) error {
-	targetPackage, targetName := splitIDDScopedName(
-		specDocument.Metadata.Package,
-		spec.Contract,
-	)
-	owners := append(
-		[]*model.Identifier(nil),
-		docSet.GetAll(derivedContractID(targetPackage, targetName))...,
-	)
-	sort.Slice(owners, func(i, j int) bool {
-		if owners[i].Source != owners[j].Source {
-			return owners[i].Source < owners[j].Source
-		}
-		return owners[i].Line < owners[j].Line
-	})
-	for _, owner := range owners {
-		if owner.Origin != model.OriginDoc || owner.Kind != "contract" {
-			continue
-		}
-		document, err := readParsedIDDDocument(owner.Source)
-		if err != nil {
-			return err
-		}
-		for index, contract := range document.Metadata.ContractRecords {
-			line := document.Index.recordLine("contracts", index)
-			if contract.Name != targetName || line != owner.Line {
-				continue
-			}
-			markdown, truncated := boundedReviewRecordMarkdown(document, "contracts", index)
-			result.Contract = &ReviewContextContract{
-				Name:       contract.Name,
-				Guarantees: contract.Guarantees,
-				File:       document.Path,
-				Line:       line,
-				Markdown:   markdown,
-				Truncated:  truncated,
-			}
-			result.Truncated = result.Truncated || truncated
-			return nil
-		}
-	}
-	return nil
-}
-
-func addReviewTestEvidence(
-	result *SpecReviewContext,
-	docSet *model.IdentifierSet,
-	specID string,
-) error {
-	documents := make(map[string]*parsedIDDDocument)
-	seen := make(map[string]bool)
-	for _, identifier := range docSet.Tests {
-		if identifier.Origin != model.OriginDoc ||
-			!identifierHasTypedLink(identifier, specID, model.LinkImplements) {
-			continue
-		}
-		document := documents[identifier.Source]
-		if document == nil {
-			var err error
-			document, err = readParsedIDDDocument(identifier.Source)
-			if err != nil {
-				return err
-			}
-			documents[identifier.Source] = document
-		}
-		for index, test := range document.Metadata.Tests {
-			line := document.Index.recordLine("tests", index)
-			key := strings.Join(
-				[]string{document.Path, strconv.Itoa(line), test.ID},
-				"\x00",
-			)
-			if seen[key] || test.ID != identifier.ID || line != identifier.Line {
-				continue
-			}
-			seen[key] = true
-			markdown, truncated := boundedReviewRecordMarkdown(document, "tests", index)
-			result.Tests = append(result.Tests, ReviewContextTest{
-				ID:        test.ID,
-				Title:     test.Title,
-				Kind:      test.Kind,
-				Purpose:   test.Purpose,
-				Oracle:    test.Oracle,
-				Contracts: append([]string(nil), test.Contracts...),
-				File:      document.Path,
-				Line:      line,
-				Markdown:  markdown,
-				Truncated: truncated,
-			})
-			result.Truncated = result.Truncated || truncated
-		}
-	}
-	return nil
-}
-
-func identifierHasTypedLink(
-	identifier *model.Identifier,
-	target string,
-	linkType model.LinkType,
-) bool {
-	for _, link := range identifier.TypedLinks {
-		if link.Ref == target && link.Type == linkType {
-			return true
-		}
-	}
-	return false
-}
-
 func addReviewDeclarationEvidence(
 	result *SpecReviewContext,
 	analyses []*SourceAnalysis,
 	sourceLines map[string][]string,
 	specID string,
+	resolvePath func(string) string,
 ) error {
 	remaining := reviewContextExcerptCharacters
 	testIDs := make(map[string]bool, len(result.Tests))
@@ -431,7 +303,11 @@ func addReviewDeclarationEvidence(
 	for _, analysis := range analyses {
 		lines, found := sourceLines[analysis.Path]
 		if !found {
-			content, err := os.ReadFile(analysis.Path)
+			path := analysis.Path
+			if resolvePath != nil {
+				path = resolvePath(path)
+			}
+			content, err := os.ReadFile(path)
 			if err != nil {
 				return fmt.Errorf("read declaration source %s: %w", analysis.Path, err)
 			}
@@ -528,21 +404,6 @@ func boundedDeclarationExcerpt(
 	return truncateReviewText(excerpt, limit), true
 }
 
-func readParsedIDDDocument(path string) (*parsedIDDDocument, error) {
-	data, err := os.ReadFile(path)
-	if err != nil {
-		return nil, fmt.Errorf("read review document %s: %w", path, err)
-	}
-	parsed, detected, err := parseIDDDocument(path, data)
-	if err != nil {
-		return nil, fmt.Errorf("parse review document %s: %w", path, err)
-	}
-	if !detected {
-		return nil, fmt.Errorf("%s is not a self-describing IDD document", path)
-	}
-	return parsed, nil
-}
-
 func boundedReviewRecordMarkdown(
 	document *parsedIDDDocument,
 	section string,
@@ -590,45 +451,6 @@ func truncateReviewText(value string, limit int) string {
 	return value[:limit]
 }
 
-func reviewIssuesForDocumentPackage(
-	errors []*model.ValidationError,
-	directory string,
-) []ReviewContextIssue {
-	issues := make([]ReviewContextIssue, 0, len(errors))
-	for _, validationError := range errors {
-		sourcePath := validationErrorSourcePath(validationError.Source)
-		if sourcePath != directory && filepath.Dir(sourcePath) != directory {
-			continue
-		}
-		issues = append(issues, ReviewContextIssue{
-			Rule:    validationError.Rule,
-			Message: validationError.Message,
-			Source:  validationError.Source,
-		})
-	}
-	return issues
-}
-
-func reviewIssuesForSpecSource(
-	errors []*model.ValidationError,
-	specID string,
-) []ReviewContextIssue {
-	issues := make([]ReviewContextIssue, 0, len(errors))
-	for _, validationError := range errors {
-		sourcePath := validationErrorSourcePath(validationError.Source)
-		content, err := os.ReadFile(sourcePath)
-		if err != nil || !strings.Contains(string(content), specID) {
-			continue
-		}
-		issues = append(issues, ReviewContextIssue{
-			Rule:    validationError.Rule,
-			Message: validationError.Message,
-			Source:  validationError.Source,
-		})
-	}
-	return issues
-}
-
 func validationErrorSourcePath(source string) string {
 	index := strings.LastIndex(source, ":")
 	if index == -1 {
@@ -641,6 +463,24 @@ func validationErrorSourcePath(source string) string {
 }
 
 func sortReviewContext(result *SpecReviewContext) {
+	sort.Slice(result.Components, func(i, j int) bool {
+		if result.Components[i].ID != result.Components[j].ID {
+			return result.Components[i].ID < result.Components[j].ID
+		}
+		if result.Components[i].File != result.Components[j].File {
+			return result.Components[i].File < result.Components[j].File
+		}
+		return result.Components[i].Line < result.Components[j].Line
+	})
+	sort.Slice(result.Contracts, func(i, j int) bool {
+		if result.Contracts[i].ID != result.Contracts[j].ID {
+			return result.Contracts[i].ID < result.Contracts[j].ID
+		}
+		if result.Contracts[i].File != result.Contracts[j].File {
+			return result.Contracts[i].File < result.Contracts[j].File
+		}
+		return result.Contracts[i].Line < result.Contracts[j].Line
+	})
 	sort.Slice(result.Tests, func(i, j int) bool {
 		if result.Tests[i].ID != result.Tests[j].ID {
 			return result.Tests[i].ID < result.Tests[j].ID

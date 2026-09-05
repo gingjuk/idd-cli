@@ -18,11 +18,11 @@ func TestRenderIDDDocumentTemplate_ListsSchemaRequiredFields(t *testing.T) {
 		role string
 		want []string
 	}{
-		{"design", []string{"Required fields: Purpose."}},
+		{"design", []string{"Required fields: Purpose, Ownership, Boundary, Decisions."}},
 		{"contract", []string{"Required fields: Guarantees."}},
 		{
 			"spec",
-			[]string{"Required fields: Design, Contract, Requirement, Acceptance."},
+			[]string{"Required fields: Components, Requirement, Acceptance."},
 		},
 		{
 			"testing",
@@ -70,12 +70,7 @@ func TestInspectDocumentCompletion_GeneratedSlots(t *testing.T) {
 
 	wantSlots := []string{
 		"contract.records",
-		"design.architecture",
 		"design.components",
-		"design.dependencies",
-		"design.function-composition",
-		"design.package-layout",
-		"design.testability-hooks",
 		"spec.records",
 		"testing.records",
 	}
@@ -153,8 +148,8 @@ func TestInspectDocumentCompletion_TreeSkipsLegacyRoleFiles(t *testing.T) {
 	if err != nil {
 		t.Fatalf("InspectDocumentCompletion() error = %v", err)
 	}
-	if status.Status != "incomplete" || len(status.IncompleteSlots) != 9 {
-		t.Fatalf("status = %#v, want only the generated package's nine slots", status)
+	if status.Status != "incomplete" || len(status.IncompleteSlots) != 4 {
+		t.Fatalf("status = %#v, want only the generated package's four slots", status)
 	}
 	for _, slot := range status.IncompleteSlots {
 		if strings.Contains(slot.File, "architecture") {
@@ -241,13 +236,46 @@ func TestInspectDocumentCompletion_MarkerRemovalDoesNotCompleteEmptySlots(t *tes
 	if err != nil {
 		t.Fatalf("InspectDocumentCompletion() error = %v", err)
 	}
-	if status.Status != "incomplete" || len(status.IncompleteSlots) != 9 {
-		t.Fatalf("status after deleting markers = %#v, want nine incomplete slots", status)
+	if status.Status != "incomplete" || len(status.IncompleteSlots) != 4 {
+		t.Fatalf("status after deleting markers = %#v, want three required records and an explicit no-contract decision", status)
 	}
 	for _, slot := range status.IncompleteSlots {
 		if strings.Contains(slot.Reason, "marker remains") {
 			t.Errorf("slot %s still reports a removed marker: %q", slot.Slot, slot.Reason)
 		}
+	}
+}
+
+// @test-contract TEST-INTERNAL_COLLECTOR-021
+func TestHasOptionalCollectionExplanation(t *testing.T) {
+	tests := []struct {
+		name string
+		body string
+		want bool
+	}{
+		{
+			name: "explicit no-contract decision",
+			body: "# Contracts\n\nThis documentation unit owns no stable external contract.\n",
+			want: true,
+		},
+		{
+			name: "generated guidance is not a decision",
+			body: "# Contracts\n\n> If no stable boundary exists, explain that explicitly.\n",
+			want: false,
+		},
+		{
+			name: "scaffold marker is not a decision",
+			body: "# Contracts\n\n<!-- idd:scaffold slot=\"contract.records\" -->\n",
+			want: false,
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			if got := hasOptionalCollectionExplanation([]byte(test.body)); got != test.want {
+				t.Fatalf("hasOptionalCollectionExplanation() = %t, want %t", got, test.want)
+			}
+		})
 	}
 }
 
@@ -296,6 +324,12 @@ func TestInspectDocumentCompletion_CompletedDocuments(t *testing.T) {
 
 **Purpose:** Runner owns execution state and isolates dependency failures.
 
+**Ownership:** Runner owns normalized execution state.
+
+**Boundary:** Filesystem discovery and presentation stay outside Runner.
+
+**Decisions:** Runner validates before executing any state transition.
+
 ## Architecture
 
 Requests flow through a normalized model before execution.
@@ -329,8 +363,8 @@ validation findings.
 
 ## SPEC-INTERNAL_EXAMPLE-001: Deterministic execution
 
-- **Design:** ` + "`Runner`" + `
-- **Contract:** ` + "`Runner`" + `
+- **Components:** ` + "`Runner`" + `
+- **Contracts:** ` + "`Runner`" + `
 
 **Requirement:**
 
@@ -396,8 +430,8 @@ func TestInspectDocumentCompletion_ReportsIncompleteRecordFields(t *testing.T) {
 
 ## SPEC-INTERNAL_EXAMPLE-001: Deterministic execution
 
-- **Design:** ` + "`Runner`" + `
-- **Contract:** ` + "`Runner`" + `
+- **Components:** ` + "`Runner`" + `
+- **Contracts:** ` + "`Runner`" + `
 
 **Requirement:** Execution is deterministic.
 `,
@@ -520,7 +554,7 @@ func TestRepairDocuments_PreservesScaffoldMarkers(t *testing.T) {
 	if before != after {
 		t.Errorf("RepairDocuments() changed generated body:\nbefore:\n%s\nafter:\n%s", before, after)
 	}
-	if !strings.Contains(after, `<!-- idd:scaffold slot="design.architecture" -->`) {
+	if !strings.Contains(after, `<!-- idd:scaffold slot="design.components" -->`) {
 		t.Error("RepairDocuments() removed scaffold marker")
 	}
 }

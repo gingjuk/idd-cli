@@ -1,7 +1,8 @@
 ---
 idd:
-  version: "1.0"
+  version: "1.1"
   package: internal/collector
+  namespace: INTERNAL_COLLECTOR
 ---
 
 # Testing: internal/collector
@@ -411,6 +412,22 @@ relative-versus-absolute path identity, stable incomplete-slot ordering,
 overlap and duplicate deduplication, and single-target compatibility.
 Initialization and repair apply each planned path once, while a later invalid
 batch member leaves every earlier valid member unchanged.
+
+## TEST-INTERNAL_COLLECTOR-033: Shared trace-project queries
+
+- **Kind:** `test`
+- **Covers:** `SPEC-INTERNAL_COLLECTOR-026`, `SPEC-INTERNAL_COLLECTOR-028`
+
+**Purpose:** Verify one collected TraceProject supplies ID dossiers and the v2
+review-context projection without losing canonical ownership, design context,
+multiple Contracts, declaration evidence, findings, or provenance.
+
+**Oracle:** Table-driven fixtures pass only when resolved, unresolved,
+ambiguous, and planned IDs retain the documented status; depth and mentions
+options bound traversal; external project workdirs keep paths project-relative;
+Components, Contracts, implementations, and TEST declarations are stable; and
+review-context v2 is a projection of the same index. Invalid IDs, depth, scan
+errors, and malformed canonical records return explicit operational errors.
 
 ## Strategy
 

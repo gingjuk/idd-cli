@@ -11,6 +11,7 @@ import (
 	"strings"
 
 	"github.com/jingxu9x/idd-cli/internal/config"
+	"github.com/jingxu9x/idd-cli/internal/graph"
 	"github.com/jingxu9x/idd-cli/internal/model"
 	"github.com/jingxu9x/idd-cli/pkg/pattern"
 )
@@ -20,14 +21,16 @@ import (
 //
 // @implement SPEC-INTERNAL_COLLECTOR-001
 type DocCollector struct {
-	cfg *config.Config
+	cfg      *config.Config
+	files    map[string][]byte
+	mentions []graph.Occurrence
 }
 
 // NewDocCollector creates a new DocCollector with the given configuration.
 //
 // @implement SPEC-INTERNAL_COLLECTOR-002
 func NewDocCollector(cfg *config.Config) *DocCollector {
-	return &DocCollector{cfg: cfg}
+	return &DocCollector{cfg: cfg, files: make(map[string][]byte)}
 }
 
 // Collect collects IDD identifiers from Markdown files at the target path.
@@ -37,11 +40,18 @@ func NewDocCollector(cfg *config.Config) *DocCollector {
 // @implement SPEC-INTERNAL_COLLECTOR-017
 func (c *DocCollector) Collect(ctx context.Context, targetPath string) (*model.IdentifierSet, []*model.ValidationError, error) {
 	set := model.NewIdentifierSet()
+	c.files = make(map[string][]byte)
+	c.mentions = nil
 	var errors []*model.ValidationError
+	if err := c.cfg.Validate(); err != nil {
+		errors = append(errors, &model.ValidationError{Rule: "filesystem-scan", Message: err.Error(), Source: "configuration", Code: "invalid-pattern"})
+		return set, errors, nil
+	}
 
 	resolvedTarget := c.cfg.ResolvePath(targetPath)
 	info, err := os.Stat(resolvedTarget)
 	if err != nil {
+		errors = append(errors, filesystemScanFinding(c.cfg.DisplayPath(resolvedTarget), "stat", err))
 		return set, errors, nil
 	}
 
@@ -72,6 +82,7 @@ func (c *DocCollector) Collect(ctx context.Context, targetPath string) (*model.I
 	if info.IsDir() {
 		err := filepath.Walk(resolvedTarget, func(path string, info os.FileInfo, err error) error {
 			if err != nil {
+				errors = append(errors, filesystemScanFinding(c.cfg.DisplayPath(path), "walk", err))
 				return nil
 			}
 			if info.IsDir() {
@@ -148,7 +159,10 @@ func (c *DocCollector) Collect(ctx context.Context, targetPath string) (*model.I
 			continue
 		}
 		data, readErr := c.readFile(path)
-		if readErr == nil && hasIDDDocumentFrontmatter(data) {
+		if readErr != nil {
+			errors = append(errors, filesystemScanFinding(path, "read", readErr))
+			invalidIDDPaths[path] = true
+		} else if hasIDDDocumentFrontmatter(data) {
 			errors = append(errors, iddDocumentValidationError(
 				"idd-document-filename",
 				"IDD frontmatter is allowed only in design.md, contract.md, spec.md, or testing.md",
@@ -167,7 +181,12 @@ func (c *DocCollector) Collect(ctx context.Context, targetPath string) (*model.I
 			continue
 		}
 		data, readErr := c.readFile(path)
-		if readErr == nil && hasIDDDocumentFrontmatter(data) {
+		if readErr != nil {
+			if !invalidIDDPaths[path] {
+				errors = append(errors, filesystemScanFinding(path, "read", readErr))
+			}
+			invalidIDDPaths[path] = true
+		} else if hasIDDDocumentFrontmatter(data) {
 			iddDirectories[filepath.Clean(filepath.Dir(path))] = true
 		}
 	}
@@ -187,8 +206,63 @@ func (c *DocCollector) Collect(ctx context.Context, targetPath string) (*model.I
 		}
 		errors = append(errors, c.collectFile(path, set)...)
 	}
+	c.collectMentions(markdownPaths, set)
 
 	return set, errors, nil
+}
+
+// Mentions returns non-authoritative Markdown references found during the most
+// recent collection. The content is read through the collector's scan cache,
+// so trace does not perform a second filesystem scan.
+func (c *DocCollector) Mentions() []graph.Occurrence {
+	return append([]graph.Occurrence(nil), c.mentions...)
+}
+
+func (c *DocCollector) collectMentions(paths []string, set *model.IdentifierSet) {
+	structured := graph.BuildTraceIndex(set)
+	seen := make(map[string]bool)
+	for _, path := range paths {
+		content, ok := c.files[filepath.Clean(path)]
+		if !ok {
+			continue
+		}
+		role := strings.TrimSuffix(filepath.Base(path), filepath.Ext(path))
+		for lineIndex, line := range strings.Split(string(content), "\n") {
+			lineNumber := lineIndex + 1
+			for _, ref := range pattern.ExtractIDDReferences(line) {
+				if traceHasOccurrenceAt(structured.Occurrences(ref), path, lineNumber) {
+					continue
+				}
+				key := strings.Join([]string{ref, filepath.Clean(path), fmt.Sprint(lineNumber)}, "\x00")
+				if seen[key] {
+					continue
+				}
+				seen[key] = true
+				c.mentions = append(c.mentions, graph.Occurrence{
+					EntityID: ref, Origin: "doc", DocumentRole: role,
+					Kind: graph.OccurrenceMention, Path: path, Line: lineNumber,
+				})
+			}
+		}
+	}
+	sort.Slice(c.mentions, func(i, j int) bool {
+		if c.mentions[i].EntityID != c.mentions[j].EntityID {
+			return c.mentions[i].EntityID < c.mentions[j].EntityID
+		}
+		if c.mentions[i].Path != c.mentions[j].Path {
+			return c.mentions[i].Path < c.mentions[j].Path
+		}
+		return c.mentions[i].Line < c.mentions[j].Line
+	})
+}
+
+func traceHasOccurrenceAt(occurrences []graph.Occurrence, path string, line int) bool {
+	for _, occurrence := range occurrences {
+		if filepath.Clean(occurrence.Path) == filepath.Clean(path) && occurrence.Line == line {
+			return true
+		}
+	}
+	return false
 }
 
 func hasLeadingFrontmatter(content string) bool {
@@ -209,7 +283,7 @@ func (c *DocCollector) collectFile(path string, set *model.IdentifierSet) []*mod
 
 	content, err := c.readFile(path)
 	if err != nil {
-		return errors
+		return append(errors, filesystemScanFinding(path, "read", err))
 	}
 
 	fm, err := ParseFrontmatter(string(content))
@@ -551,7 +625,16 @@ func extractImplementsField(section string) []string {
 }
 
 func (c *DocCollector) readFile(path string) ([]byte, error) {
-	return os.ReadFile(c.cfg.ResolvePath(path))
+	path = filepath.Clean(path)
+	if content, ok := c.files[path]; ok {
+		return append([]byte(nil), content...), nil
+	}
+	content, err := os.ReadFile(c.cfg.ResolvePath(path))
+	if err != nil {
+		return nil, err
+	}
+	c.files[path] = append([]byte(nil), content...)
+	return content, nil
 }
 
 func (c *DocCollector) stat(path string) (os.FileInfo, error) {

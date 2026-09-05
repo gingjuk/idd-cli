@@ -268,7 +268,7 @@ func TestContract_DocCollector_Collect_FileNotFound(t *testing.T) {
 
 	set, errors, err := collector.Collect(context.Background(), "/nonexistent/path/to/file.md")
 	if err != nil {
-		t.Fatalf("Collect should not return error for nonexistent file, got: %v", err)
+		t.Fatalf("Collect() error = %v, want structured finding", err)
 	}
 	if set == nil {
 		t.Error("Collect returned nil IdentifierSet")
@@ -276,8 +276,8 @@ func TestContract_DocCollector_Collect_FileNotFound(t *testing.T) {
 	if set.Count() != 0 {
 		t.Errorf("Collect should return empty set for nonexistent file, got count %d", set.Count())
 	}
-	if errors != nil {
-		t.Error("Collect should return nil errors for nonexistent file")
+	if len(errors) != 1 || errors[0].Rule != "filesystem-scan" || errors[0].Code != "not-found" {
+		t.Errorf("Collect errors = %#v, want fail-closed not-found finding", errors)
 	}
 }
 
@@ -455,8 +455,8 @@ func TestContract_CodeCollector_Collect_FileNotFound(t *testing.T) {
 	collector := NewCodeCollector(cfg)
 
 	set, err := collector.Collect(context.Background(), "/nonexistent/path/to/file.go")
-	if err != nil {
-		t.Fatalf("Collect should not return error for nonexistent file, got: %v", err)
+	if err == nil {
+		t.Fatal("Collect should fail closed for nonexistent file")
 	}
 	if set == nil {
 		t.Error("Collect returned nil IdentifierSet")
@@ -704,17 +704,50 @@ func TestContract_ErrorHandling_FileNotFound_ReturnsEmptySet(t *testing.T) {
 	if set.Count() != 0 {
 		t.Errorf("DocCollector Collect: count = %d, want 0", set.Count())
 	}
-	if errors != nil {
-		t.Errorf("DocCollector Collect: errors = %v, want nil", errors)
+	if len(errors) != 1 || errors[0].Rule != "filesystem-scan" {
+		t.Errorf("DocCollector Collect: errors = %v, want filesystem-scan finding", errors)
 	}
 
 	codeCollector := NewCodeCollector(cfg)
 	codeSet, codeErr := codeCollector.Collect(context.Background(), "/nonexistent/file.go")
-	if codeErr != nil {
-		t.Errorf("CodeCollector Collect: error = %v, want nil", codeErr)
+	if codeErr == nil {
+		t.Error("CodeCollector Collect: error = nil, want fail-closed error")
 	}
 	if codeSet.Count() != 0 {
 		t.Errorf("CodeCollector Collect: count = %d, want 0", codeSet.Count())
+	}
+}
+
+// @test-contract TEST-INTERNAL_COLLECTOR-030
+func TestCollectors_InvalidGlobFailsClosed(t *testing.T) {
+	tests := []struct {
+		name    string
+		collect func(*config.Config) []*model.ValidationError
+	}{
+		{
+			name: "document pattern",
+			collect: func(cfg *config.Config) []*model.ValidationError {
+				cfg.Docs.Patterns = []string{"docs/[.md"}
+				_, findings, _ := NewDocCollector(cfg).Collect(context.Background(), t.TempDir())
+				return findings
+			},
+		},
+		{
+			name: "source pattern",
+			collect: func(cfg *config.Config) []*model.ValidationError {
+				cfg.Code.Patterns = []string{"**/[.go"}
+				_, findings, _ := NewCodeCollector(cfg).CollectWithErrors(context.Background(), t.TempDir())
+				return findings
+			},
+		},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			findings := test.collect(config.Default())
+			if len(findings) != 1 || findings[0].Rule != "filesystem-scan" || findings[0].Code != "invalid-pattern" {
+				t.Fatalf("findings = %#v, want invalid-pattern filesystem finding", findings)
+			}
+		})
 	}
 }
 

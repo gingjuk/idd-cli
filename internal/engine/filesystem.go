@@ -2,6 +2,7 @@
 package engine
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
@@ -41,16 +42,27 @@ func (e *Engine) walkGlob(pattern string, visitor func(path string, lines []stri
 	if file == "" {
 		return
 	}
+	if _, err := filepath.Match(file, ""); err != nil {
+		e.addScanFinding(pattern, "invalid-pattern", err)
+		return
+	}
 	resolvedDir := e.cfg.ResolvePath(dir)
-	_ = filepath.WalkDir(resolvedDir, func(path string, d os.DirEntry, err error) error {
+	if err := filepath.WalkDir(resolvedDir, func(path string, d os.DirEntry, err error) error {
 		if err != nil {
+			if !os.IsNotExist(err) {
+				e.addScanFinding(e.cfg.DisplayPath(path), scanErrorCode(err, "walk"), err)
+			}
 			return nil
 		}
 		if d.IsDir() {
 			return nil
 		}
 		matched, err := filepath.Match(file, d.Name())
-		if err != nil || !matched {
+		if err != nil {
+			e.addScanFinding(pattern, "invalid-pattern", err)
+			return nil
+		}
+		if !matched {
 			return nil
 		}
 		displayPath := e.cfg.DisplayPath(path)
@@ -59,12 +71,15 @@ func (e *Engine) walkGlob(pattern string, visitor func(path string, lines []stri
 		}
 		content, err := os.ReadFile(path)
 		if err != nil {
+			e.addScanFinding(displayPath, scanErrorCode(err, "read"), err)
 			return nil
 		}
 		lines := strings.Split(string(content), "\n")
 		visitor(displayPath, lines)
 		return nil
-	})
+	}); err != nil && !os.IsNotExist(err) {
+		e.addScanFinding(e.cfg.DisplayPath(resolvedDir), scanErrorCode(err, "walk"), err)
+	}
 }
 
 // walkGlobRecursive walks the directory tree matching the given recursive
@@ -82,17 +97,28 @@ func (e *Engine) walkGlobRecursive(pattern string, visitor func(path string, lin
 		dir = "."
 	}
 	file = strings.TrimPrefix(file, "**/")
+	if _, err := filepath.Match(file, ""); err != nil {
+		e.addScanFinding(pattern, "invalid-pattern", err)
+		return
+	}
 
 	resolvedDir := e.cfg.ResolvePath(dir)
-	_ = filepath.WalkDir(resolvedDir, func(path string, d os.DirEntry, err error) error {
+	if err := filepath.WalkDir(resolvedDir, func(path string, d os.DirEntry, err error) error {
 		if err != nil {
+			if !os.IsNotExist(err) {
+				e.addScanFinding(e.cfg.DisplayPath(path), scanErrorCode(err, "walk"), err)
+			}
 			return nil
 		}
 		if d.IsDir() {
 			return nil
 		}
 		matched, err := filepath.Match(file, d.Name())
-		if err != nil || !matched {
+		if err != nil {
+			e.addScanFinding(pattern, "invalid-pattern", err)
+			return nil
+		}
+		if !matched {
 			return nil
 		}
 		displayPath := e.cfg.DisplayPath(path)
@@ -101,12 +127,34 @@ func (e *Engine) walkGlobRecursive(pattern string, visitor func(path string, lin
 		}
 		content, err := os.ReadFile(path)
 		if err != nil {
+			e.addScanFinding(displayPath, scanErrorCode(err, "read"), err)
 			return nil
 		}
 		lines := strings.Split(string(content), "\n")
 		visitor(displayPath, lines)
 		return nil
-	})
+	}); err != nil && !os.IsNotExist(err) {
+		e.addScanFinding(e.cfg.DisplayPath(resolvedDir), scanErrorCode(err, "walk"), err)
+	}
+}
+
+func (e *Engine) addScanFinding(path, code string, err error) {
+	key := code + "\x00" + path + "\x00" + err.Error()
+	if e.scanFindings[key] {
+		return
+	}
+	e.scanFindings[key] = true
+	e.result.AddError("filesystem-scan", fmt.Sprintf("%s %s: %v", code, path, err), path, "", code)
+}
+
+func scanErrorCode(err error, fallback string) string {
+	if os.IsNotExist(err) {
+		return "not-found"
+	}
+	if os.IsPermission(err) {
+		return "permission-denied"
+	}
+	return fallback
 }
 
 // shouldIgnorePath checks whether a file path matches any of the configured

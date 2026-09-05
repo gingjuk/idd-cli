@@ -1,23 +1,24 @@
 ---
 idd:
-  version: "1.0"
+  version: "1.1"
   package: internal/engine
+  namespace: INTERNAL_ENGINE
 ---
 
 # Specifications: internal/engine
 
 ## SPEC-INTERNAL_ENGINE-001: Stateful repository validation orchestration
 
-- **Design:** `ValidationEngine`
-- **Contract:** `RepositoryValidation`
+- **Components:** `ValidationEngine`
+- **Contracts:** `RepositoryValidation`
 
 **Requirement:**
 
 The engine must transform pre-collected identifier evidence and collector
-structural errors into one complete repository validation result by detecting
-cross-package duplicates, constructing the relationship graph, executing the
-configured and compatibility rule set, and preserving precise evidence for
-reporting.
+structural errors into one complete repository validation result by enforcing
+one canonical documentation owner per ID, constructing the relationship graph,
+executing the configured and compatibility rule set, and preserving every
+source evidence occurrence for reporting.
 
 ### Required behavior
 
@@ -25,8 +26,9 @@ reporting.
   erasing the other origin.
 - Code and document observations with the same SPEC or TEST identifier form the
   complete association; source files do not repeat document paths.
-- A document record without source evidence and a source annotation without a
-  document record produce `doc-code-correspondence`.
+- An active document record without required source evidence and any source
+  annotation without a document record produce `doc-code-correspondence`;
+  planned and historical records retain intent without delivery evidence.
 - Forward references become typed, source-located edges.
 - Self-describing coverage, named Contract evidence, Component dependencies,
   and lifecycle replacements retain their explicit relationship types; only
@@ -35,10 +37,11 @@ reporting.
   declarations for Go, TypeScript/TSX, JavaScript/JSX, C++, Java, and Python.
 - A configured extension without a pinned grammar or invalid supported-source
   syntax yields a `source-parse` finding and never activates a regex fallback.
-- Every distinct scanned source directory, including each nested sub-package,
-  maps to the exact same relative directory below `docs/` and requires
-  `design.md`, `contract.md`, `spec.md`, and `testing.md`; a parent package
-  cannot satisfy its child.
+- With no explicit documentation units, each distinct scanned source package
+  maps to the same relative directory below `docs/`. With `docs.units`, every
+  source must match exactly one unit and several source-package globs may share
+  that unit's four canonical files; overlap is an error and no-match is a
+  deterministic discovery warning.
 - Rule failures accumulate as structured errors or warnings.
 - Explicitly loaded deprecated configuration paths become structured warnings
   without reactivating their removed behavior.
@@ -50,9 +53,10 @@ reporting.
 
 ### Failure and implementation boundary
 
-Validation findings are not returned as Go errors. Raw filesystem scan failures
-are generally skipped, and rules report missing evidence only when their own
-checks can observe it. The rule set is hard-coded; no production Rule plugin
+Validation findings are not returned as Go errors. Stat, walk, read, invalid
+glob, unsupported grammar, and parse failures are retained as structured
+fail-closed findings rather than being converted into missing evidence or an
+empty successful scan. The rule set is hard-coded; no production Rule plugin
 interface, collector interface, or separate linker exists.
 
 The engine is not a semantic prose judge. A structurally valid graph can still
@@ -74,8 +78,8 @@ alone drives completeness.
 
 ## SPEC-INTERNAL_ENGINE-002: Initialized single-run engine
 
-- **Design:** `ValidationEngine`
-- **Contract:** `EngineLifecycle`
+- **Components:** `ValidationEngine`
+- **Contracts:** `EngineLifecycle`
 
 **Requirement:**
 
@@ -97,8 +101,8 @@ Contract tests inspect non-nil fields, initial validity, and empty findings.
 
 ## SPEC-INTERNAL_ENGINE-004: Deterministic run and result lifecycle
 
-- **Design:** `ValidationEngine`
-- **Contract:** `EngineLifecycle`
+- **Components:** `ValidationEngine`
+- **Contracts:** `EngineLifecycle`
 
 **Requirement:**
 

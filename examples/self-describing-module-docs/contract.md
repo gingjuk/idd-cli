@@ -1,7 +1,8 @@
 ---
 idd:
-  version: "1.0"
+  version: "1.1"
   package: internal/auth
+  namespace: INTERNAL_AUTH
 ---
 
 # Contracts: internal/auth
@@ -49,6 +50,18 @@ Authentication may read credential data and record private operational
 telemetry. It does not create sessions, issue tokens, mutate credentials, or
 retry failed dependencies.
 
+### Non-guarantees
+
+The contract does not select a password-hash algorithm, persistence schema,
+transport status code, session representation, or token format. It does not
+promise that operational dependencies always succeed.
+
+### Known limitations
+
+Rate limiting, multi-factor challenges, session issuance, and authorization
+are intentionally absent from this example boundary and require separate
+Components, Contracts, and SPECs.
+
 ### Invariants and security
 
 - Failure shape must not reveal whether an account exists.
@@ -56,7 +69,7 @@ retry failed dependencies.
 - The same input and dependency state must produce the same public outcome.
 - Cancellation must stop downstream work as soon as the dependency permits.
 
-### Compatibility
+### Compatibility commitments
 
 New implementations may change storage or verification algorithms but must
 preserve the public error categories, secret-ownership rules, and success

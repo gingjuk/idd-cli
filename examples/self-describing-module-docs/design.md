@@ -1,7 +1,8 @@
 ---
 idd:
-  version: "1.0"
+  version: "1.1"
   package: internal/auth
+  namespace: INTERNAL_AUTH
 ---
 
 # Design: internal/auth
@@ -14,6 +15,24 @@ idd:
 known identity. It gives callers one authentication boundary without exposing
 password-storage details or coupling authentication policy to HTTP, CLI, or
 background-job transports.
+
+**Ownership:**
+
+AuthModule owns credential lookup and secret-verification orchestration, the
+successful identity result, and the stable classification of expected login
+rejection versus operational failure.
+
+**Boundary:**
+
+Transports own request validation, throttling, logging, and response mapping;
+injected stores own persistence and verifiers own secret comparison. Session,
+token, authorization, and rate-limit state are not owned here.
+
+**Decisions:**
+
+Unknown users and invalid secrets share one public error to reduce account
+discovery. Narrow injected dependencies keep persistence and cryptography
+replaceable and make acceptance evidence deterministic.
 
 ### Responsibilities
 

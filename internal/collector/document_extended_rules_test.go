@@ -229,11 +229,11 @@ func TestDocCollector_IDDExtendedRuleValidation(t *testing.T) {
 				replaceTestFile(
 					t,
 					filepath.Join(docsDir, "spec.md"),
-					"- **Contract:** `Authenticator`",
-					"- **Contract:** `internal/shared#`",
+					"- **Contracts:** `Authenticator`",
+					"- **Contracts:** `internal/shared#`",
 				)
 			},
-			wantCode: "contract",
+			wantCode: "contracts",
 		},
 		{
 			name: "lifecycle does not reference itself",

@@ -49,8 +49,8 @@ func TestInspectDocumentCompletions_DeduplicatesTargetsAndOverlappingSlots(t *te
 		status.Targets[2] != configDocs {
 		t.Errorf("targets = %v, want first-occurrence order", status.Targets)
 	}
-	if len(status.IncompleteSlots) != 18 {
-		t.Fatalf("incomplete slots = %d, want 18 without overlap duplicates", len(status.IncompleteSlots))
+	if len(status.IncompleteSlots) != 8 {
+		t.Fatalf("incomplete slots = %d, want 8 without overlap duplicates", len(status.IncompleteSlots))
 	}
 	seen := make(map[string]bool, len(status.IncompleteSlots))
 	for index, slot := range status.IncompleteSlots {
@@ -133,7 +133,7 @@ func TestRepairDocumentTargets_DeduplicatesAndPreflightsBatch(t *testing.T) {
 			projectRoot := t.TempDir()
 			authDocs := writeValidDocumentSet(t, projectRoot, "internal/auth")
 			authDesign := filepath.Join(authDocs, "design.md")
-			replaceTestFile(t, authDesign, `version: "1.0"`, `version: ""`)
+			replaceTestFile(t, authDesign, `version: "1.1"`, `version: ""`)
 			before := readTestFile(t, authDesign)
 
 			workingDirectory, getwdErr := os.Getwd()

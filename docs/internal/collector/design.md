@@ -1,7 +1,8 @@
 ---
 idd:
-  version: "1.0"
+  version: "1.1"
   package: internal/collector
+  namespace: INTERNAL_COLLECTOR
 ---
 
 # Design: internal/collector
@@ -14,6 +15,24 @@ idd:
 annotations into the common identifier model used by the validation engine. It
 is the boundary between files written for people and normalized graph evidence
 consumed by machines.
+
+**Ownership:**
+
+The component owns document/source discovery, canonical record parsing,
+source-location preservation, AST annotation binding, structural completion
+inspection, and the safe document init/fix mechanics that share that schema.
+
+**Boundary:**
+
+It produces typed declarations, occurrences, relations, and structural
+findings but does not judge semantic adequacy, apply repository-wide policy,
+render final reports, or invent documentation from code symbols.
+
+**Decisions:**
+
+Each four-file documentation unit is parsed coherently, exact basenames own
+roles, CommonMark and YAML nodes preserve authored structure and provenance,
+and legacy parsing remains isolated so mixed authorities cannot silently merge.
 
 ### Responsibilities
 
@@ -99,12 +118,13 @@ Each document is processed in layers:
 
 1. `splitLeadingFrontmatter` isolates only a real leading frontmatter block and
    preserves the remaining body bytes.
-2. YAML decoding requires a top-level `idd` mapping containing only `version`
-   and `package`. `idd.document`, other unknown keys, and semantic catalogs are
+2. YAML decoding requires a top-level `idd` mapping containing `version`,
+   current `package`, and stable `namespace`. `idd.document`, other unknown
+   keys, and semantic catalogs are
    rejected immediately without a compatibility branch.
-3. The path-derived package establishes expected identity and module prefix;
-   the exact lowercase filename establishes the role before Markdown records
-   are parsed.
+3. The path establishes current package identity while namespace establishes
+   the stable SPEC/TEST prefix; the exact lowercase filename establishes role
+   before Markdown records are parsed.
 4. Goldmark parses the body. Level-two role headings define records, while
    subordinate prose, examples, lists, diagrams, and code blocks remain
    human-authored content.
@@ -205,8 +225,9 @@ target while preserving permissions. Malformed frontmatter, semantic YAML,
 legacy metadata, or a central catalog aborts repair rather than being
 discarded.
 
-Repair can normalize version and package identity proven by the path; it
-cannot decide how to rewrite a requirement, contract, design decision,
+Repair can normalize version and package identity proven by the path and fill
+a missing derived namespace, but it never rewrites an existing namespace
+during a package move. It cannot decide how to rewrite a requirement, contract, design decision,
 purpose, or coverage relationship. It does not accept or emit
 `idd.document`.
 

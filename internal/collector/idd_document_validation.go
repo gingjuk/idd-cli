@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"regexp"
 	"sort"
 	"strings"
 
@@ -87,6 +88,7 @@ func (c *DocCollector) collectIDDDocumentSet(directory string, set *model.Identi
 	}
 
 	errors = append(errors, validateIDDDocumentReferences(documents)...)
+	errors = append(errors, validateIDDDocumentSetIdentity(documents)...)
 	addIDDDocumentIdentifiers(documents, set)
 	declared := declaredIDDIdentifiers(documents)
 	for _, document := range documents {
@@ -104,7 +106,7 @@ func validateIDDDocument(document *parsedIDDDocument, expectedRole string) []*mo
 	}
 
 	if metadata.Version != iddDocumentVersion {
-		addError("idd-document-identity", `version must be "1.0"`, "", "version", index.topFieldLine("version"))
+		addError("idd-document-identity", `version must be "1.1"`, "", "version", index.topFieldLine("version"))
 	}
 	expectedPackage := packageFromDocumentPath(document.Path)
 	if expectedPackage == "" {
@@ -124,6 +126,17 @@ func validateIDDDocument(document *parsedIDDDocument, expectedRole string) []*mo
 			"",
 			"package",
 			index.topFieldLine("package"),
+		)
+	}
+	if metadata.Namespace == "" {
+		addError("idd-document-identity", "namespace is required", "", "namespace", index.topFieldLine("namespace"))
+	} else if !iddNamespacePattern.MatchString(metadata.Namespace) {
+		addError(
+			"idd-document-identity",
+			fmt.Sprintf("namespace %q must match [A-Z][A-Z0-9_]*", metadata.Namespace),
+			"",
+			"namespace",
+			index.topFieldLine("namespace"),
 		)
 	}
 	switch expectedRole {
@@ -165,6 +178,42 @@ func validateIDDDocument(document *parsedIDDDocument, expectedRole string) []*mo
 			issue.Link,
 			issue.Code,
 		))
+	}
+	return errors
+}
+
+func validateIDDDocumentSetIdentity(documents map[string]*parsedIDDDocument) []*model.ValidationError {
+	var errors []*model.ValidationError
+	var canonical *parsedIDDDocument
+	for _, role := range []string{"design", "contract", "spec", "testing"} {
+		document := documents[role]
+		if document == nil {
+			continue
+		}
+		if canonical == nil {
+			canonical = document
+			continue
+		}
+		if document.Metadata.Package != canonical.Metadata.Package {
+			errors = append(errors, iddDocumentValidationError(
+				"idd-document-identity",
+				fmt.Sprintf("package %q does not match documentation unit package %q", document.Metadata.Package, canonical.Metadata.Package),
+				document.Path,
+				document.Index.topFieldLine("package"),
+				"",
+				"package",
+			))
+		}
+		if document.Metadata.Namespace != canonical.Metadata.Namespace {
+			errors = append(errors, iddDocumentValidationError(
+				"idd-document-identity",
+				fmt.Sprintf("namespace %q does not match documentation unit namespace %q", document.Metadata.Namespace, canonical.Metadata.Namespace),
+				document.Path,
+				document.Index.topFieldLine("namespace"),
+				"",
+				"namespace",
+			))
+		}
 	}
 	return errors
 }
@@ -334,17 +383,23 @@ func validateIDDNames(document *parsedIDDDocument, field string, values []string
 }
 
 var (
+	iddNamespacePattern  = regexp.MustCompile(`^[A-Z][A-Z0-9_]*$`)
 	iddLifecycleStatuses = map[string]bool{
+		"planned":    true,
 		"active":     true,
 		"deprecated": true,
 		"superseded": true,
 	}
 	iddConcernNames = map[string]bool{
-		"security":      true,
-		"concurrency":   true,
-		"persistence":   true,
-		"performance":   true,
-		"compatibility": true,
+		"security":            true,
+		"concurrency":         true,
+		"persistence":         true,
+		"performance":         true,
+		"compatibility":       true,
+		"dependencies":        true,
+		"lifecycle":           true,
+		"failure-containment": true,
+		"testability":         true,
 	}
 )
 
@@ -361,7 +416,7 @@ func validateIDDRecordLifecycle(
 	if lifecycle.Status != "" && !iddLifecycleStatuses[lifecycle.Status] {
 		*errors = append(*errors, iddDocumentValidationError(
 			"idd-document-schema",
-			fmt.Sprintf("%s %s status must be active, deprecated, or superseded", recordType, recordID),
+			fmt.Sprintf("%s %s status must be planned, active, deprecated, or superseded", recordType, recordID),
 			document.Path,
 			document.Index.recordFieldLine(section, recordIndex, "status"),
 			recordID,
@@ -468,10 +523,13 @@ func validateIDDRecordLifecycle(
 }
 
 func iddConcernHeading(concern string) string {
-	if concern == "" {
-		return concern
+	words := strings.Split(concern, "-")
+	for index, word := range words {
+		if word != "" {
+			words[index] = strings.ToUpper(word[:1]) + word[1:]
+		}
 	}
-	return strings.ToUpper(concern[:1]) + concern[1:]
+	return strings.Join(words, " ")
 }
 
 type iddLifecycleRecord struct {
@@ -770,9 +828,9 @@ func validateIDDScopedName(value string) error {
 	return nil
 }
 
-func validateIDDSpecs(document *parsedIDDDocument, packagePath string) []*model.ValidationError {
+func validateIDDSpecs(document *parsedIDDDocument, _ string) []*model.ValidationError {
 	var errors []*model.ValidationError
-	module := moduleFromPackage(packagePath)
+	module := document.Metadata.Namespace
 	seen := make(map[string]bool, len(document.Metadata.Specs))
 	declared := make(map[string]bool, len(document.Metadata.Specs))
 	for _, spec := range document.Metadata.Specs {
@@ -809,7 +867,7 @@ func validateIDDSpecs(document *parsedIDDDocument, packagePath string) []*model.
 		} else if module != "" && !strings.HasPrefix(spec.ID, "SPEC-"+module+"-") {
 			errors = append(errors, iddDocumentValidationError(
 				"idd-document-schema",
-				fmt.Sprintf("SPEC id %s does not use package-derived module %s", spec.ID, module),
+				fmt.Sprintf("SPEC id %s does not use stable namespace %s", spec.ID, module),
 				document.Path,
 				document.Index.recordFieldLine("specs", recordIndex, "id"),
 				spec.ID,
@@ -837,9 +895,9 @@ func validateIDDSpecs(document *parsedIDDDocument, packagePath string) []*model.
 	return errors
 }
 
-func validateIDDTests(document *parsedIDDDocument, packagePath string) []*model.ValidationError {
+func validateIDDTests(document *parsedIDDDocument, _ string) []*model.ValidationError {
 	var errors []*model.ValidationError
-	module := moduleFromPackage(packagePath)
+	module := document.Metadata.Namespace
 	seen := make(map[string]bool, len(document.Metadata.Tests))
 	declared := make(map[string]bool, len(document.Metadata.Tests))
 	for _, test := range document.Metadata.Tests {
@@ -874,7 +932,7 @@ func validateIDDTests(document *parsedIDDDocument, packagePath string) []*model.
 			} else if module != "" && !strings.HasPrefix(test.ID, "TEST-"+module+"-") {
 				errors = append(errors, iddDocumentValidationError(
 					"idd-document-schema",
-					fmt.Sprintf("TEST id %s does not use package-derived module %s", test.ID, module),
+					fmt.Sprintf("TEST id %s does not use stable namespace %s", test.ID, module),
 					document.Path,
 					document.Index.recordFieldLine("tests", recordIndex, "id"),
 					test.ID,
@@ -1060,44 +1118,56 @@ func validateIDDDocumentReferences(documents map[string]*parsedIDDDocument) []*m
 			}
 		}
 		for recordIndex, spec := range document.Metadata.Specs {
-			if spec.Design != "" {
-				line := document.Index.recordFieldLine("specs", recordIndex, "design")
-				if err := validateIDDScopedName(spec.Design); err != nil {
+			seenComponents := make(map[string]bool)
+			for _, componentRef := range spec.Components {
+				line := document.Index.recordFieldLine("specs", recordIndex, "components")
+				if seenComponents[componentRef] {
+					errors = append(errors, iddDocumentValidationError("idd-document-schema", fmt.Sprintf("SPEC %s repeats Component reference %q", spec.ID, componentRef), document.Path, line, spec.ID, "components"))
+					continue
+				}
+				seenComponents[componentRef] = true
+				if err := validateIDDScopedName(componentRef); err != nil {
 					errors = append(errors, iddDocumentValidationError(
 						"idd-document-schema",
-						fmt.Sprintf("SPEC %s has invalid design reference %q: %v", spec.ID, spec.Design, err),
+						fmt.Sprintf("SPEC %s has invalid Component reference %q: %v", spec.ID, componentRef, err),
 						document.Path,
 						line,
 						spec.ID,
-						"design",
+						"components",
 					))
 				} else {
-					targetPackage, targetName := splitIDDScopedName(document.Metadata.Package, spec.Design)
+					targetPackage, targetName := splitIDDScopedName(document.Metadata.Package, componentRef)
 					if targetPackage == document.Metadata.Package && !designs[targetName] {
 						errors = append(errors, iddDocumentValidationError(
 							"idd-document-reference",
-							fmt.Sprintf("SPEC %s references undeclared design %q", spec.ID, targetName),
+							fmt.Sprintf("SPEC %s references undeclared Component %q", spec.ID, targetName),
 							document.Path,
 							line,
 							spec.ID,
-							"design",
+							"components",
 						))
 					}
 				}
 			}
-			if spec.Contract != "" {
-				line := document.Index.recordFieldLine("specs", recordIndex, "contract")
-				if err := validateIDDScopedName(spec.Contract); err != nil {
+			seenContracts := make(map[string]bool)
+			for _, contractRef := range spec.Contracts {
+				line := document.Index.recordFieldLine("specs", recordIndex, "contracts")
+				if seenContracts[contractRef] {
+					errors = append(errors, iddDocumentValidationError("idd-document-schema", fmt.Sprintf("SPEC %s repeats Contract reference %q", spec.ID, contractRef), document.Path, line, spec.ID, "contracts"))
+					continue
+				}
+				seenContracts[contractRef] = true
+				if err := validateIDDScopedName(contractRef); err != nil {
 					errors = append(errors, iddDocumentValidationError(
 						"idd-document-schema",
-						fmt.Sprintf("SPEC %s has invalid contract reference %q: %v", spec.ID, spec.Contract, err),
+						fmt.Sprintf("SPEC %s has invalid Contract reference %q: %v", spec.ID, contractRef, err),
 						document.Path,
 						line,
 						spec.ID,
-						"contract",
+						"contracts",
 					))
 				} else {
-					targetPackage, targetName := splitIDDScopedName(document.Metadata.Package, spec.Contract)
+					targetPackage, targetName := splitIDDScopedName(document.Metadata.Package, contractRef)
 					if targetPackage == document.Metadata.Package && !contracts[targetName] {
 						errors = append(errors, iddDocumentValidationError(
 							"idd-document-reference",
@@ -1105,7 +1175,7 @@ func validateIDDDocumentReferences(documents map[string]*parsedIDDDocument) []*m
 							document.Path,
 							line,
 							spec.ID,
-							"contract",
+							"contracts",
 						))
 					}
 				}
@@ -1196,16 +1266,22 @@ func addIDDDocumentIdentifiers(documents map[string]*parsedIDDDocument, set *mod
 			identifier.RawRef = component.Name
 			identifier.Kind = "component"
 			identifier.Derived = true
+			identifier.Namespace = document.Metadata.Namespace
+			identifier.Status = component.Status
+			identifier.DocumentRole = "design"
 			for _, dependency := range component.DependsOn {
 				targetPackage, targetName := splitIDDScopedName(document.Metadata.Package, dependency)
 				if targetName != "" {
-					identifier.AddTypedLink(
+					identifier.AddTypedLinkAt(
 						derivedComponentID(targetPackage, targetName),
 						model.LinkDependsOn,
+						document.Path,
+						document.Index.recordFieldLine("components", recordIndex, "depends-on"),
+						"Depends on",
 					)
 				}
 			}
-			addIDDLifecycleLinks(identifier, component.IDDRecordLifecycle, func(name string) string {
+			addIDDLifecycleLinks(identifier, component.IDDRecordLifecycle, document, "components", recordIndex, func(name string) string {
 				return derivedComponentID(document.Metadata.Package, name)
 			})
 			set.Add(identifier)
@@ -1227,7 +1303,10 @@ func addIDDDocumentIdentifiers(documents map[string]*parsedIDDDocument, set *mod
 			identifier.RawRef = contract.Name
 			identifier.Kind = "contract"
 			identifier.Derived = true
-			addIDDLifecycleLinks(identifier, contract.IDDRecordLifecycle, func(name string) string {
+			identifier.Namespace = document.Metadata.Namespace
+			identifier.Status = contract.Status
+			identifier.DocumentRole = "contract"
+			addIDDLifecycleLinks(identifier, contract.IDDRecordLifecycle, document, "contracts", recordIndex, func(name string) string {
 				return derivedContractID(document.Metadata.Package, name)
 			})
 			set.Add(identifier)
@@ -1249,25 +1328,34 @@ func addIDDDocumentIdentifiers(documents map[string]*parsedIDDDocument, set *mod
 				document.Index.recordLine("specs", recordIndex),
 			)
 			identifier.RawRef = spec.ID
-			if spec.Design != "" {
-				targetPackage, targetName := splitIDDScopedName(document.Metadata.Package, spec.Design)
+			identifier.Namespace = document.Metadata.Namespace
+			identifier.Status = spec.Status
+			identifier.DocumentRole = "spec"
+			for _, componentRef := range spec.Components {
+				targetPackage, targetName := splitIDDScopedName(document.Metadata.Package, componentRef)
 				if targetName != "" {
-					identifier.AddTypedLink(
+					identifier.AddTypedLinkAt(
 						derivedComponentID(targetPackage, targetName),
 						model.LinkReferences,
+						document.Path,
+						document.Index.recordFieldLine("specs", recordIndex, "components"),
+						"Components",
 					)
 				}
 			}
-			if spec.Contract != "" {
-				targetPackage, targetName := splitIDDScopedName(document.Metadata.Package, spec.Contract)
+			for _, contractRef := range spec.Contracts {
+				targetPackage, targetName := splitIDDScopedName(document.Metadata.Package, contractRef)
 				if targetName != "" {
-					identifier.AddTypedLink(
+					identifier.AddTypedLinkAt(
 						derivedContractID(targetPackage, targetName),
 						model.LinkContract,
+						document.Path,
+						document.Index.recordFieldLine("specs", recordIndex, "contracts"),
+						"Contracts",
 					)
 				}
 			}
-			addIDDLifecycleLinks(identifier, spec.IDDRecordLifecycle, func(id string) string {
+			addIDDLifecycleLinks(identifier, spec.IDDRecordLifecycle, document, "specs", recordIndex, func(id string) string {
 				return id
 			})
 			set.Add(identifier)
@@ -1289,26 +1377,32 @@ func addIDDDocumentIdentifiers(documents map[string]*parsedIDDDocument, set *mod
 			)
 			identifier.RawRef = test.ID
 			identifier.Kind = test.Kind
+			identifier.Namespace = document.Metadata.Namespace
+			identifier.Status = test.Status
+			identifier.DocumentRole = "testing"
 			for _, specID := range test.Covers {
 				if pattern.ValidateIdentifierFormat(specID) != nil ||
 					!strings.HasPrefix(specID, "SPEC-") {
 					continue
 				}
-				identifier.AddTypedLink(specID, model.LinkImplements)
+				identifier.AddTypedLinkAt(specID, model.LinkImplements, document.Path, document.Index.recordFieldLine("tests", recordIndex, "covers"), "Covers")
 				if spec := specIdentifiers[specID]; spec != nil {
-					spec.AddTypedLink(test.ID, model.LinkTests)
+					spec.AddTypedLinkAt(test.ID, model.LinkTests, document.Path, document.Index.recordFieldLine("tests", recordIndex, "covers"), "Covers")
 				}
 			}
 			for _, contractRef := range test.Contracts {
 				targetPackage, targetName := splitIDDScopedName(document.Metadata.Package, contractRef)
 				if targetName != "" {
-					identifier.AddTypedLink(
+					identifier.AddTypedLinkAt(
 						derivedContractID(targetPackage, targetName),
 						model.LinkContractTests,
+						document.Path,
+						document.Index.recordFieldLine("tests", recordIndex, "contracts"),
+						"Contracts",
 					)
 				}
 			}
-			addIDDLifecycleLinks(identifier, test.IDDRecordLifecycle, func(id string) string {
+			addIDDLifecycleLinks(identifier, test.IDDRecordLifecycle, document, "tests", recordIndex, func(id string) string {
 				return id
 			})
 			set.Add(identifier)
@@ -1319,13 +1413,16 @@ func addIDDDocumentIdentifiers(documents map[string]*parsedIDDDocument, set *mod
 func addIDDLifecycleLinks(
 	identifier *model.Identifier,
 	lifecycle IDDRecordLifecycle,
+	document *parsedIDDDocument,
+	section string,
+	recordIndex int,
 	resolve func(string) string,
 ) {
 	for _, target := range lifecycle.Supersedes {
-		identifier.AddTypedLink(resolve(target), model.LinkSupersedes)
+		identifier.AddTypedLinkAt(resolve(target), model.LinkSupersedes, document.Path, document.Index.recordFieldLine(section, recordIndex, "supersedes"), "Supersedes")
 	}
 	if lifecycle.DeprecatedBy != "" {
-		identifier.AddTypedLink(resolve(lifecycle.DeprecatedBy), model.LinkDeprecatedBy)
+		identifier.AddTypedLinkAt(resolve(lifecycle.DeprecatedBy), model.LinkDeprecatedBy, document.Path, document.Index.recordFieldLine(section, recordIndex, "deprecated-by"), "Deprecated by")
 	}
 }
 

@@ -13,6 +13,7 @@ import (
 )
 
 // @test-contract TEST-INTERNAL_COLLECTOR-031
+// @test TEST-INTERNAL_COLLECTOR-033
 func TestBuildSpecReviewContext(t *testing.T) {
 	tests := []struct {
 		name      string
@@ -55,8 +56,11 @@ func TestExecute(t *testing.T) {
 				if strings.Contains(context.Spec.Markdown, "Package guidance") {
 					t.Errorf("SPEC Markdown crossed into the next H2 section: %q", context.Spec.Markdown)
 				}
-				if context.Contract == nil || context.Contract.Guarantees != "Execution preserves the supplied value." {
-					t.Errorf("Contract = %#v", context.Contract)
+				if len(context.Contracts) != 1 || context.Contracts[0].Guarantees != "Execution preserves the supplied value." {
+					t.Errorf("Contracts = %#v", context.Contracts)
+				}
+				if len(context.Components) == 0 || context.Components[0].Boundary != "Accept one value and return one value." {
+					t.Errorf("Components = %#v", context.Components)
 				}
 				if len(context.Tests) != 1 || context.Tests[0].ID != "TEST-SAMPLE-001" {
 					t.Errorf("Tests = %#v", context.Tests)
@@ -122,10 +126,10 @@ func TestExecute(t *testing.T) {
 				writeTestFile(t, sharedTesting, content)
 			},
 			check: func(t *testing.T, context *SpecReviewContext) {
-				if context.Contract == nil ||
-					context.Contract.Name != "SharedExecution" ||
-					!strings.Contains(context.Contract.File, filepath.Join("docs", "shared")) {
-					t.Errorf("cross-package Contract = %#v", context.Contract)
+				if len(context.Contracts) != 1 ||
+					context.Contracts[0].Name != "SharedExecution" ||
+					!strings.Contains(context.Contracts[0].File, filepath.Join("docs", "shared")) {
+					t.Errorf("cross-package Contracts = %#v", context.Contracts)
 				}
 				gotTests := make([]string, 0, len(context.Tests))
 				for _, test := range context.Tests {
@@ -172,8 +176,8 @@ func TestExecute(t *testing.T) {
 				}
 				content = append(content, []byte(
 					"\n\n## SPEC-SAMPLE-001: Duplicate\n\n"+
-						"- **Design:** `Runner`\n"+
-						"- **Contract:** `Execution`\n\n"+
+						"- **Components:** `Runner`\n"+
+						"- **Contracts:** `Execution`\n\n"+
 						"**Requirement:** Duplicate the record.\n\n"+
 						"**Acceptance:** Duplicate evidence exists.\n",
 				)...)
@@ -217,6 +221,7 @@ func TestExecute(t *testing.T) {
 }
 
 // @test-contract TEST-INTERNAL_COLLECTOR-031
+// @test TEST-INTERNAL_COLLECTOR-033
 func TestBuildSpecReviewContexts(t *testing.T) {
 	root := t.TempDir()
 	writeReviewFixture(t, root, "sample", "SPEC-SAMPLE-001")
@@ -353,10 +358,14 @@ func writeReviewFixture(t *testing.T, root string, packagePath string, specID st
 	directory := filepath.Join(root, "docs", filepath.FromSlash(packagePath))
 	module := strings.ToUpper(filepath.Base(filepath.FromSlash(packagePath)))
 	packageName := filepath.ToSlash(packagePath)
+	if err := os.MkdirAll(filepath.Join(root, "source"), 0755); err != nil {
+		t.Fatalf("MkdirAll(source) error = %v", err)
+	}
 	writeReviewFile(t, filepath.Join(directory, "design.md"), `---
 idd:
-  version: "1.0"
+  version: "1.1"
   package: `+packageName+`
+  namespace: `+module+`
 ---
 
 # Design
@@ -364,11 +373,18 @@ idd:
 ## Component: Runner
 
 **Purpose:** Execute one sample behavior.
+
+**Ownership:** Own sample execution behavior.
+
+**Boundary:** Accept one value and return one value.
+
+**Decisions:** Keep preservation independent from transport concerns.
 `)
 	writeReviewFile(t, filepath.Join(directory, "contract.md"), `---
 idd:
-  version: "1.0"
+  version: "1.1"
   package: `+packageName+`
+  namespace: `+module+`
 ---
 
 # Contracts
@@ -379,16 +395,17 @@ idd:
 `)
 	writeReviewFile(t, filepath.Join(directory, "spec.md"), `---
 idd:
-  version: "1.0"
+  version: "1.1"
   package: `+packageName+`
+  namespace: `+module+`
 ---
 
 # Specifications
 
 ## `+specID+`: Preserve input
 
-- **Design:** `+"`Runner`"+`
-- **Contract:** `+"`Execution`"+`
+- **Components:** `+"`Runner`"+`
+- **Contracts:** `+"`Execution`"+`
 
 **Requirement:** Return the supplied value without mutation.
 
@@ -404,8 +421,9 @@ Keep package-wide guidance outside the preceding SPEC record.
 `)
 	writeReviewFile(t, filepath.Join(directory, "testing.md"), `---
 idd:
-  version: "1.0"
+  version: "1.1"
   package: `+packageName+`
+  namespace: `+module+`
 ---
 
 # Testing

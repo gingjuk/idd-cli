@@ -1,15 +1,16 @@
 ---
 idd:
-  version: "1.0"
+  version: "1.1"
   package: internal/auth
+  namespace: INTERNAL_AUTH
 ---
 
 # Specifications: internal/auth
 
 ## SPEC-INTERNAL_AUTH-001: Credential failure details
 
-- **Design:** `AuthModule`
-- **Contract:** `Authenticator`
+- **Components:** `AuthModule`
+- **Contracts:** `Authenticator`
 
 **Requirement:** Authenticate users with validated credentials without
 disclosing which credential failed.

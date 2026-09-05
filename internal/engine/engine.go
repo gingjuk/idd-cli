@@ -26,9 +26,11 @@ import (
 type Engine struct {
 	cfg               *config.Config
 	graph             *graph.LinkageGraph
+	traceIndex        *graph.TraceIndex
 	result            *model.ValidationResult
 	sourceAnalyses    []*collector.SourceAnalysis
 	sourceAnalysesSet bool
+	scanFindings      map[string]bool
 }
 
 // New creates a new Engine instance with the given configuration.
@@ -37,9 +39,11 @@ type Engine struct {
 // @implement SPEC-INTERNAL_ENGINE-002
 func New(cfg *config.Config) *Engine {
 	return &Engine{
-		cfg:    cfg,
-		graph:  graph.NewLinkageGraph(),
-		result: model.NewValidationResult(),
+		cfg:          cfg,
+		graph:        graph.NewLinkageGraph(),
+		traceIndex:   graph.NewTraceIndex(),
+		result:       model.NewValidationResult(),
+		scanFindings: make(map[string]bool),
 	}
 }
 
@@ -50,6 +54,7 @@ func New(cfg *config.Config) *Engine {
 func (e *Engine) Run(ctx context.Context, ids *model.IdentifierSet) (*model.ValidationResult, error) {
 	e.addConfigurationWarnings()
 	e.validateDuplicateIDs(ids)
+	e.traceIndex = graph.BuildTraceIndex(ids)
 	e.buildGraph(ids)
 	e.result.Stats = e.graph.Stats()
 	e.validate()
@@ -57,6 +62,12 @@ func (e *Engine) Run(ctx context.Context, ids *model.IdentifierSet) (*model.Vali
 		e.result.Graph = e.graph.ToSnapshot()
 	}
 	return e.result, nil
+}
+
+// Index returns the post-collection project index used by validation and query
+// projections. Callers receive a read-only API whose returned values are copies.
+func (e *Engine) Index() *graph.TraceIndex {
+	return e.traceIndex
 }
 
 func (e *Engine) addConfigurationWarnings() {
@@ -117,6 +128,17 @@ func (e *Engine) buildGraph(ids *model.IdentifierSet) {
 				node.Metadata["kind_code_"+id.Kind] = true
 			}
 		}
+		if id.Origin == model.OriginDoc {
+			if id.Status != "" {
+				node.Metadata["status"] = id.Status
+			}
+			if id.Namespace != "" {
+				node.Metadata["namespace"] = id.Namespace
+			}
+			if id.DocumentRole != "" {
+				node.Metadata["document_role"] = id.DocumentRole
+			}
+		}
 		if id.Derived {
 			node.Metadata["derived"] = true
 			node.Metadata["display_name"] = id.Title
@@ -136,7 +158,14 @@ func (e *Engine) buildGraph(ids *model.IdentifierSet) {
 			e.graph.AddEdge(id.ID, linkRef, linkType, id.Source, id.Line)
 		}
 		for _, typedLink := range id.TypedLinks {
-			e.graph.AddEdge(id.ID, typedLink.Ref, typedLink.Type, id.Source, id.Line)
+			source, line := typedLink.Source, typedLink.Line
+			if source == "" {
+				source = id.Source
+			}
+			if line == 0 {
+				line = id.Line
+			}
+			e.graph.AddEdge(id.ID, typedLink.Ref, typedLink.Type, source, line)
 		}
 	}
 
@@ -184,7 +213,7 @@ func (e *Engine) inferLinkType(fromType model.IdentifierType, toRef string) mode
 // orphan detection, doc-code correspondence, and various annotation requirements.
 func (e *Engine) validate() {
 	if e.cfg.Validation.RequireSpecTestCoverage {
-		for _, err := range e.graph.ValidateCompleteness() {
+		for _, err := range e.validateLifecycleCompleteness() {
 			source := err.Source
 			if source == "" && err.Link != "" {
 				if node, ok := e.graph.GetNode(err.Link); ok {
@@ -256,6 +285,46 @@ func (e *Engine) validate() {
 	e.result.Sort()
 }
 
+func (e *Engine) validateLifecycleCompleteness() []model.ValidationError {
+	var errors []model.ValidationError
+	for _, node := range e.graph.Nodes() {
+		if !nodeLifecycleRequiresEvidence(node) {
+			continue
+		}
+		switch node.Type {
+		case model.TypeSpec:
+			hasEvidence := false
+			for _, edge := range e.graph.GetOutboundByType(node.ID, model.LinkTests) {
+				testNode, exists := e.graph.GetNode(edge.To)
+				if !exists || !nodeLifecycleRequiresEvidence(testNode) {
+					continue
+				}
+				hasCode, _ := testNode.Metadata[string(model.OriginCode)].(bool)
+				if hasCode {
+					hasEvidence = true
+					break
+				}
+			}
+			if !hasEvidence {
+				errors = append(errors, model.ValidationError{Rule: "spec-missing-tests", Message: fmt.Sprintf("active SPEC %s has no TEST coverage relationship", node.ID), Link: node.ID})
+			}
+		case model.TypeTest:
+			if len(e.graph.GetOutboundByType(node.ID, model.LinkImplements)) == 0 {
+				errors = append(errors, model.ValidationError{Rule: "test-missing-coverage", Message: fmt.Sprintf("active TEST %s has no SPEC coverage relationship", node.ID), Link: node.ID})
+			}
+		}
+	}
+	return errors
+}
+
+func nodeLifecycleRequiresEvidence(node *graph.Node) bool {
+	if node == nil || node.Metadata == nil {
+		return true
+	}
+	status, _ := node.Metadata["status"].(string)
+	return status == "" || status == "active"
+}
+
 // validateNoOrphans detects identifiers with no connections in the graph.
 func (e *Engine) validateNoOrphans() {
 	for _, node := range e.graph.Nodes() {
@@ -288,7 +357,22 @@ func (e *Engine) validateContractTestCoverage() {
 		if node.Type != model.TypeContract {
 			continue
 		}
-		if len(e.graph.GetInboundByType(node.ID, model.LinkContractTests)) == 0 {
+		if !nodeLifecycleRequiresEvidence(node) {
+			continue
+		}
+		hasEvidence := false
+		for _, edge := range e.graph.GetInboundByType(node.ID, model.LinkContractTests) {
+			testNode, exists := e.graph.GetNode(edge.From)
+			if !exists || !nodeLifecycleRequiresEvidence(testNode) {
+				continue
+			}
+			hasContractCode, _ := testNode.Metadata["kind_code_contract"].(bool)
+			if hasContractCode {
+				hasEvidence = true
+				break
+			}
+		}
+		if !hasEvidence {
 			name := node.ID
 			if displayName, ok := node.Metadata["display_name"].(string); ok && displayName != "" {
 				name = displayName
@@ -386,6 +470,9 @@ func (e *Engine) validateDesignSections() {
 		if !strings.HasSuffix(path, "design.md") {
 			return
 		}
+		if hasIDDDocumentMetadata(lines) || e.directoryHasIDDDocumentMetadata(filepath.Dir(path)) {
+			return // collector enforces Component fields and declared concern sections
+		}
 
 		foundSections := make(map[string]int)
 		for lineIndex, line := range lines {
@@ -395,7 +482,7 @@ func (e *Engine) validateDesignSections() {
 		}
 
 		for _, section := range requiredSections {
-			lineIndex, found := foundSections[section]
+			_, found := foundSections[section]
 			if !found {
 				e.result.AddError(
 					"design-sections",
@@ -407,29 +494,6 @@ func (e *Engine) validateDesignSections() {
 				continue
 			}
 
-			if !hasIDDDocumentMetadata(lines) && !e.directoryHasIDDDocumentMetadata(filepath.Dir(path)) {
-				continue
-			}
-			hasContent := false
-			for nextIndex := lineIndex + 1; nextIndex < len(lines); nextIndex++ {
-				nextLine := strings.TrimSpace(lines[nextIndex])
-				if strings.HasPrefix(nextLine, "## ") {
-					break
-				}
-				if nextLine != "" {
-					hasContent = true
-					break
-				}
-			}
-			if !hasContent {
-				e.result.AddError(
-					"design-sections",
-					fmt.Sprintf("design.md required section is empty: %s", section),
-					fmt.Sprintf("%s:%d", path, lineIndex+1),
-					"",
-					section,
-				)
-			}
 		}
 	})
 }
@@ -866,6 +930,9 @@ func (e *Engine) validateContractDesignMarkers() {
 // real packages in the codebase. If a docs subdirectory doesn't match any
 // package path, emit a warning.
 func (e *Engine) validateDocPathExists() {
+	if len(e.cfg.Docs.Units) > 0 {
+		return // explicit documentation units intentionally need not mirror source paths
+	}
 	docsRoot := "docs"
 
 	entries, err := os.ReadDir(e.cfg.ResolvePath(docsRoot))
@@ -893,7 +960,11 @@ func (e *Engine) validateDocPathExists() {
 		fullPkgPath := pkgPath
 		if entry.Name() == "internal" || entry.Name() == "pkg" {
 			// For internal/ and pkg/, check subdirectories
-			subEntries, _ := os.ReadDir(e.cfg.ResolvePath(docDir))
+			subEntries, readErr := os.ReadDir(e.cfg.ResolvePath(docDir))
+			if readErr != nil {
+				e.addScanFinding(docDir, scanErrorCode(readErr, "read"), readErr)
+				continue
+			}
 			for _, subEntry := range subEntries {
 				if !subEntry.IsDir() {
 					continue
@@ -977,7 +1048,9 @@ func (e *Engine) validateDocCodeCorrespondence() {
 			hasCode, _ = node.Metadata[string(model.OriginCode)].(bool)
 		}
 
-		if hasDoc && !hasCode {
+		if hasDoc && !hasCode &&
+			(node.Type == model.TypeSpec || node.Type == model.TypeTest) &&
+			nodeLifecycleRequiresEvidence(node) {
 			e.result.AddError(
 				"doc-code-correspondence",
 				fmt.Sprintf("%s is documented but has no matching source annotation", node.ID),
@@ -1105,6 +1178,9 @@ func (e *Engine) directoryHasIDDDocumentMetadata(directory string) bool {
 	for _, filename := range []string{"design.md", "contract.md", "spec.md", "testing.md"} {
 		data, err := os.ReadFile(e.cfg.ResolvePath(filepath.Join(directory, filename)))
 		if err != nil {
+			if !os.IsNotExist(err) {
+				e.addScanFinding(filepath.Join(directory, filename), scanErrorCode(err, "read"), err)
+			}
 			continue
 		}
 		if hasIDDDocumentMetadata(strings.Split(string(data), "\n")) {
@@ -1139,13 +1215,57 @@ func (e *Engine) validatePkgDocFiles() {
 		dirFiles[dir][filepath.Base(path)] = true
 	})
 
-	for _, analysis := range e.ensureSourceAnalyses() {
-		docsDir, ok := docsDirectoryForSource(e.cfg, analysis.Path, docsRoots)
-		if !ok || e.isIgnoredDocPath(docsDir) {
-			continue
+	if len(e.cfg.Docs.Units) > 0 {
+		docsRoot := "docs"
+		if len(docsRoots) > 0 {
+			docsRoot = docsRoots[0]
 		}
-		if dirFiles[docsDir] == nil {
-			dirFiles[docsDir] = make(map[string]bool)
+		explicit := make(map[string]map[string]bool, len(e.cfg.Docs.Units))
+		for _, unit := range e.cfg.Docs.Units {
+			docsDir := filepath.Clean(filepath.Join(docsRoot, filepath.FromSlash(unit.Package)))
+			explicit[docsDir] = dirFiles[docsDir]
+			if explicit[docsDir] == nil {
+				explicit[docsDir] = make(map[string]bool)
+			}
+		}
+		for _, analysis := range e.ensureSourceAnalyses() {
+			units := e.cfg.DocumentationUnitsForSource(analysis.Path)
+			switch len(units) {
+			case 0:
+				e.result.AddWarning(
+					"source-unit-unmapped",
+					fmt.Sprintf("source %s is not owned by any docs.units source pattern", analysis.Path),
+					analysis.Path,
+					"",
+					"unmapped",
+				)
+			case 1:
+				// The configured package already contributes one canonical target above.
+			default:
+				packages := make([]string, 0, len(units))
+				for _, unit := range units {
+					packages = append(packages, unit.Package)
+				}
+				sort.Strings(packages)
+				e.result.AddError(
+					"source-unit-ambiguous",
+					fmt.Sprintf("source %s is owned by multiple documentation units: %s", analysis.Path, strings.Join(packages, ", ")),
+					analysis.Path,
+					"",
+					"ambiguous",
+				)
+			}
+		}
+		dirFiles = explicit
+	} else {
+		for _, analysis := range e.ensureSourceAnalyses() {
+			docsDir, ok := docsDirectoryForSource(e.cfg, analysis.Path, docsRoots)
+			if !ok || e.isIgnoredDocPath(docsDir) {
+				continue
+			}
+			if dirFiles[docsDir] == nil {
+				dirFiles[docsDir] = make(map[string]bool)
+			}
 		}
 	}
 

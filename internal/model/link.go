@@ -17,6 +17,14 @@ const (
 	LinkDependedBy         LinkType = "depended_by"
 	LinkSupersedes         LinkType = "supersedes"
 	LinkDeprecatedBy       LinkType = "deprecated_by"
+	// ID-centered relation names used by TraceIndex. Legacy graph names above
+	// remain supported while validation is migrated independently.
+	LinkDesignedBy    LinkType = "designed_by"
+	LinkConstrainedBy LinkType = "constrained_by"
+	LinkVerifies      LinkType = "verifies"
+	LinkProves        LinkType = "proves"
+	LinkExecutes      LinkType = "executes"
+	LinkMentions      LinkType = "mentions"
 )
 
 // ReverseLinkType returns the reverse link type.
@@ -55,8 +63,12 @@ func ReverseLinkType(lt LinkType) LinkType {
 // disambiguate relationship semantics.
 // @implement SPEC-INTERNAL_MODEL-012
 type IdentifierLink struct {
-	Ref  string
-	Type LinkType
+	Ref      string
+	Type     LinkType
+	Source   string
+	Line     int
+	Field    string
+	RecordID string
 }
 
 // Link represents a directed relationship between two identifiers.

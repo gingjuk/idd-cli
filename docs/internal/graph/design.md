@@ -1,7 +1,8 @@
 ---
 idd:
-  version: "1.0"
+  version: "1.1"
   package: internal/graph
+  namespace: INTERNAL_GRAPH
 ---
 
 # Design: internal/graph
@@ -20,6 +21,25 @@ The graph is a mutable working structure, not the canonical source of
 documentation. Collectors create identifiers and relationship references;
 `Engine.buildGraph` decides which nodes and edges to add. This package does not
 parse Markdown, infer link types, apply configuration, or format findings.
+
+**Ownership:**
+
+The component owns the mutable validation graph and the ID-centered TraceIndex
+that separates logical entities from every physical occurrence and preserves
+typed relation provenance in both query directions.
+
+**Boundary:**
+
+It stores and deterministically queries normalized data. Collectors decide
+what was authored, the engine decides validation policy, and reporters decide
+presentation; none of those meanings are inferred by the graph package.
+
+**Decisions:**
+
+Canonical declarations, references, implementations, test evidence, and
+mentions remain distinct occurrences. Query methods return stable copies so
+trace, review-context, and impacted share one index without collapsing
+file-and-line evidence.
 
 ### Responsibilities
 

@@ -2,8 +2,8 @@
 
 A CLI tool with an embedded **IDD (Intent-Driven Development)** skill. The
 skill guides semantic authoring; idd-cli creates safe document skeletons,
-repairs structural identity, and validates the complete documentation/code
-traceability graph.
+repairs structural identity, and maintains an ID-centered index of independent
+intent, contract, implementation, and evidence records.
 
 The self-describing format reduces duplicated declarations and relationships;
 it does not treat fewer lines as a documentation goal. Human-readable
@@ -13,13 +13,16 @@ explanation remains part of the product contract.
 
 idd-cli validates that a project adheres to the IDD documentation system:
 
-- **Consistent identifiers**: All IDD markers use path-based module naming (e.g., `SPEC-INTERNAL_AUTH-001` for `internal/auth/`)
+- **Stable identifiers**: Every documentation unit declares a namespace that
+  remains stable when its physical package path changes
+- **One canonical declaration**: An ID has one owner while typed references,
+  implementation evidence, test evidence, and mentions retain every location
 - **Derived traceability**: `testing.md` records coverage once and idd-cli derives reverse links
 - **CLI-owned code-doc association**: idd-cli joins declaration annotations
   (`@implement`, `@test`, `@test-contract`) directly to formal document records;
   source files do not repeat document paths
-- **Test coverage**: Every SPEC is covered through a TEST record's `Covers`
-  field; contract tests use `@test-contract`
+- **Lifecycle-aware delivery**: An active SPEC requires implementation and
+  TEST evidence; a planned SPEC may preserve approved intent before either exists
 - **Version-aligned workflow**: The binary exports the IDD skill that describes
   the document model it validates
 - **Human-readable depth**: Structural deduplication preserves design rationale,
@@ -95,6 +98,12 @@ idd-cli docs review-context \
   SPEC-INTERNAL_AUTH-002 \
   --format llm-markdown
 
+# Trace any ID across canonical docs, source, tests, and typed provenance
+idd-cli trace SPEC-INTERNAL_AUTH-001 --format llm-markdown
+
+# Derive a semantic-review queue from the complete current Git worktree
+idd-cli docs impacted --base main --format llm-markdown
+
 # After the skill repairs each finding and repository tests pass
 idd-cli run . --format json
 ```
@@ -116,16 +125,26 @@ gate; `idd-cli run /path/to/project` safely validates another worktree without
 mixing it with the caller's current directory or changing process cwd.
 
 `docs review-context` is not another gate. It accepts up to ten unique SPEC IDs,
-deduplicates repeats, and scans documentation and source once. Each returned
-context contains that SPEC's full authored record, Contract, covering TEST
-records, and bounded AST-bound implementation and test declarations. Use
+deduplicates repeats, and reuses one TraceProject scan. Each returned context
+contains that SPEC's full authored record, Components and relevant design,
+zero or more Contracts, covering TEST records, and bounded AST-bound
+implementation and test declarations. Use
 `--docs-path` when documentation input should be narrower than `.`.
+
+`trace` is the general ID dossier. It distinguishes the canonical declaration
+from references, implementation, test evidence, and optional mentions while
+retaining the file, line, field, and record source of each relation.
+`docs impacted --base <revision>` maps Git hunks and changed annotations through
+that same index. Its `related-spec-unchanged` finding is a review warning, not
+a semantic-staleness verdict.
 
 Deprecated configuration remains decodable only for migration. If
 `validation.consistency_check` is still present, `run` and `lint` emit a
 `deprecated-config` warning that names the configuration file and removal
-action; `docs review-context` emits the same notice on stderr. Remove the whole
-mapping rather than changing its ignored values.
+action; query commands emit the same notice on stderr. Remove the whole mapping
+rather than changing its ignored values. Obsolete `docs.identifier_patterns`
+is also ignored and should be removed: ID syntax is one versioned protocol,
+not a partial second authority.
 
 ### Example Prompts
 
@@ -162,7 +181,7 @@ Format: `TYPE-MODULE-NUMBER`
 
 - `TYPE`: `SPEC` or `TEST` for self-describing records. `CONTRACT` and
   `DESIGN` identifiers are accepted only by the legacy metadata model.
-- `MODULE`: Path-based abbreviation following directory structure
+- `MODULE`: The stable `idd.namespace` owned by a documentation unit
 - `ID`: Sequential number within the module
 
 Examples:
@@ -173,11 +192,12 @@ Examples:
 | `TEST-INTERNAL_ENGINE-001` | Test 001 for `internal/engine/` module |
 | `SPEC-PKG_WALK-001` | Spec 001 for `pkg/walk/` module |
 
-### Module Naming Rules
+### Namespace Rules
 
-The module is derived without a lookup table: uppercase every package-path
-component, replace hyphens with underscores, and join components with
-underscores.
+`docs init` derives the initial namespace by uppercasing package-path
+components, replacing hyphens with underscores, and joining components with
+underscores. After creation, preserve it across package moves instead of
+renaming historical IDs.
 
 | Package path | Module |
 | --- | --- |
@@ -187,9 +207,19 @@ underscores.
 
 ## Documentation Structure
 
-Each scanned source package directory has its own documentation under the same
-project-relative `docs/<path>/`. A nested source package is an independent
-package and therefore owns an equally nested document set:
+Each IDD documentation unit owns one four-file set under its project-relative
+`docs/<package>/`. Without `docs.units`, source packages retain the historical
+one-package/one-document-set mapping. An explicit unit may cover several
+physical source packages, keeping behavior ownership independent of layout:
+
+```yaml
+docs:
+  units:
+    - package: auth
+      sources:
+        - "internal/auth/**"
+        - "internal/session/**"
+```
 
 ```text
 docs/
@@ -209,8 +239,9 @@ Every file is self-describing. YAML frontmatter contains only identity:
 
 ```yaml
 idd:
-  version: "1.0"
+  version: "1.1"
   package: internal/auth
+  namespace: INTERNAL_AUTH
 ```
 
 The exact lowercase filename is the only document-role marker:
@@ -218,7 +249,7 @@ The exact lowercase filename is the only document-role marker:
 `idd.document` field is invalid; there is no compatibility period for it.
 Headings and prose do not determine the role.
 
-Each package owns one file of each role. IDD documents have no line-count
+Each documentation unit owns one file of each role. IDD documents have no line-count
 limit, so keep detailed rationale, requirements, boundaries, examples,
 diagrams, and small local tables in those four files. Do not split a role into
 names such as `design-auth.md`, `spec.part.md`, or `testing_extra.md`.
@@ -246,6 +277,12 @@ it is not a complete documentation example.
 **Purpose:** Separate credential verification from transport concerns and own
 the request-scoped authentication decision.
 
+**Ownership:** Own request-scoped credential-verification orchestration.
+
+**Boundary:** Transports, persistence, and session state remain outside.
+
+**Decisions:** Return one rejection category for unknown users and bad secrets.
+
 <!-- contract.md -->
 ## Contract: Authenticator
 
@@ -256,8 +293,8 @@ credential failed.
 <!-- spec.md -->
 ## SPEC-INTERNAL_AUTH-001: User authentication
 
-- **Design:** `AuthModule`
-- **Contract:** `Authenticator`
+- **Components:** `AuthModule`
+- **Contracts:** `Authenticator`
 
 **Requirement:** Authenticate users with validated credentials.
 
@@ -296,6 +333,10 @@ be explained. A useful document set lets a new maintainer understand:
   oracles, and meaningful exclusions.
 
 Use paragraphs, lists, diagrams, examples, and subordinate headings naturally.
+Contract prose should distinguish guarantees from non-guarantees, known
+limitations, and compatibility commitments. Only deliberate caller promises
+belong in `Guarantees`; current defects and incidental behavior remain visible
+as limitations instead of becoming permanent contract obligations.
 Do not restore repeated backlinks or copy every source signature into the
 records. Conversely, do not collapse a design or requirement to a one-sentence
 summary merely because idd-cli can parse it.
@@ -317,6 +358,10 @@ Component and Contract names must not contain the reserved `#` or `,`
 reference separators.
 
 Records may declare `Status`, `Supersedes`, `Deprecated by`, and `Concerns`.
+`planned` preserves approved but undelivered intent without requiring code or
+tests. `active` means delivered and therefore requires implementation and TEST
+evidence; deprecated and superseded records retain history without delivery
+correspondence requirements.
 Lifecycle replacements must be same-kind, single-valued after normalization,
 and acyclic. A selected concern requires a same-named, non-empty level-three
 section for `security`, `concurrency`, `persistence`, `performance`, or
@@ -370,9 +415,10 @@ func TestLogin(t *testing.T) { ... }
 func TestLoginContract(t *testing.T) { ... }
 ```
 
-The identifier is the code-to-document join key. idd-cli resolves it against
-the four self-describing package documents and reports either side when its
-matching source annotation or document record is missing. Do not add repeated
+The identifier is the code-to-document join key. idd-cli resolves annotations
+against the canonical documentation unit and requires implementation/evidence
+for active records. Ordinary helper APIs and unrelated tests do not need
+invented IDD records unless optional census rules are enabled. Do not add repeated
 `Spec:`, `Contract:`, or `Test:` document paths to source-file headers.
 
 The `@test-contract` annotation links contract test functions to their
@@ -386,8 +432,8 @@ the document record and its declaration annotation.
 Equivalent declaration-attached comments are recognized in all supported
 languages (`//` or `/* */`, and `#` in Python). The parser ignores annotation
 text in strings and does not bind comments inside function bodies or detached
-comments. Public declarations require `@implement`; recognized test
-declarations require `@test` or `@test-contract`. The annotation and declaration
+comments. An annotation must name a declared record and remain attached to its
+declaration. Optional public/test census rules can demand broader coverage. The annotation and declaration
 must be adjacent apart from comments and limited whitespace.
 
 ## Validation Rules
@@ -397,10 +443,10 @@ idd-cli enforces these rules:
 | Rule | Description |
 |------|-------------|
 | `idd-document-schema` | Each file contains valid role-owned records, required fields, lifecycle state, and concern sections |
-| `idd-document-identity` | Version and package match the canonical `docs/<package>/` location |
+| `idd-document-identity` | Version, package, and stable namespace agree across the canonical unit |
 | `idd-document-filename` | IDD role documents use only the four canonical basenames; split files receive a path-specific, content-preserving agent merge prompt |
 | `idd-document-set` | All four self-describing documents exist |
-| `idd-document-reference` | Design, contract, and coverage references resolve |
+| `idd-document-reference` | Component, Contract, coverage, dependency, and lifecycle references resolve |
 | `idd-document-incomplete` | Generated scaffold slots still need authored content |
 | `idd-document-markdown` | Records are well-formed and do not duplicate legacy metadata |
 | `idd-document-migration` | Central catalogs and semantic YAML fields require migration |
@@ -410,11 +456,11 @@ idd-cli enforces these rules:
 | `spec-required-fields` | Legacy SPEC sections contain their required fields |
 | `doc-link-consistency` | Self-described or legacy coverage relationships are consistent |
 | `orphan-detection` | No undefined or unreferenced identifiers |
-| `doc-code-correspondence` | Declaration annotations and document records match by identifier |
-| `public-func-annotation` | Public source declarations use `@implement` |
-| `test-annotation` | Recognized test declarations use the correct test annotation |
+| `doc-code-correspondence` | Active SPEC/TEST records have declaration evidence and every annotation resolves |
+| `public-func-annotation` | Optional census mode requires public source declarations to use `@implement` |
+| `test-annotation` | Optional census mode requires every recognized test declaration to use an annotation |
 | `contract-test-coverage` | Legacy markers and self-describing named Contracts have contract-test evidence |
-| `design-sections` | Docs have required ## Design sections |
+| `design-sections` | Components own Purpose/Ownership/Boundary/Decisions and declared concerns have narrative sections |
 | `frontmatter-mismatch` | Legacy YAML frontmatter markers match content |
 
 Narrative validation rejects structural emptiness and obvious placeholders; it

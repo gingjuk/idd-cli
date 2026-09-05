@@ -143,9 +143,8 @@ Temporary filesystem fixtures.
 			content: complete,
 		},
 		{
-			name:      "empty self-describing design section is incomplete",
-			content:   strings.Replace(complete, "## Architecture\nConcrete architecture.", "## Architecture", 1),
-			wantError: true,
+			name:    "fixed sections are optional for self-describing design",
+			content: strings.Replace(complete, "## Architecture\nConcrete architecture.", "## Architecture", 1),
 		},
 	}
 
@@ -157,8 +156,9 @@ Temporary filesystem fixtures.
 			}
 			content := `---
 idd:
-  version: "1.0"
+  version: "1.1"
   package: internal/example
+  namespace: INTERNAL_EXAMPLE
 ---
 
 ` + tt.content
@@ -693,6 +693,80 @@ func TestEngine_PkgDocFiles_RequiresNestedSourcePackageDocumentSet(t *testing.T)
 	}
 }
 
+// @test TEST-INTERNAL_ENGINE-031
+func TestEngine_PkgDocFiles_ExplicitDocumentationUnitOwnership(t *testing.T) {
+	tests := []struct {
+		name      string
+		units     []config.DocumentationUnit
+		wantError string
+		wantWarn  string
+	}{
+		{
+			name:  "one documentation unit spans packages",
+			units: []config.DocumentationUnit{{Package: "auth", Sources: []string{"internal/auth/**", "internal/session/**"}}},
+		},
+		{
+			name:     "unmapped source is discover warning",
+			units:    []config.DocumentationUnit{{Package: "auth", Sources: []string{"internal/auth/**"}}},
+			wantWarn: "source-unit-unmapped",
+		},
+		{
+			name: "overlapping ownership fails",
+			units: []config.DocumentationUnit{
+				{Package: "auth", Sources: []string{"internal/**"}},
+				{Package: "session", Sources: []string{"internal/session/**"}},
+			},
+			wantError: "source-unit-ambiguous",
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			root := t.TempDir()
+			docsRoot := filepath.Join(root, "docs")
+			for _, unit := range test.units {
+				dir := filepath.Join(docsRoot, filepath.FromSlash(unit.Package))
+				if err := os.MkdirAll(dir, 0o755); err != nil {
+					t.Fatal(err)
+				}
+				for _, filename := range []string{"design.md", "contract.md", "spec.md", "testing.md"} {
+					if err := os.WriteFile(filepath.Join(dir, filename), []byte("# content\n"), 0o644); err != nil {
+						t.Fatal(err)
+					}
+				}
+			}
+			cfg := &config.Config{
+				Docs:       config.DocsConfig{Patterns: []string{filepath.Join(docsRoot, "**/*.md")}, Units: test.units},
+				Validation: config.ValidationConfig{RequirePkgDocFiles: true},
+			}
+			eng := New(cfg)
+			eng.SetSourceAnalyses([]*collector.SourceAnalysis{
+				{Path: "internal/auth/auth.go"},
+				{Path: "internal/session/token.go"},
+			})
+			result, err := eng.Run(context.Background(), model.NewIdentifierSet())
+			if err != nil {
+				t.Fatalf("Run() error = %v", err)
+			}
+			if got := resultHasRule(result, test.wantError); test.wantError != "" && !got {
+				t.Errorf("missing error %s: %#v", test.wantError, result.Errors)
+			}
+			if test.wantError == "" && len(result.Errors) != 0 {
+				t.Errorf("unexpected errors: %#v", result.Errors)
+			}
+			if test.wantWarn != "" {
+				found := false
+				for _, warning := range result.Warnings {
+					found = found || warning.Rule == test.wantWarn
+				}
+				if !found {
+					t.Errorf("missing warning %s: %#v", test.wantWarn, result.Warnings)
+				}
+			}
+		})
+	}
+}
+
 // @test TEST-INTERNAL_ENGINE-032
 func TestEngine_PkgDocFiles_AllPresent(t *testing.T) {
 	tmpDir := t.TempDir()
@@ -792,41 +866,15 @@ func TestEngine_DuplicateIDs_DocSide(t *testing.T) {
 }
 
 // @test TEST-INTERNAL_ENGINE-035
-func TestEngine_DuplicateIDs_SameDir_NoError(t *testing.T) {
+func TestEngine_DuplicateIDs_SameDir_IsConflict(t *testing.T) {
 	cfg := &config.Config{Version: "1.0"}
 	ids := model.NewIdentifierSet()
 
-	// Same ID in two files of the same doc directory → not a conflict
+	// Same ID in two files of one directory is still two canonical owners.
 	a := model.NewIdentifier("SPEC-BE-001", model.TypeSpec, "Spec A", "docs/backend/spec.md", 1)
 	a.SetOrigin(model.OriginDoc)
 	b := model.NewIdentifier("SPEC-BE-001", model.TypeSpec, "Spec B", "docs/backend/testing.md", 1)
 	b.SetOrigin(model.OriginDoc)
-	ids.Add(a)
-	ids.Add(b)
-
-	eng := New(cfg)
-	result, err := eng.Run(context.Background(), ids)
-	if err != nil {
-		t.Fatalf("Run failed: %v", err)
-	}
-
-	for _, e := range result.Errors {
-		if e.Rule == "duplicate-id" {
-			t.Errorf("unexpected duplicate-id error for same directory: %s", e.Message)
-		}
-	}
-}
-
-// @test TEST-INTERNAL_ENGINE-036
-func TestEngine_DuplicateIDs_CodeSide(t *testing.T) {
-	cfg := &config.Config{Version: "1.0"}
-	ids := model.NewIdentifierSet()
-
-	// Same ID @implement in two different code packages → conflict
-	a := model.NewIdentifier("SPEC-BE-001", model.TypeSpec, "", "internal/backend/service.go", 10)
-	a.SetOrigin(model.OriginCode)
-	b := model.NewIdentifier("SPEC-BE-001", model.TypeSpec, "", "internal/billing/service.go", 20)
-	b.SetOrigin(model.OriginCode)
 	ids.Add(a)
 	ids.Add(b)
 
@@ -844,7 +892,33 @@ func TestEngine_DuplicateIDs_CodeSide(t *testing.T) {
 		}
 	}
 	if !found {
-		t.Error("expected duplicate-id error for same ID in different code packages")
+		t.Error("expected duplicate-id error for competing owners in one directory")
+	}
+}
+
+// @test TEST-INTERNAL_ENGINE-036
+func TestEngine_MultipleCodeOccurrences_AreAllowed(t *testing.T) {
+	cfg := &config.Config{Version: "1.0"}
+	ids := model.NewIdentifierSet()
+
+	// One canonical ID may have implementation evidence in multiple packages.
+	a := model.NewIdentifier("SPEC-BE-001", model.TypeSpec, "", "internal/backend/service.go", 10)
+	a.SetOrigin(model.OriginCode)
+	b := model.NewIdentifier("SPEC-BE-001", model.TypeSpec, "", "internal/billing/service.go", 20)
+	b.SetOrigin(model.OriginCode)
+	ids.Add(a)
+	ids.Add(b)
+
+	eng := New(cfg)
+	result, err := eng.Run(context.Background(), ids)
+	if err != nil {
+		t.Fatalf("Run failed: %v", err)
+	}
+
+	for _, e := range result.Errors {
+		if e.Rule == "duplicate-id" {
+			t.Errorf("unexpected duplicate-id error for source occurrences: %s", e.Message)
+		}
 	}
 }
 

@@ -1,7 +1,8 @@
 ---
 idd:
-  version: "1.0"
+  version: "1.1"
   package: internal/engine
+  namespace: INTERNAL_ENGINE
 ---
 
 # Design: internal/engine
@@ -11,10 +12,10 @@ idd:
 **Purpose:**
 
 `ValidationEngine` is the stateful coordinator between collected identifier
-evidence and a repository-level validation result. It detects cross-package
-duplicates, builds the linkage graph, applies configured graph and filesystem
-rules, enriches the result with statistics and an optional graph snapshot, and
-sorts findings for deterministic reporting.
+evidence and a repository-level validation result. It detects competing
+canonical document owners, builds the linkage graph, applies configured graph
+and filesystem rules, enriches the result with statistics and an optional
+graph snapshot, and sorts findings for deterministic reporting.
 
 Collection is deliberately outside the component. The CLI invokes
 `DocCollector` and `CodeCollector`, merges their `IdentifierSet` values, passes
@@ -24,11 +25,30 @@ then calls `Run`. The engine can rescan configured files for rules that depend
 on raw Markdown layout, but source annotation placement and declaration policy
 consume the normalized AST model.
 
+**Ownership:**
+
+The component owns repository-wide policy execution over collected entities,
+occurrences, typed relations, AST analyses, configured documentation units,
+and filesystem evidence, plus deterministic validity and statistics.
+
+**Boundary:**
+
+Collectors own parsing and provenance creation; reporters own presentation;
+the CLI owns configuration and process behavior. The engine never authors or
+repairs prose and cannot establish whether an intention is semantically sound.
+
+**Decisions:**
+
+Validation remains an explicit ordered pipeline with one shared TraceIndex.
+Lifecycle gates correspondence and coverage from canonical SPECs outward, and
+scan failures are findings rather than evidence of absence or success.
+
 ### Responsibilities
 
 - accept a resolved configuration and pre-collected identifier set;
 - preserve collector structural errors in the shared result;
-- detect duplicate document and code IDs across package directories;
+- reject every duplicate canonical document owner, including two declarations
+  in one directory, while allowing multiple source evidence occurrences;
 - create graph nodes for every observation and retain origin, description,
   TEST-kind, and source metadata;
 - preserve typed links for Component dependencies, named Contract evidence,
@@ -41,8 +61,8 @@ consume the normalized AST model.
   syntax-tree analyses;
 - join source and document observations by SPEC or TEST identifier, without
   file-level document paths;
-- map every scanned source directory, including nested sub-packages, to its
-  equally nested `docs/<package>/` four-file document set;
+- map every scanned source to exactly one configured documentation unit, or use
+  the legacy same-path package mapping when no units are configured;
 - read configured files for remaining Markdown and package-document-set
   evidence;
 - set validity from accumulated errors, sort findings, and attach statistics;

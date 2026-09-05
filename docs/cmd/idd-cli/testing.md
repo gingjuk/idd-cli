@@ -1,7 +1,8 @@
 ---
 idd:
-  version: "1.0"
+  version: "1.1"
   package: cmd/idd-cli
+  namespace: CMD_IDD_CLI
 ---
 
 # Testing: cmd/idd-cli
@@ -172,6 +173,38 @@ its frontmatter through the command package's stable Skill information shape.
 **Oracle:** The embedded path resolves to `skills/SKILL.md`, its bytes contain
 the IDD workflow, parsed metadata retains name, audience, workflow, and
 protection state, and a missing embedded path returns an error.
+
+## TEST-CMD_IDD_CLI-007: ID-centered trace behavior
+
+- **Kind:** `test`
+- **Covers:** `SPEC-CMD_IDD_CLI-011`
+
+**Purpose:** Verify the trace command and shared query projection preserve
+canonical ownership, typed occurrence classes, bidirectional relation
+provenance, lifecycle/resolution state, bounded traversal, and stable output.
+
+**Oracle:** Table-driven index/query/reporter tests pass only when JSON uses
+schema `idd.trace.v1`, repeated queries serialize deterministically, Component
+and Contract context is present, mentions obey the explicit include flag, and
+unknown or ambiguous owners retain evidence while causing the documented CLI
+error behavior. Review-context regression cases must resolve through the same
+TraceProject and preserve their focused evidence contract.
+
+## TEST-CMD_IDD_CLI-008: Change-aware impacted behavior
+
+- **Kind:** `test`
+- **Covers:** `SPEC-CMD_IDD_CLI-012`
+
+**Purpose:** Verify Git changes become a stable, provenance-bearing IDD review
+queue without a second document/source relationship parser.
+
+**Oracle:** Table-driven tests cover name-status parsing, rename paths, zero and
+implicit hunk counts, added and deleted annotations, untracked files,
+AST declaration-range matches, conservative fallback labeling, bidirectional
+SPEC/TEST/Contract/Component traversal, physical-endpoint exclusion, stable
+JSON/LLM Markdown, and `related-spec-unchanged` warning suppression when the
+canonical SPEC file changed. The Cobra contract exposes `docs impacted` with
+`--base`, and the focused package tests pass under the race detector.
 
 ## Strategy
 

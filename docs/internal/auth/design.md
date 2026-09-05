@@ -1,7 +1,8 @@
 ---
 idd:
-  version: "1.0"
+  version: "1.1"
   package: internal/auth
+  namespace: INTERNAL_AUTH
 ---
 
 # Design: internal/auth
@@ -14,6 +15,23 @@ idd:
 authentication boundary. The current package is deliberately a value-model
 stub: it documents the shape and expected meaning of login data without
 claiming that authentication behavior already exists.
+
+**Ownership:**
+
+The component owns the names and field-level meaning of the request and
+response values exchanged by a future authentication capability.
+
+**Boundary:**
+
+It stores values only; validation, credential verification, token issuance,
+session management, secret protection, and transport policy remain outside
+this package and require their own behavior boundary.
+
+**Decisions:**
+
+Plain dependency-free structs preserve a stable vocabulary without selecting
+premature service or error policy. The resulting constraints are documentary
+until a separate active behavior component implements them.
 
 ### Responsibilities
 
