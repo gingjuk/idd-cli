@@ -46,10 +46,15 @@ func TestReverseLinkType(t *testing.T) {
 	}{
 		{"tests -> implements", LinkTests, LinkImplements},
 		{"implements -> tests", LinkImplements, LinkTests},
+		{"contract tests -> contract tests", LinkContractTests, LinkContractTests},
 		{"references -> references", LinkReferences, LinkReferences},
 		{"annotates -> annotates", LinkAnnotates, LinkAnnotates},
+		{"contract -> contract implements", LinkContract, LinkContractImplements},
+		{"contract implements -> contract", LinkContractImplements, LinkContract},
 		{"depends_on -> depended_by", LinkDependsOn, LinkDependedBy},
+		{"depended_by -> depends_on", LinkDependedBy, LinkDependsOn},
 		{"supersedes -> deprecated_by", LinkSupersedes, LinkDeprecatedBy},
+		{"deprecated_by -> supersedes", LinkDeprecatedBy, LinkSupersedes},
 		{"unknown -> same", LinkType("unknown"), LinkType("unknown")},
 	}
 

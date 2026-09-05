@@ -3,6 +3,7 @@ package model
 
 import (
 	"encoding/json"
+	"path/filepath"
 	"testing"
 )
 
@@ -329,10 +330,18 @@ func TestIdentifierSet_GetAll(t *testing.T) {
 func TestIdentifier_AddTypedLink(t *testing.T) {
 	identifier := NewIdentifier("SPEC-001", TypeSpec, "", "spec.md", 1)
 	identifier.AddTypedLink("SPEC-000", LinkSupersedes)
-	if len(identifier.TypedLinks) != 1 ||
+	identifier.AddTypedLinkAt("component:sample#Runner", LinkReferences, "docs/sample/spec.md", 12, "Components")
+	identifier.AddTypedLinkAt("contract:sample#Execution", LinkContract, "docs/sample/spec.md", 13, "Contracts", "SPEC-SAMPLE-001")
+	if len(identifier.TypedLinks) != 3 ||
 		identifier.TypedLinks[0].Ref != "SPEC-000" ||
 		identifier.TypedLinks[0].Type != LinkSupersedes {
 		t.Errorf("TypedLinks = %#v", identifier.TypedLinks)
+	}
+	if got := identifier.TypedLinks[1].RecordID; got != identifier.ID {
+		t.Errorf("default RecordID = %q, want %q", got, identifier.ID)
+	}
+	if got := identifier.TypedLinks[2]; got.RecordID != "SPEC-SAMPLE-001" || got.Field != "Contracts" || got.Line != 13 {
+		t.Errorf("provenance-aware TypedLink = %#v", got)
 	}
 }
 
@@ -424,9 +433,9 @@ func TestIdentifier_SetOrigin(t *testing.T) {
 
 func TestIdentifierSet_DuplicateDocGroups(t *testing.T) {
 	tests := []struct {
-		name       string
+		name        string
 		identifiers []*Identifier
-		wantGroups int
+		wantGroups  int
 	}{
 		{
 			name: "owners in different directories conflict",
@@ -468,12 +477,64 @@ func TestIdentifierSet_DuplicateDocGroups(t *testing.T) {
 	}
 }
 
+func TestIdentifierSet_DuplicateCodeGroups(t *testing.T) {
+	tests := []struct {
+		name        string
+		identifiers []*Identifier
+		wantGroups  int
+	}{
+		{
+			name: "evidence in different source packages conflicts",
+			identifiers: []*Identifier{
+				NewIdentifier("SPEC-BE-001", TypeSpec, "", "internal/z/z.go", 20),
+				NewIdentifier("SPEC-BE-001", TypeSpec, "", "internal/a/a.go", 10),
+			},
+			wantGroups: 1,
+		},
+		{
+			name: "repeated evidence in one source package is allowed",
+			identifiers: []*Identifier{
+				NewIdentifier("SPEC-BE-001", TypeSpec, "", "internal/a/first.go", 10),
+				NewIdentifier("SPEC-BE-001", TypeSpec, "", "internal/a/second.go", 20),
+			},
+		},
+		{
+			name: "document declarations are ignored",
+			identifiers: []*Identifier{
+				NewIdentifier("SPEC-BE-001", TypeSpec, "", "docs/a/spec.md", 10),
+				NewIdentifier("SPEC-BE-001", TypeSpec, "", "docs/b/spec.md", 20),
+			},
+		},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			set := NewIdentifierSet()
+			for _, identifier := range test.identifiers {
+				if filepath.Ext(identifier.Source) == ".go" {
+					identifier.SetOrigin(OriginCode)
+				}
+				set.Add(identifier)
+			}
+			groups := set.DuplicateCodeGroups()
+			if len(groups) != test.wantGroups {
+				t.Fatalf("len(DuplicateCodeGroups()) = %d, want %d", len(groups), test.wantGroups)
+			}
+			if len(groups) == 1 && groups[0][0].Source != "internal/a/a.go" {
+				t.Errorf("group is not stably sorted: %#v", groups[0])
+			}
+		})
+	}
+}
+
 // @test-contract TEST-INTERNAL_MODEL-018
 func TestValidationResult_Sort_MultipleRules(t *testing.T) {
 	result := NewValidationResult()
 	result.AddError("zzz", "msg3", "", "", "")
 	result.AddError("aaa", "msg1", "", "", "")
 	result.AddError("mmm", "msg2", "", "", "")
+	result.AddWarning("zzz", "msg3", "", "", "")
+	result.AddWarning("aaa", "msg2", "", "", "")
+	result.AddWarning("aaa", "msg1", "", "", "")
 
 	result.Sort()
 
@@ -485,6 +546,9 @@ func TestValidationResult_Sort_MultipleRules(t *testing.T) {
 	}
 	if result.Errors[2].Rule != "zzz" {
 		t.Errorf("Errors[2].Rule = %q, want 'zzz'", result.Errors[2].Rule)
+	}
+	if result.Warnings[0].Rule != "aaa" || result.Warnings[0].Message != "msg1" || result.Warnings[2].Rule != "zzz" {
+		t.Errorf("Warnings are not sorted by rule and message: %#v", result.Warnings)
 	}
 }
 

@@ -63,6 +63,57 @@ func TestRenderTraceDossier(t *testing.T) {
 	}
 }
 
+// @test TEST-INTERNAL_REPORTER-016
+func TestRenderTraceDossierUnresolvedAndNil(t *testing.T) {
+	tests := []struct {
+		name      string
+		dossier   *collector.TraceDossier
+		wantError string
+		contains  []string
+	}{
+		{
+			name:      "nil dossier is rejected",
+			wantError: "trace dossier is nil",
+		},
+		{
+			name: "unresolved dossier retains an explicit empty projection",
+			dossier: &collector.TraceDossier{
+				Schema:    collector.TraceSchema,
+				Query:     collector.TraceQuery{ID: "SPEC-MISSING-001"},
+				Status:    "unresolved",
+				Truncated: true,
+			},
+			contains: []string{
+				"No logical entity was resolved",
+				"No unique canonical declaration was resolved",
+				"No related Component was collected",
+				"No related Contract was collected",
+				"No related TEST evidence was collected",
+				"Some authored records or declaration excerpts were truncated",
+			},
+		},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			rendered, err := RenderTraceDossier(test.dossier, "markdown")
+			if test.wantError != "" {
+				if err == nil || !strings.Contains(err.Error(), test.wantError) {
+					t.Fatalf("error = %v, want containing %q", err, test.wantError)
+				}
+				return
+			}
+			if err != nil {
+				t.Fatalf("RenderTraceDossier() error = %v", err)
+			}
+			for _, value := range test.contains {
+				if !strings.Contains(string(rendered), value) {
+					t.Errorf("output lacks %q", value)
+				}
+			}
+		})
+	}
+}
+
 func traceReporterFixture() *collector.TraceDossier {
 	return &collector.TraceDossier{
 		Schema:    collector.TraceSchema,
