@@ -79,10 +79,10 @@ requirements and architecture.
 - deduplicates repeated packages and preflights the whole batch before writing;
 - creates or adopts exactly `design.md`, `contract.md`, `spec.md`, and
   `testing.md` under `docs/<package>/`;
-- treats each nested source sub-package as an independent invocation and
-  equally nested documentation set;
-- writes only version/package identity because the exact basename is the sole
-  role authority;
+- without explicit `docs.units`, treats each nested source sub-package as an
+  independent invocation and equally nested documentation set;
+- writes version, current package, and stable namespace identity because the
+  exact basename is the sole role authority;
 - never overwrites existing IDD or legacy metadata;
 - refuses legacy marker or `related_files` metadata before writing anything;
 - creates structural headings with stable `idd:scaffold` markers, never fake

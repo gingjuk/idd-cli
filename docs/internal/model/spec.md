@@ -68,20 +68,23 @@ normalization.
 **Requirement:**
 
 The collection must preserve every observation, maintain type and ID indexes,
-filter by origin, and distinguish same-directory repetition from IDs duplicated
-across packages.
+filter by origin, identify every competing documentation owner regardless of
+its directory, and keep repeated source annotations as evidence occurrences.
 
 **Acceptance:** After adding document and code observations, lookup by ID and
 origin returns only the matching values; wrong-origin and unknown-ID queries
-are empty. Duplicate analysis retains separate observations, ignores repeated
-files from one directory as a package conflict, and groups occurrences only
-when the same ID spans directories.
+are empty. Documentation duplicate analysis groups two or more doc-origin
+declarations even when they occur in different files of one directory. Source
+observations remain independently queryable and do not create canonical-owner
+conflicts.
 
 ### Implementation boundary
 
-Adding values performs no uniqueness or nil check. Cross-directory duplicate
-groups retain one source representative per directory; callers decide whether
-that evidence is an error.
+Adding values performs no uniqueness or nil check. `DuplicateDocGroups`
+returns every competing documentation declaration in deterministic ID and
+location order. The compatibility `DuplicateCodeGroups` view can still group
+source directories, but engine policy treats those values as evidence rather
+than canonical declarations.
 
 ## SPEC-INTERNAL_MODEL-005: First and complete ID lookup
 

@@ -52,7 +52,8 @@ stable boundary used by higher-level queries.
   evidence;
 - provide unique, duplicate-preserving, type-specific, and origin-specific
   collection views;
-- detect duplicate IDs that cross source directories;
+- expose all competing documentation owners while preserving repeated source
+  annotations as evidence;
 - translate source annotations into identifier observations;
 - model relationship direction and reverse relationship types;
 - accumulate and sort validation errors and warnings;
@@ -154,8 +155,9 @@ origin filtering, untyped and typed link append behavior, annotation
 conversion, result mutation and sorting, every directional relationship
 reversal, and JSON round trips.
 
-Direct package tests do not exhaustively cover cross-directory duplicate
-grouping, aliasing through returned slices, exact order among duplicate IDs,
-concurrent access, every report `omitempty` combination, or invalid field
-combinations. Engine and reporter tests provide additional integration evidence
-for those consumers.
+Table-driven package tests cover canonical-owner conflicts across and within
+directories and verify that source evidence is not a document-owner conflict.
+They do not exhaustively cover aliasing through returned slices, exact order
+among every duplicate-ID combination, concurrent access, every report
+`omitempty` combination, or invalid field combinations. Engine and reporter
+tests provide additional integration evidence for those consumers.

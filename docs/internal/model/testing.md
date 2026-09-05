@@ -402,8 +402,9 @@ reverse-link mappings; exact field assertions cover constructors and mutation;
 JSON round trips cover the wire model. No test relies on filesystem state,
 time, randomness, or network access.
 
-The suite deliberately does not claim direct coverage of cross-directory
-duplicate grouping, nil insertion, mutation aliasing, duplicate-ID secondary
+The suite directly covers canonical-owner conflicts across and within
+directories and the non-conflicting source-evidence case. It does not claim
+coverage of nil insertion, mutation aliasing, every duplicate-ID secondary
 ordering, concurrency, every link constant, every JSON omission rule, or
 invalid report field combinations. Engine and reporter tests cover some
 consumer behavior, but these model-level boundaries remain explicit.

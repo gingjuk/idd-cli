@@ -54,10 +54,13 @@ observation to the public slice for its type.
 - `HasOrigin` searches observations for one ID and origin.
 - `Merge` appends all observations from another set without cloning.
 
-Duplicate document/code group detection reports one representative per source
-directory only when an ID spans multiple directories. Returned pointers and
-slices are borrowed mutable data. The set is not concurrency-safe and rejects
-no nil identifiers; callers must supply valid pointers.
+Duplicate document grouping returns every doc-origin declaration whenever an
+ID has more than one canonical owner, including declarations in separate files
+of the same directory, in deterministic ID/location order. The compatibility
+code-group view reports one source representative per directory, but source
+annotations are evidence and are not canonical-owner conflicts. Returned
+pointers and slices are borrowed mutable data. The set is not concurrency-safe
+and rejects no nil identifiers; callers must supply valid pointers.
 
 ## Contract: SourceAnnotation
 
