@@ -1,7 +1,8 @@
 ---
 idd:
-  version: "1.0"
+  version: "1.1"
   package: internal/auth
+  namespace: INTERNAL_AUTH
 ---
 
 # Contracts: internal/auth

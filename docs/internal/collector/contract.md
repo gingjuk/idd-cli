@@ -1,7 +1,8 @@
 ---
 idd:
-  version: "1.0"
+  version: "1.1"
   package: internal/collector
+  namespace: INTERNAL_COLLECTOR
 ---
 
 # Contracts: internal/collector
@@ -179,8 +180,8 @@ deduplicated in first-request order. Documentation and source collection each
 run once for the batch. Every requested identifier resolves exactly one
 canonical SPEC owner.
 
-The result uses schema `idd.spec_review_context_batch.v1` and contains one
-ordered `idd.spec_review_context.v1` value per unique identifier. Each context
+The result uses schema `idd.spec_review_context_batch.v2` and contains one
+ordered `idd.spec_review_context.v2` value per unique identifier. Each context
 contains the SPEC fields, complete
 bounded authored SPEC section, and source location; its named Contract record;
 every TEST record whose `Covers` list names the SPEC; every attached
@@ -203,7 +204,7 @@ missing, or multiply owned SPEC, an empty request, or more than ten unique
 identifiers is returned as an atomic operational error.
 
 `BuildSpecReviewContext` remains the single-SPEC wrapper and returns the first
-context without changing schema `idd.spec_review_context.v1`.
+context without changing schema `idd.spec_review_context.v2`.
 
 ## Contract: LegacyFrontmatter
 

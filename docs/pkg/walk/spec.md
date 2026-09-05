@@ -1,15 +1,16 @@
 ---
 idd:
-  version: "1.0"
+  version: "1.1"
   package: pkg/walk
+  namespace: PKG_WALK
 ---
 
 # Specifications: pkg/walk
 
 ## SPEC-PKG_WALK-001: Synchronous visitor boundary
 
-- **Design:** `FilesystemWalker`
-- **Contract:** `FileTraversal`
+- **Components:** `FilesystemWalker`
+- **Contracts:** `FileTraversal`
 
 **Requirement:**
 
@@ -35,8 +36,8 @@ returned by `Walk`; a no-match invocation never calls the visitor.
 
 ## SPEC-PKG_WALK-002: Pattern expansion, recursion, and deduplication
 
-- **Design:** `FilesystemWalker`
-- **Contract:** `FileTraversal`
+- **Components:** `FilesystemWalker`
+- **Contracts:** `FileTraversal`
 
 **Requirement:**
 
@@ -73,8 +74,8 @@ current suite only proves direct-match error propagation.
 
 ## SPEC-PKG_WALK-003: Exact final-extension matching
 
-- **Design:** `FilesystemWalker`
-- **Contract:** `ExtensionMatch`
+- **Components:** `FilesystemWalker`
+- **Contracts:** `ExtensionMatch`
 
 **Requirement:**
 

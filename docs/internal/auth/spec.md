@@ -1,15 +1,16 @@
 ---
 idd:
-  version: "1.0"
+  version: "1.1"
   package: internal/auth
+  namespace: INTERNAL_AUTH
 ---
 
 # Specifications: internal/auth
 
 ## SPEC-INTERNAL_AUTH-001: Authentication value boundaries
 
-- **Design:** `AuthTypes`
-- **Contract:** `AuthenticationValues`
+- **Components:** `AuthTypes`
+- **Contracts:** `AuthenticationValues`
 
 **Requirement:** Define login credential and token response value types without
 implementing authentication behavior.

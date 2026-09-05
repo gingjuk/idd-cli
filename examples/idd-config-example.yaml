@@ -20,13 +20,6 @@ docs:
   patterns:
     - "docs/**/*.md"
 
-  # Regex patterns for SPEC and TEST identifiers.
-  # Contract tests also own TEST IDs.
-  identifier_patterns:
-    spec: "SPEC-[A-Z]+-[0-9]+"
-    test: "TEST-[A-Z]+-[0-9]+"
-    test_contract: "TEST-[A-Z]+-[0-9]+"
-
   # Paths to ignore during scanning (glob patterns).
   # Repository examples are copyable references, not project-owned documents.
   ignore_paths:
@@ -72,8 +65,8 @@ validation:
   require_doc_link_consistency: true
 
   # Require legacy SPEC sections to carry their historical fixed fields.
-  # Self-describing records always require Design, Contract, Requirement,
-  # and Acceptance.
+  # Self-describing records always require Components, Requirement, and
+  # Acceptance; Contracts are optional and plural.
   require_spec_fields: true
 
   # Require every SPEC to be covered by at least one TEST
@@ -86,13 +79,14 @@ validation:
   # Require authored content in every required design section
   require_design_sections: true
 
-  # Join document records to declaration annotations by identifier and
-  # require both sides.
+  # Join active document records to declaration annotations by identifier and
+  # require implementation/evidence from the canonical SPEC outward.
   # Source-file Spec/Contract/Test path headers are not used.
   require_doc_code_correspondence: true
 
-  # Require public declarations in supported source languages to have @implement
-  require_public_func_annotation: true
+  # Optional census mode for every public declaration. The default keeps
+  # ordinary helper APIs in source documentation instead of inventing SPECs.
+  require_public_func_annotation: false
 
   # Require related_files in legacy marker documents.
   # Self-describing documents deliberately omit repeated related_files metadata.
@@ -101,8 +95,8 @@ validation:
   # Require @implement/@test/@test-contract annotations have identifiers
   require_annotation_identifier: true
 
-  # Require every scanned source package and nested sub-package to have the
-  # four canonical role files at docs/<package>/.
+  # Require every configured documentation unit (or source package when units
+  # are omitted) to have the four canonical role files.
   require_pkg_doc_files: true
 
   # Require annotation types not split across consecutive lines
@@ -110,8 +104,9 @@ validation:
   # e.g., NOT ALLOWED: // @test TEST-AUTH-001 \n // @test TEST-AUTH-002
   require_annotation_on_same_line: true
 
-  # Require recognized test declarations to have @test or @test-contract
-  require_test_annotation: true
+  # Optional census mode for every recognized test declaration. Active TEST
+  # records still require real evidence through correspondence validation.
+  require_test_annotation: false
 
   # Deprecated compatibility key. Remove it; if present, idd-cli ignores its
   # values and emits a deprecated-config warning:

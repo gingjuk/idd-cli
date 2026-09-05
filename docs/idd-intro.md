@@ -59,6 +59,10 @@ The skill owns semantic decisions. idd-cli owns these executable boundaries:
 - `docs status` returns the exact file, line, role, slot, and reason for every
   generated location that still needs authored content;
 - `docs fix` repairs identity and missing skeletons without rewriting prose;
+- `trace <ID>` returns the canonical declaration plus typed occurrences and
+  relation provenance across docs, source, and tests;
+- `docs impacted --base <revision>` derives a stable semantic-review queue
+  from Git changes; and
 - `run .` validates the complete project graph and emits exact findings.
 
 Regenerate the installed skill after upgrading idd-cli. `.idd.yaml` is only
@@ -86,14 +90,11 @@ both documents and source annotations there. Use `docs status` or
 
 Note: CONTRACT and DESIGN are no longer primary identifiers. contract.md describes contracts that implement SPECs. design.md describes architecture decisions.
 
-**Regex Patterns:**
-
-```yaml
-identifier_patterns:
-  spec: "SPEC-[A-Z]+-[0-9]+"
-  test: "TEST-[A-Z]+-[0-9]+"
-  test_contract: "TEST-[A-Z]+-[0-9]+"
-```
+`MODULE` is the documentation unit's stable `idd.namespace`. `docs init`
+derives its first value from the package path, but later package moves preserve
+the namespace and therefore preserve historical IDs. ID syntax is owned by the
+versioned IDD protocol; obsolete `docs.identifier_patterns` is ignored with a
+migration warning.
 
 ## Syntax-tree source binding
 
@@ -105,7 +106,10 @@ pinned grammar or a syntax error in a supported file produces a
 fallback.
 
 The annotation identifier is also the code-to-document join key. idd-cli
-matches it to the owning SPEC or TEST record and reports either missing side.
+requires implementation and TEST evidence for active SPECs and resolves every
+authored annotation. Planned SPECs may intentionally have neither. Ordinary
+helper APIs and unrelated tests need no IDD record unless optional census rules
+are enabled.
 Do not repeat `Spec:`, `Contract:`, or `Test:` document paths in source-file
 headers; those paths are redundant with the self-describing document set and
 are not consumed by validation.
@@ -128,9 +132,10 @@ The directive must be the complete normalized comment line; merely mentioning
 
 ## Document Structure
 
-Documents are organized by source package in the `docs/` directory. Every
-scanned package directory, including a nested sub-package, owns a separate
-document directory at the same project-relative path:
+Documents are organized by documentation unit in `docs/`. Without an explicit
+mapping, each scanned package retains its own matching directory. `docs.units`
+may instead map one stable behavior boundary to several physical source globs;
+every scanned source must resolve to exactly one configured unit.
 
 ```text
 docs/
@@ -142,21 +147,22 @@ docs/
 └── IDD.md            # This file
 ```
 
-Each document has an `idd` frontmatter block containing only version and
-package identity:
+Each document has an `idd` frontmatter block containing version, its current
+package location, and a stable namespace:
 
 ```yaml
 # spec.md
 idd:
-  version: "1.0"
+  version: "1.1"
   package: internal/auth
+  namespace: INTERNAL_AUTH
 ```
 
 The exact lowercase basename is the only role authority: `design.md`,
 `contract.md`, `spec.md`, or `testing.md`. `idd.document` is invalid without a
 compatibility period, and headings do not override the filename.
 
-Each source package and sub-package must have all four files. They have no
+Each documentation unit must have all four files. They have no
 line-count limit: keep the complete human-readable design, contract,
 requirements, examples, boundaries, and test rationale in the owning files.
 Do not create split role names such as `design-auth.md`, `spec.part.md`, or
@@ -182,6 +188,12 @@ finished design or specification.
 
 **Purpose:** Own credential verification without importing transport policy.
 
+**Ownership:** Own request-scoped verification orchestration and its result.
+
+**Boundary:** Transports, persistence, and session state remain outside.
+
+**Decisions:** Use one public rejection category for unknown users and bad secrets.
+
 <!-- contract.md -->
 ## Contract: Authenticator
 
@@ -191,8 +203,8 @@ error for expected credential rejection.
 <!-- spec.md -->
 ## SPEC-INTERNAL_AUTH-001: User authentication
 
-- **Design:** `AuthModule`
-- **Contract:** `Authenticator`
+- **Components:** `AuthModule`
+- **Contracts:** `Authenticator`
 
 **Requirement:** Authenticate users with validated credentials.
 
@@ -240,12 +252,22 @@ records and `contract.md` owns `## Contract:` records. Self-describing
 documents must not repeat legacy marker, `related_files`, `Tests`, or
 `Spec Coverage` metadata.
 
-Component `Purpose`, Contract `Guarantees`, SPEC `Requirement` and
+Component `Purpose`, `Ownership`, `Boundary`, and `Decisions`; Contract `Guarantees`; SPEC `Requirement` and
 `Acceptance`, and TEST `Purpose` and `Oracle` are the required prose anchors.
 A `Kind: contract` TEST must name the Contract records it proves in
 `Contracts`; a behavior TEST must not. Component `Depends on` references and
 record lifecycle relationships are normalized into typed graph edges and
 checked for missing targets, ambiguity, self-links, and cycles.
+
+Contract narrative distinguishes deliberate Guarantees from non-guarantees,
+known limitations, and compatibility commitments. Current defects and
+incidental behavior stay visible as limitations instead of becoming permanent
+promises. A unit with no stable Contract may leave records empty only after
+explaining that decision in prose.
+
+Lifecycle controls delivery checks: `planned` records preserve approved intent
+without implementation or evidence; `active` records require both; deprecated
+and superseded records retain history without active correspondence gates.
 
 Generated documents contain `idd:scaffold` markers. A slot is complete only
 when the marker is gone and the bounded section contains non-placeholder
@@ -269,7 +291,7 @@ legacy frontmatter format, so migration can happen one package at a time.
 `docs init` refuses legacy marker metadata and central catalogs before writing;
 migrate those relationships explicitly before enabling self-describing mode.
 Legacy marker compatibility does not accept the removed `idd.document` field:
-an `idd` block immediately uses filename-owned roles and version/package-only
+an `idd` block immediately uses filename-owned roles and version/package/namespace
 identity.
 The migration must preserve useful rationale, boundary discussion, failure
 behavior, examples, and test strategy; a smaller file is not automatically a
@@ -304,16 +326,16 @@ complete association.
 1. **Document Schema** — Each role owns correctly shaped Markdown records.
 2. **Filename Authority** — Only the four canonical basenames define IDD
    roles; split role documents receive a path-specific agent merge prompt.
-3. **Path Identity** — Version and package identity match
-   `docs/<package>/`.
-4. **Document Set** — Every scanned source package and sub-package has all four
-   self-describing documents.
+3. **Stable Identity** — Version, current package path, and namespace agree
+   across the four-file unit.
+4. **Document Set** — Every configured documentation unit has all four
+   self-describing documents and each source maps unambiguously.
 5. **Migration Safety** — A package-local central marker catalog is rejected.
-6. **Reference Integrity** — Design, contract, and coverage references resolve.
-7. **Completeness** — Every SPEC has at least one derived TEST backlink.
+6. **Reference Integrity** — Component, Contract, coverage, dependency, and lifecycle references resolve.
+7. **Lifecycle Completeness** — Every active SPEC has implementation and TEST evidence.
 8. **TEST Kind** — `Kind: test` uses `@test`; `Kind: contract` uses
    `@test-contract`.
-9. **Doc/Code Correspondence** — Document identifiers match code annotations.
+9. **Doc/Code Correspondence** — Active records have declarations and every annotation resolves.
 10. **Legacy Compatibility** — Legacy marker rules apply when no `idd` block
     is present; this does not accept the removed self-describing
     `idd.document` field.
@@ -329,10 +351,9 @@ version: "1.0"
 docs:
   patterns:
     - "docs/**/*.md"
-  identifier_patterns:
-    spec: "SPEC-[A-Z]+-[0-9]+"
-    test: "TEST-[A-Z]+-[0-9]+"
-    test_contract: "TEST-[A-Z]+-[0-9]+"
+  units:
+    - package: auth
+      sources: ["internal/auth/**", "internal/session/**"]
 
 code:
   patterns:
@@ -392,6 +413,10 @@ CGO_ENABLED=1 go build -o idd-cli ./cmd/idd-cli
 # Let the skill repair the complete finding report
 ./idd-cli run . --format llm-markdown
 
+# Inspect one ID or derive the queue from Git changes
+./idd-cli trace SPEC-INTERNAL_AUTH-001 --format llm-markdown
+./idd-cli docs impacted --base main --format llm-markdown
+
 # Final automation-facing gate
 ./idd-cli run . --config .idd.yaml --format json
 ```
@@ -410,4 +435,5 @@ relative report output paths remain anchored to the invoking directory.
 Deprecated configuration is migration-only. Explicitly configuring
 `validation.consistency_check` produces a non-failing `deprecated-config`
 warning even when its values are false or zero. Remove the complete mapping;
-semantic review uses `docs review-context`.
+semantic review uses `docs review-context`. Remove `docs.identifier_patterns`
+as well; its values no longer override the protocol grammar.

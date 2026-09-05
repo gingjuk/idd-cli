@@ -1,7 +1,8 @@
 ---
 idd:
-  version: "1.0"
+  version: "1.1"
   package: internal/graph
+  namespace: INTERNAL_GRAPH
 ---
 
 # Testing: internal/graph
@@ -207,6 +208,21 @@ collections and zero nodes and edges.
 **Oracle:** The test passes only when its assertions confirm
 construction returns an initialized graph with non-nil internal collections and zero
 nodes and edges.
+
+## TEST-INTERNAL_GRAPH-016: ID-centered trace index
+
+- **Kind:** `test`
+- **Covers:** `SPEC-INTERNAL_GRAPH-009`
+
+**Purpose:** Verify canonical resolution, typed occurrence preservation,
+physical annotation endpoints, relation provenance, path/range lookup, missing
+targets, and deterministic copied query results.
+
+**Oracle:** Table-driven index fixtures pass only when zero, one, and multiple
+owners yield unresolved, resolved, and ambiguous state; implementation and test
+annotations remain distinct occurrences; every relation retains its exact
+path, line, field, and record; mentions cannot become evidence; and mutating a
+returned slice or entity cannot change later query results.
 
 ## Strategy
 

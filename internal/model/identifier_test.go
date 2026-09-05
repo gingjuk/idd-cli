@@ -422,6 +422,52 @@ func TestIdentifier_SetOrigin(t *testing.T) {
 	}
 }
 
+func TestIdentifierSet_DuplicateDocGroups(t *testing.T) {
+	tests := []struct {
+		name       string
+		identifiers []*Identifier
+		wantGroups int
+	}{
+		{
+			name: "owners in different directories conflict",
+			identifiers: []*Identifier{
+				NewIdentifier("SPEC-BE-001", TypeSpec, "A", "docs/a/spec.md", 10),
+				NewIdentifier("SPEC-BE-001", TypeSpec, "B", "docs/b/spec.md", 20),
+			},
+			wantGroups: 1,
+		},
+		{
+			name: "owners in one directory still conflict",
+			identifiers: []*Identifier{
+				NewIdentifier("SPEC-BE-001", TypeSpec, "A", "docs/a/spec.md", 10),
+				NewIdentifier("SPEC-BE-001", TypeSpec, "B", "docs/a/testing.md", 20),
+			},
+			wantGroups: 1,
+		},
+		{
+			name: "source evidence does not create canonical owners",
+			identifiers: func() []*Identifier {
+				first := NewIdentifier("SPEC-BE-001", TypeSpec, "", "internal/a/a.go", 10)
+				first.SetOrigin(OriginCode)
+				second := NewIdentifier("SPEC-BE-001", TypeSpec, "", "internal/b/b.go", 20)
+				second.SetOrigin(OriginCode)
+				return []*Identifier{first, second}
+			}(),
+		},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			set := NewIdentifierSet()
+			for _, identifier := range test.identifiers {
+				set.Add(identifier)
+			}
+			if got := len(set.DuplicateDocGroups()); got != test.wantGroups {
+				t.Fatalf("len(DuplicateDocGroups()) = %d, want %d", got, test.wantGroups)
+			}
+		})
+	}
+}
+
 // @test-contract TEST-INTERNAL_MODEL-018
 func TestValidationResult_Sort_MultipleRules(t *testing.T) {
 	result := NewValidationResult()

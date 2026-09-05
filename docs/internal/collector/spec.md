@@ -1,15 +1,16 @@
 ---
 idd:
-  version: "1.0"
+  version: "1.1"
   package: internal/collector
+  namespace: INTERNAL_COLLECTOR
 ---
 
 # Specifications: internal/collector
 
 ## SPEC-INTERNAL_COLLECTOR-001: Distributed ownership and safety
 
-- **Design:** `CollectorModule`
-- **Contract:** `IDDDocumentSet`
+- **Components:** `CollectorModule`
+- **Contracts:** `IDDDocumentSet`
 
 **Requirement:** Parse and validate minimal IDD version/package frontmatter,
 derive the document role only from its canonical filename, and preserve
@@ -58,8 +59,8 @@ Neither collection nor status inspection performs the merge or deletion.
 
 ## SPEC-INTERNAL_COLLECTOR-002: Document collector construction
 
-- **Design:** `CollectorModule`
-- **Contract:** `DocCollector`
+- **Components:** `CollectorModule`
+- **Contracts:** `DocCollector`
 
 **Requirement:** Construct a `DocCollector` with the supplied IDD
 configuration.
@@ -77,8 +78,8 @@ and may create independent collectors for different repository policies.
 
 ## SPEC-INTERNAL_COLLECTOR-003: Source annotation collector
 
-- **Design:** `CollectorModule`
-- **Contract:** `CodeCollector`
+- **Components:** `CollectorModule`
+- **Contracts:** `CodeCollector`
 
 **Requirement:** Represent collection of IDD annotations from supported source
 files.
@@ -98,8 +99,8 @@ origins in the engine.
 
 ## SPEC-INTERNAL_COLLECTOR-004: Source collector construction
 
-- **Design:** `CollectorModule`
-- **Contract:** `CodeCollector`
+- **Components:** `CollectorModule`
+- **Contracts:** `CodeCollector`
 
 **Requirement:** Construct a `CodeCollector` with the supplied IDD
 configuration.
@@ -118,8 +119,8 @@ evidence.
 
 ## SPEC-INTERNAL_COLLECTOR-005: Legacy marker values
 
-- **Design:** `CollectorModule`
-- **Contract:** `LegacyFrontmatter`
+- **Components:** `CollectorModule`
+- **Contracts:** `LegacyFrontmatter`
 
 **Requirement:** Represent legacy marker identifiers with meaningful names and
 descriptions.
@@ -136,8 +137,8 @@ for a package that has opted into minimal `idd` identity.
 
 ## SPEC-INTERNAL_COLLECTOR-006: Legacy related document set
 
-- **Design:** `CollectorModule`
-- **Contract:** `LegacyFrontmatter`
+- **Components:** `CollectorModule`
+- **Contracts:** `LegacyFrontmatter`
 
 **Requirement:** Represent the four related narrative document paths in legacy
 frontmatter.
@@ -155,8 +156,8 @@ because fixed filenames already establish those roles.
 
 ## SPEC-INTERNAL_COLLECTOR-007: Legacy frontmatter values
 
-- **Design:** `CollectorModule`
-- **Contract:** `LegacyFrontmatter`
+- **Components:** `CollectorModule`
+- **Contracts:** `LegacyFrontmatter`
 
 **Requirement:** Represent legacy marker and related-file metadata as one
 frontmatter value.
@@ -175,8 +176,8 @@ catalog; malformed YAML returns a parse error with file context.
 
 ## SPEC-INTERNAL_COLLECTOR-008: Legacy frontmatter parsing
 
-- **Design:** `CollectorModule`
-- **Contract:** `LegacyFrontmatter`
+- **Components:** `CollectorModule`
+- **Contracts:** `LegacyFrontmatter`
 
 **Requirement:** Parse the leading YAML frontmatter document without treating
 fenced-code separators as metadata boundaries.
@@ -194,8 +195,8 @@ can report structural debt instead of silently collecting incomplete markers.
 
 ## SPEC-INTERNAL_COLLECTOR-009: Legacy marker validation
 
-- **Design:** `CollectorModule`
-- **Contract:** `LegacyFrontmatter`
+- **Components:** `CollectorModule`
+- **Contracts:** `LegacyFrontmatter`
 
 **Requirement:** Verify that frontmatter markers resolve to correctly formed
 Markdown detail headings.
@@ -214,8 +215,8 @@ and marker so migration can preserve the explanatory section.
 
 ## SPEC-INTERNAL_COLLECTOR-010: Legacy marker formatting
 
-- **Design:** `CollectorModule`
-- **Contract:** `LegacyFrontmatter`
+- **Components:** `CollectorModule`
+- **Contracts:** `LegacyFrontmatter`
 
 **Requirement:** Report bare IDD markers outside headings, frontmatter, and
 fenced code.
@@ -234,8 +235,8 @@ containing coincidental words.
 
 ## SPEC-INTERNAL_COLLECTOR-011: Legacy heading validation
 
-- **Design:** `CollectorModule`
-- **Contract:** `LegacyFrontmatter`
+- **Components:** `CollectorModule`
+- **Contracts:** `LegacyFrontmatter`
 
 **Requirement:** Require IDD detail headings to contain a valid identifier and
 a meaningful description after a colon.
@@ -254,8 +255,8 @@ become valid requirements.
 
 ## SPEC-INTERNAL_COLLECTOR-012: Narrative filename mapping
 
-- **Design:** `CollectorModule`
-- **Contract:** `LegacyFrontmatter`
+- **Components:** `CollectorModule`
+- **Contracts:** `LegacyFrontmatter`
 
 **Requirement:** Map each IDD identifier type to its fixed narrative Markdown
 filename.
@@ -272,8 +273,8 @@ filename rather than being assigned to an arbitrary document.
 
 ## SPEC-INTERNAL_COLLECTOR-013: Narrative document placement
 
-- **Design:** `CollectorModule`
-- **Contract:** `LegacyFrontmatter`
+- **Components:** `CollectorModule`
+- **Contracts:** `LegacyFrontmatter`
 
 **Requirement:** Verify that legacy identifiers are declared in the narrative
 file assigned to their type while allowing root documentation.
@@ -293,8 +294,8 @@ and readers share one location convention.
 
 ## SPEC-INTERNAL_COLLECTOR-017: Deterministic document collection
 
-- **Design:** `CollectorModule`
-- **Contract:** `DocCollector`
+- **Components:** `CollectorModule`
+- **Contracts:** `DocCollector`
 
 **Requirement:** Discover self-describing document sets before Markdown and
 select self-describing or legacy parsing deterministically for each package.
@@ -321,8 +322,8 @@ boundary.
 
 ## SPEC-INTERNAL_COLLECTOR-024: Source annotation collection
 
-- **Design:** `CollectorModule`
-- **Contract:** `CodeCollector`
+- **Components:** `CollectorModule`
+- **Contracts:** `CodeCollector`
 
 **Requirement:** Bind `@implement`, `@test`, and `@test-contract` comments to
 real declarations in Go, TypeScript, TSX, JavaScript/JSX, C++, Java, and Python
@@ -360,8 +361,8 @@ both origins are available.
 
 ## SPEC-INTERNAL_COLLECTOR-025: Multiple references
 
-- **Design:** `CollectorModule`
-- **Contract:** `CodeCollector`
+- **Components:** `CollectorModule`
+- **Contracts:** `CodeCollector`
 
 **Requirement:** Split comma-separated annotation references into trimmed
 identifiers without losing their annotation kind.
@@ -378,8 +379,8 @@ remain with their owning stages.
 
 ## SPEC-INTERNAL_COLLECTOR-026: Focused SPEC review evidence
 
-- **Design:** `CollectorModule`
-- **Contract:** `SpecReviewContext`
+- **Components:** `CollectorModule`
+- **Contracts:** `SpecReviewContext`
 
 **Requirement:** Assemble bounded canonical documentation, test, contract, and
 source declaration evidence for one or a bounded batch of requested SPECs
@@ -387,9 +388,10 @@ without judging semantic quality.
 
 **Acceptance:**
 
-Each context uses schema `idd.spec_review_context.v1`, resolves one canonical
-SPEC owner, and includes the complete bounded SPEC, Contract, and covering TEST
-record Markdown plus matching non-ignored implementation and test declarations,
+Each context uses schema `idd.spec_review_context.v2`, resolves one canonical
+SPEC owner through TraceProject, and includes the complete bounded SPEC,
+Component design context, zero or more Contracts, and covering TEST record
+Markdown plus matching non-ignored implementation and test declarations,
 preserves subordinate authored `Details`, and sorts evidence deterministically.
 Record Markdown ends at the next peer H2 heading, so package-wide strategy or
 guidance sections are not attributed to the preceding record. Qualified
@@ -401,14 +403,15 @@ Malformed, absent, and duplicate SPEC owners return operational errors.
 
 Batch collection accepts at most ten unique IDs, deduplicates repeated inputs
 in first-request order, performs one documentation scan and one source scan,
-and returns schema `idd.spec_review_context_batch.v1`. Any invalid member fails
+and returns schema `idd.spec_review_context_batch.v2`. Every relationship comes
+from the same ID-centered index used by trace, not an independent join. Any invalid member fails
 the whole request so a reviewer cannot mistake partial evidence for a complete
 batch.
 
 ## SPEC-INTERNAL_COLLECTOR-027: Batch document operations
 
-- **Design:** `CollectorModule`
-- **Contract:** `IDDDocumentSet`
+- **Components:** `CollectorModule`
+- **Contracts:** `IDDDocumentSet`
 
 **Requirement:** Inspect, initialize, or structurally repair one or more
 document targets with deterministic deduplication and whole-batch preflight.
@@ -435,6 +438,30 @@ replacement. Whole-batch preflight does not claim a cross-filesystem
 transaction: an unexpected I/O failure while applying an already validated
 plan may leave earlier individually atomic writes in place. Batch operations
 do not author semantic records.
+
+## SPEC-INTERNAL_COLLECTOR-028: Shared ID-centered trace project
+
+- **Components:** `CollectorModule`
+- **Contracts:** `SpecReviewContext`
+
+**Requirement:** Collect documentation and source once into a reusable project
+query boundary that exposes the shared TraceIndex, AST declaration analyses,
+and bounded dossiers for SPEC, TEST, Contract, and Component IDs.
+
+**Acceptance:**
+
+`BuildTraceProject` uses the configured external workdir for both document and
+source collection, merges their observations once, preserves collector
+findings, and builds the canonical Entity/Occurrence and
+Relation/Provenance index. Read-only accessors expose the index and copies of
+collected analyses so review-context and impacted never trigger a second scan.
+
+`Trace` accepts a valid public or scoped ID, depth zero through five, and an
+explicit mentions option. It preserves unresolved, ambiguous, planned, and
+active-but-incomplete state; returns canonical and related semantic records,
+declaration excerpts, provenance, and findings in stable order; and bounds
+content without suppressing evidence. Plain Markdown mentions are discoverable
+context only and never satisfy correspondence or coverage.
 
 ## Legacy compatibility
 

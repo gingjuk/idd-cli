@@ -1,7 +1,8 @@
 ---
 idd:
-  version: "1.0"
+  version: "1.1"
   package: pkg/pattern
+  namespace: PKG_PATTERN
 ---
 
 # Design: pkg/pattern
@@ -19,6 +20,24 @@ The component is deliberately lexical. It can say that text has a supported
 shape, but it cannot establish that an identifier is declared, belongs to the
 current package, uses the configured project pattern, or appears on an allowed
 Go declaration. Collectors and the engine own those contextual decisions.
+
+**Ownership:**
+
+The component owns the versioned lexical grammar for public SPEC and TEST IDs,
+annotation marker recognition, comma-separated target parsing, and explicit
+quoted-reference extraction used by collectors.
+
+**Boundary:**
+
+It recognizes text shapes only. Declaration ownership, namespace membership,
+document roles, relationship meaning, and source-declaration attachment are
+resolved by collectors and validation, not by configurable identifier regexes.
+
+**Decisions:**
+
+One built-in protocol grammar replaces the former ineffective pattern
+configuration. Broad recognition and strict whole-value validation remain
+separate operations so callers deliberately select discovery or acceptance.
 
 ### Responsibilities
 

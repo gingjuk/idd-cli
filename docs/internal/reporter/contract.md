@@ -1,7 +1,8 @@
 ---
 idd:
-  version: "1.0"
+  version: "1.1"
   package: internal/reporter
+  namespace: INTERNAL_REPORTER
 ---
 
 # Contracts: internal/reporter
@@ -102,13 +103,13 @@ not change the engine's underlying result.
 **Guarantees:**
 
 Review-context rendering serializes the collector-owned
-`idd.spec_review_context.v1` value without inventing findings or verdicts.
+`idd.spec_review_context.v2` value without inventing findings or verdicts.
 JSON preserves the schema exactly. Markdown and LLM Markdown present the same
 SPEC, Contract, TEST, declaration, issue, and truncation evidence with neutral
 questions for a human or model reviewer.
 
 When more than one context is requested, JSON uses
-`idd.spec_review_context_batch.v1` with ordered `requested_spec_ids` and
+`idd.spec_review_context_batch.v2` with ordered `requested_spec_ids` and
 `contexts`. Markdown uses one batch heading and an independent nested review
 section for each SPEC. A single context retains the existing single-SPEC JSON
 and Markdown shape.

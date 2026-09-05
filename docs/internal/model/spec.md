@@ -1,15 +1,16 @@
 ---
 idd:
-  version: "1.0"
+  version: "1.1"
   package: internal/model
+  namespace: INTERNAL_MODEL
 ---
 
 # Specifications: internal/model
 
 ## SPEC-INTERNAL_MODEL-001: Identifier type vocabulary and parsing
 
-- **Design:** `IDDModel`
-- **Contract:** `IdentifierVocabulary`
+- **Components:** `IDDModel`
+- **Contracts:** `IdentifierVocabulary`
 
 **Requirement:**
 
@@ -25,8 +26,8 @@ other supported kind, an unknown name, and empty input.
 
 ## SPEC-INTERNAL_MODEL-002: Initialized identifier construction
 
-- **Design:** `IDDModel`
-- **Contract:** `IdentifierRecord`
+- **Components:** `IDDModel`
+- **Contracts:** `IdentifierRecord`
 
 **Requirement:**
 
@@ -46,8 +47,8 @@ basic forms differ only in whether `Describe` is populated.
 
 ## SPEC-INTERNAL_MODEL-003: Append-only forward references
 
-- **Design:** `IDDModel`
-- **Contract:** `IdentifierRecord`
+- **Components:** `IDDModel`
+- **Contracts:** `IdentifierRecord`
 
 **Requirement:** An identifier must retain both legacy untyped targets and
 explicitly typed relationship targets in insertion order, allowing repeated
@@ -61,8 +62,8 @@ normalization.
 
 ## SPEC-INTERNAL_MODEL-004: Duplicate-preserving identifier collection
 
-- **Design:** `IDDModel`
-- **Contract:** `IdentifierCollection`
+- **Components:** `IDDModel`
+- **Contracts:** `IdentifierCollection`
 
 **Requirement:**
 
@@ -84,8 +85,8 @@ that evidence is an error.
 
 ## SPEC-INTERNAL_MODEL-005: First and complete ID lookup
 
-- **Design:** `IDDModel`
-- **Contract:** `IdentifierCollection`
+- **Components:** `IDDModel`
+- **Contracts:** `IdentifierCollection`
 
 **Requirement:**
 
@@ -104,8 +105,8 @@ values and are not defensive copies.
 
 ## SPEC-INTERNAL_MODEL-006: Deterministic unique and exhaustive views
 
-- **Design:** `IDDModel`
-- **Contract:** `IdentifierCollection`
+- **Components:** `IDDModel`
+- **Contracts:** `IdentifierCollection`
 
 **Requirement:**
 
@@ -125,8 +126,8 @@ contract.
 
 ## SPEC-INTERNAL_MODEL-007: Lossless set merge
 
-- **Design:** `IDDModel`
-- **Contract:** `IdentifierCollection`
+- **Components:** `IDDModel`
+- **Contracts:** `IdentifierCollection`
 
 **Requirement:**
 
@@ -139,8 +140,8 @@ exhaustive lookup returns both observations rather than an overwritten value.
 
 ## SPEC-INTERNAL_MODEL-008: Source annotation evidence
 
-- **Design:** `IDDModel`
-- **Contract:** `SourceAnnotation`
+- **Components:** `IDDModel`
+- **Contracts:** `SourceAnnotation`
 
 **Requirement:**
 
@@ -159,8 +160,8 @@ or declaration validity.
 
 ## SPEC-INTERNAL_MODEL-009: Annotation-to-identifier projection
 
-- **Design:** `IDDModel`
-- **Contract:** `SourceAnnotation`
+- **Components:** `IDDModel`
+- **Contracts:** `SourceAnnotation`
 
 **Requirement:**
 
@@ -181,8 +182,8 @@ Lexical context is not copied.
 
 ## SPEC-INTERNAL_MODEL-010: Validation and complete-report value shapes
 
-- **Design:** `IDDModel`
-- **Contract:** `ValidationResult`
+- **Components:** `IDDModel`
+- **Contracts:** `ValidationResult`
 
 **Requirement:**
 
@@ -203,8 +204,8 @@ while retaining structured evidence separately.
 
 ## SPEC-INTERNAL_MODEL-011: Finding accumulation and stable rule ordering
 
-- **Design:** `IDDModel`
-- **Contract:** `ValidationResult`
+- **Components:** `IDDModel`
+- **Contracts:** `ValidationResult`
 
 **Requirement:**
 
@@ -224,8 +225,8 @@ a source-based tie breaker.
 
 ## SPEC-INTERNAL_MODEL-012: Relationship vocabulary and reversal
 
-- **Design:** `IDDModel`
-- **Contract:** `Relationship`
+- **Components:** `IDDModel`
+- **Contracts:** `Relationship`
 
 **Requirement:** The model must expose the relationship strings consumed by
 graph validation, including Component dependency and lifecycle replacement,
@@ -241,8 +242,8 @@ unknown value.
 
 ## SPEC-INTERNAL_MODEL-013: Source-located directed link
 
-- **Design:** `IDDModel`
-- **Contract:** `Relationship`
+- **Components:** `IDDModel`
+- **Contracts:** `Relationship`
 
 **Requirement:**
 
@@ -255,8 +256,8 @@ values.
 
 ## SPEC-INTERNAL_MODEL-014: Document and code provenance
 
-- **Design:** `IDDModel`
-- **Contract:** `IdentifierVocabulary`
+- **Components:** `IDDModel`
+- **Contracts:** `IdentifierVocabulary`
 
 **Requirement:**
 
@@ -271,8 +272,8 @@ Origin filtering and presence tests distinguish document and code observations.
 
 ## SPEC-INTERNAL_MODEL-015: Link construction without graph policy
 
-- **Design:** `IDDModel`
-- **Contract:** `Relationship`
+- **Components:** `IDDModel`
+- **Contracts:** `Relationship`
 
 **Requirement:**
 
@@ -285,8 +286,8 @@ relationship were supplied.
 
 ## SPEC-INTERNAL_MODEL-017: Explicit origin reassignment
 
-- **Design:** `IDDModel`
-- **Contract:** `IdentifierRecord`
+- **Components:** `IDDModel`
+- **Contracts:** `IdentifierRecord`
 
 **Requirement:**
 
@@ -302,8 +303,8 @@ assigns code origin through the method, and observes the new value.
 
 ## SPEC-INTERNAL_MODEL-018: Complete identifier evidence record
 
-- **Design:** `IDDModel`
-- **Contract:** `IdentifierRecord`
+- **Components:** `IDDModel`
+- **Contracts:** `IdentifierRecord`
 
 **Requirement:**
 
@@ -324,8 +325,8 @@ mutable fields represent facts accumulated by pipeline stages.
 
 ## SPEC-INTERNAL_MODEL-037: Finding-centered LLM wire model
 
-- **Design:** `IDDModel`
-- **Contract:** `LLMFindingReport`
+- **Components:** `IDDModel`
+- **Contracts:** `LLMFindingReport`
 
 **Requirement:**
 

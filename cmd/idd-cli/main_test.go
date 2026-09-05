@@ -25,6 +25,15 @@ func TestCommandSurfaceBehavior(t *testing.T) {
 			t.Errorf("docs command missing %q", name)
 		}
 	}
+	if trace := commandNamed(rootCmd, "trace"); trace == nil {
+		t.Fatal("root command is missing trace")
+	} else {
+		for _, flag := range []string{"depth", "include", "project-root"} {
+			if trace.Flags().Lookup(flag) == nil {
+				t.Errorf("trace command is missing --%s", flag)
+			}
+		}
+	}
 }
 
 // @test TEST-CMD_IDD_CLI-002

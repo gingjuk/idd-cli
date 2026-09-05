@@ -15,8 +15,9 @@ import (
 
 const validDesignDocument = `---
 idd:
-  version: "1.0"
+  version: "1.1"
   package: internal/auth
+  namespace: INTERNAL_AUTH
 ---
 
 # Design
@@ -30,6 +31,12 @@ idd:
 
 AuthModule owns the authentication boundary and keeps transport concerns out of
 credential verification.
+
+**Ownership:** Authentication policy and credential-verification orchestration.
+
+**Boundary:** Transport and credential storage remain outside this component.
+
+**Decisions:** The component exposes one stable authentication flow.
 
 ### Security
 
@@ -58,8 +65,9 @@ Tests use deterministic fakes.
 
 const validContractDocument = `---
 idd:
-  version: "1.0"
+  version: "1.1"
   package: internal/auth
+  namespace: INTERNAL_AUTH
 ---
 
 # Contracts
@@ -81,16 +89,17 @@ Existing callers retain the same input and error contract.
 
 const validSpecDocument = `---
 idd:
-  version: "1.0"
+  version: "1.1"
   package: internal/auth
+  namespace: INTERNAL_AUTH
 ---
 
 # Specifications
 
 ## SPEC-INTERNAL_AUTH-001: User authentication
 
-- **Design:** ` + "`AuthModule`" + `
-- **Contract:** ` + "`Authenticator`" + `
+- **Components:** ` + "`AuthModule`" + `
+- **Contracts:** ` + "`Authenticator`" + `
 - **Status:** ` + "`active`" + `
 - **Concerns:** ` + "`security`" + `
 
@@ -111,8 +120,9 @@ Invalid credentials expose one stable failure.
 
 const validTestingDocument = `---
 idd:
-  version: "1.0"
+  version: "1.1"
   package: internal/auth
+  namespace: INTERNAL_AUTH
 ---
 
 # Testing
@@ -274,16 +284,17 @@ idd:
 func TestParseIDDDocument_RoleComesOnlyFromFilename(t *testing.T) {
 	const filenameOwnedDocument = `---
 idd:
-  version: "1.0"
+  version: "1.1"
   package: internal/auth
+  namespace: INTERNAL_AUTH
 ---
 
 # Specifications: internal/auth
 
 ## SPEC-INTERNAL_AUTH-001: Authenticate
 
-- **Design:** ` + "`AuthModule`" + `
-- **Contract:** ` + "`Authenticator`" + `
+- **Components:** ` + "`AuthModule`" + `
+- **Contracts:** ` + "`Authenticator`" + `
 
 **Requirement:** Authenticate valid credentials.
 
@@ -369,8 +380,8 @@ func TestParseIDDDocument_MarkdownRecords(t *testing.T) {
 				Title:       "User authentication",
 				Requirement: "Authenticate a user with credentials while exposing one stable failure for invalid credentials.",
 				Acceptance:  "Valid credentials succeed, while invalid credentials return the documented public rejection without exposing credential details.",
-				Design:      "AuthModule",
-				Contract:    "Authenticator",
+				Components:  []string{"AuthModule"},
+				Contracts:   []string{"Authenticator"},
 				IDDRecordLifecycle: IDDRecordLifecycle{
 					Status:   "active",
 					Concerns: []string{"security"},
@@ -391,8 +402,8 @@ func TestParseIDDDocument_MarkdownRecords(t *testing.T) {
 				Title:       "User authentication",
 				Requirement: "Authenticate a user with credentials while exposing one stable failure for invalid credentials.",
 				Acceptance:  "Valid credentials succeed, while invalid credentials return the documented public rejection without exposing credential details.",
-				Design:      "AuthModule",
-				Contract:    "Authenticator",
+				Components:  []string{"AuthModule"},
+				Contracts:   []string{"Authenticator"},
 				IDDRecordLifecycle: IDDRecordLifecycle{
 					Status:   "active",
 					Concerns: []string{"security"},
@@ -563,12 +574,12 @@ func TestDocCollector_IDDDocumentValidation(t *testing.T) {
 				replaceTestFile(
 					t,
 					filepath.Join(docsDir, "spec.md"),
-					"- **Design:** `AuthModule`\n",
+					"- **Components:** `AuthModule`\n",
 					"",
 				)
 			},
 			wantRule:   "idd-document-schema",
-			wantCode:   "design",
+			wantCode:   "components",
 			wantSource: "spec.md:",
 		},
 		{
@@ -620,7 +631,7 @@ idd:
 				replaceTestFile(t, filepath.Join(docsDir, "spec.md"), "`AuthModule`", "`MissingModule`")
 			},
 			wantRule:   "idd-document-reference",
-			wantCode:   "design",
+			wantCode:   "components",
 			wantSource: "spec.md:",
 		},
 		{
@@ -629,8 +640,8 @@ idd:
 				replaceTestFile(
 					t,
 					filepath.Join(docsDir, "design.md"),
-					"AuthModule owns the authentication boundary and keeps transport concerns out of\ncredential verification.",
-					"",
+					"**Purpose:**",
+					"**Missing purpose:**",
 				)
 			},
 			wantRule:   "idd-document-schema",
@@ -733,7 +744,7 @@ idd:
 				)
 			},
 			wantRule:   "idd-document-reference",
-			wantCode:   "contract",
+			wantCode:   "contracts",
 			wantSource: "spec.md:",
 		},
 		{
@@ -818,15 +829,15 @@ func TestDocCollector_IDDDocumentsBuildDerivedLinks(t *testing.T) {
 	componentID := derivedComponentID("internal/auth", "AuthModule")
 	contractID := derivedContractID("internal/auth", "Authenticator")
 	wantSpecLinks := []model.IdentifierLink{
-		{Ref: componentID, Type: model.LinkReferences},
-		{Ref: contractID, Type: model.LinkContract},
-		{Ref: "TEST-INTERNAL_AUTH-001", Type: model.LinkTests},
+		{Ref: componentID, Type: model.LinkReferences, Source: spec.Source, Line: 12, Field: "Components", RecordID: spec.ID},
+		{Ref: contractID, Type: model.LinkContract, Source: spec.Source, Line: 13, Field: "Contracts", RecordID: spec.ID},
+		{Ref: "TEST-INTERNAL_AUTH-001", Type: model.LinkTests, Source: test.Source, Line: 13, Field: "Covers", RecordID: spec.ID},
 	}
 	if !reflect.DeepEqual(spec.TypedLinks, wantSpecLinks) {
 		t.Errorf("SPEC typed links = %#v, want %#v", spec.TypedLinks, wantSpecLinks)
 	}
 	wantTestLinks := []model.IdentifierLink{
-		{Ref: "SPEC-INTERNAL_AUTH-001", Type: model.LinkImplements},
+		{Ref: "SPEC-INTERNAL_AUTH-001", Type: model.LinkImplements, Source: test.Source, Line: 13, Field: "Covers", RecordID: test.ID},
 	}
 	if !reflect.DeepEqual(test.TypedLinks, wantTestLinks) {
 		t.Errorf("TEST typed links = %#v, want %#v", test.TypedLinks, wantTestLinks)
@@ -850,6 +861,74 @@ func TestDocCollector_IDDDocumentsBuildDerivedLinks(t *testing.T) {
 	}
 	if !strings.HasSuffix(test.Source, "testing.md") || test.Line == 0 {
 		t.Errorf("TEST source = %q:%d, want testing.md Markdown record", test.Source, test.Line)
+	}
+}
+
+// @test-contract TEST-INTERNAL_COLLECTOR-021
+func TestDocCollector_IDDPolicySchema(t *testing.T) {
+	tests := []struct {
+		name   string
+		mutate func(*testing.T, string)
+	}{
+		{
+			name: "planned lifecycle is valid",
+			mutate: func(t *testing.T, docsDir string) {
+				replaceTestFile(t, filepath.Join(docsDir, "spec.md"), "- **Status:** `active`", "- **Status:** `planned`")
+			},
+		},
+		{
+			name: "SPEC Contracts is optional",
+			mutate: func(t *testing.T, docsDir string) {
+				replaceTestFile(t, filepath.Join(docsDir, "spec.md"), "- **Contracts:** `Authenticator`\n", "")
+			},
+		},
+		{
+			name: "documentation unit may declare no stable Contracts",
+			mutate: func(t *testing.T, docsDir string) {
+				replaceTestFile(t, filepath.Join(docsDir, "spec.md"), "- **Contracts:** `Authenticator`\n", "")
+				writeTestFile(t, filepath.Join(docsDir, "contract.md"), `---
+idd:
+  version: "1.1"
+  package: internal/auth
+  namespace: INTERNAL_AUTH
+---
+
+# Contracts
+
+This documentation unit owns no stable externally observable contract.
+`)
+			},
+		},
+		{
+			name: "SPEC Components supports multiple scoped references",
+			mutate: func(t *testing.T, docsDir string) {
+				replaceTestFile(t, filepath.Join(docsDir, "spec.md"), "`AuthModule`", "`AuthModule`, `internal/shared#AuditModule`")
+			},
+		},
+		{
+			name: "stable namespace is independent from package path",
+			mutate: func(t *testing.T, docsDir string) {
+				for _, filename := range iddDocumentOrder {
+					path := filepath.Join(docsDir, filename)
+					replaceTestFile(t, path, "namespace: INTERNAL_AUTH", "namespace: AUTH_STABLE")
+					content := strings.ReplaceAll(readTestFile(t, path), "INTERNAL_AUTH", "AUTH_STABLE")
+					writeTestFile(t, path, content)
+				}
+			},
+		},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			docsDir := createIDDDocumentFixture(t)
+			test.mutate(t, docsDir)
+			_, findings, err := NewDocCollector(config.Default()).Collect(context.Background(), filepath.Dir(filepath.Dir(docsDir)))
+			if err != nil {
+				t.Fatalf("Collect() error = %v", err)
+			}
+			if len(findings) != 0 {
+				t.Fatalf("findings = %#v, want none", findings)
+			}
+		})
 	}
 }
 
@@ -902,23 +981,23 @@ func TestIDDDocumentCrossPackageReferencesBecomeTypedLinks(t *testing.T) {
 
 	wantSpecLinks := []model.IdentifierLink{
 		{
-			Ref:  derivedComponentID("internal/shared", "SharedModule"),
-			Type: model.LinkReferences,
+			Ref: derivedComponentID("internal/shared", "SharedModule"), Type: model.LinkReferences,
+			Source: "spec.md", Line: 12, Field: "Components", RecordID: spec.ID,
 		},
 		{
-			Ref:  derivedContractID("internal/shared", "SharedContract"),
-			Type: model.LinkContract,
+			Ref: derivedContractID("internal/shared", "SharedContract"), Type: model.LinkContract,
+			Source: "spec.md", Line: 13, Field: "Contracts", RecordID: spec.ID,
 		},
-		{Ref: "TEST-INTERNAL_AUTH-001", Type: model.LinkTests},
+		{Ref: "TEST-INTERNAL_AUTH-001", Type: model.LinkTests, Source: "testing.md", Line: 13, Field: "Covers", RecordID: spec.ID},
 	}
 	if !reflect.DeepEqual(spec.TypedLinks, wantSpecLinks) {
 		t.Errorf("SPEC typed links = %#v, want %#v", spec.TypedLinks, wantSpecLinks)
 	}
 	wantTestLinks := []model.IdentifierLink{
-		{Ref: "SPEC-INTERNAL_AUTH-001", Type: model.LinkImplements},
+		{Ref: "SPEC-INTERNAL_AUTH-001", Type: model.LinkImplements, Source: "testing.md", Line: 13, Field: "Covers", RecordID: test.ID},
 		{
-			Ref:  derivedContractID("internal/shared", "SharedContract"),
-			Type: model.LinkContractTests,
+			Ref: derivedContractID("internal/shared", "SharedContract"), Type: model.LinkContractTests,
+			Source: "testing.md", Line: 15, Field: "Contracts", RecordID: test.ID,
 		},
 	}
 	if !reflect.DeepEqual(test.TypedLinks, wantTestLinks) {
@@ -1210,7 +1289,7 @@ func TestInitDocuments_RefusesCentralCatalogBeforeWriting(t *testing.T) {
 // @test-contract TEST-INTERNAL_COLLECTOR-021
 func TestRepairDocuments(t *testing.T) {
 	docsDir := createIDDDocumentFixture(t)
-	replaceTestFile(t, filepath.Join(docsDir, "design.md"), `version: "1.0"`, `version: ""`)
+	replaceTestFile(t, filepath.Join(docsDir, "design.md"), `version: "1.1"`, `version: ""`)
 	replaceTestFile(t, filepath.Join(docsDir, "design.md"), "package: internal/auth", "package: wrong/package")
 
 	bodies := make(map[string]string)
@@ -1240,7 +1319,7 @@ func TestRepairDocuments(t *testing.T) {
 	if err != nil {
 		t.Fatalf("ParseIDDDocument(design.md) error = %v", err)
 	}
-	if design.Version != "1.0" || design.Package != "internal/auth" || design.Document != "design" {
+	if design.Version != "1.1" || design.Package != "internal/auth" || design.Namespace != "INTERNAL_AUTH" || design.Document != "design" {
 		t.Errorf("repaired design identity = %#v", design)
 	}
 	if got := strings.Join(design.Components, ","); got != "AuthModule" {
@@ -1273,7 +1352,7 @@ func TestRepairDocuments_SingleFileHasSingleWriteTarget(t *testing.T) {
 	docsDir := createIDDDocumentFixture(t)
 	specPath := filepath.Join(docsDir, "spec.md")
 	testingPath := filepath.Join(docsDir, "testing.md")
-	replaceTestFile(t, specPath, `version: "1.0"`, `version: ""`)
+	replaceTestFile(t, specPath, `version: "1.1"`, `version: ""`)
 	testingBefore := readTestFile(t, testingPath)
 
 	changed, err := RepairDocuments(specPath)
@@ -1292,7 +1371,7 @@ func TestRepairDocuments_SingleFileHasSingleWriteTarget(t *testing.T) {
 func TestRepairDocuments_RefusesCentralCatalog(t *testing.T) {
 	docsDir := createIDDDocumentFixture(t)
 	specPath := filepath.Join(docsDir, "spec.md")
-	replaceTestFile(t, specPath, `version: "1.0"`, `version: ""`)
+	replaceTestFile(t, specPath, `version: "1.1"`, `version: ""`)
 	specBefore := readTestFile(t, specPath)
 	writeTestFile(t, filepath.Join(docsDir, "idd.yaml"), "version: \"1.0\"\n")
 

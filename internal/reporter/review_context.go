@@ -79,8 +79,11 @@ func renderSpecReviewContextMarkdown(context *collector.SpecReviewContext, headi
 	fmt.Fprintf(&output, "- Title: %s\n", context.Spec.Title)
 	fmt.Fprintf(&output, "- Package: `%s`\n", context.Spec.Package)
 	fmt.Fprintf(&output, "- Location: `%s:%d`\n", context.Spec.File, context.Spec.Line)
-	fmt.Fprintf(&output, "- Design: `%s`\n", context.Spec.Design)
-	fmt.Fprintf(&output, "- Contract: `%s`\n\n", context.Spec.Contract)
+	fmt.Fprintf(&output, "- Components: `%s`\n", strings.Join(context.Spec.Components, "`, `"))
+	if len(context.Spec.Contracts) > 0 {
+		fmt.Fprintf(&output, "- Contracts: `%s`\n", strings.Join(context.Spec.Contracts, "`, `"))
+	}
+	output.WriteString("\n")
 	writeMarkdownHeading(&output, 3+headingOffset, "Requirement")
 	fmt.Fprintf(&output, "%s\n\n", context.Spec.Requirement)
 	writeMarkdownHeading(&output, 3+headingOffset, "Acceptance")
@@ -89,15 +92,32 @@ func renderSpecReviewContextMarkdown(context *collector.SpecReviewContext, headi
 	writeFencedBlock(&output, "markdown", context.Spec.Markdown)
 	fmt.Fprintf(&output, "Record truncated: `%t`\n\n", context.Spec.Truncated)
 
-	writeMarkdownHeading(&output, 2+headingOffset, "Contract")
-	if context.Contract == nil {
+	writeMarkdownHeading(&output, 2+headingOffset, "Components and design context")
+	if len(context.Components) == 0 {
+		output.WriteString("No matching Component record was collected.\n\n")
+	}
+	for _, component := range context.Components {
+		writeMarkdownHeading(&output, 3+headingOffset, component.Name)
+		fmt.Fprintf(&output, "- ID: `%s`\n- Location: `%s:%d`\n\n", component.ID, component.File, component.Line)
+		for _, field := range []struct{ label, value string }{{"Purpose", component.Purpose}, {"Ownership", component.Ownership}, {"Boundary", component.Boundary}, {"Decisions", component.Decisions}} {
+			if field.value != "" {
+				fmt.Fprintf(&output, "%s: %s\n\n", field.label, field.value)
+			}
+		}
+		writeFencedBlock(&output, "markdown", component.Markdown)
+		fmt.Fprintf(&output, "Record truncated: `%t`\n\n", component.Truncated)
+	}
+
+	writeMarkdownHeading(&output, 2+headingOffset, "Contracts")
+	if len(context.Contracts) == 0 {
 		output.WriteString("No matching Contract record was collected.\n\n")
-	} else {
-		writeMarkdownHeading(&output, 3+headingOffset, context.Contract.Name)
-		fmt.Fprintf(&output, "Location: `%s:%d`\n\n", context.Contract.File, context.Contract.Line)
-		fmt.Fprintf(&output, "%s\n\n", context.Contract.Guarantees)
-		writeFencedBlock(&output, "markdown", context.Contract.Markdown)
-		fmt.Fprintf(&output, "Record truncated: `%t`\n\n", context.Contract.Truncated)
+	}
+	for _, contract := range context.Contracts {
+		writeMarkdownHeading(&output, 3+headingOffset, contract.Name)
+		fmt.Fprintf(&output, "- ID: `%s`\n- Location: `%s:%d`\n\n", contract.ID, contract.File, contract.Line)
+		fmt.Fprintf(&output, "%s\n\n", contract.Guarantees)
+		writeFencedBlock(&output, "markdown", contract.Markdown)
+		fmt.Fprintf(&output, "Record truncated: `%t`\n\n", contract.Truncated)
 	}
 
 	writeMarkdownHeading(&output, 2+headingOffset, "Covering TEST records")
@@ -155,7 +175,7 @@ func renderSpecReviewContextMarkdown(context *collector.SpecReviewContext, headi
 	writeMarkdownHeading(&output, 2+headingOffset, "Review questions")
 	output.WriteString("- Does the Requirement state one observable behavior and its boundary?\n")
 	output.WriteString("- Does Acceptance provide concrete evidence for that behavior?\n")
-	output.WriteString("- Do the Contract guarantees, TEST oracles, and implementation agree with the SPEC?\n")
+	output.WriteString("- Do the Component boundaries, Contract guarantees, TEST oracles, and implementation agree with the SPEC?\n")
 	output.WriteString("- Are important failures, side effects, or edge cases absent from the authored records?\n")
 	return output.String()
 }

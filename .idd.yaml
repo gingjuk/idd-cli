@@ -3,10 +3,29 @@ version: "1.0"
 docs:
   patterns:
     - "docs/**/*.md"
-  identifier_patterns:
-    spec: "SPEC-[A-Z]+-[0-9]+"
-    test: "TEST-[A-Z]+-[0-9]+"
-    test_contract: "TEST-[A-Z]+-[0-9]+"
+  units:
+    - package: cmd/idd-cli
+      sources:
+        - "cmd/idd-cli/**"
+        - "internal/impact/**"
+    - package: internal/auth
+      sources: ["internal/auth/**"]
+    - package: internal/collector
+      sources: ["internal/collector/**"]
+    - package: internal/config
+      sources: ["internal/config/**"]
+    - package: internal/engine
+      sources: ["internal/engine/**"]
+    - package: internal/graph
+      sources: ["internal/graph/**"]
+    - package: internal/model
+      sources: ["internal/model/**"]
+    - package: internal/reporter
+      sources: ["internal/reporter/**"]
+    - package: pkg/pattern
+      sources: ["pkg/pattern/**"]
+    - package: pkg/walk
+      sources: ["pkg/walk/**"]
   ignore_paths:
     - "examples/**"
     - "cmd/idd-cli/skills/**"
@@ -43,11 +62,11 @@ validation:
   require_spec_test_coverage: true
   require_contract_test_coverage: true
   require_doc_code_correspondence: true
-  require_public_func_annotation: true
+  require_public_func_annotation: false
   require_related_files: true
   require_annotation_identifier: true
   require_annotation_on_same_line: true
-  require_test_annotation: true
+  require_test_annotation: false
   require_design_sections: true
   require_pkg_doc_files: true
 

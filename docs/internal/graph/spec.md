@@ -1,15 +1,16 @@
 ---
 idd:
-  version: "1.0"
+  version: "1.1"
   package: internal/graph
+  namespace: INTERNAL_GRAPH
 ---
 
 # Specifications: internal/graph
 
 ## SPEC-INTERNAL_GRAPH-001: Identifier node state
 
-- **Design:** `LinkageGraphStore`
-- **Contract:** `GraphQuery`
+- **Components:** `LinkageGraphStore`
+- **Contracts:** `GraphQuery`
 
 **Requirement:**
 
@@ -31,8 +32,8 @@ reuse, type indexing, and incoming/outgoing edge attachment.
 
 ## SPEC-INTERNAL_GRAPH-002: Directed relationship evidence
 
-- **Design:** `LinkageGraphStore`
-- **Contract:** `RelationshipVerification`
+- **Components:** `LinkageGraphStore`
+- **Contracts:** `RelationshipVerification`
 
 **Requirement:**
 
@@ -52,8 +53,8 @@ derived later and can be reset on each verification pass.
 
 ## SPEC-INTERNAL_GRAPH-003: Mutable graph and typed traversal
 
-- **Design:** `LinkageGraphStore`
-- **Contract:** `GraphQuery`
+- **Components:** `LinkageGraphStore`
+- **Contracts:** `GraphQuery`
 
 **Requirement:**
 
@@ -78,8 +79,8 @@ outcomes.
 
 ## SPEC-INTERNAL_GRAPH-004: Reverse-reference index
 
-- **Design:** `LinkageGraphStore`
-- **Contract:** `GraphQuery`
+- **Components:** `LinkageGraphStore`
+- **Contracts:** `GraphQuery`
 
 **Requirement:**
 
@@ -98,8 +99,8 @@ without copying.
 
 ## SPEC-INTERNAL_GRAPH-005: Fully initialized empty graph
 
-- **Design:** `LinkageGraphStore`
-- **Contract:** `GraphMutation`
+- **Components:** `LinkageGraphStore`
+- **Contracts:** `GraphMutation`
 
 **Requirement:**
 
@@ -115,8 +116,8 @@ internal collections through same-package access.
 
 ## SPEC-INTERNAL_GRAPH-007: Idempotent node insertion
 
-- **Design:** `LinkageGraphStore`
-- **Contract:** `GraphMutation`
+- **Components:** `LinkageGraphStore`
+- **Contracts:** `GraphMutation`
 
 **Requirement:**
 
@@ -135,8 +136,8 @@ that were added before the node.
 
 ## SPEC-INTERNAL_GRAPH-008: Edge insertion across graph views
 
-- **Design:** `LinkageGraphStore`
-- **Contract:** `GraphMutation`
+- **Components:** `LinkageGraphStore`
+- **Contracts:** `GraphMutation`
 
 **Requirement:**
 
@@ -154,3 +155,25 @@ evidence.
 The operation returns no error for missing endpoints and performs no duplicate
 check. Engine construction order is responsible for normal endpoint integrity;
 changing to rejection or deduplication would be observable behavior.
+
+## SPEC-INTERNAL_GRAPH-009: Entity and provenance trace index
+
+- **Components:** `LinkageGraphStore`
+- **Contracts:** `GraphQuery`, `GraphProjection`
+
+**Requirement:** Preserve logical ID entities separately from every physical
+declaration, reference, implementation, test-evidence, and mention occurrence,
+and retain exact authored provenance for every typed relation.
+
+**Acceptance:**
+
+One canonical owner resolves an entity; no owner is unresolved and several
+owners are ambiguous without silently selecting one. Namespace and lifecycle
+come from the canonical declaration. Source annotations create physical
+implements/executes endpoints, while ordinary mentions remain non-authoritative.
+
+Entity, occurrence, path/range, inbound, outbound, and all-relation queries
+return detached, stably sorted values. Each relation preserves occurrence kind,
+path, line, field, and record owner. Missing relation targets remain queryable
+as unresolved entities, and the same collected observations produce the one
+projection shared by validation and higher-level CLI queries.

@@ -1,15 +1,16 @@
 ---
 idd:
-  version: "1.0"
+  version: "1.1"
   package: cmd/idd-cli
+  namespace: CMD_IDD_CLI
 ---
 
 # Specifications: cmd/idd-cli
 
 ## SPEC-CMD_IDD_CLI-001: Validation execution
 
-- **Design:** `IDDCLIModule`
-- **Contract:** `CLI`
+- **Components:** `IDDCLIModule`
+- **Contracts:** `CLI`
 
 **Requirement:** Collect documentation and source identifiers, build and
 validate the linkage graph, and report actionable findings through a
@@ -38,8 +39,8 @@ human-readable design is semantically complete.
 
 ## SPEC-CMD_IDD_CLI-002: Linkage graph
 
-- **Design:** `IDDCLIModule`
-- **Contract:** `LinkageGraph`
+- **Components:** `IDDCLIModule`
+- **Contracts:** `LinkageGraph`
 
 **Requirement:** Represent identifiers and directed traceability relationships
 with deterministic lookup, verification, statistics, and snapshots.
@@ -61,8 +62,8 @@ without allowing mutation of the live graph.
 
 ## SPEC-CMD_IDD_CLI-003: Configuration precedence
 
-- **Design:** `IDDCLIModule`
-- **Contract:** `Config`
+- **Components:** `IDDCLIModule`
+- **Contracts:** `Config`
 
 **Requirement:** Execute validation behavior from an explicit or discovered
 IDD configuration with safe defaults.
@@ -91,8 +92,8 @@ normalization behavior of an individual configuration file is owned by
 
 ## SPEC-CMD_IDD_CLI-004: Report boundaries
 
-- **Design:** `IDDCLIModule`
-- **Contract:** `Reporter`
+- **Components:** `IDDCLIModule`
+- **Contracts:** `Reporter`
 
 **Requirement:** Convert validation results into stable JSON, Markdown, or
 LLM-oriented findings without contaminating structured stdout.
@@ -126,8 +127,8 @@ document even when validation fails.
 
 ## SPEC-CMD_IDD_CLI-005: Identifier model
 
-- **Design:** `IDDCLIModule`
-- **Contract:** `Identifier`
+- **Components:** `IDDCLIModule`
+- **Contracts:** `Identifier`
 
 **Requirement:** Preserve each identifier's type, origin, source, description,
 links, and TEST kind through collection, graph construction, and reporting.
@@ -149,8 +150,8 @@ reaching into each other's internal representations.
 
 ## SPEC-CMD_IDD_CLI-006: Configuration loading
 
-- **Design:** `IDDCLIModule`
-- **Contract:** `Config`
+- **Components:** `IDDCLIModule`
+- **Contracts:** `Config`
 
 **Requirement:** Load configuration by explicit flag and then project defaults,
 while applying command-line output and verbosity overrides.
@@ -176,8 +177,8 @@ their Markdown owners.
 
 ## SPEC-CMD_IDD_CLI-007: Focused SPEC review contexts
 
-- **Design:** `IDDCLIModule`
-- **Contract:** `CLI`
+- **Components:** `IDDCLIModule`
+- **Contracts:** `CLI`
 
 **Requirement:** Assemble bounded, deterministic evidence bundles for one or
 more SPECs so a human or LLM can judge document quality outside validation
@@ -191,15 +192,15 @@ selects documentation input and defaults to `.`, while source remains rooted at
 the current working tree. Documentation and source collection each run once.
 
 Each identifier resolves exactly one canonical SPEC and returns its
-Requirement, Acceptance, Design and Contract references, complete bounded
+Requirement, Acceptance, Component and Contract references, complete bounded
 authored record Markdown including `Details`, the named Contract record, every
 covering TEST record, and every attached
 non-ignored source declaration annotated with that SPEC, plus declarations
 annotated with each covering TEST ID. Declaration excerpts are bounded and
 expose truncation. Output ordering is stable.
 
-A one-SPEC JSON result retains schema `idd.spec_review_context.v1`. Multiple
-SPECs use `idd.spec_review_context_batch.v1` and ordered independent contexts;
+A one-SPEC JSON result retains schema `idd.spec_review_context.v2`. Multiple
+SPECs use `idd.spec_review_context_batch.v2` and ordered independent contexts;
 Markdown formats preserve the same separation and neutral review questions.
 The command is read-only, does not invoke an LLM, does not emit a semantic score
 or pass/fail verdict, and does not participate in `run` validity. An empty,
@@ -208,8 +209,8 @@ an operational error.
 
 ## SPEC-CMD_IDD_CLI-008: Embedded workflow
 
-- **Design:** `IDDCLIModule`
-- **Contract:** `SkillsFS`
+- **Components:** `IDDCLIModule`
+- **Contracts:** `SkillsFS`
 
 **Requirement:** Embed, list, and export the IDD authoring workflow so one
 binary distributes instructions aligned with its validation behavior.
@@ -237,8 +238,8 @@ error.
 
 ## SPEC-CMD_IDD_CLI-009: Document commands
 
-- **Design:** `IDDCLIModule`
-- **Contract:** `CLI`
+- **Components:** `IDDCLIModule`
+- **Contracts:** `CLI`
 
 **Requirement:** Expose validation, skill generation, self-describing document
 initialization, explicit completion status, and safe structural repair as one
@@ -303,8 +304,8 @@ the dedicated `docs` commands.
 
 ## SPEC-CMD_IDD_CLI-010: Engine contract evidence
 
-- **Design:** `IDDCLIModule`
-- **Contract:** `Engine`
+- **Components:** `IDDCLIModule`
+- **Contracts:** `Engine`
 
 **Requirement:** Keep `Rule` as a test-only fixture that verifies concrete
 engine and graph behavior without advertising a production rule extension
@@ -320,6 +321,58 @@ The test-only interface exists to express a narrow contract assertion in
 runtime, configured by users, or promised as a plugin extension point.
 Documentation and architecture diagrams must continue to name the concrete
 engine ownership until a real extension lifecycle is designed and implemented.
+
+## SPEC-CMD_IDD_CLI-011: ID-centered trace query
+
+- **Components:** `IDDCLIModule`
+- **Contracts:** `CLI`
+
+**Requirement:** Given one public SPEC or TEST ID, or one package-scoped
+Component or Contract ID, expose its canonical declaration and every bounded
+typed relationship needed to review intent, design, contract, implementation,
+and evidence without creating a second relationship collector.
+
+**Acceptance:**
+
+`idd-cli trace <ID>` builds one shared project index and emits schema
+`idd.trace.v1` as JSON or equivalent LLM Markdown. The dossier distinguishes
+the one canonical owner from references, implementation declarations, test
+evidence, and optional mentions; includes inbound and outbound relation
+provenance with file, line, field, and record owner; and presents Component,
+Contract, SPEC, and TEST context in stable order.
+
+Depth is bounded and explicit. Unknown, unresolved, ambiguous, planned, and
+active-but-incomplete entities still return all available evidence and named
+findings. An unresolved or ambiguous query exits non-zero after writing that
+evidence. `docs review-context` projects the same TraceProject rather than
+maintaining a separate association algorithm.
+
+## SPEC-CMD_IDD_CLI-012: Change-aware impacted review queue
+
+- **Components:** `IDDCLIModule`
+- **Contracts:** `CLI`
+
+**Requirement:** Convert a Git comparison into a deterministic semantic-review
+queue by mapping changed declaration ranges and annotation IDs through the
+shared TraceIndex to related SPEC, TEST, Contract, and Component entities.
+
+**Acceptance:**
+
+`idd-cli docs impacted [project-root] --base <revision>` compares the selected
+commit with the complete current worktree, including tracked staged and
+unstaged edits plus untracked files. Added and removed annotation lines retain
+their SPEC or TEST seeds; changed function bodies map through the already
+collected AST declaration `Line`/`EndLine` range. If no declaration span can be
+matched, the command may conservatively seed indexed occurrences in that file
+but must disclose that reason rather than imply a semantic match.
+
+The command traverses typed relations in both directions to bounded depth two,
+deduplicates and stably orders its work queue, and preserves relationship
+provenance in each reason. Physical occurrence endpoints never become logical
+queue entities. When implementation or test evidence changes while a related
+canonical SPEC file does not, schema `idd.impacted.v1` includes a
+`related-spec-unchanged` warning. The warning requests review and never claims
+that prose is stale or semantically incorrect.
 
 ## Concrete implementation notes
 

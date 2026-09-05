@@ -1,15 +1,16 @@
 ---
 idd:
-  version: "1.0"
+  version: "1.1"
   package: internal/reporter
+  namespace: INTERNAL_REPORTER
 ---
 
 # Specifications: internal/reporter
 
 ## SPEC-INTERNAL_REPORTER-001: Multi-audience report rendering
 
-- **Design:** `ReportRenderer`
-- **Contract:** `ReporterLifecycle`
+- **Components:** `ReportRenderer`
+- **Contracts:** `ReporterLifecycle`
 
 **Requirement:**
 
@@ -31,8 +32,8 @@ Markdown, stdout, file output, statistics, graph output, and finding enrichment.
 
 ## SPEC-INTERNAL_REPORTER-003: Format-aware reporter construction
 
-- **Design:** `ReportRenderer`
-- **Contract:** `ReporterLifecycle`
+- **Components:** `ReportRenderer`
+- **Contracts:** `ReporterLifecycle`
 
 **Requirement:**
 
@@ -52,8 +53,8 @@ dereferences it; callers are responsible for supplying the resolved config.
 
 ## SPEC-INTERNAL_REPORTER-004: Complete internal report envelope
 
-- **Design:** `ReportRenderer`
-- **Contract:** `ReporterLifecycle`
+- **Components:** `ReportRenderer`
+- **Contracts:** `ReporterLifecycle`
 
 **Requirement:**
 
@@ -74,8 +75,8 @@ operation does not serialize or write and currently has no expected error path.
 
 ## SPEC-INTERNAL_REPORTER-005: Destination and human output behavior
 
-- **Design:** `ReportRenderer`
-- **Contract:** `ReportDestination`
+- **Components:** `ReportRenderer`
+- **Contracts:** `ReportDestination`
 
 **Requirement:**
 
@@ -99,8 +100,8 @@ stats and graph content, pass/fail icons, and unsupported format rejection.
 
 ## SPEC-INTERNAL_REPORTER-011: Finding-centered JSON and LLM Markdown
 
-- **Design:** `ReportRenderer`
-- **Contract:** `FindingReport`
+- **Components:** `ReportRenderer`
+- **Contracts:** `FindingReport`
 
 **Requirement:**
 
@@ -123,8 +124,8 @@ with no findings must explicitly say so.
 
 ## SPEC-INTERNAL_REPORTER-012: Self-contained finding enrichment
 
-- **Design:** `ReportRenderer`
-- **Contract:** `FindingReport`
+- **Components:** `ReportRenderer`
+- **Contracts:** `FindingReport`
 
 **Requirement:**
 
@@ -165,18 +166,21 @@ remain guidance and may require Skill-guided semantic judgment.
 
 ## SPEC-INTERNAL_REPORTER-013: Evidence-only review-context rendering
 
-- **Design:** `ReportRenderer`
-- **Contract:** `ReviewContextReport`
+- **Components:** `ReportRenderer`
+- **Contracts:** `ReviewContextReport`
 
-**Requirement:** Render one or a bounded ordered batch of collector-owned SPEC
-review contexts as JSON or Markdown without adding a semantic score, warning,
-or approval.
+**Requirement:** Render ID-centered trace dossiers and one or a bounded ordered
+batch of collector-owned SPEC review projections as JSON or Markdown without
+adding a semantic score, stale-doc verdict, or approval.
 
-**Acceptance:** JSON preserves schema `idd.spec_review_context.v1`; Markdown
-contains the same authored, implementation, and covering-test source evidence,
-visible record-or-declaration truncation, and neutral review questions.
+**Acceptance:** Trace JSON preserves `idd.trace.v1` and LLM Markdown contains
+the same canonical, occurrence, Component, Contract, implementation, TEST, and
+relation-provenance evidence. Review JSON preserves
+`idd.spec_review_context.v2`; Markdown contains the same authored,
+implementation, and covering-test source evidence, visible
+record-or-declaration truncation, and neutral review questions.
 Unsupported formats return an operational error.
 
-Multiple contexts use schema `idd.spec_review_context_batch.v1`, preserve
+Multiple contexts use schema `idd.spec_review_context_batch.v2`, preserve
 first-request order, and render independently within one output. A one-context
-call remains byte-compatible with the single-context renderer.
+call retains the single-context schema. All lists use deterministic ordering.

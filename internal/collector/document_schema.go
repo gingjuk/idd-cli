@@ -46,6 +46,7 @@ type iddDocumentSlotSchema struct {
 	Name         string
 	Heading      string
 	RecordPrefix string
+	Optional     bool
 	Guidance     []string
 }
 
@@ -54,6 +55,7 @@ type iddDocumentRecordFieldSchema struct {
 	Label            string
 	List             bool
 	Heading          bool
+	Optional         bool
 	RequiredWhenKind string
 }
 
@@ -83,6 +85,8 @@ var iddDocumentSchemas = map[string]iddDocumentRoleSchema{
 				"Explain why it exists, its responsibilities and state ownership,",
 				"what remains outside its boundary, how it collaborates, and the",
 				"decisions and trade-offs behind that shape.",
+				"Declare concerns such as dependencies, lifecycle, failure containment,",
+				"concurrency, persistence, security, performance, or testability only when relevant.",
 			},
 		},
 		Record: iddDocumentRecordSchema{
@@ -91,48 +95,9 @@ var iddDocumentSchemas = map[string]iddDocumentRoleSchema{
 			Fields: []iddDocumentRecordFieldSchema{
 				{Name: "name", Label: "Component name", Heading: true},
 				{Name: "purpose", Label: "Purpose"},
-			},
-		},
-		Sections: []iddDocumentSlotSchema{
-			{
-				Name:    "design.architecture",
-				Heading: "Architecture",
-				Guidance: []string{
-					"Describe data and control flow, state ownership, lifecycle,",
-					"concurrency when relevant, and failure containment.",
-				},
-			},
-			{
-				Name:    "design.package-layout",
-				Heading: "Package Layout",
-				Guidance: []string{
-					"Explain why responsibilities live in their selected packages,",
-					"not only the directory tree.",
-				},
-			},
-			{
-				Name:    "design.function-composition",
-				Heading: "Function Composition",
-				Guidance: []string{
-					"Describe meaningful execution paths and initialization or",
-					"lifecycle order.",
-				},
-			},
-			{
-				Name:    "design.dependencies",
-				Heading: "Dependencies",
-				Guidance: []string{
-					"Explain what each dependency contributes and which assumptions",
-					"must remain true.",
-				},
-			},
-			{
-				Name:    "design.testability-hooks",
-				Heading: "Testability Hooks",
-				Guidance: []string{
-					"Explain seams, fakes, observable outcomes, and difficult",
-					"failure paths.",
-				},
+				{Name: "ownership", Label: "Ownership"},
+				{Name: "boundary", Label: "Boundary"},
+				{Name: "decisions", Label: "Decisions"},
 			},
 		},
 	},
@@ -142,8 +107,10 @@ var iddDocumentSchemas = map[string]iddDocumentRoleSchema{
 		Collection: iddDocumentSlotSchema{
 			Name:         "contract.records",
 			RecordPrefix: "Contract:",
+			Optional:     true,
 			Guidance: []string{
 				"Add one `## Contract: <name>` section for each observable boundary.",
+				"If no stable boundary exists, explain that explicitly instead of inventing a Contract.",
 				"Describe the caller-visible capability,",
 				"inputs and outputs, validity and ownership rules,",
 				"errors, side effects, invariants, and compatibility expectations.",
@@ -180,8 +147,8 @@ var iddDocumentSchemas = map[string]iddDocumentRoleSchema{
 			Fields: []iddDocumentRecordFieldSchema{
 				{Name: "id", Label: "SPEC identifier", Heading: true},
 				{Name: "title", Label: "title", Heading: true},
-				{Name: "design", Label: "Design"},
-				{Name: "contract", Label: "Contract"},
+				{Name: "components", Label: "Components", List: true},
+				{Name: "contracts", Label: "Contracts", List: true, Optional: true},
 				{Name: "requirement", Label: "Requirement"},
 				{Name: "acceptance", Label: "Acceptance"},
 			},
@@ -246,6 +213,9 @@ func writeScaffoldSlot(
 	conditional := make([]string, 0)
 	for _, field := range record.Fields {
 		if field.Heading {
+			continue
+		}
+		if field.Optional {
 			continue
 		}
 		if field.RequiredWhenKind != "" {
@@ -551,13 +521,23 @@ func inspectParsedDocumentCompletion(
 	}
 
 	records := splitIDDMarkdownRecords(document, root)
-	if !hasRecordPrefix(records, schema.Collection.RecordPrefix) {
+	hasCollectionRecord := hasRecordPrefix(records, schema.Collection.RecordPrefix)
+	if !schema.Collection.Optional && !hasCollectionRecord {
 		addMissingCompletionSlot(incomplete, IncompleteSlot{
 			File:   document.Path,
 			Line:   completionFallbackLine(document, schema.Collection.Name),
 			Role:   role,
 			Slot:   schema.Collection.Name,
 			Reason: "required record has not been authored",
+		})
+	} else if schema.Collection.Optional && !hasCollectionRecord &&
+		!hasOptionalCollectionExplanation(document.Body) {
+		addMissingCompletionSlot(incomplete, IncompleteSlot{
+			File:   document.Path,
+			Line:   completionFallbackLine(document, schema.Collection.Name),
+			Role:   role,
+			Slot:   schema.Collection.Name,
+			Reason: "author a Contract record or explicitly explain why this documentation unit owns no stable contract",
 		})
 	}
 	for _, section := range schema.Sections {
@@ -627,6 +607,27 @@ func inspectParsedDocumentCompletion(
 	}
 	sortIncompleteSlots(slots)
 	return slots
+}
+
+func hasOptionalCollectionExplanation(body []byte) bool {
+	inComment := false
+	for _, line := range strings.Split(string(body), "\n") {
+		trimmed := strings.TrimSpace(line)
+		if strings.HasPrefix(trimmed, "<!--") {
+			inComment = true
+		}
+		if inComment {
+			if strings.Contains(trimmed, "-->") {
+				inComment = false
+			}
+			continue
+		}
+		if trimmed == "" || strings.HasPrefix(trimmed, "#") || strings.HasPrefix(trimmed, ">") {
+			continue
+		}
+		return true
+	}
+	return false
 }
 
 type iddScaffoldMarker struct {
@@ -710,8 +711,11 @@ func iddDocumentRecordValuesForRole(
 				Index:      index,
 				Identifier: component.Name,
 				Scalars: map[string]string{
-					"name":    component.Name,
-					"purpose": component.Purpose,
+					"name":      component.Name,
+					"purpose":   component.Purpose,
+					"ownership": component.Ownership,
+					"boundary":  component.Boundary,
+					"decisions": component.Decisions,
 				},
 			})
 		}
@@ -734,10 +738,12 @@ func iddDocumentRecordValuesForRole(
 				Scalars: map[string]string{
 					"id":          spec.ID,
 					"title":       spec.Title,
-					"design":      spec.Design,
-					"contract":    spec.Contract,
 					"requirement": spec.Requirement,
 					"acceptance":  spec.Acceptance,
+				},
+				Lists: map[string][]string{
+					"components": spec.Components,
+					"contracts":  spec.Contracts,
 				},
 			})
 		}
@@ -768,7 +774,7 @@ func iddDocumentRecordFieldRequired(
 	field iddDocumentRecordFieldSchema,
 	recordKind string,
 ) bool {
-	return field.RequiredWhenKind == "" || field.RequiredWhenKind == recordKind
+	return !field.Optional && (field.RequiredWhenKind == "" || field.RequiredWhenKind == recordKind)
 }
 
 func iddDocumentRecordFieldComplete(value, recordID, field string) bool {

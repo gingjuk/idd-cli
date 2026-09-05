@@ -32,6 +32,135 @@ func TestDefault(t *testing.T) {
 	if !reflect.DeepEqual(cfg.Code.Patterns, defaultCodePatterns) {
 		t.Errorf("Code.Patterns = %#v, want %#v", cfg.Code.Patterns, defaultCodePatterns)
 	}
+	if cfg.Validation.RequirePublicFuncAnnotation || cfg.Validation.RequireTestAnnotation {
+		t.Error("implementation census rules should be disabled by default")
+	}
+}
+
+// @test-contract TEST-INTERNAL_CONFIG-001
+func TestConfig_ValidateDocumentationUnits(t *testing.T) {
+	tests := []struct {
+		name        string
+		units       []DocumentationUnit
+		wantErrText string
+		wantPackage string
+		wantSource  string
+	}{
+		{
+			name: "one unit spans source packages",
+			units: []DocumentationUnit{{
+				Package: "auth",
+				Sources: []string{"internal/auth/**", "internal/session/**"},
+			}},
+			wantPackage: "auth",
+			wantSource:  "internal/auth/**",
+		},
+		{name: "package is required", units: []DocumentationUnit{{Sources: []string{"internal/auth/**"}}}, wantErrText: "package"},
+		{name: "sources are required", units: []DocumentationUnit{{Package: "auth"}}, wantErrText: "sources"},
+		{name: "package cannot escape", units: []DocumentationUnit{{Package: "../auth", Sources: []string{"internal/auth/**"}}}, wantErrText: "package"},
+		{name: "duplicate package", units: []DocumentationUnit{{Package: "auth", Sources: []string{"internal/auth/**"}}, {Package: "auth", Sources: []string{"internal/session/**"}}}, wantErrText: "repeats package"},
+		{name: "duplicate source", units: []DocumentationUnit{{Package: "auth", Sources: []string{"internal/auth/**", "internal/auth/**"}}}, wantErrText: "repeats source"},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			cfg := Default()
+			cfg.Docs.Units = test.units
+			err := cfg.Validate()
+			if test.wantErrText != "" {
+				if err == nil || !strings.Contains(err.Error(), test.wantErrText) {
+					t.Fatalf("Validate() error = %v, want text %q", err, test.wantErrText)
+				}
+				return
+			}
+			if err != nil {
+				t.Fatalf("Validate() error = %v", err)
+			}
+			if got := cfg.Docs.Units[0].Package; got != test.wantPackage {
+				t.Errorf("Package = %q, want %q", got, test.wantPackage)
+			}
+			if got := cfg.Docs.Units[0].Sources[0]; got != test.wantSource {
+				t.Errorf("Sources[0] = %q, want %q", got, test.wantSource)
+			}
+		})
+	}
+}
+
+// @test-contract TEST-INTERNAL_CONFIG-003
+func TestLoad_DeprecatedIdentifierPatterns(t *testing.T) {
+	configPath := filepath.Join(t.TempDir(), ".idd.yaml")
+	data := []byte("docs:\n  identifier_patterns:\n    spec: SPEC-[A-Z]+-[0-9]+\n")
+	if err := os.WriteFile(configPath, data, 0o644); err != nil {
+		t.Fatalf("WriteFile() error = %v", err)
+	}
+	cfg, err := Load(configPath)
+	if err != nil {
+		t.Fatalf("Load() error = %v", err)
+	}
+	warnings := cfg.DeprecationWarnings()
+	if len(warnings) != 1 || warnings[0].Path != "docs.identifier_patterns" {
+		t.Fatalf("DeprecationWarnings() = %#v, want identifier_patterns warning", warnings)
+	}
+}
+
+// @test-contract TEST-INTERNAL_CONFIG-001
+func TestConfig_DocumentationUnitsForSource(t *testing.T) {
+	cfg := Default()
+	cfg.Docs.Units = []DocumentationUnit{
+		{Package: "auth", Sources: []string{"internal/auth/**", "internal/session/*.go"}},
+		{Package: "shared", Sources: []string{"internal/shared/**"}},
+		{Package: "overlap", Sources: []string{"internal/**/token.go"}},
+	}
+	tests := []struct {
+		name string
+		path string
+		want []string
+	}{
+		{name: "recursive tree", path: "internal/auth/sub/token.go", want: []string{"auth", "overlap"}},
+		{name: "single segment", path: "internal/session/login.go", want: []string{"auth"}},
+		{name: "single segment does not cross directory", path: "internal/session/sub/login.go"},
+		{name: "independent unit", path: "internal/shared/value.go", want: []string{"shared"}},
+		{name: "unmapped", path: "cmd/tool/main.go"},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			matches := cfg.DocumentationUnitsForSource(test.path)
+			got := make([]string, 0, len(matches))
+			for _, unit := range matches {
+				got = append(got, unit.Package)
+			}
+			if strings.Join(got, ",") != strings.Join(test.want, ",") {
+				t.Errorf("DocumentationUnitsForSource(%q) = %v, want %v", test.path, got, test.want)
+			}
+		})
+	}
+}
+
+// @test-contract TEST-INTERNAL_CONFIG-001
+func TestConfig_ValidateRejectsMalformedGlobs(t *testing.T) {
+	tests := []struct {
+		name   string
+		mutate func(*Config)
+		want   string
+	}{
+		{name: "docs pattern", mutate: func(cfg *Config) { cfg.Docs.Patterns = []string{"docs/[.md"} }, want: "docs.patterns"},
+		{name: "docs ignore", mutate: func(cfg *Config) { cfg.Docs.IgnorePaths = []string{"docs/**bad/*.md"} }, want: "docs.ignore_paths"},
+		{name: "code pattern", mutate: func(cfg *Config) { cfg.Code.Patterns = []string{"**/[.go"} }, want: "code.patterns"},
+		{name: "code ignore", mutate: func(cfg *Config) { cfg.Code.IgnorePaths = []string{"internal/["} }, want: "code.ignore_paths"},
+		{name: "unit source", mutate: func(cfg *Config) {
+			cfg.Docs.Units = []DocumentationUnit{{Package: "auth", Sources: []string{"internal/**bad"}}}
+		}, want: "docs.units"},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			cfg := Default()
+			test.mutate(cfg)
+			err := cfg.Validate()
+			if err == nil || !strings.Contains(err.Error(), test.want) {
+				t.Fatalf("Validate() error = %v, want %q", err, test.want)
+			}
+		})
+	}
 }
 
 // @test-contract TEST-INTERNAL_CONFIG-004

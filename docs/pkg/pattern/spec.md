@@ -1,15 +1,16 @@
 ---
 idd:
-  version: "1.0"
+  version: "1.1"
   package: pkg/pattern
+  namespace: PKG_PATTERN
 ---
 
 # Specifications: pkg/pattern
 
 ## SPEC-PKG_PATTERN-001: Built-in identifier recognition registry
 
-- **Design:** `SyntaxRecognizer`
-- **Contract:** `IdentifierSyntax`
+- **Components:** `SyntaxRecognizer`
+- **Contracts:** `IdentifierSyntax`
 
 **Requirement:**
 
@@ -33,8 +34,8 @@ identifiers.
 
 ## SPEC-PKG_PATTERN-002: Source annotation recognition registry
 
-- **Design:** `SyntaxRecognizer`
-- **Contract:** `AnnotationSyntax`
+- **Components:** `SyntaxRecognizer`
+- **Contracts:** `AnnotationSyntax`
 
 **Requirement:**
 
@@ -56,8 +57,8 @@ valid declaration.
 
 ## SPEC-PKG_PATTERN-003: Annotation prefix type mapping
 
-- **Design:** `SyntaxRecognizer`
-- **Contract:** `AnnotationSyntax`
+- **Components:** `SyntaxRecognizer`
+- **Contracts:** `AnnotationSyntax`
 
 **Requirement:**
 
@@ -73,8 +74,8 @@ unknown value, and empty input.
 
 ## SPEC-PKG_PATTERN-004: Explicit document reference extraction
 
-- **Design:** `SyntaxRecognizer`
-- **Contract:** `DocumentReferenceSyntax`
+- **Components:** `SyntaxRecognizer`
+- **Contracts:** `DocumentReferenceSyntax`
 
 **Requirement:**
 
@@ -96,8 +97,8 @@ current limitation because quote detection searches with the normalized value.
 
 ## SPEC-PKG_PATTERN-005: Comma-separated annotation target splitting
 
-- **Design:** `SyntaxRecognizer`
-- **Contract:** `AnnotationSyntax`
+- **Components:** `SyntaxRecognizer`
+- **Contracts:** `AnnotationSyntax`
 
 **Requirement:**
 
@@ -116,8 +117,8 @@ lexical extraction.
 
 ## SPEC-PKG_PATTERN-006: Broad identifier type detection
 
-- **Design:** `SyntaxRecognizer`
-- **Contract:** `IdentifierSyntax`
+- **Components:** `SyntaxRecognizer`
+- **Contracts:** `IdentifierSyntax`
 
 **Requirement:**
 
@@ -136,8 +137,8 @@ accept authored IDs must use strict validation instead.
 
 ## SPEC-PKG_PATTERN-007: Broad pattern validity check
 
-- **Design:** `SyntaxRecognizer`
-- **Contract:** `IdentifierSyntax`
+- **Components:** `SyntaxRecognizer`
+- **Contracts:** `IdentifierSyntax`
 
 **Requirement:**
 
@@ -155,8 +156,8 @@ whether PATTERN and WALK forms are valid author-facing IDs.
 
 ## SPEC-PKG_PATTERN-008: Annotation target extraction
 
-- **Design:** `SyntaxRecognizer`
-- **Contract:** `AnnotationSyntax`
+- **Components:** `SyntaxRecognizer`
+- **Contracts:** `AnnotationSyntax`
 
 **Requirement:**
 
@@ -173,8 +174,8 @@ targets, and content containing no annotations.
 
 ## SPEC-PKG_PATTERN-009: Strict identifier format validation
 
-- **Design:** `SyntaxRecognizer`
-- **Contract:** `IdentifierSyntax`
+- **Components:** `SyntaxRecognizer`
+- **Contracts:** `IdentifierSyntax`
 
 **Requirement:**
 

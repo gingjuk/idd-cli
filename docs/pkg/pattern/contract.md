@@ -1,7 +1,8 @@
 ---
 idd:
-  version: "1.0"
+  version: "1.1"
   package: pkg/pattern
+  namespace: PKG_PATTERN
 ---
 
 # Contracts: pkg/pattern
@@ -46,9 +47,23 @@ double quote or backtick. Returned values are uppercased, duplicates are
 preserved, and ordering across identifier types is unspecified because the
 registry is map-backed.
 
+### Non-guarantees
+
 The function is a lexical filter, not a Markdown renderer. It does not prove
-balanced delimiters and currently relies on an uppercase lookup when checking
-the original text, which limits lowercase quoted input.
+balanced delimiters, declaration existence, reference validity, or relationship
+authority.
+
+### Known limitations
+
+The current implementation relies on an uppercase lookup when checking the
+original text, which limits lowercase quoted input. This is migration debt, not
+behavior that callers should depend on.
+
+### Compatibility commitments
+
+Changing duplicate preservation or the returned uppercase spelling requires a
+coordinated collector and regression-test migration. The lowercase lookup
+limitation may be fixed without treating its present failure as a promise.
 
 ## Contract: AnnotationSyntax
 

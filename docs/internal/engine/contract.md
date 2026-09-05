@@ -1,7 +1,8 @@
 ---
 idd:
-  version: "1.0"
+  version: "1.1"
   package: internal/engine
+  namespace: INTERNAL_ENGINE
 ---
 
 # Contracts: internal/engine

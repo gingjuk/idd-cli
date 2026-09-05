@@ -1,7 +1,8 @@
 ---
 idd:
-  version: "1.0"
+  version: "1.1"
   package: pkg/pattern
+  namespace: PKG_PATTERN
 ---
 
 # Testing: pkg/pattern

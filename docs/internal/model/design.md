@@ -1,7 +1,8 @@
 ---
 idd:
-  version: "1.0"
+  version: "1.1"
   package: internal/model
+  namespace: INTERNAL_MODEL
 ---
 
 # Design: internal/model
@@ -20,6 +21,25 @@ semantics and deterministic collection helpers, but not Markdown parsing,
 source scanning, graph construction, validation policy, or output rendering.
 That separation prevents low-level values from importing the packages that
 produce or consume them.
+
+**Ownership:**
+
+The component owns the value vocabulary for identifiers, lifecycle and
+namespace identity, typed links with field provenance, validation findings,
+graph snapshots, statistics, and public report payloads exchanged by packages.
+
+**Boundary:**
+
+It does not discover files, parse Markdown or source, build indexes, execute
+validation policy, or render output. Producers and consumers must preserve the
+semantics represented by these dependency-light values.
+
+**Decisions:**
+
+IdentifierSet preserves duplicate physical observations rather than enforcing
+uniqueness early, and typed links retain their authored source. Mutable pointer
+values keep collection simple, while deterministic read projections define the
+stable boundary used by higher-level queries.
 
 ### Responsibilities
 

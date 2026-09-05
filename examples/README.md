@@ -15,10 +15,10 @@ Components, Contracts, SPECs, TESTs, relationships, guarantees, acceptance
 evidence, and oracles in human-readable Markdown records. Source snippets use
 declaration annotations as the code-to-document join:
 
-The filename alone selects the role. Frontmatter contains only `version` and
-`package`; an `idd.document` field is invalid. Real projects repeat this exact
-four-file set at `docs/<package>/` for every source package and nested
-sub-package. The files have no line-count limit and are not split into names
+The filename alone selects the role. Frontmatter contains `version`, current
+`package`, and stable `namespace`; an `idd.document` field is invalid. Real
+projects keep this four-file set per documentation unit. With `docs.units`, one
+unit may cover several physical source packages. The files have no line-count limit and are not split into names
 such as `design-auth.md` or `spec.part.md`.
 
 If a real project contains one of those split names, the validation finding's
@@ -33,6 +33,11 @@ equivalent guidance when the split prevents completion inspection.
 
 They intentionally contain no file-level `Spec:`, `Contract:`, or `Test:`
 paths. The identifier is the join key used by idd-cli.
+
+The example Component separately states Purpose, Ownership, Boundary, and
+Decisions. Contract prose distinguishes durable guarantees from
+non-guarantees, known limitations, and compatibility commitments so current
+implementation accidents do not become promises.
 
 Check that every required record and field is authored:
 

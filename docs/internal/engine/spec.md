@@ -1,15 +1,16 @@
 ---
 idd:
-  version: "1.0"
+  version: "1.1"
   package: internal/engine
+  namespace: INTERNAL_ENGINE
 ---
 
 # Specifications: internal/engine
 
 ## SPEC-INTERNAL_ENGINE-001: Stateful repository validation orchestration
 
-- **Design:** `ValidationEngine`
-- **Contract:** `RepositoryValidation`
+- **Components:** `ValidationEngine`
+- **Contracts:** `RepositoryValidation`
 
 **Requirement:**
 
@@ -74,8 +75,8 @@ alone drives completeness.
 
 ## SPEC-INTERNAL_ENGINE-002: Initialized single-run engine
 
-- **Design:** `ValidationEngine`
-- **Contract:** `EngineLifecycle`
+- **Components:** `ValidationEngine`
+- **Contracts:** `EngineLifecycle`
 
 **Requirement:**
 
@@ -97,8 +98,8 @@ Contract tests inspect non-nil fields, initial validity, and empty findings.
 
 ## SPEC-INTERNAL_ENGINE-004: Deterministic run and result lifecycle
 
-- **Design:** `ValidationEngine`
-- **Contract:** `EngineLifecycle`
+- **Components:** `ValidationEngine`
+- **Contracts:** `EngineLifecycle`
 
 **Requirement:**
 

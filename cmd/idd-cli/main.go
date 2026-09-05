@@ -21,16 +21,21 @@ import (
 )
 
 var (
-	cfgPath        string
-	outPath        string
-	format         string
-	verbose        bool
-	noConfig       bool
-	reviewDocsPath string
-	version        = "1.0.0"
+	cfgPath           string
+	outPath           string
+	format            string
+	verbose           bool
+	noConfig          bool
+	reviewDocsPath    string
+	reviewProjectRoot string
+	traceDepth        int
+	traceIncludes     []string
+	traceProjectRoot  string
+	version           = "1.0.0"
 )
 
 var errValidationFailed = errors.New("IDD validation failed")
+var errTraceResolution = errors.New("IDD trace did not resolve to one canonical declaration")
 
 var rootCmd = &cobra.Command{
 	Use:   "idd-cli",
@@ -44,6 +49,7 @@ Example usage:
   idd-cli generate skill -o idd-skill.md
   idd-cli docs init internal/auth
   idd-cli docs review-context SPEC-INTERNAL_AUTH-001
+  idd-cli trace SPEC-INTERNAL_AUTH-001 --format llm-markdown
   idd-cli run . --format llm-markdown
   idd-cli run . --format json`,
 	Version:       version,
@@ -197,10 +203,12 @@ while the run command treats its positional path as a complete project root.
 Repeated SPEC IDs are deduplicated in first-request order, and one batch
 accepts at most ten unique IDs.
 
-One SPEC retains JSON schema idd.spec_review_context.v1. Multiple SPECs use
-idd.spec_review_context_batch.v1 with an ordered context per SPEC. Markdown
-formats preserve the same independent Requirement, Acceptance, Contract,
-covering TEST, implementation, and test evidence with neutral review questions.
+One SPEC uses JSON schema idd.spec_review_context.v2. Multiple SPECs use
+idd.spec_review_context_batch.v2 with an ordered context per SPEC. Markdown
+formats preserve the same independent Requirement, Acceptance, Component
+design context, Contracts, covering TEST, implementation, and test evidence
+with neutral review questions. Both forms are projections of the shared trace
+index rather than an independent relationship collector.
 
 This command does not invoke an LLM, score prose, approve documentation, or
 participate in validation.
@@ -211,6 +219,30 @@ Example:
   idd-cli docs review-context SPEC-INTERNAL_AUTH-001 --docs-path docs/internal/auth --format llm-markdown`,
 	Args: cobra.MinimumNArgs(1),
 	RunE: reviewSpecContext,
+}
+
+var traceCmd = &cobra.Command{
+	Use:   "trace <ID>",
+	Short: "Trace one ID across declarations, relations, source, and evidence",
+	Long: `Build one stable ID-centered dossier from the shared project index.
+
+The result preserves the canonical declaration, every typed occurrence,
+inbound and outbound relations with field-level provenance, Components,
+Contracts, implementation declarations, and TEST evidence. The default depth
+is one; larger values traverse related entities up to a bounded depth of five.
+Use --include mentions to add non-authoritative Markdown mentions. Mentions do
+not satisfy validation coverage or correspondence.
+
+Unresolved and ambiguous IDs still emit their complete dossier, then exit
+non-zero. A planned canonical SPEC is a successful trace with empty
+implementation or evidence lists when none exist.
+
+Example:
+  idd-cli trace SPEC-INTERNAL_AUTH-001
+  idd-cli trace TEST-INTERNAL_AUTH-001 --depth 2 --include mentions
+  idd-cli trace contract:internal/auth#Authenticator --format llm-markdown`,
+	Args: cobra.ExactArgs(1),
+	RunE: traceIdentifier,
 }
 
 // @implement SPEC-CMD_IDD_CLI-009
@@ -237,6 +269,10 @@ func init() {
 	rootCmd.AddCommand(lintCmd)
 	rootCmd.AddCommand(skillsCmd)
 	rootCmd.AddCommand(generateCmd)
+	rootCmd.AddCommand(traceCmd)
+	traceCmd.Flags().IntVar(&traceDepth, "depth", 1, "Relationship traversal depth (0-5)")
+	traceCmd.Flags().StringSliceVar(&traceIncludes, "include", nil, "Optional occurrence classes to include (mentions)")
+	traceCmd.Flags().StringVar(&traceProjectRoot, "project-root", ".", "Project root for config, docs, and source collection")
 	docsCmd.AddCommand(docsInitCmd)
 	docsCmd.AddCommand(docsFixCmd)
 	docsCmd.AddCommand(docsStatusCmd)
@@ -247,6 +283,7 @@ func init() {
 		".",
 		"Documentation search root",
 	)
+	docsReviewContextCmd.Flags().StringVar(&reviewProjectRoot, "project-root", ".", "Project root for config and source collection")
 	rootCmd.AddCommand(docsCmd)
 
 	_ = viper.BindPFlag("config", rootCmd.PersistentFlags().Lookup("config"))
@@ -258,7 +295,7 @@ func init() {
 
 func main() {
 	if err := rootCmd.Execute(); err != nil {
-		if err != errValidationFailed {
+		if err != errValidationFailed && err != errTraceResolution {
 			fmt.Fprintln(os.Stderr, err)
 		}
 		os.Exit(1)
@@ -608,7 +645,11 @@ func statusPackageDocs(cmd *cobra.Command, args []string) error {
 
 // @implement SPEC-CMD_IDD_CLI-007, SPEC-CMD_IDD_CLI-009
 func reviewSpecContext(cmd *cobra.Command, args []string) error {
-	cfg, err := loadCLIConfig("")
+	projectRoot, err := resolveRunProjectRoot([]string{reviewProjectRoot})
+	if err != nil {
+		return err
+	}
+	cfg, err := loadCLIConfig(projectRoot)
 	if err != nil {
 		return err
 	}
@@ -634,6 +675,68 @@ func reviewSpecContext(cmd *cobra.Command, args []string) error {
 		return nil
 	}
 	_, err = os.Stdout.Write(rendered)
+	return err
+}
+
+// @implement SPEC-CMD_IDD_CLI-011
+func traceIdentifier(cmd *cobra.Command, args []string) error {
+	projectRoot, err := resolveRunProjectRoot([]string{traceProjectRoot})
+	if err != nil {
+		return err
+	}
+	cfg, err := loadCLIConfig(projectRoot)
+	if err != nil {
+		return err
+	}
+	writeConfigDeprecationWarnings(cfg)
+	includeMentions, err := parseTraceIncludes(traceIncludes)
+	if err != nil {
+		return err
+	}
+	project, err := collector.BuildTraceProject(context.Background(), cfg, ".", ".")
+	if err != nil {
+		return err
+	}
+	dossier, err := project.Trace(args[0], collector.TraceOptions{Depth: traceDepth, IncludeMentions: includeMentions})
+	if err != nil {
+		return err
+	}
+	rendered, err := reporter.RenderTraceDossier(dossier, format)
+	if err != nil {
+		return err
+	}
+	if err := writeTraceOutput(rendered); err != nil {
+		return err
+	}
+	if dossier.Status == "unresolved" || dossier.Status == "ambiguous" {
+		return errTraceResolution
+	}
+	return nil
+}
+
+func parseTraceIncludes(values []string) (bool, error) {
+	includeMentions := false
+	for _, value := range values {
+		switch strings.ToLower(strings.TrimSpace(value)) {
+		case "mentions":
+			includeMentions = true
+		case "":
+			continue
+		default:
+			return false, fmt.Errorf("unsupported trace include %q; expected mentions", value)
+		}
+	}
+	return includeMentions, nil
+}
+
+func writeTraceOutput(rendered []byte) error {
+	if outPath != "" && outPath != "-" {
+		if err := os.WriteFile(outPath, rendered, 0644); err != nil {
+			return fmt.Errorf("write trace dossier: %w", err)
+		}
+		return nil
+	}
+	_, err := os.Stdout.Write(rendered)
 	return err
 }
 

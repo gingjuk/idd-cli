@@ -28,10 +28,11 @@ The agent owns meaning:
 idd-cli owns deterministic mechanics:
 
 - scaffold and inspect canonical documents;
-- validate identity, fields, references, coverage, annotations, and package
+- validate identity, fields, references, lifecycle-aware coverage, annotations, and documentation-unit
   correspondence;
 - perform safe structural repair; and
-- assemble evidence for focused review.
+- build one ID-centered Entity/Occurrence and Relation/Provenance index for
+  trace, focused review, and change-aware impact queries.
 
 A passing `idd-cli run` proves structural traceability, not semantic truth or
 implementation correctness. `.idd.yaml` configures validation; it does not own
@@ -56,14 +57,15 @@ idd-cli run . --format json
 Also inspect the real code, tests, configuration, documents, and working-tree
 changes. Separate existing findings from findings introduced by the work.
 
-### 2. Initialize only new packages
+### 2. Initialize only new documentation units
 
 ```bash
 idd-cli docs init internal/auth internal/config --format json
 ```
 
-Each scanned source package, including a nested package, owns the matching
-`docs/<package>/` four-file set. A parent package cannot satisfy a child.
+Without `docs.units`, each scanned source package owns the matching
+`docs/<package>/` four-file set. An explicit unit can cover several source
+package globs; every scanned source must match exactly one configured unit.
 
 Do not initialize over an existing self-describing or legacy package.
 Generated guidance is incomplete until replaced with package-specific content.
@@ -75,10 +77,10 @@ semantic reviews separate.
 
 ### 3. Author documents in dependency order
 
-1. `design.md`: ownership, architecture, boundaries, dependencies, decisions,
-   failure containment, and testability.
+1. `design.md`: each Component's Purpose, Ownership, Boundary, and Decisions,
+   plus concern-driven dependencies, failure containment, and testability.
 2. `contract.md`: externally meaningful guarantees, inputs, outputs, errors,
-   side effects, invariants, and compatibility.
+   side effects, invariants, non-guarantees, known limitations, and compatibility.
 3. `spec.md`: required behavior and observable acceptance evidence, linked to
    the owning Component and Contract.
 4. `testing.md`: evidence strategy, TEST records, scenarios, fixtures,
@@ -105,6 +107,11 @@ func TestAuthenticatorContract(t *testing.T) { ... }
 
 Place annotations on the declarations they describe. One annotation may list
 several same-kind identifiers separated by commas.
+
+Validation proceeds from canonical records outward: every active SPEC needs an
+implementation and TEST evidence, and every authored annotation must resolve.
+Ordinary helper APIs and unrelated test functions do not require invented
+records unless the optional public/test census rules are enabled.
 
 Do not add repeated `Spec:`, `Contract:`, or `Test:` paths to source headers.
 idd-cli associates declarations with documents through identifiers. An
@@ -133,6 +140,18 @@ idd-cli docs review-context \
   SPEC-INTERNAL_CONFIG-001 \
   --format llm-markdown
 ```
+
+Start from Git changes when the affected IDs are not known, or trace any ID
+directly across docs, source, tests, and relation provenance:
+
+```bash
+idd-cli docs impacted --base main --format llm-markdown
+idd-cli trace SPEC-INTERNAL_AUTH-001 --format llm-markdown
+```
+
+An impacted `related-spec-unchanged` warning requests review; it does not claim
+that the canonical prose is stale. Trace and review-context reuse the same
+project index and must not reinterpret mentions as authoritative relationships.
 
 One request accepts up to ten SPEC IDs. Review each returned SPEC independently
 against its Requirement, Acceptance, Contract, covering TEST records, and
@@ -171,12 +190,15 @@ Each file begins with:
 ```yaml
 ---
 idd:
-  version: "1.0"
+  version: "1.1"
   package: internal/auth
+  namespace: INTERNAL_AUTH
 ---
 ```
 
-Do not add `idd.document`. The package value and document path must agree.
+Do not add `idd.document`. Package records the current document location;
+namespace is the stable ID prefix and survives package moves. All four files in
+a unit must agree on both values.
 There is no line limit: keep rich content in the canonical file instead of
 creating `design-*`, `contract-*`, `spec-*`, or `testing-*` fragments.
 
@@ -186,7 +208,13 @@ authority. The minimal record shapes are:
 ```markdown
 ## Component: AuthModule
 
-**Purpose:** Explain ownership, rationale, boundaries, and testability.
+**Purpose:** Explain why this component exists.
+
+**Ownership:** Explain the responsibilities and state it owns.
+
+**Boundary:** Explain what remains outside and how collaboration crosses it.
+
+**Decisions:** Explain the choices and trade-offs behind this shape.
 
 ## Contract: Authenticator
 
@@ -194,8 +222,8 @@ authority. The minimal record shapes are:
 
 ## SPEC-INTERNAL_AUTH-001: Authenticate credentials
 
-- **Design:** `AuthModule`
-- **Contract:** `Authenticator`
+- **Components:** `AuthModule`
+- **Contracts:** `Authenticator`
 
 **Requirement:** State the required behavior.
 
@@ -214,6 +242,10 @@ authority. The minimal record shapes are:
 A contract TEST uses `Kind: contract` and lists only the Contract guarantees it
 actually exercises in `Contracts`.
 
+`Components` is required and may name several owners. `Contracts` is optional
+and may name several stable boundaries; do not invent a Contract for internal
+behavior. A Contract file with no records must explain that choice explicitly.
+
 ### Relationship rules
 
 - Component and Contract names are package-local. Use `<package>#<name>` for a
@@ -223,6 +255,9 @@ actually exercises in `Contracts`.
   one-to-one numbering.
 - A contract TEST's `Contracts` field links evidence to Contract records.
 - Dependencies, lifecycle links, and concerns must represent real decisions.
+- `planned` SPECs preserve approved intent without implementation or evidence;
+  active SPECs require both. Deprecated and superseded records retain history
+  without delivery correspondence requirements.
 - Required fields and allowed values come from the current `docs init`,
   `docs status`, and finding output; do not copy validator catalogs into prose.
 
@@ -243,6 +278,8 @@ actually exercises in `Contracts`.
 - If `validation.consistency_check` is configured, remove the complete mapping.
   It is a deprecated, ignored compatibility key; use `docs review-context` for
   semantic review instead of carrying forward TF-IDF thresholds.
+- Remove obsolete `docs.identifier_patterns`; the versioned IDD protocol owns
+  ID syntax. Moving a package changes `idd.package`, not its stable namespace.
 
 Run `docs status`, `run`, and relevant tests after each migrated package, then
 run the repository's complete gates before committing.

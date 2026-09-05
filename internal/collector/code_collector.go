@@ -35,7 +35,14 @@ func NewCodeCollector(cfg *config.Config) *CodeCollector {
 //
 // @implement SPEC-INTERNAL_COLLECTOR-024
 func (c *CodeCollector) Collect(ctx context.Context, targetPath string) (*model.IdentifierSet, error) {
-	set, _, err := c.CollectWithErrors(ctx, targetPath)
+	set, findings, err := c.CollectWithErrors(ctx, targetPath)
+	if err == nil {
+		for _, finding := range findings {
+			if finding.Rule == "filesystem-scan" {
+				return set, fmt.Errorf("%s", finding.Message)
+			}
+		}
+	}
 	return set, err
 }
 
@@ -49,16 +56,22 @@ func (c *CodeCollector) CollectWithErrors(
 	set := model.NewIdentifierSet()
 	c.analyses = nil
 	var validationErrors []*model.ValidationError
+	if err := c.cfg.Validate(); err != nil {
+		validationErrors = append(validationErrors, &model.ValidationError{Rule: "filesystem-scan", Message: err.Error(), Source: "configuration", Code: "invalid-pattern"})
+		return set, validationErrors, nil
+	}
 
 	resolvedTarget := c.cfg.ResolvePath(targetPath)
 	info, err := os.Stat(resolvedTarget)
 	if err != nil {
+		validationErrors = append(validationErrors, filesystemScanFinding(c.cfg.DisplayPath(resolvedTarget), "stat", err))
 		return set, validationErrors, nil
 	}
 
 	if info.IsDir() {
 		err := filepath.Walk(resolvedTarget, func(path string, info os.FileInfo, err error) error {
 			if err != nil {
+				validationErrors = append(validationErrors, filesystemScanFinding(c.cfg.DisplayPath(path), "walk", err))
 				return nil
 			}
 			if info.IsDir() {
@@ -77,7 +90,8 @@ func (c *CodeCollector) CollectWithErrors(
 			}
 			fileErrors, collectErr := c.collectFile(displayPath, set)
 			if collectErr != nil {
-				return collectErr
+				validationErrors = append(validationErrors, filesystemScanFinding(displayPath, "read", collectErr))
+				return nil
 			}
 			validationErrors = append(validationErrors, fileErrors...)
 			return nil
@@ -93,12 +107,28 @@ func (c *CodeCollector) CollectWithErrors(
 		}
 		fileErrors, collectErr := c.collectFile(displayPath, set)
 		if collectErr != nil {
-			return set, validationErrors, collectErr
+			validationErrors = append(validationErrors, filesystemScanFinding(displayPath, "read", collectErr))
+			return set, validationErrors, nil
 		}
 		validationErrors = append(validationErrors, fileErrors...)
 	}
 
 	return set, validationErrors, nil
+}
+
+func filesystemScanFinding(path, operation string, err error) *model.ValidationError {
+	code := operation
+	if os.IsNotExist(err) {
+		code = "not-found"
+	} else if os.IsPermission(err) {
+		code = "permission-denied"
+	}
+	return &model.ValidationError{
+		Rule:    "filesystem-scan",
+		Message: fmt.Sprintf("%s %s: %v", operation, path, err),
+		Source:  path,
+		Code:    code,
+	}
 }
 
 func unsupportedSourceFinding(path string) *model.ValidationError {

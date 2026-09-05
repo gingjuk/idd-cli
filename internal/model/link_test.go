@@ -22,6 +22,19 @@ func TestLinkType_Constants(t *testing.T) {
 	if LinkDependsOn != "depends_on" || LinkSupersedes != "supersedes" {
 		t.Errorf("derived link constants are not stable")
 	}
+	traceTypes := map[LinkType]string{
+		LinkDesignedBy:    "designed_by",
+		LinkConstrainedBy: "constrained_by",
+		LinkVerifies:      "verifies",
+		LinkProves:        "proves",
+		LinkExecutes:      "executes",
+		LinkMentions:      "mentions",
+	}
+	for got, want := range traceTypes {
+		if string(got) != want {
+			t.Errorf("trace relation = %q, want %q", got, want)
+		}
+	}
 }
 
 // @test TEST-INTERNAL_MODEL-029

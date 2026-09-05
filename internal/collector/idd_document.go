@@ -16,7 +16,7 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-const iddDocumentVersion = "1.0"
+const iddDocumentVersion = "1.1"
 
 var (
 	iddDocumentRoles = map[string]string{
@@ -34,8 +34,9 @@ var (
 //
 // @implement SPEC-INTERNAL_COLLECTOR-001
 type IDDDocument struct {
-	Version string `yaml:"version"`
-	Package string `yaml:"package"`
+	Version   string `yaml:"version"`
+	Package   string `yaml:"package"`
+	Namespace string `yaml:"namespace"`
 	// Document is derived from the canonical filename and is never serialized.
 	Document         string                 `yaml:"-"`
 	Components       []string               `yaml:"-"`
@@ -61,6 +62,9 @@ type IDDRecordLifecycle struct {
 type IDDDocumentComponent struct {
 	Name      string
 	Purpose   string
+	Ownership string
+	Boundary  string
+	Decisions string
 	DependsOn []string
 	IDDRecordLifecycle
 }
@@ -77,12 +81,12 @@ type IDDDocumentContract struct {
 //
 // @implement SPEC-INTERNAL_COLLECTOR-001
 type IDDDocumentSpec struct {
-	ID          string `yaml:"id"`
-	Title       string `yaml:"title"`
-	Requirement string `yaml:"requirement"`
-	Acceptance  string `yaml:"acceptance"`
-	Design      string `yaml:"design"`
-	Contract    string `yaml:"contract"`
+	ID          string   `yaml:"id"`
+	Title       string   `yaml:"title"`
+	Requirement string   `yaml:"requirement"`
+	Acceptance  string   `yaml:"acceptance"`
+	Components  []string `yaml:"components"`
+	Contracts   []string `yaml:"contracts"`
 	IDDRecordLifecycle
 }
 
@@ -358,6 +362,7 @@ func iddMetadataNode(document *IDDDocument) *yaml.Node {
 	root := mappingNode()
 	appendMapping(root, scalarNode("version"), quotedScalarNode(document.Version))
 	appendMapping(root, scalarNode("package"), scalarNode(document.Package))
+	appendMapping(root, scalarNode("namespace"), scalarNode(document.Namespace))
 	return root
 }
 
@@ -444,10 +449,19 @@ func parseIDDComponentRecords(document *parsedIDDDocument, records []iddMarkdown
 		document.Issues = append(document.Issues, fieldIssues...)
 		purpose, purposeLine, purposeIssues := parseIDDLabeledParagraph(document, record, "Purpose")
 		document.Issues = append(document.Issues, purposeIssues...)
+		ownership, ownershipLine, ownershipIssues := parseIDDLabeledParagraph(document, record, "Ownership")
+		document.Issues = append(document.Issues, ownershipIssues...)
+		boundary, boundaryLine, boundaryIssues := parseIDDLabeledParagraph(document, record, "Boundary")
+		document.Issues = append(document.Issues, boundaryIssues...)
+		decisions, decisionsLine, decisionsIssues := parseIDDLabeledParagraph(document, record, "Decisions")
+		document.Issues = append(document.Issues, decisionsIssues...)
 
 		component := IDDDocumentComponent{
 			Name:               name,
 			Purpose:            purpose,
+			Ownership:          ownership,
+			Boundary:           boundary,
+			Decisions:          decisions,
 			DependsOn:          parseIDDReferenceList(fields["depends-on"]),
 			IDDRecordLifecycle: lifecycleFromFields(fields),
 		}
@@ -456,6 +470,15 @@ func parseIDDComponentRecords(document *parsedIDDDocument, records []iddMarkdown
 		fieldLines["name"] = record.line
 		if purposeLine > 0 {
 			fieldLines["purpose"] = purposeLine
+		}
+		if ownershipLine > 0 {
+			fieldLines["ownership"] = ownershipLine
+		}
+		if boundaryLine > 0 {
+			fieldLines["boundary"] = boundaryLine
+		}
+		if decisionsLine > 0 {
+			fieldLines["decisions"] = decisionsLine
 		}
 		document.Index.addRecord("components", record.line, fieldLines)
 		if name == "" {
@@ -519,8 +542,8 @@ func parseIDDSpecRecords(document *parsedIDDDocument, records []iddMarkdownRecor
 			document,
 			record,
 			map[string]string{
-				"design":        "Design",
-				"contract":      "Contract",
+				"components":    "Components",
+				"contracts":     "Contracts",
 				"status":        "Status",
 				"supersedes":    "Supersedes",
 				"deprecated-by": "Deprecated by",
@@ -538,8 +561,8 @@ func parseIDDSpecRecords(document *parsedIDDDocument, records []iddMarkdownRecor
 			Title:              title,
 			Requirement:        requirement,
 			Acceptance:         acceptance,
-			Design:             fields["design"],
-			Contract:           fields["contract"],
+			Components:         parseIDDReferenceList(fields["components"]),
+			Contracts:          parseIDDReferenceList(fields["contracts"]),
 			IDDRecordLifecycle: lifecycleFromFields(fields),
 		})
 		fieldLines["id"] = record.line
@@ -677,8 +700,12 @@ func normalizeIDDRecordFieldKey(label string) string {
 }
 
 func lifecycleFromFields(fields map[string]string) IDDRecordLifecycle {
+	status := strings.ToLower(trimMarkdownScalar(fields["status"]))
+	if status == "" {
+		status = "active"
+	}
 	return IDDRecordLifecycle{
-		Status:       strings.ToLower(trimMarkdownScalar(fields["status"])),
+		Status:       status,
 		Supersedes:   parseIDDReferenceList(fields["supersedes"]),
 		DeprecatedBy: trimMarkdownScalar(fields["deprecated-by"]),
 		Concerns:     lowercaseStrings(parseIDDReferenceList(fields["concerns"])),

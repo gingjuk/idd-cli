@@ -1,7 +1,8 @@
 ---
 idd:
-  version: "1.0"
+  version: "1.1"
   package: cmd/idd-cli
+  namespace: CMD_IDD_CLI
 ---
 
 # Design: cmd/idd-cli
@@ -21,6 +22,24 @@ boundaries. It does not parse Markdown records, build links, implement
 validation rules, decide architectural meaning, or synthesize semantic
 documentation. Keeping those responsibilities outside `main.go` prevents the
 CLI surface from becoming a second implementation of the domain model.
+
+**Ownership:**
+
+The component owns command registration, argument and flag interpretation,
+configuration selection, collaborator construction, output routing, and the
+mapping from domain failures to process exit behavior.
+
+**Boundary:**
+
+It delegates Markdown parsing, trace-index construction, validation policy,
+semantic review, and report content to their owning internal packages. The CLI
+may project those results but must not become a second source of IDD truth.
+
+**Decisions:**
+
+Commands use concrete package entry points and the embedded Skill ships with
+the binary. This favors a directly traceable execution path and version-aligned
+guidance over speculative plugin interfaces or independently versioned rules.
 
 ### Design rationale
 
@@ -86,8 +105,9 @@ normal mechanism.
 delegates to `InitDocumentPackages`. The collector layer performs path,
 package-existence, legacy-metadata, and central-catalog preflight for the whole
 batch before any write. It creates the four canonical basenames with
-version/package-only frontmatter; a nested package is initialized independently
-at its matching nested path. After creation it runs
+version/package/namespace frontmatter. Without explicit documentation units a
+nested package is initialized independently at its matching path; configured
+units may intentionally own several source packages. After creation it runs
 `InspectDocumentCompletions` and serializes normalized targets, the changed-path
 list, and the exact incomplete-slot work list.
 

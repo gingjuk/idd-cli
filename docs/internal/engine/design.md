@@ -1,7 +1,8 @@
 ---
 idd:
-  version: "1.0"
+  version: "1.1"
   package: internal/engine
+  namespace: INTERNAL_ENGINE
 ---
 
 # Design: internal/engine
@@ -23,6 +24,24 @@ Tree-sitter-backed `SourceAnalysis` values through `SetSourceAnalyses`, and only
 then calls `Run`. The engine can rescan configured files for rules that depend
 on raw Markdown layout, but source annotation placement and declaration policy
 consume the normalized AST model.
+
+**Ownership:**
+
+The component owns repository-wide policy execution over collected entities,
+occurrences, typed relations, AST analyses, configured documentation units,
+and filesystem evidence, plus deterministic validity and statistics.
+
+**Boundary:**
+
+Collectors own parsing and provenance creation; reporters own presentation;
+the CLI owns configuration and process behavior. The engine never authors or
+repairs prose and cannot establish whether an intention is semantically sound.
+
+**Decisions:**
+
+Validation remains an explicit ordered pipeline with one shared TraceIndex.
+Lifecycle gates correspondence and coverage from canonical SPECs outward, and
+scan failures are findings rather than evidence of absence or success.
 
 ### Responsibilities
 

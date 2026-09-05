@@ -9,11 +9,11 @@ import (
 	"github.com/jingxu9x/idd-cli/internal/model"
 )
 
-// validateDuplicateIDs checks that no identifier is defined in more than one
-// pkg directory — both on the doc side and the code side.
+// validateDuplicateIDs enforces a single canonical documentation declaration.
+// Source annotations are evidence occurrences and may legitimately appear in
+// several packages belonging to the same documented behavior.
 func (e *Engine) validateDuplicateIDs(ids *model.IdentifierSet) {
 	e.reportDuplicates(ids.DuplicateDocGroups(), "doc")
-	e.reportDuplicates(ids.DuplicateCodeGroups(), "code")
 }
 
 func (e *Engine) reportDuplicates(groups [][]*model.Identifier, side string) {

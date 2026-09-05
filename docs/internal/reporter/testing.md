@@ -1,7 +1,8 @@
 ---
 idd:
-  version: "1.0"
+  version: "1.1"
   package: internal/reporter
+  namespace: INTERNAL_REPORTER
 ---
 
 # Testing: internal/reporter
@@ -213,6 +214,20 @@ semantic verdict language.
 declaration, and record-or-declaration truncation fields. One context retains
 the single schema; multiple contexts use the batch schema and independent
 Markdown sections; unsupported formats return an error.
+
+## TEST-INTERNAL_REPORTER-016: Trace and review projection formats
+
+- **Kind:** `test`
+- **Covers:** `SPEC-INTERNAL_REPORTER-013`
+
+**Purpose:** Verify trace and review-context v2 JSON/LLM Markdown preserve the
+same ID-centered evidence without changing lifecycle, resolution, provenance,
+truncation, or semantic-review boundaries.
+
+**Oracle:** Table-driven formats pass only when trace emits schema
+`idd.trace.v1`, review-context emits its v2 single or batch schema, Components
+and multiple Contracts remain visible, lists are stable, Markdown contains no
+approval or semantic score, and unsupported formats return explicit errors.
 
 ## Strategy
 

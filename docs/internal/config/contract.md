@@ -1,7 +1,8 @@
 ---
 idd:
-  version: "1.0"
+  version: "1.1"
   package: internal/config
+  namespace: INTERNAL_CONFIG
 ---
 
 # Contracts: internal/config
@@ -13,8 +14,8 @@ idd:
 `Config` is the complete in-memory input to collection, validation, and
 reporting. Its nested values have separate ownership:
 
-- `DocsConfig` selects documentation globs, identifier regex strings, and
-  ignored document paths;
+- `DocsConfig` selects documentation globs, optional documentation-unit source
+  mappings, and ignored document paths;
 - `CodeConfig` selects source globs, semantic annotation prefixes, and ignored
   source paths;
 - `ValidationConfig` enables deterministic validation policies and retains the
@@ -25,10 +26,9 @@ reporting. Its nested values have separate ownership:
   verbosity.
 
 `Config.DeprecationWarnings()` returns a copy of load-time warnings derived
-from explicitly present obsolete YAML paths. The current warning identifies
-`validation.consistency_check`, its source file, ignored behavior, removal
-action, and the review-context replacement. Programmatic defaults have no
-warnings.
+from explicitly present obsolete YAML paths. Warnings identify
+`validation.consistency_check` or `docs.identifier_patterns`, their source,
+ignored behavior, and removal action. Programmatic defaults have no warnings.
 
 Slices and maps are caller-visible mutable values. The package does not clone
 them after construction or loading. Consumers may read them concurrently only
@@ -93,9 +93,9 @@ Explicit YAML presence is retained as a deprecation warning even when the
 decoded values are zero. Semantic review is requested explicitly through
 `docs review-context`.
 
-The method does not validate identifier regex or glob syntax, version support,
-output paths, ignore patterns, or relationships between boolean flags. It does
-not fill omitted identifier patterns, ignore paths, output values, or
+The method validates documentation-unit source globs but does not validate
+general scan glob syntax, version support, output paths, ignore patterns, or
+relationships between boolean flags. It does not fill omitted units, ignore paths, output values, or
 validation booleans in a partially loaded YAML file.
 
 ## Contract: RuntimeWorkdir

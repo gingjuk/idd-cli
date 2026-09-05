@@ -206,6 +206,7 @@ func TestEngine_validateBidirectional(t *testing.T) {
 		Version: "1.0",
 		Validation: config.ValidationConfig{
 			RequireDocLinkConsistency: false,
+			RequireSpecTestCoverage:   false,
 			AllowOrphans:              true,
 		},
 	}
@@ -229,11 +230,14 @@ func TestEngine_validateDocCodeCorrespondence(t *testing.T) {
 		name      string
 		addDoc    bool
 		addCode   bool
+		status    string
 		wantError bool
 	}{
 		{name: "matching identifier joins code to document", addDoc: true, addCode: true},
 		{name: "source annotation without document", addCode: true, wantError: true},
 		{name: "document without source annotation", addDoc: true, wantError: true},
+		{name: "planned document may precede implementation", addDoc: true, status: "planned"},
+		{name: "deprecated document need not retain implementation", addDoc: true, status: "deprecated"},
 	}
 
 	for _, tt := range tests {
@@ -255,6 +259,7 @@ func TestEngine_validateDocCodeCorrespondence(t *testing.T) {
 					10,
 				)
 				docID.SetOrigin(model.OriginDoc)
+				docID.Status = tt.status
 				ids.Add(docID)
 			}
 			if tt.addCode {

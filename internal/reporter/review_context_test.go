@@ -11,24 +11,33 @@ import (
 // @test-contract TEST-INTERNAL_REPORTER-014
 func TestRenderSpecReviewContext(t *testing.T) {
 	contextValue := &collector.SpecReviewContext{
-		Schema: "idd.spec_review_context.v1",
+		Schema: "idd.spec_review_context.v2",
 		Spec: collector.ReviewContextSpec{
 			ID:          "SPEC-SAMPLE-001",
 			Title:       "Preserve input",
 			Package:     "sample",
 			File:        "docs/sample/spec.md",
 			Line:        9,
-			Design:      "Runner",
-			Contract:    "Execution",
+			Components:  []string{"component:sample#Runner"},
+			Contracts:   []string{"contract:sample#Execution"},
 			Requirement: "Return the supplied value.",
 			Acceptance:  "The result equals the input.",
 		},
-		Contract: &collector.ReviewContextContract{
+		Components: []collector.ReviewContextComponent{{
+			ID:       "component:sample#Runner",
+			Name:     "Runner",
+			Purpose:  "Execute the sample behavior.",
+			Boundary: "Accept and return a value.",
+			File:     "docs/sample/design.md",
+			Line:     9,
+		}},
+		Contracts: []collector.ReviewContextContract{{
+			ID:         "contract:sample#Execution",
 			Name:       "Execution",
 			Guarantees: "The input is preserved.",
 			File:       "docs/sample/contract.md",
 			Line:       9,
-		},
+		}},
 		Tests: []collector.ReviewContextTest{{
 			ID:      "TEST-SAMPLE-001",
 			Title:   "Preservation evidence",
@@ -61,7 +70,7 @@ func TestRenderSpecReviewContext(t *testing.T) {
 		{
 			name:       "json",
 			format:     "json",
-			wantValues: []string{`"schema": "idd.spec_review_context.v1"`, `"id": "SPEC-SAMPLE-001"`},
+			wantValues: []string{`"schema": "idd.spec_review_context.v2"`, `"id": "SPEC-SAMPLE-001"`},
 		},
 		{
 			name:   "markdown",
@@ -116,7 +125,7 @@ func TestRenderSpecReviewContext(t *testing.T) {
 func TestRenderSpecReviewContexts(t *testing.T) {
 	contexts := []*collector.SpecReviewContext{
 		{
-			Schema: "idd.spec_review_context.v1",
+			Schema: "idd.spec_review_context.v2",
 			Spec: collector.ReviewContextSpec{
 				ID:      "SPEC-SAMPLE-002",
 				Title:   "Second",
@@ -124,7 +133,7 @@ func TestRenderSpecReviewContexts(t *testing.T) {
 			},
 		},
 		{
-			Schema: "idd.spec_review_context.v1",
+			Schema: "idd.spec_review_context.v2",
 			Spec: collector.ReviewContextSpec{
 				ID:      "SPEC-SAMPLE-001",
 				Title:   "First",
@@ -142,26 +151,26 @@ func TestRenderSpecReviewContexts(t *testing.T) {
 		{
 			name: "single retains single schema",
 			batch: &collector.SpecReviewContextBatch{
-				Schema:           "idd.spec_review_context_batch.v1",
+				Schema:           "idd.spec_review_context_batch.v2",
 				RequestedSpecIDs: []string{"SPEC-SAMPLE-002"},
 				Contexts:         contexts[:1],
 			},
 			format: "json",
 			wantValues: []string{
-				`"schema": "idd.spec_review_context.v1"`,
+				`"schema": "idd.spec_review_context.v2"`,
 				`"id": "SPEC-SAMPLE-002"`,
 			},
 		},
 		{
 			name: "batch json preserves order",
 			batch: &collector.SpecReviewContextBatch{
-				Schema:           "idd.spec_review_context_batch.v1",
+				Schema:           "idd.spec_review_context_batch.v2",
 				RequestedSpecIDs: []string{"SPEC-SAMPLE-002", "SPEC-SAMPLE-001"},
 				Contexts:         contexts,
 			},
 			format: "json",
 			wantValues: []string{
-				`"schema": "idd.spec_review_context_batch.v1"`,
+				`"schema": "idd.spec_review_context_batch.v2"`,
 				`"requested_spec_ids"`,
 				`"id": "SPEC-SAMPLE-002"`,
 				`"id": "SPEC-SAMPLE-001"`,
@@ -170,7 +179,7 @@ func TestRenderSpecReviewContexts(t *testing.T) {
 		{
 			name: "batch markdown has independent sections",
 			batch: &collector.SpecReviewContextBatch{
-				Schema:           "idd.spec_review_context_batch.v1",
+				Schema:           "idd.spec_review_context_batch.v2",
 				RequestedSpecIDs: []string{"SPEC-SAMPLE-002", "SPEC-SAMPLE-001"},
 				Contexts:         contexts,
 			},

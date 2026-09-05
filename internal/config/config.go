@@ -103,17 +103,63 @@ type DeprecationWarning struct {
 // DocsConfig holds documentation-related configuration including patterns and ignore paths.
 // @implement SPEC-INTERNAL_CONFIG-002
 type DocsConfig struct {
-	Patterns           []string           `yaml:"patterns"`
-	IdentifierPatterns IdentifierPatterns `yaml:"identifier_patterns"`
-	IgnorePaths        []string           `yaml:"ignore_paths"`
+	Patterns    []string            `yaml:"patterns"`
+	Units       []DocumentationUnit `yaml:"units"`
+	IgnorePaths []string            `yaml:"ignore_paths"`
 }
 
-// IdentifierPatterns defines regex patterns for matching SPEC, TEST, and other IDD identifiers.
-// @implement SPEC-INTERNAL_CONFIG-003
-type IdentifierPatterns struct {
-	Spec         string `yaml:"spec"`
-	Test         string `yaml:"test"`
-	TestContract string `yaml:"test_contract"`
+// DocumentationUnit maps one stable IDD documentation package to one or more
+// source trees. Sources are project-relative glob patterns and may span
+// several physical language packages.
+// @implement SPEC-INTERNAL_CONFIG-002
+type DocumentationUnit struct {
+	Package string   `yaml:"package"`
+	Sources []string `yaml:"sources"`
+}
+
+// DocumentationUnitsForSource returns all explicitly configured units whose
+// source patterns match a project-relative source path, in configuration order.
+func (c *Config) DocumentationUnitsForSource(path string) []DocumentationUnit {
+	if c == nil {
+		return nil
+	}
+	path = filepath.ToSlash(filepath.Clean(c.DisplayPath(path)))
+	var matches []DocumentationUnit
+	for _, unit := range c.Docs.Units {
+		for _, source := range unit.Sources {
+			if matchProjectGlob(source, path) {
+				copyUnit := DocumentationUnit{Package: unit.Package, Sources: append([]string(nil), unit.Sources...)}
+				matches = append(matches, copyUnit)
+				break
+			}
+		}
+	}
+	return matches
+}
+
+func matchProjectGlob(pattern, path string) bool {
+	patternParts := strings.Split(filepath.ToSlash(filepath.Clean(pattern)), "/")
+	pathParts := strings.Split(filepath.ToSlash(filepath.Clean(path)), "/")
+	var match func(int, int) bool
+	match = func(patternIndex, pathIndex int) bool {
+		if patternIndex == len(patternParts) {
+			return pathIndex == len(pathParts)
+		}
+		if patternParts[patternIndex] == "**" {
+			for next := pathIndex; next <= len(pathParts); next++ {
+				if match(patternIndex+1, next) {
+					return true
+				}
+			}
+			return false
+		}
+		if pathIndex == len(pathParts) {
+			return false
+		}
+		matched, err := filepath.Match(patternParts[patternIndex], pathParts[pathIndex])
+		return err == nil && matched && match(patternIndex+1, pathIndex+1)
+	}
+	return match(0, 0)
 }
 
 // CodeConfig holds code-related configuration including patterns and annotations.
@@ -199,18 +245,27 @@ func (c *Config) DeprecationWarnings() []DeprecationWarning {
 }
 
 func collectDeprecationWarnings(source string, document *yaml.Node) []DeprecationWarning {
-	if !yamlPathExists(document, "validation", "consistency_check") {
-		return nil
+	var warnings []DeprecationWarning
+	if yamlPathExists(document, "validation", "consistency_check") {
+		warnings = append(warnings, DeprecationWarning{
+			Path:   "validation.consistency_check",
+			Source: source,
+			Message: "validation.consistency_check is deprecated and ignored; " +
+				"remove it from the configuration. Use idd-cli docs review-context " +
+				"<SPEC-ID>... when semantic review is needed",
+			SuggestedFix: "Remove the complete validation.consistency_check mapping. " +
+				"Use idd-cli docs review-context <SPEC-ID>... when semantic review is needed.",
+		})
 	}
-	return []DeprecationWarning{{
-		Path:   "validation.consistency_check",
-		Source: source,
-		Message: "validation.consistency_check is deprecated and ignored; " +
-			"remove it from the configuration. Use idd-cli docs review-context " +
-			"<SPEC-ID>... when semantic review is needed",
-		SuggestedFix: "Remove the complete validation.consistency_check mapping. " +
-			"Use idd-cli docs review-context <SPEC-ID>... when semantic review is needed.",
-	}}
+	if yamlPathExists(document, "docs", "identifier_patterns") {
+		warnings = append(warnings, DeprecationWarning{
+			Path:         "docs.identifier_patterns",
+			Source:       source,
+			Message:      "docs.identifier_patterns is deprecated and ignored; identifier syntax is owned by the versioned IDD protocol",
+			SuggestedFix: "Remove the complete docs.identifier_patterns mapping.",
+		})
+	}
+	return warnings
 }
 
 func yamlPathExists(node *yaml.Node, path ...string) bool {
@@ -249,11 +304,6 @@ func Default() *Config {
 		Version: "1.0",
 		Docs: DocsConfig{
 			Patterns: []string{"docs/**/*.md"},
-			IdentifierPatterns: IdentifierPatterns{
-				Spec:         `SPEC-[A-Z]+-[0-9]+`,
-				Test:         `TEST-[A-Z]+-[0-9]+`,
-				TestContract: `TEST-[A-Z]+-[0-9]+`,
-			},
 			IgnorePaths: []string{
 				"examples/**",
 				"cmd/idd-cli/skills/**",
@@ -279,9 +329,9 @@ func Default() *Config {
 			RequireContractTestCoverage:  true,
 			RequireDesignSections:        true,
 			RequireDocCodeCorrespondence: true,
-			RequirePublicFuncAnnotation:  true,
+			RequirePublicFuncAnnotation:  false,
 			RequireRelatedFiles:          true,
-			RequireTestAnnotation:        true,
+			RequireTestAnnotation:        false,
 			RequireAnnotationIdentifier:  true,
 			RequireAnnotationOnSameLine:  true,
 			RequirePkgDocFiles:           true,
@@ -293,8 +343,7 @@ func Default() *Config {
 	}
 }
 
-// expectedAnnotationKeys returns the canonical set of annotation keys that must
-// match between docs.identifier_patterns and code.annotations.
+// expectedAnnotationKeys returns the canonical protocol annotation roles.
 func expectedAnnotationKeys() map[string]bool {
 	return map[string]bool{"spec": true, "test": true, "test_contract": true}
 }
@@ -324,11 +373,25 @@ func (c *Config) Validate() error {
 	if err := c.validateAnnotationValues(); err != nil {
 		return err
 	}
+	if err := c.validateDocumentationUnits(); err != nil {
+		return err
+	}
+	for label, patterns := range map[string][]string{
+		"docs.patterns":     c.Docs.Patterns,
+		"docs.ignore_paths": c.Docs.IgnorePaths,
+		"code.patterns":     c.Code.Patterns,
+		"code.ignore_paths": c.Code.IgnorePaths,
+	} {
+		for index, pattern := range patterns {
+			if err := validateGlobPattern(pattern); err != nil {
+				return fmt.Errorf("%s[%d] is invalid: %w", label, index, err)
+			}
+		}
+	}
 	return nil
 }
 
-// validateAnnotationKeys checks that code.annotations keys match
-// docs.identifier_patterns keys (spec, test, test_contract).
+// validateAnnotationKeys checks that code.annotations uses the protocol roles.
 func (c *Config) validateAnnotationKeys() error {
 	expected := expectedAnnotationKeys()
 	for key := range c.Code.Annotations {
@@ -338,7 +401,61 @@ func (c *Config) validateAnnotationKeys() error {
 	}
 	for key := range expected {
 		if _, ok := c.Code.Annotations[key]; !ok {
-			return fmt.Errorf("code.annotations is missing key %q (required by docs.identifier_patterns)", key)
+			return fmt.Errorf("code.annotations is missing required protocol key %q", key)
+		}
+	}
+	return nil
+}
+
+func (c *Config) validateDocumentationUnits() error {
+	packages := make(map[string]bool, len(c.Docs.Units))
+	for index := range c.Docs.Units {
+		unit := &c.Docs.Units[index]
+		unit.Package = filepath.ToSlash(filepath.Clean(strings.TrimSpace(unit.Package)))
+		if unit.Package == "." || unit.Package == "" || filepath.IsAbs(unit.Package) ||
+			unit.Package == ".." || strings.HasPrefix(unit.Package, "../") {
+			return fmt.Errorf("docs.units[%d].package must be a normalized project-relative documentation package", index)
+		}
+		if packages[unit.Package] {
+			return fmt.Errorf("docs.units repeats package %q", unit.Package)
+		}
+		packages[unit.Package] = true
+		if len(unit.Sources) == 0 {
+			return fmt.Errorf("docs.units[%d].sources must contain at least one project-relative source pattern", index)
+		}
+		seenSources := make(map[string]bool, len(unit.Sources))
+		for sourceIndex, source := range unit.Sources {
+			normalized := filepath.ToSlash(filepath.Clean(strings.TrimSpace(source)))
+			if normalized == "." || normalized == "" || filepath.IsAbs(normalized) ||
+				normalized == ".." || strings.HasPrefix(normalized, "../") {
+				return fmt.Errorf("docs.units[%d].sources[%d] must be a project-relative source pattern", index, sourceIndex)
+			}
+			if seenSources[normalized] {
+				return fmt.Errorf("docs.units[%d] repeats source pattern %q", index, normalized)
+			}
+			if err := validateGlobPattern(normalized); err != nil {
+				return fmt.Errorf("docs.units[%d].sources[%d] is invalid: %w", index, sourceIndex, err)
+			}
+			seenSources[normalized] = true
+			unit.Sources[sourceIndex] = normalized
+		}
+	}
+	return nil
+}
+
+func validateGlobPattern(pattern string) error {
+	if strings.TrimSpace(pattern) == "" {
+		return fmt.Errorf("glob pattern must not be empty")
+	}
+	for _, segment := range strings.FieldsFunc(filepath.ToSlash(pattern), func(r rune) bool { return r == '/' }) {
+		if segment == "**" {
+			continue
+		}
+		if strings.Contains(segment, "**") {
+			return fmt.Errorf("** must occupy a complete path segment in %q", pattern)
+		}
+		if _, err := filepath.Match(segment, ""); err != nil {
+			return fmt.Errorf("glob pattern %q: %w", pattern, err)
 		}
 	}
 	return nil
